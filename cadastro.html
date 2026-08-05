@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadastrar ocorrência</title>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    :root {
+      --azul-escuro: #132b46;
+      --azul: #2556d8;
+      --azul-hover: #1e40af;
+      --fundo: #eef2f6;
+      --borda: #d7e0ea;
+      --texto: #1f2937;
+      --suave: #64748b;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--fundo);
+      color: var(--texto);
+    }
+
+    header {
+      padding: 24px 20px;
+      background: var(--azul-escuro);
+      color: white;
+    }
+
+    .topo {
+      width: min(1200px, 94%);
+      margin: auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+    }
+
+    header h1 {
+      margin: 0 0 5px;
+      font-size: 25px;
+    }
+
+    header p {
+      margin: 0;
+      opacity: .85;
+    }
+
+    .voltar {
+      color: white;
+      text-decoration: none;
+      border: 1px solid rgba(255,255,255,.45);
+      padding: 10px 16px;
+      border-radius: 8px;
+      white-space: nowrap;
+    }
+
+    main {
+      width: min(1200px, 94%);
+      margin: 28px auto;
+    }
+
+    .aviso {
+      margin-bottom: 18px;
+      padding: 14px 16px;
+      border-left: 4px solid var(--azul);
+      background: #ffffff;
+      border-radius: 8px;
+      color: #334155;
+    }
+
+    form {
+      display: grid;
+      gap: 18px;
+    }
+
+    section {
+      padding: 24px;
+      background: white;
+      border-radius: 13px;
+      box-shadow: 0 4px 16px rgba(0,0,0,.07);
+    }
+
+    section h2 {
+      margin: 0 0 18px;
+      font-size: 20px;
+      color: var(--azul-escuro);
+      border-bottom: 1px solid var(--borda);
+      padding-bottom: 12px;
+    }
+
+    .grade {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .campo {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .campo.duplo { grid-column: span 2; }
+    .campo.triplo { grid-column: span 3; }
+    .campo.inteiro { grid-column: 1 / -1; }
+
+    label {
+      font-size: 14px;
+      font-weight: bold;
+      color: #334155;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 11px 12px;
+      border: 1px solid var(--borda);
+      border-radius: 8px;
+      background: white;
+      color: var(--texto);
+      font: inherit;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: 2px solid rgba(37,86,216,.18);
+      border-color: var(--azul);
+    }
+
+    input[readonly] {
+      background: #f8fafc;
+      color: #475569;
+    }
+
+    textarea {
+      min-height: 92px;
+      resize: vertical;
+    }
+
+    .subtitulo {
+      grid-column: 1 / -1;
+      margin: 4px 0 -4px;
+      padding-top: 8px;
+      font-weight: bold;
+      color: var(--azul-escuro);
+    }
+
+    .acoes {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      padding: 4px 0 30px;
+    }
+
+    button, .botao-secundario {
+      border: 0;
+      border-radius: 9px;
+      padding: 13px 22px;
+      font-size: 16px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    button {
+      background: var(--azul);
+      color: white;
+    }
+
+    button:hover { background: var(--azul-hover); }
+
+    .botao-secundario {
+      background: white;
+      color: var(--azul-escuro);
+      border: 1px solid var(--borda);
+    }
+
+    .nota {
+      color: var(--suave);
+      font-size: 13px;
+      font-weight: normal;
+    }
+
+    @media (max-width: 900px) {
+      .grade { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .campo.triplo { grid-column: span 2; }
+    }
+
+    @media (max-width: 600px) {
+      .topo { align-items: flex-start; }
+      .topo, .acoes { flex-direction: column; }
+      .grade { grid-template-columns: 1fr; }
+      .campo.duplo, .campo.triplo, .campo.inteiro { grid-column: auto; }
+      .acoes a, .acoes button { width: 100%; text-align: center; }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="topo">
+      <div>
+        <h1>Cadastrar ocorrência</h1>
+        <p>Sistema de Estatísticas Operacionais</p>
+      </div>
+
+      <a class="voltar" href="index.html">← Voltar ao painel</a>
+    </div>
+  </header>
+
+  <main>
+    <div class="aviso">
+      Esta é a primeira versão visual do formulário. O botão “Salvar ocorrência”
+      será conectado ao banco de dados na próxima fase.
+    </div>
+
+    <form id="formOcorrencia">
+      <section>
+        <h2>1. Identificação do registro</h2>
+
+        <div class="grade">
+          <div class="campo">
+            <label for="data">Data *</label>
+            <input id="data" name="data" type="date" required>
+          </div>
+
+          <div class="campo">
+            <label for="semana">Dia da semana</label>
+            <input id="semana" name="semana" type="text" readonly>
+          </div>
+
+          <div class="campo">
+            <label for="mes">Mês</label>
+            <input id="mes" name="mes" type="text" readonly>
+          </div>
+
+          <div class="campo">
+            <label for="vtr">VTR</label>
+            <input id="vtr" name="vtr" type="text" placeholder="Ex.: 133">
+          </div>
+
+          <div class="campo">
+            <label for="tipoRegistro">Tipo *</label>
+            <select id="tipoRegistro" name="tipoRegistro" required>
+              <option value="">Selecione</option>
+              <option>BO</option>
+              <option>ROP</option>
+              <option>TS</option>
+              <option>NI — Não Informado</option>
+            </select>
+          </div>
+
+          <div class="campo">
+            <label for="numeroBo">Nº BO/ROP *</label>
+            <input id="numeroBo" name="numeroBo" type="text" required>
+          </div>
+
+          <div class="campo">
+            <label for="horaInicial">Hora inicial *</label>
+            <input id="horaInicial" name="horaInicial" type="time" required>
+          </div>
+
+          <div class="campo">
+            <label for="horaFinal">Hora final</label>
+            <input id="horaFinal" name="horaFinal" type="time">
+          </div>
+
+          <div class="campo">
+            <label for="turno">Turno</label>
+            <select id="turno" name="turno">
+              <option value="">Selecione</option>
+              <option>MADRUGADA</option>
+              <option>MANHÃ</option>
+              <option>TARDE</option>
+              <option>NOITE</option>
+              <option>NI — Não Informado</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>2. Classificação e providências</h2>
+
+        <div class="grade">
+          <div class="campo duplo">
+            <label for="ocorrencia">Ocorrência *</label>
+            <input id="ocorrencia" name="ocorrencia" type="text"
+                   placeholder="Ex.: Maria da Penha, furto, tráfico..." required>
+          </div>
+
+          <div class="campo duplo">
+            <label for="detalhes">Detalhes</label>
+            <input id="detalhes" name="detalhes" type="text"
+                   placeholder="Ex.: lesão corporal, abordagem...">
+          </div>
+
+          <div class="campo">
+            <label for="numeroPrisoes">Nº de prisões</label>
+            <input id="numeroPrisoes" name="numeroPrisoes" type="number" min="0">
+          </div>
+
+          <div class="campo">
+            <label for="providencia1">Providência 1</label>
+            <select id="providencia1" name="providencia1">
+              <option value="">Selecione</option>
+              <option>PRISÃO</option>
+              <option>CONDUÇÃO</option>
+              <option>ORIENTAÇÃO</option>
+              <option>OUTROS</option>
+              <option>NI — Não Informado</option>
+            </select>
+          </div>
+
+          <div class="campo">
+            <label for="numeroConduzidos">Nº de conduzidos</label>
+            <input id="numeroConduzidos" name="numeroConduzidos" type="number" min="0">
+          </div>
+
+          <div class="campo">
+            <label for="providencia2">Providência 2</label>
+            <select id="providencia2" name="providencia2">
+              <option value="">Selecione</option>
+              <option>PRISÃO</option>
+              <option>CONDUÇÃO</option>
+              <option>ORIENTAÇÃO</option>
+              <option>OUTROS</option>
+              <option>NI — Não Informado</option>
+            </select>
+          </div>
+
+          <div class="campo">
+            <label for="fe">FE <span class="nota">(conforme planilha)</span></label>
+            <input id="fe" name="fe" type="text">
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>3. Local da ocorrência</h2>
+
+        <div class="grade">
+          <div class="campo triplo">
+            <label for="endereco">Endereço</label>
+            <input id="endereco" name="endereco" type="text">
+          </div>
+
+          <div class="campo">
+            <label for="numeroEndereco">Número</label>
+            <input id="numeroEndereco" name="numeroEndereco" type="text"
+                   placeholder="Ex.: 847 ou S/N">
+          </div>
+
+          <div class="campo duplo">
+            <label for="bairro">Bairro</label>
+            <input id="bairro" name="bairro" type="text">
+          </div>
+
+          <div class="campo duplo">
+            <label for="localEntrega">Local de entrega do relatório</label>
+            <input id="localEntrega" name="localEntrega" type="text"
+                   placeholder="Ex.: PC II, 2º DP, DDIJ">
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>4. Pessoas envolvidas</h2>
+
+        <div class="grade">
+          <div class="subtitulo">Vítima</div>
+
+          <div class="campo">
+            <label for="nacVitima">Nacionalidade</label>
+            <select id="nacVitima" name="nacVitima">
+              <option value="">Selecione</option>
+              <option>BR — Brasileira</option>
+              <option>VE — Venezuelana</option>
+              <option>Outra</option>
+              <option>NI — Não Informado</option>
+            </select>
+          </div>
+
+          <div class="campo">
+            <label for="sexoVitima">Sexo</label>
+            <select id="sexoVitima" name="sexoVitima">
+              <option value="">Selecione</option>
+              <option>F</option>
+              <option>M</option>
+              <option>Outro</option>
+              <option>NI — Não Informado</option>
+            </select>
+          </div>
+
+          <div class="campo">
+            <label for="idadeVitima">Idade</label>
+            <input id="idadeVitima" name="idadeVitima" type="number" min="0" max="130">
+          </div>
+
+          <div class="subtitulo">Infrator</div>
+
+          <div class="campo">
+            <label for="nacInfrator">Nacionalidade</label>
+            <select id="nacInfrator" name="nacInfrator">
+              <option value="">Selecione</option>
+              <option>BR — Brasileira</option>
+              <option>VE — Venezuelana</option>
+              <option>Outra</option>
+              <option>NI — Não Informado</option>
+            </select>
+          </div>
+
+          <div class="campo">
+            <label for="sexoInfrator">Sexo</label>
+            <select id="sexoInfrator" name="sexoInfrator">
+              <option value="">Selecione</option>
+              <option>F</option>
+              <option>M</option>
+              <option>Outro</option>
+              <option>NI — Não Informado</option>
+            </select>
+          </div>
+
+          <div class="campo">
+            <label for="idadeInfrator">Idade</label>
+            <input id="idadeInfrator" name="idadeInfrator" type="number" min="0" max="130">
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>5. Guarnição</h2>
+
+        <div class="grade">
+          <div class="campo">
+            <label for="comandante">Comandante</label>
+            <input id="comandante" name="comandante" type="text">
+          </div>
+
+          <div class="campo">
+            <label for="comp2">Componente 2</label>
+            <input id="comp2" name="comp2" type="text">
+          </div>
+
+          <div class="campo">
+            <label for="comp3">Componente 3</label>
+            <input id="comp3" name="comp3" type="text">
+          </div>
+
+          <div class="campo">
+            <label for="comp4">Componente 4</label>
+            <input id="comp4" name="comp4" type="text">
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>6. Resumo e materialidade</h2>
+
+        <div class="grade">
+          <div class="campo inteiro">
+            <label for="mo">Histórico resumido / MO</label>
+            <textarea id="mo" name="mo"
+                      placeholder="Resumo objetivo do fato, sem nomes das pessoas."></textarea>
+          </div>
+
+          <div class="campo inteiro">
+            <label for="materialidade">Materialidade e objetos</label>
+            <textarea id="materialidade" name="materialidade"
+                      placeholder="Ex.: 01 celular; R$ 224,00; 01 bicicleta..."></textarea>
+          </div>
+
+          <div class="campo inteiro">
+            <label for="observacao1">Observação</label>
+            <textarea id="observacao1" name="observacao1"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>7. Entorpecentes</h2>
+
+        <div class="grade">
+          <div class="campo">
+            <label for="entorpecentes">Registro de entorpecentes</label>
+            <select id="entorpecentes" name="entorpecentes">
+              <option value="">Selecione</option>
+              <option>SIM</option>
+              <option>NÃO</option>
+              <option>NI — Não Informado</option>
+            </select>
+          </div>
+
+          <div class="campo">
+            <label for="maconha">Maconha</label>
+            <input id="maconha" name="maconha" type="number" min="0" step="any">
+          </div>
+
+          <div class="campo">
+            <label for="cocaina">Cocaína</label>
+            <input id="cocaina" name="cocaina" type="number" min="0" step="any">
+          </div>
+
+          <div class="campo">
+            <label for="pastaBase">Pasta base</label>
+            <input id="pastaBase" name="pastaBase" type="number" min="0" step="any">
+          </div>
+
+          <div class="campo">
+            <label for="crack">Crack</label>
+            <input id="crack" name="crack" type="number" min="0" step="any">
+          </div>
+
+          <div class="campo">
+            <label for="skank">Skank</label>
+            <input id="skank" name="skank" type="number" min="0" step="any">
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>8. Armas e munições</h2>
+
+        <div class="grade">
+          <div class="campo">
+            <label for="quantArmas">Quantidade de armas</label>
+            <input id="quantArmas" name="quantArmas" type="number" min="0">
+          </div>
+
+          <div class="campo triplo">
+            <label for="armas">Armas e simulacros</label>
+            <input id="armas" name="armas" type="text"
+                   placeholder="Tipo, marca, calibre, cor e situação">
+          </div>
+
+          <div class="campo">
+            <label for="quantMunicoes">Quantidade de munições</label>
+            <input id="quantMunicoes" name="quantMunicoes" type="number" min="0">
+          </div>
+
+          <div class="campo triplo">
+            <label for="municoes">Munições</label>
+            <input id="municoes" name="municoes" type="text"
+                   placeholder="Calibre e demais detalhes">
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>9. Outros indicadores operacionais</h2>
+
+        <div class="grade">
+          <div class="campo">
+            <label for="veiculosRestricao">Veículos com restrição capturados</label>
+            <input id="veiculosRestricao" name="veiculosRestricao" type="number" min="0">
+          </div>
+
+          <div class="campo">
+            <label for="foragidos">Foragidos</label>
+            <input id="foragidos" name="foragidos" type="number" min="0">
+          </div>
+
+          <div class="campo">
+            <label for="disparo">Disparo</label>
+            <select id="disparo" name="disparo">
+              <option value="">Selecione</option>
+              <option>SIM</option>
+              <option>NÃO</option>
+              <option>NI — Não Informado</option>
+            </select>
+          </div>
+
+          <div class="campo">
+            <label for="autoResistencia">Auto de resistência/prisão</label>
+            <select id="autoResistencia" name="autoResistencia">
+              <option value="">Selecione</option>
+              <option>SIM</option>
+              <option>NÃO</option>
+              <option>NI — Não Informado</option>
+            </select>
+          </div>
+
+          <div class="campo">
+            <label for="quantAutoInfracao">Quantidade de autos de infração</label>
+            <input id="quantAutoInfracao" name="quantAutoInfracao" type="number" min="0">
+          </div>
+
+          <div class="campo duplo">
+            <label for="autoInfracao">Auto de infração</label>
+            <input id="autoInfracao" name="autoInfracao" type="text">
+          </div>
+
+          <div class="campo">
+            <label for="balanca">Balança de precisão</label>
+            <select id="balanca" name="balanca">
+              <option value="">Selecione</option>
+              <option>SIM</option>
+              <option>NÃO</option>
+              <option>NI — Não Informado</option>
+            </select>
+          </div>
+
+          <div class="campo inteiro">
+            <label for="observacaoFinal">Observação final</label>
+            <textarea id="observacaoFinal" name="observacaoFinal"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <div class="acoes">
+        <a class="botao-secundario" href="index.html">Cancelar e voltar</a>
+        <button type="submit">Salvar ocorrência</button>
+      </div>
+    </form>
+  </main>
+
+  <script>
+    const data = document.getElementById("data");
+    const semana = document.getElementById("semana");
+    const mes = document.getElementById("mes");
+    const horaInicial = document.getElementById("horaInicial");
+    const turno = document.getElementById("turno");
+    const formulario = document.getElementById("formOcorrencia");
+
+    const nomesDias = [
+      "DOMINGO", "SEGUNDA-FEIRA", "TERÇA-FEIRA",
+      "QUARTA-FEIRA", "QUINTA-FEIRA", "SEXTA-FEIRA", "SÁBADO"
+    ];
+
+    const nomesMeses = [
+      "JAN", "FEV", "MAR", "ABR", "MAI", "JUN",
+      "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"
+    ];
+
+    data.addEventListener("change", () => {
+      if (!data.value) {
+        semana.value = "";
+        mes.value = "";
+        return;
+      }
+
+      const [ano, numeroMes, dia] = data.value.split("-").map(Number);
+      const dataLocal = new Date(ano, numeroMes - 1, dia);
+
+      semana.value = nomesDias[dataLocal.getDay()];
+      mes.value = nomesMeses[dataLocal.getMonth()];
+    });
+
+    horaInicial.addEventListener("change", () => {
+      if (!horaInicial.value) return;
+
+      const hora = Number(horaInicial.value.split(":")[0]);
+
+      if (hora < 6) turno.value = "MADRUGADA";
+      else if (hora < 12) turno.value = "MANHÃ";
+      else if (hora < 18) turno.value = "TARDE";
+      else turno.value = "NOITE";
+    });
+
+    formulario.addEventListener("submit", (evento) => {
+      evento.preventDefault();
+
+      alert(
+        "O formulário está funcionando. Na próxima etapa, " +
+        "vamos conectar este botão ao banco de dados online."
+      );
+    });
+  </script>
+</body>
+</html>
