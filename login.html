@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Acesso ao Sistema - 2º BPM</title>
+  <style>
+    * { box-sizing: border-box; }
+    :root {
+      --azul-escuro:#132b46; --azul:#2556d8; --azul-hover:#1e40af;
+      --fundo:#eef2f6; --borda:#d7e0ea; --texto:#1f2937;
+      --suave:#64748b; --erro:#b91c1c;
+    }
+    body {
+      margin:0; min-height:100vh; font-family:Arial,Helvetica,sans-serif;
+      background:var(--fundo); color:var(--texto); display:flex; flex-direction:column;
+    }
+    header { background:var(--azul-escuro); color:white; padding:24px 20px; }
+    .cabecalho {
+      width:min(950px,94%); margin:auto; display:grid;
+      grid-template-columns:100px 1fr 100px; align-items:center; gap:22px;
+    }
+    .logo {
+      width:100px; height:100px; object-fit:contain;
+      background:white; border-radius:12px; padding:4px;
+    }
+    .titulo { text-align:center; }
+    .titulo h1 { margin:0 0 7px; font-size:27px; }
+    .titulo p { margin:0 0 4px; font-size:18px; font-weight:bold; }
+    .titulo span { font-size:14px; opacity:.85; }
+    main { flex:1; width:min(440px,92%); margin:45px auto; }
+    .caixa-login {
+      background:white; border-radius:15px; box-shadow:0 7px 24px rgba(0,0,0,.10);
+      padding:30px;
+    }
+    .caixa-login h2 { margin:0 0 7px; color:var(--azul-escuro); text-align:center; }
+    .descricao { margin:0 0 26px; color:var(--suave); text-align:center; line-height:1.5; }
+    .campo { display:flex; flex-direction:column; gap:7px; margin-bottom:17px; }
+    label { font-size:14px; font-weight:bold; color:#334155; }
+    input {
+      width:100%; padding:13px 12px; border:1px solid var(--borda);
+      border-radius:9px; font:inherit;
+    }
+    input:focus { outline:2px solid rgba(37,86,216,.18); border-color:var(--azul); }
+    .linha-senha { position:relative; }
+    .linha-senha input { padding-right:75px; }
+    .mostrar {
+      position:absolute; right:8px; top:50%; transform:translateY(-50%);
+      border:0; background:transparent; color:var(--azul);
+      cursor:pointer; font-weight:bold;
+    }
+    .entrar {
+      width:100%; min-height:52px; border:0; border-radius:9px;
+      background:var(--azul); color:white; font-size:16px;
+      font-weight:bold; cursor:pointer; margin-top:5px;
+    }
+    .entrar:hover { background:var(--azul-hover); }
+    .entrar:disabled { opacity:.65; cursor:wait; }
+    #mensagem {
+      display:none; margin-top:17px; padding:11px 12px; border-radius:8px;
+      background:#fef2f2; color:var(--erro); font-size:14px; line-height:1.4;
+    }
+    footer { text-align:center; color:var(--suave); padding:25px; font-size:14px; }
+    @media (max-width:600px) {
+      .cabecalho { grid-template-columns:65px 1fr 65px; gap:8px; }
+      .logo { width:65px; height:65px; }
+      .titulo h1 { font-size:19px; }
+      .titulo p { font-size:13px; }
+      .titulo span { font-size:11px; }
+      main { margin-top:28px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="cabecalho">
+      <img src="logo-cpc.jpeg" alt="Logo CPC" class="logo">
+      <div class="titulo">
+        <h1>Sistema de Estatísticas Operacionais</h1>
+        <p>2º Batalhão da Polícia Militar</p>
+        <span>Comando de Policiamento da Capital</span>
+      </div>
+      <img src="logo-2bpm.jpeg" alt="Logo 2º BPM" class="logo">
+    </div>
+  </header>
+
+  <main>
+    <div class="caixa-login">
+      <h2>Acesso ao sistema</h2>
+      <p class="descricao">Informe o e-mail e a senha de acesso.</p>
+
+      <form id="formLogin">
+        <div class="campo">
+          <label for="email">E-mail</label>
+          <input id="email" type="email" autocomplete="username" required>
+        </div>
+
+        <div class="campo">
+          <label for="senha">Senha</label>
+          <div class="linha-senha">
+            <input id="senha" type="password" autocomplete="current-password" required>
+            <button type="button" id="mostrarSenha" class="mostrar">Mostrar</button>
+          </div>
+        </div>
+
+        <button id="botaoEntrar" class="entrar" type="submit">Entrar</button>
+        <div id="mensagem"></div>
+      </form>
+    </div>
+  </main>
+
+  <footer>
+    2º Batalhão da Polícia Militar — Sistema de Estatísticas Operacionais
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = "https://jppmhukujigxupgskdk.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_ZVnU35i2x9zwppQqYg7UYw_mzaT43aG";
+
+    const banco = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const formLogin = document.getElementById("formLogin");
+    const email = document.getElementById("email");
+    const senha = document.getElementById("senha");
+    const botaoEntrar = document.getElementById("botaoEntrar");
+    const mensagem = document.getElementById("mensagem");
+    const mostrarSenha = document.getElementById("mostrarSenha");
+
+    mostrarSenha.addEventListener("click", () => {
+      const mostrando = senha.type === "text";
+      senha.type = mostrando ? "password" : "text";
+      mostrarSenha.textContent = mostrando ? "Mostrar" : "Ocultar";
+    });
+
+    async function verificarSessao() {
+      const { data: { session } } = await banco.auth.getSession();
+      if (session) window.location.href = "index.html";
+    }
+
+    verificarSessao();
+
+    formLogin.addEventListener("submit", async (evento) => {
+      evento.preventDefault();
+
+      mensagem.style.display = "none";
+      mensagem.textContent = "";
+      botaoEntrar.disabled = true;
+      botaoEntrar.textContent = "Entrando...";
+
+      try {
+        const { error } = await banco.auth.signInWithPassword({
+          email: email.value.trim(),
+          password: senha.value
+        });
+
+        if (error) {
+          console.error(error);
+          mensagem.textContent = "E-mail ou senha incorretos. Confira os dados e tente novamente.";
+          mensagem.style.display = "block";
+          return;
+        }
+
+        window.location.href = "index.html";
+      } catch (erro) {
+        console.error(erro);
+        mensagem.textContent = "Não foi possível conectar ao sistema. Tente novamente.";
+        mensagem.style.display = "block";
+      } finally {
+        botaoEntrar.disabled = false;
+        botaoEntrar.textContent = "Entrar";
+      }
+    });
+  </script>
+</body>
+</html>
