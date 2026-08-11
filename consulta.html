@@ -26,7 +26,7 @@
     th { background:#f8fafc; color:var(--azul-escuro); white-space:nowrap; }
     .vazio { padding:28px; text-align:center; color:var(--suave); }
     @media(max-width:700px) { .topo { align-items:flex-start; flex-direction:column; } .filtros { grid-template-columns:1fr; } button { width:100%; } }
-  .btnExcluir{border:1px solid #dc3545;background:#fff;color:#c82333;border-radius:7px;padding:7px 10px;font-weight:bold;cursor:pointer}.btnExcluir:hover{background:#dc3545;color:#fff}.btnExcluir:disabled{opacity:.55;cursor:wait} </style>
+  .btnEditar{display:inline-block;border:1px solid #2556d8;background:#fff;color:#2556d8;border-radius:7px;padding:7px 10px;font-weight:bold;text-decoration:none;margin-right:6px}.btnEditar:hover{background:#2556d8;color:#fff}.btnExcluir{border:1px solid #dc3545;background:#fff;color:#c82333;border-radius:7px;padding:7px 10px;font-weight:bold;cursor:pointer}.btnExcluir:hover{background:#dc3545;color:#fff}.btnExcluir:disabled{opacity:.55;cursor:wait} </style>
 </head>
 <body>
   <header><div class="topo"><div><h1>Consultar ocorrências</h1><p>Sistema de Estatísticas Operacionais</p></div><a class="voltar" href="index.html">← Voltar ao painel</a></div></header>
@@ -77,7 +77,7 @@
       resultado.innerHTML = dados.map(function(item) {
         return "<tr><td>" + formatarData(item.data_ocorrencia) + "</td><td>" +
           escapar(item.tipo_registro || "—") + "</td><td>" + escapar(item.numero_bo) +
-          "</td><td>" + escapar(item.ocorrencia) + "</td><td>" + escapar(item.bairro || "—") + "</td><td><button class=\"btnExcluir\" data-id=\""+escapar(item.id)+"\" data-bo=\""+escapar(item.numero_bo)+"\">Excluir</button></td></tr>";
+          "</td><td>" + escapar(item.ocorrencia) + "</td><td>" + escapar(item.bairro || "—") + "</td><td><a class=\"btnEditar\" href=\"cadastro.html?id="+encodeURIComponent(item.id)+"\">Editar</a><button class=\"btnExcluir\" data-id=\""+escapar(item.id)+"\" data-bo=\""+escapar(item.numero_bo)+"\">Excluir</button></td></tr>";
       }).join("");
     }
     resultado.addEventListener("click", async function(e) {
