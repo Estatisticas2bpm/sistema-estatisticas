@@ -895,8 +895,7 @@
           botaoSalvar.textContent = "Localizando endereço...";
           const localizado = await geocodificarEnderecoCompleto();
           if (!localizado) {
-            alert("Não foi possível localizar o endereço. Confira logradouro, número e bairro antes de salvar.");
-            return;
+            console.warn("Endereço salvo sem coordenadas; geolocalização indisponível.");
           }
           botaoSalvar.textContent = "Salvando...";
         }
