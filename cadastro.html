@@ -212,8 +212,7 @@
 
   <main>
     <div class="aviso">
-      Esta é a primeira versão visual do formulário. O botão “Salvar ocorrência”
-      será conectado ao banco de dados na próxima fase.
+      Preencha os dados operacionais. Os campos marcados com * são obrigatórios.
     </div>
 
     <form id="formOcorrencia">
@@ -236,10 +235,10 @@
             <input id="mes" name="mes" type="text" readonly>
           </div>
 
-          <div class="campo">
-            <label for="vtr">VTR</label>
-            <input id="vtr" name="vtr" type="text" placeholder="Ex.: 133">
-          </div>
+          <div class="campo"><label for="vtr">VTR</label><input id="vtr" name="vtr" type="text" placeholder="Ex.: 133"></div>
+          <div class="campo"><label for="statusAtendimento">Situação *</label><select id="statusAtendimento" required><option value="ATENDIDA">ATENDIDA</option><option value="DEMANDA REPRIMIDA">DEMANDA REPRIMIDA</option></select></div>
+          <div class="campo duplo" id="campoMotivo" style="display:none"><label for="motivoRepressao">Motivo da demanda reprimida *</label><input id="motivoRepressao" type="text" placeholder="Ex.: falta de viatura disponível"></div>
+          <div class="campo"><label for="municipio">Município *</label><input id="municipio" type="text" value="BOA VISTA" required></div>
 
           <div class="campo">
             <label for="tipoRegistro">Tipo *</label>
@@ -291,11 +290,8 @@
                    placeholder="Ex.: Maria da Penha, furto, tráfico..." required>
           </div>
 
-          <div class="campo duplo">
-            <label for="detalhes">Detalhes</label>
-            <input id="detalhes" name="detalhes" type="text"
-                   placeholder="Ex.: lesão corporal, abordagem...">
-          </div>
+          <div class="campo duplo"><label for="crime">Crime / subtipo</label><input id="crime" type="text" placeholder="Ex.: furto de veículo, lesão corporal"></div>
+          <div class="campo duplo"><label for="detalhes">Detalhes</label><input id="detalhes" name="detalhes" type="text" placeholder="Informações complementares"></div>
 
           <div class="campo">
             <label for="numeroPrisoes">Nº de prisões</label>
@@ -314,10 +310,9 @@
             </select>
           </div>
 
-          <div class="campo">
-            <label for="numeroConduzidos">Nº de conduzidos</label>
-            <input id="numeroConduzidos" name="numeroConduzidos" type="number" min="0">
-          </div>
+          <div class="campo"><label for="numeroConduzidos">Nº de conduzidos</label><input id="numeroConduzidos" name="numeroConduzidos" type="number" min="0"></div>
+          <div class="campo"><label for="orientacoes">Nº de orientações</label><input id="orientacoes" type="number" min="0"></div>
+          <div class="campo"><label for="veiculosRecuperados">Veículos recuperados</label><input id="veiculosRecuperados" type="number" min="0"></div>
 
           <div class="campo">
             <label for="providencia2">Providência 2</label>
@@ -438,21 +433,6 @@
             <label for="comandante">Comandante</label>
             <input id="comandante" name="comandante" type="text">
           </div>
-
-          <div class="campo">
-            <label for="comp2">Componente 2</label>
-            <input id="comp2" name="comp2" type="text">
-          </div>
-
-          <div class="campo">
-            <label for="comp3">Componente 3</label>
-            <input id="comp3" name="comp3" type="text">
-          </div>
-
-          <div class="campo">
-            <label for="comp4">Componente 4</label>
-            <input id="comp4" name="comp4" type="text">
-          </div>
         </div>
       </section>
 
@@ -529,11 +509,9 @@
             <input id="quantArmas" name="quantArmas" type="number" min="0">
           </div>
 
-          <div class="campo triplo">
-            <label for="armas">Armas e simulacros</label>
-            <input id="armas" name="armas" type="text"
-                   placeholder="Tipo, marca, calibre, cor e situação">
-          </div>
+          <div class="campo triplo"><label for="armas">Armas e simulacros</label><input id="armas" name="armas" type="text" placeholder="Tipo, marca, calibre, cor e situação"></div>
+          <div class="campo"><label for="quantArmaBranca">Quantidade de armas brancas</label><input id="quantArmaBranca" type="number" min="0"></div>
+          <div class="campo triplo"><label for="armaBranca">Armas brancas</label><input id="armaBranca" type="text" placeholder="Faca, canivete, facão..."></div>
 
           <div class="campo">
             <label for="quantMunicoes">Quantidade de munições</label>
@@ -602,6 +580,7 @@
             </select>
           </div>
 
+          <div class="campo"><label for="taticoSetorial">Tático setorial</label><select id="taticoSetorial"><option value="false">NÃO</option><option value="true">SIM</option></select></div>
           <div class="campo inteiro">
             <label for="observacaoFinal">Observação final</label>
             <textarea id="observacaoFinal" name="observacaoFinal"></textarea>
@@ -629,6 +608,15 @@
     const horaInicial = document.getElementById("horaInicial");
     const turno = document.getElementById("turno");
     const formulario = document.getElementById("formOcorrencia");
+    const statusAtendimento = document.getElementById("statusAtendimento");
+    const campoMotivo = document.getElementById("campoMotivo");
+    const motivoRepressao = document.getElementById("motivoRepressao");
+    statusAtendimento.addEventListener("change", () => {
+      const reprimida = statusAtendimento.value === "DEMANDA REPRIMIDA";
+      campoMotivo.style.display = reprimida ? "flex" : "none";
+      motivoRepressao.required = reprimida;
+      if (!reprimida) motivoRepressao.value = "";
+    });
 
     const nomesDias = [
       "DOMINGO", "SEGUNDA-FEIRA", "TERÇA-FEIRA",
@@ -679,6 +667,9 @@
       try {
         const registro = {
           data_ocorrencia: document.getElementById("data").value,
+          status_atendimento: statusAtendimento.value,
+          motivo_repressao: motivoRepressao.value || null,
+          municipio: document.getElementById("municipio").value.trim(),
           vtr: document.getElementById("vtr").value || null,
           tipo_registro: tratarNI(document.getElementById("tipoRegistro").value),
           numero_bo: document.getElementById("numeroBo").value.trim(),
@@ -686,10 +677,13 @@
           hora_final: document.getElementById("horaFinal").value || null,
 
           ocorrencia: document.getElementById("ocorrencia").value.trim(),
+          crime: document.getElementById("crime").value || null,
           detalhes: document.getElementById("detalhes").value || null,
           numero_prisoes: document.getElementById("numeroPrisoes").value || null,
           providencia_1: tratarNI(document.getElementById("providencia1").value),
           numero_conduzidos: document.getElementById("numeroConduzidos").value || null,
+          orientacoes: document.getElementById("orientacoes").value || 0,
+          veiculos_recuperados: document.getElementById("veiculosRecuperados").value || 0,
           providencia_2: tratarNI(document.getElementById("providencia2").value),
           fe: document.getElementById("fe").value || null,
 
@@ -707,9 +701,6 @@
           infrator_idade: document.getElementById("idadeInfrator").value || null,
 
           comandante: document.getElementById("comandante").value || null,
-          componente_2: document.getElementById("comp2").value || null,
-          componente_3: document.getElementById("comp3").value || null,
-          componente_4: document.getElementById("comp4").value || null,
 
           historico_resumido: document.getElementById("mo").value || null,
           materialidade: document.getElementById("materialidade").value || null,
@@ -723,6 +714,8 @@
           skank: document.getElementById("skank").value || null,
 
           quantidade_armas: document.getElementById("quantArmas").value || null,
+          quantidade_arma_branca: document.getElementById("quantArmaBranca").value || 0,
+          arma_branca: document.getElementById("armaBranca").value || null,
           armas: document.getElementById("armas").value || null,
           quantidade_municoes: document.getElementById("quantMunicoes").value || null,
           municoes: document.getElementById("municoes").value || null,
@@ -735,6 +728,7 @@
           quantidade_autos_infracao: document.getElementById("quantAutoInfracao").value || null,
           auto_infracao: document.getElementById("autoInfracao").value || null,
           balanca_precisao: tratarNI(document.getElementById("balanca").value),
+          tatico_setorial: document.getElementById("taticoSetorial").value === "true",
           observacao_final: document.getElementById("observacaoFinal").value || null
         };
 
