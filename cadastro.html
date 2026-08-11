@@ -345,7 +345,7 @@
         <div class="grade">
           <div class="campo triplo">
             <label for="endereco">Endereço</label>
-            <input id="endereco" name="endereco" type="text" list="listaEnderecos" autocomplete="off" placeholder="Digite o logradouro para pesquisar"><datalist id="listaEnderecos"></datalist><small style="color:#64748b">Sugestões de localização: OpenStreetMap</small><input id="latitude" type="hidden"><input id="longitude" type="hidden"><input id="enderecoFormatado" type="hidden">
+            <div class="campo-com-acao"><input id="endereco" name="endereco" type="text" list="listaEnderecos" autocomplete="off" placeholder="Digite para pesquisar e selecione"><datalist id="listaEnderecos"></datalist><button class="botao-adicionar" id="abrirNovoEndereco" type="button" title="Cadastrar novo logradouro" aria-label="Cadastrar novo logradouro">+</button></div><small style="color:#64748b">Selecione um logradouro padronizado ou use + para cadastrar</small><input id="latitude" type="hidden"><input id="longitude" type="hidden"><input id="enderecoFormatado" type="hidden">
           </div>
 
           <div class="campo">
@@ -356,7 +356,7 @@
 
           <div class="campo duplo">
             <label for="bairro">Bairro</label>
-            <input id="bairro" name="bairro" type="text" list="listaBairros" autocomplete="off" placeholder="Digite para pesquisar e selecione"><datalist id="listaBairros"></datalist>
+            <div class="campo-com-acao"><input id="bairro" name="bairro" type="text" list="listaBairros" autocomplete="off" placeholder="Digite para pesquisar e selecione"><datalist id="listaBairros"></datalist><button class="botao-adicionar" id="abrirNovoBairro" type="button" title="Cadastrar novo bairro" aria-label="Cadastrar novo bairro">+</button></div>
           </div>
 
           <div class="campo duplo">
@@ -620,6 +620,12 @@
       </div>
     </form>
   </dialog>
+  <dialog id="modalBairro">
+    <form class="modal-conteudo" id="formNovoBairro" method="dialog"><h3>Cadastrar novo bairro</h3><p>Cadastre apenas se o bairro ainda não estiver na lista.</p><div class="campo"><label for="novoBairro">Nome do bairro</label><input id="novoBairro" maxlength="100" required></div><div class="modal-acoes"><button class="botao-secundario" id="cancelarNovoBairro" type="button">Cancelar</button><button type="submit">Salvar bairro</button></div></form>
+  </dialog>
+  <dialog id="modalEndereco">
+    <form class="modal-conteudo" id="formNovoEndereco" method="dialog"><h3>Cadastrar novo logradouro</h3><p>Use o nome oficial completo, como RUA, AVENIDA, TRAVESSA ou ALAMEDA.</p><div class="campo"><label for="novoEndereco">Logradouro</label><input id="novoEndereco" maxlength="160" placeholder="Ex.: RUA EXEMPLO" required></div><div class="campo" style="margin-top:12px"><label for="bairroNovoEndereco">Bairro</label><input id="bairroNovoEndereco" list="listaBairros" required></div><div class="modal-acoes"><button class="botao-secundario" id="cancelarNovoEndereco" type="button">Cancelar</button><button type="submit">Salvar logradouro</button></div></form>
+  </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -708,6 +714,48 @@
       campoComandante.value = nome;
       comandanteEmEdicao = null;
       modalComandante.close();
+    });
+    function normalizarCatalogo(valor) { return String(valor || "").trim().replace(/\s+/g," ").toUpperCase(); }
+    const modalBairro = document.getElementById("modalBairro");
+    document.getElementById("abrirNovoBairro").addEventListener("click", function() {
+      document.getElementById("novoBairro").value = normalizarCatalogo(document.getElementById("bairro").value);
+      modalBairro.showModal();
+    });
+    document.getElementById("cancelarNovoBairro").addEventListener("click", () => modalBairro.close());
+    document.getElementById("formNovoBairro").addEventListener("submit", async function(evento) {
+      evento.preventDefault();
+      const nome = normalizarCatalogo(document.getElementById("novoBairro").value);
+      if (nome.length < 2) return;
+      const resposta = await banco.rpc("cadastrar_bairro_publico", {p_nome:nome});
+      if (resposta.error) { alert("Não foi possível cadastrar o bairro: "+resposta.error.message); return; }
+      if (!catalogos.bairros.includes(nome)) catalogos.bairros.push(nome);
+      catalogos.bairros.sort((a,b)=>a.localeCompare(b,"pt-BR"));
+      preencherLista("listaBairros",catalogos.bairros);
+      document.getElementById("bairro").value=nome;
+      modalBairro.close();
+    });
+    const modalEndereco = document.getElementById("modalEndereco");
+    document.getElementById("abrirNovoEndereco").addEventListener("click", function() {
+      document.getElementById("novoEndereco").value = normalizarCatalogo(document.getElementById("endereco").value);
+      document.getElementById("bairroNovoEndereco").value = normalizarCatalogo(document.getElementById("bairro").value);
+      modalEndereco.showModal();
+    });
+    document.getElementById("cancelarNovoEndereco").addEventListener("click", () => modalEndereco.close());
+    document.getElementById("formNovoEndereco").addEventListener("submit", async function(evento) {
+      evento.preventDefault();
+      const logradouro = normalizarCatalogo(document.getElementById("novoEndereco").value);
+      const bairro = normalizarCatalogo(document.getElementById("bairroNovoEndereco").value);
+      if (!/^(RUA|AVENIDA|TRAVESSA|ALAMEDA|RODOVIA|ESTRADA|VICINAL|PRAÇA)\s+\S/.test(logradouro)) { alert("Informe o tipo completo do logradouro. Ex.: RUA EXEMPLO."); return; }
+      if (!catalogos.bairros.includes(bairro)) { alert("Selecione um bairro válido ou cadastre-o primeiro no botão + do bairro."); return; }
+      const resposta = await banco.rpc("cadastrar_endereco_publico", {p_logradouro:logradouro,p_bairro:bairro});
+      if (resposta.error) { alert("Não foi possível cadastrar o logradouro: "+resposta.error.message); return; }
+      catalogos.enderecos = catalogos.enderecos.filter(e=>e.logradouro!==logradouro);
+      catalogos.enderecos.push({logradouro,bairro,latitude:null,longitude:null});
+      catalogos.enderecos.sort((a,b)=>a.logradouro.localeCompare(b.logradouro,"pt-BR"));
+      preencherLista("listaEnderecos",catalogos.enderecos.map(e=>e.logradouro));
+      document.getElementById("endereco").value=logradouro;
+      document.getElementById("bairro").value=bairro;
+      modalEndereco.close();
     });
     document.getElementById("ocorrencia").addEventListener("input", atualizarSubtipos);
     document.getElementById("ocorrencia").addEventListener("change", atualizarSubtipos);
@@ -885,6 +933,12 @@
       const comandanteDigitado = normalizarComandante(campoComandante.value);
       if (comandanteDigitado && !catalogos.comandantes.includes(comandanteDigitado)) { alert("Selecione um comandante válido na lista ou use o botão + para cadastrá-lo."); return; }
       campoComandante.value = comandanteDigitado;
+      const bairroDigitado = normalizarCatalogo(document.getElementById("bairro").value);
+      if (bairroDigitado && !catalogos.bairros.includes(bairroDigitado)) { alert("Selecione um bairro válido na lista ou use o botão + para cadastrá-lo."); return; }
+      const enderecoDigitado = normalizarCatalogo(document.getElementById("endereco").value);
+      if (enderecoDigitado && !catalogos.enderecos.some(e=>e.logradouro===enderecoDigitado)) { alert("Selecione um logradouro válido na lista ou use o botão + para cadastrá-lo."); return; }
+      document.getElementById("bairro").value = bairroDigitado;
+      document.getElementById("endereco").value = enderecoDigitado;
 
       const botaoSalvar = formulario.querySelector('button[type="submit"]');
       botaoSalvar.disabled = true;
