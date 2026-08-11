@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Consultar ocorrências</title>
+  <style>
+    * { box-sizing: border-box; }
+    :root { --azul-escuro:#132b46; --azul:#2556d8; --fundo:#eef2f6; --borda:#d7e0ea; --texto:#1f2937; --suave:#64748b; }
+    body { margin:0; font-family:Arial,Helvetica,sans-serif; background:var(--fundo); color:var(--texto); }
+    header { padding:24px 20px; background:var(--azul-escuro); color:white; }
+    .topo { width:min(1200px,94%); margin:auto; display:flex; justify-content:space-between; align-items:center; gap:20px; }
+    header h1 { margin:0 0 5px; font-size:25px; }
+    header p { margin:0; opacity:.85; }
+    .voltar { color:white; text-decoration:none; border:1px solid rgba(255,255,255,.45); padding:10px 16px; border-radius:8px; }
+    main { width:min(1200px,94%); margin:28px auto; }
+    .painel { padding:22px; background:white; border-radius:13px; box-shadow:0 4px 16px rgba(0,0,0,.07); }
+    .filtros { display:grid; grid-template-columns:2fr 1fr auto; gap:12px; align-items:end; }
+    label { display:block; margin-bottom:7px; font-size:14px; font-weight:bold; color:#334155; }
+    input { width:100%; padding:11px 12px; border:1px solid var(--borda); border-radius:8px; font:inherit; }
+    button { min-height:43px; padding:10px 18px; border:0; border-radius:8px; background:var(--azul); color:white; font-size:15px; cursor:pointer; }
+    .status { margin:18px 0 10px; color:var(--suave); }
+    .tabela-wrap { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; background:white; }
+    th,td { padding:12px 10px; border-bottom:1px solid var(--borda); text-align:left; vertical-align:top; }
+    th { background:#f8fafc; color:var(--azul-escuro); white-space:nowrap; }
+    .vazio { padding:28px; text-align:center; color:var(--suave); }
+    @media(max-width:700px) { .topo { align-items:flex-start; flex-direction:column; } .filtros { grid-template-columns:1fr; } button { width:100%; } }
+  </style>
+</head>
+<body>
+  <header><div class="topo"><div><h1>Consultar ocorrências</h1><p>Sistema de Estatísticas Operacionais</p></div><a class="voltar" href="index.html">← Voltar ao painel</a></div></header>
+  <main><section class="painel">
+    <div class="filtros">
+      <div><label for="busca">Pesquisar</label><input id="busca" type="search" placeholder="Nº BO, ocorrência ou bairro"></div>
+      <div><label for="dataFiltro">Data</label><input id="dataFiltro" type="date"></div>
+      <button id="btnPesquisar" type="button">Pesquisar</button>
+    </div>
+    <p id="status" class="status">Carregando ocorrências...</p>
+    <div class="tabela-wrap"><table><thead><tr><th>Data</th><th>Tipo</th><th>Nº BO/ROP</th><th>Ocorrência</th><th>Bairro</th></tr></thead><tbody id="resultado"></tbody></table></div>
+  </section></main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const banco = supabase.createClient("https://jppmhhukujigxupgskdk.supabase.co","sb_publishable_ZVnU35i2x9zwppQqYg7UYw_mzaT43aG");
+    const busca = document.getElementById("busca");
+    const dataFiltro = document.getElementById("dataFiltro");
+    const resultado = document.getElementById("resultado");
+    const statusEl = document.getElementById("status");
+    function escapar(valor) {
+      return String(valor == null ? "" : valor).replace(/[&<>"']/g, function(c) {
+        return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c];
+      });
+    }
+    function formatarData(valor) {
+      if (!valor) return "—";
+      const partes = valor.split("-");
+      return partes[2] + "/" + partes[1] + "/" + partes[0];
+    }
+    async function carregar() {
+      statusEl.textContent = "Carregando ocorrências...";
+      resultado.innerHTML = "";
+      const resposta = await banco.rpc("consultar_ocorrencias_publicas", {
+        termo_busca: busca.value.trim() || null,
+        data_busca: dataFiltro.value || null
+      });
+      if (resposta.error) {
+        console.error(resposta.error);
+        statusEl.textContent = "Não foi possível carregar as ocorrências.";
+        return;
+      }
+      const dados = resposta.data || [];
+      statusEl.textContent = dados.length + " ocorrência(s) encontrada(s).";
+      if (!dados.length) {
+        resultado.innerHTML = '<tr><td colspan="5" class="vazio">Nenhum registro encontrado.</td></tr>';
+        return;
+      }
+      resultado.innerHTML = dados.map(function(item) {
+        return "<tr><td>" + formatarData(item.data_ocorrencia) + "</td><td>" +
+          escapar(item.tipo_registro || "—") + "</td><td>" + escapar(item.numero_bo) +
+          "</td><td>" + escapar(item.ocorrencia) + "</td><td>" + escapar(item.bairro || "—") + "</td></tr>";
+      }).join("");
+    }
+    document.getElementById("btnPesquisar").addEventListener("click", carregar);
+    busca.addEventListener("keydown", function(e) { if (e.key === "Enter") carregar(); });
+    dataFiltro.addEventListener("change", carregar);
+    carregar();
+  </script>
+</body>
+</html>
