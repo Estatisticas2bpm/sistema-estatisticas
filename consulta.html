@@ -84,18 +84,26 @@
       const botao = e.target.closest(".btnExcluir");
       if (!botao) return;
       const numero = botao.dataset.bo || "este registro";
-      if (!confirm("Tem certeza de que deseja excluir definitivamente a ocorrência "+numero+"?")) return;
+      if (botao.dataset.confirmado !== "sim") {
+        document.querySelectorAll(".btnExcluir").forEach(function(b){ b.dataset.confirmado=""; b.textContent="Excluir"; });
+        botao.dataset.confirmado = "sim";
+        botao.textContent = "Confirmar exclusão";
+        statusEl.textContent = "Clique novamente em “Confirmar exclusão” para apagar a ocorrência "+numero+".";
+        setTimeout(function(){ if (botao.isConnected && botao.dataset.confirmado === "sim") { botao.dataset.confirmado=""; botao.textContent="Excluir"; } }, 7000);
+        return;
+      }
       botao.disabled = true;
       botao.textContent = "Excluindo...";
       const resposta = await banco.rpc("excluir_ocorrencia_publica", {p_id: botao.dataset.id});
       if (resposta.error || resposta.data !== true) {
-        alert("Não foi possível excluir a ocorrência.");
+        statusEl.textContent = "Não foi possível excluir a ocorrência. Tente novamente.";
         botao.disabled = false;
+        botao.dataset.confirmado = "";
         botao.textContent = "Excluir";
         return;
       }
-      alert("Ocorrência "+numero+" excluída com sucesso.");
-      carregar();
+      await carregar();
+      statusEl.textContent = "Ocorrência "+numero+" excluída com sucesso.";
     });
     const termoInicial = new URLSearchParams(location.search).get("q");
     if (termoInicial) busca.value = termoInicial;
