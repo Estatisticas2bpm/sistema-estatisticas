@@ -286,12 +286,11 @@
 
         <div class="grade">
           <div class="campo duplo">
-            <label for="ocorrencia">Ocorrência *</label>
-            <input id="ocorrencia" name="ocorrencia" type="text"
-                   placeholder="Ex.: Maria da Penha, furto, tráfico..." required>
+            <label for="ocorrencia">Tipo de Ocorrência *</label>
+            <input id="ocorrencia" name="ocorrencia" type="text" list="listaOcorrencias" autocomplete="off" placeholder="Digite para pesquisar e selecione" required><datalist id="listaOcorrencias"></datalist>
           </div>
 
-          <div class="campo duplo"><label for="crime">Crime / subtipo</label><input id="crime" type="text" placeholder="Ex.: furto de veículo, lesão corporal"></div>
+          <div class="campo duplo"><label for="crime">Subtipo da Ocorrência</label><input id="crime" type="text" list="listaSubtipos" autocomplete="off" placeholder="Selecione primeiro o tipo de ocorrência"><datalist id="listaSubtipos"></datalist><small id="fundamentoLegal" style="color:#64748b"></small></div>
           <div class="campo duplo"><label for="detalhes">Detalhes</label><input id="detalhes" name="detalhes" type="text" placeholder="Informações complementares"></div>
 
           <div class="campo">
@@ -340,7 +339,7 @@
         <div class="grade">
           <div class="campo triplo">
             <label for="endereco">Endereço</label>
-            <input id="endereco" name="endereco" type="text">
+            <input id="endereco" name="endereco" type="text" list="listaEnderecos" autocomplete="off" placeholder="Digite o logradouro para pesquisar"><datalist id="listaEnderecos"></datalist><small style="color:#64748b">Sugestões de localização: OpenStreetMap</small><input id="latitude" type="hidden"><input id="longitude" type="hidden"><input id="enderecoFormatado" type="hidden">
           </div>
 
           <div class="campo">
@@ -351,13 +350,12 @@
 
           <div class="campo duplo">
             <label for="bairro">Bairro</label>
-            <input id="bairro" name="bairro" type="text">
+            <input id="bairro" name="bairro" type="text" list="listaBairros" autocomplete="off" placeholder="Digite para pesquisar e selecione"><datalist id="listaBairros"></datalist>
           </div>
 
           <div class="campo duplo">
             <label for="localEntrega">Local de entrega do relatório</label>
-            <input id="localEntrega" name="localEntrega" type="text"
-                   placeholder="Ex.: PC II, 2º DP, DDIJ">
+            <input id="localEntrega" name="localEntrega" type="text" list="listaLocais" autocomplete="off" placeholder="Digite para pesquisar e selecione"><datalist id="listaLocais"></datalist>
           </div>
         </div>
       </section>
@@ -603,6 +601,67 @@
     const SUPABASE_KEY = "sb_publishable_ZVnU35i2x9zwppQqYg7UYw_mzaT43aG";
     const banco = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+    let catalogos = {tipos:[],subtipos:[],bairros:[],locais:[],enderecos:[]};
+    let resultadosMapa = {};
+    function preencherLista(id, itens) {
+      document.getElementById(id).innerHTML = itens.map(v => '<option value="'+String(v).replace(/"/g,"&quot;")+'"></option>').join("");
+    }
+    function atualizarSubtipos() {
+      const tipo = catalogos.tipos.find(t => t.nome === document.getElementById("ocorrencia").value);
+      const lista = tipo ? catalogos.subtipos.filter(s => Number(s.tipo_id) === Number(tipo.id)) : [];
+      preencherLista("listaSubtipos", lista.map(s => s.nome));
+      const campo = document.getElementById("crime");
+      campo.placeholder = tipo ? "Digite para pesquisar e selecione" : "Selecione primeiro o tipo de ocorrência";
+      if (campo.value && !lista.some(s => s.nome === campo.value)) campo.value = "";
+      document.getElementById("fundamentoLegal").textContent = "";
+    }
+    async function carregarCatalogos() {
+      const resposta = await banco.rpc("obter_catalogos_cadastro");
+      if (resposta.error) { console.error(resposta.error); return; }
+      catalogos = resposta.data || catalogos;
+      preencherLista("listaOcorrencias", catalogos.tipos.map(t => t.nome));
+      preencherLista("listaBairros", catalogos.bairros);
+      preencherLista("listaLocais", catalogos.locais);
+      preencherLista("listaEnderecos", catalogos.enderecos.map(e => e.logradouro));
+    }
+    document.getElementById("ocorrencia").addEventListener("change", atualizarSubtipos);
+    document.getElementById("crime").addEventListener("change", function() {
+      const subtipo = catalogos.subtipos.find(s => s.nome === this.value);
+      document.getElementById("fundamentoLegal").textContent = subtipo && subtipo.fundamento_legal ? subtipo.fundamento_legal : "";
+    });
+    document.getElementById("endereco").addEventListener("change", function() {
+      const valor = this.value.toUpperCase();
+      const local = catalogos.enderecos.find(e => e.logradouro === valor) || resultadosMapa[valor];
+      if (!local) return;
+      this.value = local.logradouro || valor;
+      if (local.bairro) document.getElementById("bairro").value = String(local.bairro).toUpperCase();
+      if (local.latitude) document.getElementById("latitude").value = local.latitude;
+      if (local.longitude) document.getElementById("longitude").value = local.longitude;
+      document.getElementById("enderecoFormatado").value = local.endereco_formatado || local.display_name || local.logradouro || valor;
+    });
+    let temporizadorEndereco;
+    document.getElementById("endereco").addEventListener("input", function() {
+      clearTimeout(temporizadorEndereco);
+      const texto = this.value.trim();
+      if (texto.length < 4) return;
+      temporizadorEndereco = setTimeout(async function() {
+        try {
+          const url = "https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&countrycodes=br&limit=5&q="+encodeURIComponent(texto+", Boa Vista, Roraima, Brasil");
+          const resposta = await fetch(url,{headers:{"Accept-Language":"pt-BR"}});
+          const locais = await resposta.json();
+          const opcoes = catalogos.enderecos.map(e => e.logradouro);
+          locais.forEach(function(l) {
+            const nome = String(l.display_name || "").split(",")[0].toUpperCase();
+            if (!nome) return;
+            resultadosMapa[nome] = {logradouro:nome,bairro:(l.address.suburb||l.address.neighbourhood||l.address.city_district||"").toUpperCase(),latitude:Number(l.lat),longitude:Number(l.lon),display_name:l.display_name};
+            if (!opcoes.includes(nome)) opcoes.push(nome);
+          });
+          preencherLista("listaEnderecos",opcoes);
+        } catch(e) { console.warn("Não foi possível consultar o mapa.",e); }
+      },700);
+    });
+
+
     const data = document.getElementById("data");
     const semana = document.getElementById("semana");
     const mes = document.getElementById("mes");
@@ -674,7 +733,7 @@
       const resposta = await banco.rpc("obter_ocorrencia_publica", {p_id:idEdicao});
       if (resposta.error || !resposta.data) { alert("Não foi possível carregar a ocorrência para edição."); return; }
       const x = resposta.data;
-      const mapa = {data_ocorrencia:"data",status_atendimento:"statusAtendimento",motivo_repressao:"motivoRepressao",municipio:"municipio",vtr:"vtr",tipo_registro:"tipoRegistro",numero_bo:"numeroBo",hora_inicial:"horaInicial",hora_final:"horaFinal",ocorrencia:"ocorrencia",crime:"crime",detalhes:"detalhes",numero_prisoes:"numeroPrisoes",providencia_1:"providencia1",numero_conduzidos:"numeroConduzidos",orientacoes:"orientacoes",veiculos_recuperados:"veiculosRecuperados",providencia_2:"providencia2",fe:"fe",endereco:"endereco",numero_endereco:"numeroEndereco",bairro:"bairro",local_entrega:"localEntrega",vitima_nacionalidade:"nacVitima",vitima_sexo:"sexoVitima",vitima_idade:"idadeVitima",infrator_nacionalidade:"nacInfrator",infrator_sexo:"sexoInfrator",infrator_idade:"idadeInfrator",comandante:"comandante",historico_resumido:"mo",materialidade:"materialidade",observacao:"observacao1",entorpecentes:"entorpecentes",maconha:"maconha",cocaina:"cocaina",pasta_base:"pastaBase",crack:"crack",skank:"skank",quantidade_armas:"quantArmas",quantidade_arma_branca:"quantArmaBranca",arma_branca:"armaBranca",armas:"armas",quantidade_municoes:"quantMunicoes",municoes:"municoes",veiculos_restricao:"veiculosRestricao",foragidos:"foragidos",disparo:"disparo",auto_resistencia:"autoResistencia",quantidade_autos_infracao:"quantAutoInfracao",auto_infracao:"autoInfracao",balanca_precisao:"balanca",tatico_setorial:"taticoSetorial",observacao_final:"observacaoFinal"};
+      const mapa = {data_ocorrencia:"data",status_atendimento:"statusAtendimento",motivo_repressao:"motivoRepressao",municipio:"municipio",vtr:"vtr",tipo_registro:"tipoRegistro",numero_bo:"numeroBo",hora_inicial:"horaInicial",hora_final:"horaFinal",ocorrencia:"ocorrencia",crime:"crime",detalhes:"detalhes",numero_prisoes:"numeroPrisoes",providencia_1:"providencia1",numero_conduzidos:"numeroConduzidos",orientacoes:"orientacoes",veiculos_recuperados:"veiculosRecuperados",providencia_2:"providencia2",fe:"fe",endereco:"endereco",numero_endereco:"numeroEndereco",bairro:"bairro",local_entrega:"localEntrega",vitima_nacionalidade:"nacVitima",vitima_sexo:"sexoVitima",vitima_idade:"idadeVitima",infrator_nacionalidade:"nacInfrator",infrator_sexo:"sexoInfrator",infrator_idade:"idadeInfrator",comandante:"comandante",historico_resumido:"mo",materialidade:"materialidade",observacao:"observacao1",entorpecentes:"entorpecentes",maconha:"maconha",cocaina:"cocaina",pasta_base:"pastaBase",crack:"crack",skank:"skank",quantidade_armas:"quantArmas",quantidade_arma_branca:"quantArmaBranca",arma_branca:"armaBranca",armas:"armas",quantidade_municoes:"quantMunicoes",municoes:"municoes",veiculos_restricao:"veiculosRestricao",foragidos:"foragidos",disparo:"disparo",auto_resistencia:"autoResistencia",quantidade_autos_infracao:"quantAutoInfracao",auto_infracao:"autoInfracao",balanca_precisao:"balanca",tatico_setorial:"taticoSetorial",observacao_final:"observacaoFinal",latitude:"latitude",longitude:"longitude",endereco_formatado:"enderecoFormatado"};
       Object.keys(mapa).forEach(k => definirCampo(mapa[k],x[k]));
       data.dispatchEvent(new Event("change"));
       horaInicial.dispatchEvent(new Event("change"));
@@ -685,10 +744,14 @@
       botao.textContent = "Salvar alterações";
       window.scrollTo({top:0});
     }
-    if (idEdicao) carregarParaEdicao();
+    carregarCatalogos().then(function(){ if (idEdicao) carregarParaEdicao(); });
 
     formulario.addEventListener("submit", async (evento) => {
       evento.preventDefault();
+      const tipoEscolhido = catalogos.tipos.find(t => t.nome === document.getElementById("ocorrencia").value);
+      if (!tipoEscolhido) { alert("Selecione um Tipo de Ocorrência válido na lista."); return; }
+      const subtipoDigitado = document.getElementById("crime").value;
+      if (subtipoDigitado && !catalogos.subtipos.some(s => Number(s.tipo_id) === Number(tipoEscolhido.id) && s.nome === subtipoDigitado)) { alert("Selecione um Subtipo válido relacionado à ocorrência."); return; }
 
       const botaoSalvar = formulario.querySelector('button[type="submit"]');
       botaoSalvar.disabled = true;
@@ -720,6 +783,9 @@
           endereco: document.getElementById("endereco").value || null,
           numero_endereco: document.getElementById("numeroEndereco").value || null,
           bairro: document.getElementById("bairro").value || null,
+          latitude: document.getElementById("latitude").value || null,
+          longitude: document.getElementById("longitude").value || null,
+          endereco_formatado: document.getElementById("enderecoFormatado").value || null,
           local_entrega: document.getElementById("localEntrega").value || null,
 
           vitima_nacionalidade: tratarNI(document.getElementById("nacVitima").value),
