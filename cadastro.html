@@ -443,6 +443,7 @@
             <div class="campo-com-acao">
               <input id="comandante" name="comandante" type="text" list="listaComandantes" autocomplete="off" placeholder="Pesquise e selecione">
               <datalist id="listaComandantes"></datalist>
+              <button class="botao-adicionar" id="editarComandante" type="button" title="Editar comandante selecionado" aria-label="Editar comandante selecionado">✎</button>
               <button class="botao-adicionar" id="abrirNovoComandante" type="button" title="Cadastrar novo comandante" aria-label="Cadastrar novo comandante">+</button>
             </div>
             <span class="nota">Use o padrão: graduação abreviada + nome de guerra.</span>
@@ -611,7 +612,7 @@
 
   <dialog id="modalComandante">
     <form class="modal-conteudo" id="formNovoComandante" method="dialog">
-      <h3>Cadastrar novo comandante</h3>
+      <h3 id="tituloModalComandante">Cadastrar novo comandante</h3>
       <p>Informe somente a graduação abreviada e o nome de guerra. Ex.: SGT Sarmanha.</p>
       <div class="campo">
         <label for="novoComandante">Comandante</label>
@@ -662,11 +663,26 @@
     const modalComandante = document.getElementById("modalComandante");
     const campoComandante = document.getElementById("comandante");
     const novoComandante = document.getElementById("novoComandante");
+    let comandanteEmEdicao = null;
     function normalizarComandante(valor) {
       return String(valor || "").trim().replace(/\s+/g," ").toUpperCase();
     }
     document.getElementById("abrirNovoComandante").addEventListener("click", function() {
+      comandanteEmEdicao = null;
+      document.getElementById("tituloModalComandante").textContent = "Cadastrar novo comandante";
       novoComandante.value = normalizarComandante(campoComandante.value);
+      modalComandante.showModal();
+      novoComandante.focus();
+    });
+    document.getElementById("editarComandante").addEventListener("click", function() {
+      const atual = normalizarComandante(campoComandante.value);
+      if (!catalogos.comandantes.includes(atual)) {
+        alert("Primeiro selecione na lista o comandante que deseja editar.");
+        return;
+      }
+      comandanteEmEdicao = atual;
+      document.getElementById("tituloModalComandante").textContent = "Editar comandante";
+      novoComandante.value = atual;
       modalComandante.showModal();
       novoComandante.focus();
     });
@@ -683,14 +699,18 @@
       const botao = document.getElementById("salvarNovoComandante");
       botao.disabled = true;
       botao.textContent = "Salvando...";
-      const resposta = await banco.rpc("cadastrar_comandante_publico", {p_nome:nome});
+      const resposta = comandanteEmEdicao
+        ? await banco.rpc("editar_comandante_publico", {p_nome_atual:comandanteEmEdicao,p_novo_nome:nome})
+        : await banco.rpc("cadastrar_comandante_publico", {p_nome:nome});
       botao.disabled = false;
       botao.textContent = "Salvar comandante";
       if (resposta.error) { alert("Não foi possível cadastrar: " + resposta.error.message); return; }
+      if (comandanteEmEdicao) catalogos.comandantes = catalogos.comandantes.filter(v => v !== comandanteEmEdicao);
       if (!catalogos.comandantes.includes(nome)) catalogos.comandantes.push(nome);
       catalogos.comandantes.sort((a,b) => a.localeCompare(b,"pt-BR"));
       preencherLista("listaComandantes", catalogos.comandantes);
       campoComandante.value = nome;
+      comandanteEmEdicao = null;
       modalComandante.close();
     });
     document.getElementById("ocorrencia").addEventListener("input", atualizarSubtipos);
