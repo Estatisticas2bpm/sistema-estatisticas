@@ -725,6 +725,45 @@
       if (local.longitude) document.getElementById("longitude").value = local.longitude;
       document.getElementById("enderecoFormatado").value = local.endereco_formatado || local.display_name || local.logradouro || valor;
     });
+    function aplicarLocalizacao(local) {
+      if (!local || !local.latitude || !local.longitude) return false;
+      if (local.logradouro) document.getElementById("endereco").value = local.logradouro;
+      if (local.bairro && !document.getElementById("bairro").value) document.getElementById("bairro").value = String(local.bairro).toUpperCase();
+      document.getElementById("latitude").value = local.latitude;
+      document.getElementById("longitude").value = local.longitude;
+      document.getElementById("enderecoFormatado").value = local.endereco_formatado || local.display_name || local.logradouro || "";
+      return true;
+    }
+    async function geocodificarEnderecoCompleto() {
+      const endereco = document.getElementById("endereco").value.trim();
+      if (!endereco) return true;
+      if (document.getElementById("latitude").value && document.getElementById("longitude").value) return true;
+      const numero = document.getElementById("numeroEndereco").value.trim();
+      const bairro = document.getElementById("bairro").value.trim();
+      const municipio = document.getElementById("municipio").value.trim() || "BOA VISTA";
+      const consulta = [endereco,numero,bairro,municipio,"Roraima","Brasil"].filter(Boolean).join(", ");
+      try {
+        const resposta = await fetch("https://photon.komoot.io/api/?limit=1&lang=pt&lat=2.8235&lon=-60.6758&q="+encodeURIComponent(consulta));
+        if (resposta.ok) {
+          const geo = await resposta.json();
+          const item = geo.features && geo.features[0];
+          if (item && item.geometry && item.geometry.coordinates) {
+            const p=item.properties||{},c=item.geometry.coordinates;
+            if (aplicarLocalizacao({logradouro:endereco.toUpperCase(),bairro:bairro||p.district||p.locality,latitude:Number(c[1]),longitude:Number(c[0]),display_name:[endereco,numero,bairro,municipio,"RR"].filter(Boolean).join(", ")})) return true;
+          }
+        }
+      } catch(e) { console.warn("Photon indisponível.",e); }
+      try {
+        const url = "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=br&addressdetails=1&q="+encodeURIComponent(consulta);
+        const resposta = await fetch(url,{headers:{"Accept-Language":"pt-BR,pt;q=0.9"}});
+        if (resposta.ok) {
+          const itens = await resposta.json();
+          const item = itens && itens[0];
+          if (item && aplicarLocalizacao({logradouro:endereco.toUpperCase(),bairro:bairro||(item.address&&(item.address.suburb||item.address.neighbourhood)),latitude:Number(item.lat),longitude:Number(item.lon),display_name:item.display_name})) return true;
+        }
+      } catch(e) { console.warn("Nominatim indisponível.",e); }
+      return false;
+    }
     let temporizadorEndereco;
     document.getElementById("endereco").addEventListener("input", function() {
       clearTimeout(temporizadorEndereco);
@@ -852,6 +891,15 @@
       botaoSalvar.textContent = "Salvando...";
 
       try {
+        if (document.getElementById("endereco").value && !document.getElementById("latitude").value) {
+          botaoSalvar.textContent = "Localizando endereço...";
+          const localizado = await geocodificarEnderecoCompleto();
+          if (!localizado) {
+            alert("Não foi possível localizar o endereço. Confira logradouro, número e bairro antes de salvar.");
+            return;
+          }
+          botaoSalvar.textContent = "Salvando...";
+        }
         const registro = {
           data_ocorrencia: document.getElementById("data").value,
           status_atendimento: statusAtendimento.value,
