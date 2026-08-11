@@ -677,17 +677,7 @@
       botaoSalvar.textContent = "Salvando...";
 
       try {
-        const {
-          data: { session }
-        } = await banco.auth.getSession();
-
-        if (!session) {
-          alert("Você precisa estar conectado para salvar uma ocorrência.");
-          return;
-        }
-
         const registro = {
-          criado_por: session.user.id,
           data_ocorrencia: document.getElementById("data").value,
           vtr: document.getElementById("vtr").value || null,
           tipo_registro: tratarNI(document.getElementById("tipoRegistro").value),
