@@ -765,6 +765,10 @@
     }
     async function iniciarAutocompleteGoogle() {
       try {
+        for (let tentativa = 0; tentativa < 50 && !(window.google && google.maps && google.maps.importLibrary); tentativa++) {
+          await new Promise(resolve => setTimeout(resolve,100));
+        }
+        if (!(window.google && google.maps && google.maps.importLibrary)) throw new Error("Google Maps não carregou.");
         const {PlaceAutocompleteElement} = await google.maps.importLibrary("places");
         googleAddressElement = new PlaceAutocompleteElement({includedRegionCodes:["br"]});
         googleAddressElement.placeholder = "Digite uma rua ou avenida de Boa Vista/RR";
