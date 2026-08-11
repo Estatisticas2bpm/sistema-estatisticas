@@ -183,6 +183,16 @@
       font-weight: normal;
     }
 
+    .campo-com-acao { display: flex; gap: 8px; align-items: stretch; }
+    .campo-com-acao input { flex: 1; }
+    .botao-adicionar { width: 44px; min-width: 44px; padding: 0; font-size: 25px; font-weight: bold; line-height: 1; border-radius: 8px; }
+    dialog { width: min(460px, 92vw); border: 0; border-radius: 14px; padding: 0; box-shadow: 0 20px 60px rgba(15,23,42,.28); }
+    dialog::backdrop { background: rgba(15,23,42,.62); }
+    .modal-conteudo { padding: 24px; }
+    .modal-conteudo h3 { margin: 0 0 8px; color: var(--azul-escuro); }
+    .modal-conteudo p { margin: 0 0 18px; color: var(--suave); font-size: 14px; }
+    .modal-acoes { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+
     @media (max-width: 900px) {
       .grade { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .campo.triplo { grid-column: span 2; }
@@ -429,8 +439,13 @@
 
         <div class="grade">
           <div class="campo">
-            <label for="comandante">Comandante</label>
-            <input id="comandante" name="comandante" type="text">
+            <label for="comandante">Comandante da viatura</label>
+            <div class="campo-com-acao">
+              <input id="comandante" name="comandante" type="text" list="listaComandantes" autocomplete="off" placeholder="Pesquise e selecione">
+              <datalist id="listaComandantes"></datalist>
+              <button class="botao-adicionar" id="abrirNovoComandante" type="button" title="Cadastrar novo comandante" aria-label="Cadastrar novo comandante">+</button>
+            </div>
+            <span class="nota">Use o padrão: graduação abreviada + nome de guerra.</span>
           </div>
         </div>
       </section>
@@ -594,6 +609,21 @@
     </form>
   </main>
 
+  <dialog id="modalComandante">
+    <form class="modal-conteudo" id="formNovoComandante" method="dialog">
+      <h3>Cadastrar novo comandante</h3>
+      <p>Informe somente a graduação abreviada e o nome de guerra. Ex.: SGT Sarmanha.</p>
+      <div class="campo">
+        <label for="novoComandante">Comandante</label>
+        <input id="novoComandante" type="text" maxlength="80" autocomplete="off" placeholder="Ex.: SGT Sarmanha" required>
+      </div>
+      <div class="modal-acoes">
+        <button class="botao-secundario" id="cancelarNovoComandante" type="button">Cancelar</button>
+        <button id="salvarNovoComandante" type="submit">Salvar comandante</button>
+      </div>
+    </form>
+  </dialog>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
@@ -601,7 +631,7 @@
     const SUPABASE_KEY = "sb_publishable_ZVnU35i2x9zwppQqYg7UYw_mzaT43aG";
     const banco = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let catalogos = {tipos:[],subtipos:[],bairros:[],locais:[],enderecos:[]};
+    let catalogos = {tipos:[],subtipos:[],bairros:[],locais:[],enderecos:[],comandantes:[]};
     let resultadosMapa = {};
     function preencherLista(id, itens) {
       document.getElementById(id).innerHTML = itens.map(v => '<option value="'+String(v).replace(/"/g,"&quot;")+'"></option>').join("");
@@ -616,14 +646,53 @@
       document.getElementById("fundamentoLegal").textContent = "";
     }
     async function carregarCatalogos() {
-      const resposta = await banco.rpc("obter_catalogos_cadastro");
+      const [resposta, respostaComandantes] = await Promise.all([
+        banco.rpc("obter_catalogos_cadastro"),
+        banco.rpc("obter_comandantes_publicos")
+      ]);
       if (resposta.error) { console.error(resposta.error); return; }
       catalogos = resposta.data || catalogos;
+      catalogos.comandantes = respostaComandantes.error ? [] : (respostaComandantes.data || []);
       preencherLista("listaOcorrencias", catalogos.tipos.map(t => t.nome));
       preencherLista("listaBairros", catalogos.bairros);
       preencherLista("listaLocais", catalogos.locais);
       preencherLista("listaEnderecos", catalogos.enderecos.map(e => e.logradouro));
+      preencherLista("listaComandantes", catalogos.comandantes || []);
     }
+    const modalComandante = document.getElementById("modalComandante");
+    const campoComandante = document.getElementById("comandante");
+    const novoComandante = document.getElementById("novoComandante");
+    function normalizarComandante(valor) {
+      return String(valor || "").trim().replace(/\s+/g," ").toUpperCase();
+    }
+    document.getElementById("abrirNovoComandante").addEventListener("click", function() {
+      novoComandante.value = normalizarComandante(campoComandante.value);
+      modalComandante.showModal();
+      novoComandante.focus();
+    });
+    document.getElementById("cancelarNovoComandante").addEventListener("click", function() {
+      modalComandante.close();
+    });
+    document.getElementById("formNovoComandante").addEventListener("submit", async function(evento) {
+      evento.preventDefault();
+      const nome = normalizarComandante(novoComandante.value);
+      if (!/^(CEL|TEN CEL|MAJ|CAP|TEN|ASP|ST|SGT|CB|SD|AL SGT)\s+\S/.test(nome)) {
+        alert("Use o padrão Graduação + Nome de Guerra. Ex.: SGT Sarmanha.");
+        return;
+      }
+      const botao = document.getElementById("salvarNovoComandante");
+      botao.disabled = true;
+      botao.textContent = "Salvando...";
+      const resposta = await banco.rpc("cadastrar_comandante_publico", {p_nome:nome});
+      botao.disabled = false;
+      botao.textContent = "Salvar comandante";
+      if (resposta.error) { alert("Não foi possível cadastrar: " + resposta.error.message); return; }
+      if (!catalogos.comandantes.includes(nome)) catalogos.comandantes.push(nome);
+      catalogos.comandantes.sort((a,b) => a.localeCompare(b,"pt-BR"));
+      preencherLista("listaComandantes", catalogos.comandantes);
+      campoComandante.value = nome;
+      modalComandante.close();
+    });
     document.getElementById("ocorrencia").addEventListener("input", atualizarSubtipos);
     document.getElementById("ocorrencia").addEventListener("change", atualizarSubtipos);
     document.getElementById("crime").addEventListener("change", function() {
@@ -758,6 +827,9 @@
       if (!tipoEscolhido) { alert("Selecione um Tipo de Ocorrência válido na lista."); return; }
       const subtipoDigitado = document.getElementById("crime").value;
       if (subtipoDigitado && !catalogos.subtipos.some(s => Number(s.tipo_id) === Number(tipoEscolhido.id) && s.nome === subtipoDigitado)) { alert("Selecione um Subtipo válido relacionado à ocorrência."); return; }
+      const comandanteDigitado = normalizarComandante(campoComandante.value);
+      if (comandanteDigitado && !catalogos.comandantes.includes(comandanteDigitado)) { alert("Selecione um comandante válido na lista ou use o botão + para cadastrá-lo."); return; }
+      campoComandante.value = comandanteDigitado;
 
       const botaoSalvar = formulario.querySelector('button[type="submit"]');
       botaoSalvar.disabled = true;
@@ -802,7 +874,7 @@
           infrator_sexo: tratarNI(document.getElementById("sexoInfrator").value),
           infrator_idade: document.getElementById("idadeInfrator").value || null,
 
-          comandante: document.getElementById("comandante").value || null,
+          comandante: comandanteDigitado || null,
 
           historico_resumido: document.getElementById("mo").value || null,
           materialidade: document.getElementById("materialidade").value || null,
