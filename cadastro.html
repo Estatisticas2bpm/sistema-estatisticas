@@ -346,7 +346,7 @@
         <div class="grade">
           <div class="campo triplo">
             <label for="endereco">Endereço</label>
-            <div id="enderecoAutocomplete"><input id="enderecoBusca" type="text" autocomplete="off" placeholder="Digite uma rua ou avenida de Boa Vista/RR"></div>
+            <div id="enderecoAutocomplete"><div class="campo-com-acao"><input id="enderecoBusca" type="text" autocomplete="off" placeholder="Digite uma rua ou avenida de Boa Vista/RR"><button class="botao-adicionar" id="buscarEndereco" type="button" title="Pesquisar endereço" aria-label="Pesquisar endereço">⌕</button></div><select id="resultadoEndereco" style="display:none;margin-top:8px"></select></div>
             <small id="statusEndereco" style="color:#64748b">Pesquise e selecione um endereço real de Boa Vista/RR.</small>
             <input id="endereco" name="endereco" type="hidden"><input id="latitude" type="hidden"><input id="longitude" type="hidden"><input id="enderecoFormatado" type="hidden">
           </div>
@@ -764,22 +764,9 @@
       document.getElementById("statusEndereco").textContent = "Endereço confirmado no Google Maps" + (estado ? " — " + estado : "") + ".";
     }
     async function iniciarAutocompleteGoogle() {
-      try {
-        for (let tentativa = 0; tentativa < 50 && !(window.google && google.maps && google.maps.places); tentativa++) {
-          await new Promise(resolve => setTimeout(resolve,100));
-        }
-        if (!(window.google && google.maps && google.maps.places)) throw new Error("Google Maps não carregou.");
-        googleAddressElement = new google.maps.places.Autocomplete(document.getElementById("enderecoBusca"), {
-          componentRestrictions:{country:"br"},
-          bounds:new google.maps.LatLngBounds({lat:2.55,lng:-61.05},{lat:3.15,lng:-60.35}),
-          strictBounds:false,
-          fields:["address_components","formatted_address","geometry","name"]
-        });
-        googleAddressElement.addListener("place_changed", () => selecionarEnderecoGoogle({place:googleAddressElement.getPlace()}));
-      } catch (erro) {
-        console.error("Falha ao carregar o Google Maps.", erro);
-        document.getElementById("statusEndereco").textContent = "Não foi possível carregar a pesquisa de endereços. Atualize a página.";
-      }
+      const busca=document.getElementById("enderecoBusca"),botao=document.getElementById("buscarEndereco"),resultado=document.getElementById("resultadoEndereco");
+      async function pesquisar(){const termo=busca.value.trim();if(termo.length<3)return;botao.disabled=true;document.getElementById("statusEndereco").textContent="Pesquisando endereço...";try{const url="https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countrycodes=br&viewbox=-61.05,3.15,-60.35,2.55&bounded=1&q="+encodeURIComponent(termo+", Boa Vista, RR");const dados=await fetch(url,{headers:{"Accept-Language":"pt-BR"}}).then(r=>r.json());resultado.innerHTML='<option value="">Selecione o endereço correto</option>'+dados.map((x,i)=>'<option value="'+i+'">'+x.display_name.replace(/</g,'&lt;')+'</option>').join('');resultado._dados=dados;resultado.style.display=dados.length?'block':'none';document.getElementById("statusEndereco").textContent=dados.length?"Selecione uma das sugestões encontradas.":"Nenhum endereço encontrado. Revise a pesquisa."}catch(e){document.getElementById("statusEndereco").textContent="Falha na pesquisa. Tente novamente."}finally{botao.disabled=false}}
+      botao.addEventListener("click",pesquisar);busca.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();pesquisar()}});resultado.addEventListener("change",function(){const x=this._dados&&this._dados[Number(this.value)];if(!x)return;const a=x.address||{},logradouro=a.road||a.pedestrian||a.residential||a.path||busca.value;document.getElementById("endereco").value=normalizarCatalogo(logradouro);document.getElementById("enderecoBusca").value=x.display_name;document.getElementById("enderecoFormatado").value=x.display_name;document.getElementById("latitude").value=x.lat;document.getElementById("longitude").value=x.lon;if(a.suburb||a.neighbourhood)document.getElementById("bairro").value=normalizarCatalogo(a.suburb||a.neighbourhood);document.getElementById("municipio").value="BOA VISTA";document.getElementById("statusEndereco").textContent="Endereço confirmado no OpenStreetMap."});
     }
     const data = document.getElementById("data");
     const semana = document.getElementById("semana");
