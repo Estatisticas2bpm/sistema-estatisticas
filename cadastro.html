@@ -185,7 +185,7 @@
 
     .campo-com-acao { display: flex; gap: 8px; align-items: stretch; }
     .campo-com-acao input { flex: 1; }
-    #enderecoAutocomplete, gmp-place-autocomplete { display: block; width: 100%; }
+    #enderecoAutocomplete, #enderecoBusca { display: block; width: 100%; }
     .botao-adicionar { width: 44px; min-width: 44px; padding: 0; font-size: 25px; font-weight: bold; line-height: 1; border-radius: 8px; }
     dialog { width: min(460px, 92vw); border: 0; border-radius: 14px; padding: 0; box-shadow: 0 20px 60px rgba(15,23,42,.28); }
     dialog::backdrop { background: rgba(15,23,42,.62); }
@@ -346,7 +346,7 @@
         <div class="grade">
           <div class="campo triplo">
             <label for="endereco">Endereço</label>
-            <div id="enderecoAutocomplete"></div>
+            <div id="enderecoAutocomplete"><input id="enderecoBusca" type="text" autocomplete="off" placeholder="Digite uma rua ou avenida de Boa Vista/RR"></div>
             <small id="statusEndereco" style="color:#64748b">Pesquise e selecione um endereço real de Boa Vista/RR.</small>
             <input id="endereco" name="endereco" type="hidden"><input id="latitude" type="hidden"><input id="longitude" type="hidden"><input id="enderecoFormatado" type="hidden">
           </div>
@@ -739,22 +739,24 @@
     });
     function componenteEndereco(componentes, tipos) {
       const item = (componentes || []).find(c => (c.types || []).some(t => tipos.includes(t)));
-      return item ? (item.longText || item.shortText || "") : "";
+      return item ? (item.longText || item.shortText || item.long_name || item.short_name || "") : "";
     }
     async function selecionarEnderecoGoogle(evento) {
       const predicao = evento.placePrediction || (evento.detail && evento.detail.placePrediction);
       const lugar = predicao && predicao.toPlace ? predicao.toPlace() : evento.place;
       if (!lugar) return;
-      await lugar.fetchFields({fields:["addressComponents","formattedAddress","location","displayName"]});
-      const componentes = lugar.addressComponents || [];
-      const logradouro = componenteEndereco(componentes,["route"]) || lugar.displayName || "";
+      if (lugar.fetchFields) await lugar.fetchFields({fields:["addressComponents","formattedAddress","location","displayName"]});
+      const componentes = lugar.addressComponents || lugar.address_components || [];
+      const logradouro = componenteEndereco(componentes,["route"]) || lugar.displayName || lugar.name || "";
       const bairro = componenteEndereco(componentes,["sublocality_level_1","sublocality","neighborhood","administrative_area_level_4"]);
       const municipio = componenteEndereco(componentes,["locality","administrative_area_level_2"]);
       const estado = componenteEndereco(componentes,["administrative_area_level_1"]);
-      const lat = lugar.location && lugar.location.lat();
-      const lng = lugar.location && lugar.location.lng();
+      const localizacao = lugar.location || (lugar.geometry && lugar.geometry.location);
+      const lat = localizacao && localizacao.lat();
+      const lng = localizacao && localizacao.lng();
       document.getElementById("endereco").value = normalizarCatalogo(logradouro);
-      document.getElementById("enderecoFormatado").value = lugar.formattedAddress || logradouro;
+      document.getElementById("enderecoBusca").value = lugar.formattedAddress || lugar.formatted_address || logradouro;
+      document.getElementById("enderecoFormatado").value = lugar.formattedAddress || lugar.formatted_address || logradouro;
       document.getElementById("latitude").value = lat ?? "";
       document.getElementById("longitude").value = lng ?? "";
       if (bairro) document.getElementById("bairro").value = normalizarCatalogo(bairro);
@@ -763,17 +765,17 @@
     }
     async function iniciarAutocompleteGoogle() {
       try {
-        for (let tentativa = 0; tentativa < 50 && !(window.google && google.maps && google.maps.importLibrary); tentativa++) {
+        for (let tentativa = 0; tentativa < 50 && !(window.google && google.maps && google.maps.places); tentativa++) {
           await new Promise(resolve => setTimeout(resolve,100));
         }
-        if (!(window.google && google.maps && google.maps.importLibrary)) throw new Error("Google Maps não carregou.");
-        const {PlaceAutocompleteElement} = await google.maps.importLibrary("places");
-        googleAddressElement = new PlaceAutocompleteElement({includedRegionCodes:["br"]});
-        googleAddressElement.placeholder = "Digite uma rua ou avenida de Boa Vista/RR";
-        googleAddressElement.locationRestriction = {north:3.15,south:2.55,east:-60.35,west:-61.05};
-        googleAddressElement.addEventListener("gmp-select", selecionarEnderecoGoogle);
-        googleAddressElement.addEventListener("gmp-placeselect", selecionarEnderecoGoogle);
-        document.getElementById("enderecoAutocomplete").appendChild(googleAddressElement);
+        if (!(window.google && google.maps && google.maps.places)) throw new Error("Google Maps não carregou.");
+        googleAddressElement = new google.maps.places.Autocomplete(document.getElementById("enderecoBusca"), {
+          componentRestrictions:{country:"br"},
+          bounds:new google.maps.LatLngBounds({lat:2.55,lng:-61.05},{lat:3.15,lng:-60.35}),
+          strictBounds:false,
+          fields:["address_components","formatted_address","geometry","name"]
+        });
+        googleAddressElement.addListener("place_changed", () => selecionarEnderecoGoogle({place:googleAddressElement.getPlace()}));
       } catch (erro) {
         console.error("Falha ao carregar o Google Maps.", erro);
         document.getElementById("statusEndereco").textContent = "Não foi possível carregar a pesquisa de endereços. Atualize a página.";
