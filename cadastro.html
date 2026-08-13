@@ -357,7 +357,7 @@
         <div class="grade">
           <div class="campo triplo">
             <label for="endereco">Endereço</label>
-            <div id="enderecoAutocomplete"></div>
+            <div id="enderecoAutocomplete"><input id="enderecoGoogle" type="text" autocomplete="off" placeholder="Digite uma rua ou avenida de Boa Vista/RR"></div>
             <details open style="margin-top:8px">
               <summary style="cursor:pointer;color:#2563eb;font-weight:700">Não encontrou? Pesquisar endereço aproximado</summary>
               <div class="campo-com-acao" style="margin-top:8px"><input id="enderecoAproximado" type="text" autocomplete="off" placeholder="Digite o endereço como foi informado"><button class="botao-adicionar" id="localizarEnderecoAproximado" type="button" title="Selecionar o resultado mais provável" aria-label="Selecionar o endereço mais provável">⌕</button></div>
@@ -802,7 +802,8 @@
       const lng = localizacao && localizacao.lng();
       document.getElementById("bairro").value = "";
       document.getElementById("endereco").value = normalizarCatalogo(logradouro);
-      if (googleAddressElement) googleAddressElement.value = lugar.formattedAddress || lugar.formatted_address || logradouro;
+      const campoGoogle = document.getElementById("enderecoGoogle");
+      if (campoGoogle) campoGoogle.value = lugar.formattedAddress || lugar.formatted_address || logradouro;
       document.getElementById("enderecoFormatado").value = lugar.formattedAddress || lugar.formatted_address || logradouro;
       document.getElementById("latitude").value = lat ?? "";
       document.getElementById("longitude").value = lng ?? "";
@@ -838,18 +839,23 @@
     }
     async function iniciarAutocompleteGoogle() {
       try {
-        const {PlaceAutocompleteElement} = await google.maps.importLibrary("places");
+        await google.maps.importLibrary("places");
         geocodificadorGoogle = new google.maps.Geocoder();
-        googleAddressElement = new PlaceAutocompleteElement({
-          includedRegionCodes: ["br"],
-          locationRestriction: {north:3.15,south:2.55,east:-60.35,west:-61.05}
+        const campoGoogle = document.getElementById("enderecoGoogle");
+        googleAddressElement = new google.maps.places.Autocomplete(campoGoogle, {
+          componentRestrictions: {country:"br"},
+          bounds: new google.maps.LatLngBounds({lat:2.55,lng:-61.05},{lat:3.15,lng:-60.35}),
+          strictBounds: true,
+          fields: ["address_components","formatted_address","geometry","name"]
         });
-        googleAddressElement.placeholder = "Digite uma rua ou avenida de Boa Vista/RR";
-        googleAddressElement.addEventListener("gmp-select", selecionarEnderecoGoogle);
-        googleAddressElement.addEventListener("gmp-error", () => {
-          document.getElementById("statusEndereco").textContent = "A pesquisa do Google Maps não está disponível. Verifique se a Places API (New) está ativada.";
+        googleAddressElement.addListener("place_changed", async () => {
+          const lugar = googleAddressElement.getPlace();
+          if (!lugar || !lugar.geometry) {
+            document.getElementById("statusEndereco").textContent = "Selecione um dos enderecos sugeridos pelo Google Maps.";
+            return;
+          }
+          await selecionarEnderecoGoogle({place:lugar});
         });
-        document.getElementById("enderecoAutocomplete").replaceChildren(googleAddressElement);
         document.getElementById("localizarEnderecoAproximado").addEventListener("click", async () => {
           const campo = document.getElementById("enderecoAproximado");
           const termo = campo.value.trim();
