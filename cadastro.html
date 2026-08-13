@@ -358,8 +358,10 @@
           </div>
 
           <div class="campo duplo">
-            <label for="bairro">Bairro</label>
-            <div class="campo-com-acao"><input id="bairro" name="bairro" type="text" list="listaBairros" autocomplete="off" placeholder="Digite para pesquisar e selecione"><datalist id="listaBairros"></datalist><button class="botao-adicionar" id="abrirNovoBairro" type="button" title="Cadastrar novo bairro" aria-label="Cadastrar novo bairro">+</button></div>
+            <label for="bairro">Bairro identificado pelo endereço</label>
+            <input id="bairro" name="bairro" type="text" readonly placeholder="Preenchido automaticamente pelo Google Maps">
+            <small style="color:#64748b">Não é necessário preencher novamente.</small>
+            <datalist id="listaBairros"></datalist><button id="abrirNovoBairro" type="button" hidden aria-hidden="true" tabindex="-1">+</button>
           </div>
 
           <div class="campo duplo">
@@ -713,6 +715,11 @@
       modalComandante.close();
     });
     function normalizarCatalogo(valor) { return String(valor || "").trim().replace(/\s+/g," ").toUpperCase(); }
+    function bairroPadronizado(valor) {
+      const informado = normalizarCatalogo(valor);
+      const chave = informado.normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+      return catalogos.bairros.find(nome => normalizarCatalogo(nome).normalize("NFD").replace(/[\u0300-\u036f]/g,"") === chave) || informado;
+    }
     const modalBairro = document.getElementById("modalBairro");
     document.getElementById("abrirNovoBairro").addEventListener("click", function() {
       document.getElementById("novoBairro").value = normalizarCatalogo(document.getElementById("bairro").value);
@@ -754,12 +761,13 @@
       const localizacao = lugar.location || (lugar.geometry && lugar.geometry.location);
       const lat = localizacao && localizacao.lat();
       const lng = localizacao && localizacao.lng();
+      document.getElementById("bairro").value = "";
       document.getElementById("endereco").value = normalizarCatalogo(logradouro);
       if (googleAddressElement) googleAddressElement.value = lugar.formattedAddress || lugar.formatted_address || logradouro;
       document.getElementById("enderecoFormatado").value = lugar.formattedAddress || lugar.formatted_address || logradouro;
       document.getElementById("latitude").value = lat ?? "";
       document.getElementById("longitude").value = lng ?? "";
-      if (bairro) document.getElementById("bairro").value = normalizarCatalogo(bairro);
+      if (bairro) document.getElementById("bairro").value = bairroPadronizado(bairro);
       document.getElementById("municipio").value = normalizarCatalogo(municipio || "BOA VISTA");
       document.getElementById("statusEndereco").textContent = "Endereço confirmado no Google Maps" + (estado ? " — " + estado : "") + ".";
     }
@@ -878,7 +886,7 @@
       if (comandanteDigitado && !catalogos.comandantes.includes(comandanteDigitado)) { alert("Selecione um comandante válido na lista ou use o botão + para cadastrá-lo."); return; }
       campoComandante.value = comandanteDigitado;
       const bairroDigitado = normalizarCatalogo(document.getElementById("bairro").value);
-      if (bairroDigitado && !catalogos.bairros.includes(bairroDigitado)) { alert("Selecione um bairro válido na lista ou use o botão + para cadastrá-lo."); return; }
+      if (!bairroDigitado) { alert("O Google Maps não identificou o bairro deste endereço. Selecione outra sugestão de endereço mais completa."); return; }
       document.getElementById("bairro").value = bairroDigitado;
       if (!document.getElementById("endereco").value || !document.getElementById("latitude").value || !document.getElementById("longitude").value) { alert("Pesquise o endereço e selecione uma sugestão do Google Maps antes de salvar."); return; }
 
