@@ -186,6 +186,10 @@
     .campo-com-acao { display: flex; gap: 8px; align-items: stretch; }
     .campo-com-acao input { flex: 1; }
     #enderecoAutocomplete, gmp-place-autocomplete { display: block; width: 100%; }
+    #enderecoAutocomplete { position: relative; }
+    #enderecoSugestoes { position:absolute; z-index:1000; left:0; right:0; top:100%; background:#fff; border:1px solid #cbd5e1; border-radius:0 0 10px 10px; box-shadow:0 10px 20px rgba(15,23,42,.14); overflow:hidden; }
+    .sugestao-endereco-google { display:block; width:100%; padding:10px 12px; border:0; border-bottom:1px solid #e2e8f0; background:#fff; text-align:left; cursor:pointer; }
+    .sugestao-endereco-google:hover { background:#eff6ff; }
     .botao-adicionar { width: 44px; min-width: 44px; padding: 0; font-size: 25px; font-weight: bold; line-height: 1; border-radius: 8px; }
     .cabecalho-pessoas { display:flex; justify-content:space-between; align-items:center; gap:12px; grid-column:1/-1; margin-top:6px; }
     .cabecalho-pessoas .subtitulo { margin:0; }
@@ -357,7 +361,7 @@
         <div class="grade">
           <div class="campo triplo">
             <label for="endereco">Endereço</label>
-            <div id="enderecoAutocomplete"><input id="enderecoGoogle" type="text" autocomplete="off" placeholder="Digite uma rua ou avenida de Boa Vista/RR"></div>
+            <div id="enderecoAutocomplete"><input id="enderecoGoogle" type="text" autocomplete="off" placeholder="Digite uma rua ou avenida de Boa Vista/RR"><div id="enderecoSugestoes" hidden></div></div>
             <details open style="margin-top:8px">
               <summary style="cursor:pointer;color:#2563eb;font-weight:700">Não encontrou? Pesquisar endereço aproximado</summary>
               <div class="campo-com-acao" style="margin-top:8px"><input id="enderecoAproximado" type="text" autocomplete="off" placeholder="Digite o endereço como foi informado"><button class="botao-adicionar" id="localizarEnderecoAproximado" type="button" title="Selecionar o resultado mais provável" aria-label="Selecionar o endereço mais provável">⌕</button></div>
@@ -839,22 +843,46 @@
     }
     async function iniciarAutocompleteGoogle() {
       try {
-        await google.maps.importLibrary("places");
+        const {AutocompleteSuggestion} = await google.maps.importLibrary("places");
         geocodificadorGoogle = new google.maps.Geocoder();
         const campoGoogle = document.getElementById("enderecoGoogle");
-        googleAddressElement = new google.maps.places.Autocomplete(campoGoogle, {
-          componentRestrictions: {country:"br"},
-          bounds: new google.maps.LatLngBounds({lat:2.55,lng:-61.05},{lat:3.15,lng:-60.35}),
-          strictBounds: true,
-          fields: ["address_components","formatted_address","geometry","name"]
-        });
-        googleAddressElement.addListener("place_changed", async () => {
-          const lugar = googleAddressElement.getPlace();
-          if (!lugar || !lugar.geometry) {
-            document.getElementById("statusEndereco").textContent = "Selecione um dos enderecos sugeridos pelo Google Maps.";
-            return;
-          }
-          await selecionarEnderecoGoogle({place:lugar});
+        const caixaSugestoes = document.getElementById("enderecoSugestoes");
+        let temporizadorSugestoes;
+        async function buscarSugestoesGoogle(termo) {
+          const resposta = await AutocompleteSuggestion.fetchAutocompleteSuggestions({
+            input: termo,
+            includedRegionCodes: ["br"],
+            locationRestriction: {north:3.15,south:2.55,east:-60.35,west:-61.05}
+          });
+          return resposta.suggestions || [];
+        }
+        async function escolherSugestaoGoogle(sugestao) {
+          const predicao = sugestao.placePrediction;
+          if (!predicao) return;
+          await selecionarEnderecoGoogle({placePrediction:predicao});
+          caixaSugestoes.hidden = true;
+        }
+        campoGoogle.addEventListener("input", () => {
+          clearTimeout(temporizadorSugestoes);
+          const termo = campoGoogle.value.trim();
+          if (termo.length < 3) { caixaSugestoes.hidden = true; return; }
+          temporizadorSugestoes = setTimeout(async () => {
+            try {
+              const sugestoes = await buscarSugestoesGoogle(termo);
+              caixaSugestoes.replaceChildren(...sugestoes.slice(0,5).map((sugestao) => {
+                const botao = document.createElement("button");
+                botao.type = "button";
+                botao.className = "sugestao-endereco-google";
+                botao.textContent = sugestao.placePrediction && sugestao.placePrediction.text ? sugestao.placePrediction.text.toString() : termo;
+                botao.addEventListener("click", () => escolherSugestaoGoogle(sugestao));
+                return botao;
+              }));
+              caixaSugestoes.hidden = sugestoes.length === 0;
+            } catch (erro) {
+              console.error("Falha ao pesquisar enderecos.", erro);
+              caixaSugestoes.hidden = true;
+            }
+          }, 350);
         });
         document.getElementById("localizarEnderecoAproximado").addEventListener("click", async () => {
           const campo = document.getElementById("enderecoAproximado");
@@ -864,11 +892,10 @@
           botao.disabled = true;
           document.getElementById("statusEndereco").textContent = "Procurando o endereço mais provável no Google Maps...";
           try {
-            const resposta = await geocodificadorGoogle.geocode({address:termo + ", Boa Vista, RR, Brasil",componentRestrictions:{country:"BR"}});
-            const resultado = resposta.results && resposta.results[0];
-            if (!resultado) throw new Error("ZERO_RESULTS");
-            await selecionarEnderecoGoogle({place:resultado});
-            campo.value = resultado.formatted_address || termo;
+            const sugestoes = await buscarSugestoesGoogle(termo);
+            if (!sugestoes.length) throw new Error("ZERO_RESULTS");
+            await escolherSugestaoGoogle(sugestoes[0]);
+            campo.value = sugestoes[0].placePrediction.text.toString();
           } catch (erro) {
             console.error("Falha na pesquisa aproximada.", erro);
             document.getElementById("statusEndereco").textContent = "Não foi possível localizar esse endereço. Revise o nome informado.";
