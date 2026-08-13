@@ -187,6 +187,12 @@
     .campo-com-acao input { flex: 1; }
     #enderecoAutocomplete, gmp-place-autocomplete { display: block; width: 100%; }
     .botao-adicionar { width: 44px; min-width: 44px; padding: 0; font-size: 25px; font-weight: bold; line-height: 1; border-radius: 8px; }
+    .cabecalho-pessoas { display:flex; justify-content:space-between; align-items:center; gap:12px; grid-column:1/-1; margin-top:6px; }
+    .cabecalho-pessoas .subtitulo { margin:0; }
+    .adicionar-pessoa { width:auto; min-width:0; padding:9px 13px; font-size:14px; }
+    .pessoa-adicional { grid-column:1/-1; display:grid; grid-template-columns:2fr 1fr 1fr auto; gap:14px; align-items:end; padding:14px; border:1px solid #dbe4ee; border-radius:12px; background:#f8fafc; }
+    .pessoa-adicional .campo { margin:0; }
+    .remover-pessoa { background:#b91c1c; width:42px; min-width:42px; padding:9px 0; }
     dialog { width: min(460px, 92vw); border: 0; border-radius: 14px; padding: 0; box-shadow: 0 20px 60px rgba(15,23,42,.28); }
     dialog::backdrop { background: rgba(15,23,42,.62); }
     .modal-conteudo { padding: 24px; }
@@ -197,6 +203,7 @@
     @media (max-width: 900px) {
       .grade { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .campo.triplo { grid-column: span 2; }
+      .pessoa-adicional { grid-template-columns:1fr 1fr; }
     }
 
     @media (max-width: 600px) {
@@ -205,6 +212,10 @@
       .grade { grid-template-columns: 1fr; }
       .campo.duplo, .campo.triplo, .campo.inteiro { grid-column: auto; }
       .acoes a, .acoes button { width: 100%; text-align: center; }
+      .cabecalho-pessoas { align-items:flex-start; flex-direction:column; }
+      .cabecalho-pessoas button { width:100%; }
+      .pessoa-adicional { grid-template-columns:1fr; }
+      .remover-pessoa { width:100%; }
     }
   </style>
 </head>
@@ -375,7 +386,7 @@
         <h2>4. Pessoas envolvidas</h2>
 
         <div class="grade">
-          <div class="subtitulo">Vítima</div>
+          <div class="cabecalho-pessoas"><div class="subtitulo">Vítima 1</div><button class="botao-adicionar adicionar-pessoa" id="adicionarVitima" type="button">+ Adicionar vítima</button></div>
 
           <div class="campo">
             <label for="nacVitima">Nacionalidade</label>
@@ -413,8 +424,9 @@
             <label for="idadeVitima">Idade</label>
             <input id="idadeVitima" name="idadeVitima" type="number" min="0" max="130">
           </div>
+          <div id="vitimasAdicionais" style="display:contents"></div>
 
-          <div class="subtitulo">Infrator</div>
+          <div class="cabecalho-pessoas"><div class="subtitulo">Infrator 1</div><button class="botao-adicionar adicionar-pessoa" id="adicionarInfrator" type="button">+ Adicionar infrator</button></div>
 
           <div class="campo">
             <label for="nacInfrator">Nacionalidade</label>
@@ -452,6 +464,7 @@
             <label for="idadeInfrator">Idade</label>
             <input id="idadeInfrator" name="idadeInfrator" type="number" min="0" max="130">
           </div>
+          <div id="infratoresAdicionais" style="display:contents"></div>
         </div>
       </section>
 
@@ -898,6 +911,48 @@
       return valor === "NI — Não Informado" ? "NI" : (valor || null);
     }
 
+    const MARCADOR_PESSOAS = "[[PESSOAS_ENVOLVIDAS]]";
+    function adicionarPessoa(tipo, dados = {}) {
+      const vitima = tipo === "vitima";
+      const recipiente = document.getElementById(vitima ? "vitimasAdicionais" : "infratoresAdicionais");
+      const numero = recipiente.children.length + 2;
+      const bloco = document.createElement("div");
+      bloco.className = "pessoa-adicional";
+      bloco.dataset.tipo = tipo;
+      bloco.innerHTML = `<div class="campo"><label>${vitima ? "Vítima" : "Infrator"} ${numero} — Nacionalidade</label><select data-pessoa="nacionalidade">${document.getElementById(vitima ? "nacVitima" : "nacInfrator").innerHTML}</select></div><div class="campo"><label>Sexo</label><select data-pessoa="sexo">${document.getElementById(vitima ? "sexoVitima" : "sexoInfrator").innerHTML}</select></div><div class="campo"><label>Idade</label><input data-pessoa="idade" type="number" min="0" max="130"></div><button class="botao-adicionar remover-pessoa" type="button" title="Remover esta pessoa">×</button>`;
+      bloco.querySelector('[data-pessoa="nacionalidade"]').value = dados.nacionalidade || "";
+      bloco.querySelector('[data-pessoa="sexo"]').value = dados.sexo || "";
+      bloco.querySelector('[data-pessoa="idade"]').value = dados.idade || "";
+      bloco.querySelector(".remover-pessoa").addEventListener("click", () => bloco.remove());
+      recipiente.appendChild(bloco);
+    }
+    function pessoasAdicionais(tipo) {
+      const recipiente = document.getElementById(tipo === "vitima" ? "vitimasAdicionais" : "infratoresAdicionais");
+      return Array.from(recipiente.querySelectorAll(".pessoa-adicional")).map(bloco => ({
+        nacionalidade: tratarNI(bloco.querySelector('[data-pessoa="nacionalidade"]').value),
+        sexo: tratarNI(bloco.querySelector('[data-pessoa="sexo"]').value),
+        idade: bloco.querySelector('[data-pessoa="idade"]').value || null
+      })).filter(p => p.nacionalidade || p.sexo || p.idade);
+    }
+    function separarPessoas(valor) {
+      const texto = String(valor || "");
+      const posicao = texto.indexOf(MARCADOR_PESSOAS);
+      if (posicao < 0) return {texto, vitimas:[], infratores:[]};
+      try {
+        const dados = JSON.parse(texto.slice(posicao + MARCADOR_PESSOAS.length));
+        return {texto:texto.slice(0,posicao).trim(),vitimas:dados.vitimas || [],infratores:dados.infratores || []};
+      } catch (_) { return {texto,vitimas:[],infratores:[]}; }
+    }
+    function montarObservacaoFinal() {
+      const texto = document.getElementById("observacaoFinal").value.trim();
+      const dados = {vitimas:pessoasAdicionais("vitima"),infratores:pessoasAdicionais("infrator")};
+      return dados.vitimas.length || dados.infratores.length
+        ? (texto ? texto + "\n" : "") + MARCADOR_PESSOAS + JSON.stringify(dados)
+        : (texto || null);
+    }
+    document.getElementById("adicionarVitima").addEventListener("click", () => adicionarPessoa("vitima"));
+    document.getElementById("adicionarInfrator").addEventListener("click", () => adicionarPessoa("infrator"));
+
 
     const idEdicao = new URLSearchParams(location.search).get("id");
     function definirCampo(id, valor) {
@@ -914,10 +969,14 @@
       const resposta = await banco.rpc("obter_ocorrencia_publica", {p_id:idEdicao});
       if (resposta.error || !resposta.data) { alert("Não foi possível carregar a ocorrência para edição."); return; }
       const x = resposta.data;
+      const pessoasSalvas = separarPessoas(x.observacao_final);
+      x.observacao_final = pessoasSalvas.texto;
       const mapa = {data_ocorrencia:"data",status_atendimento:"statusAtendimento",motivo_repressao:"motivoRepressao",municipio:"municipio",vtr:"vtr",tipo_registro:"tipoRegistro",numero_bo:"numeroBo",hora_inicial:"horaInicial",hora_final:"horaFinal",ocorrencia:"ocorrencia",crime:"crime",detalhes:"detalhes",numero_prisoes:"numeroPrisoes",providencia_1:"providencia1",numero_conduzidos:"numeroConduzidos",orientacoes:"orientacoes",veiculos_recuperados:"veiculosRecuperados",providencia_2:"providencia2",endereco:"endereco",numero_endereco:"numeroEndereco",bairro:"bairro",local_entrega:"localEntrega",vitima_nacionalidade:"nacVitima",vitima_sexo:"sexoVitima",vitima_idade:"idadeVitima",infrator_nacionalidade:"nacInfrator",infrator_sexo:"sexoInfrator",infrator_idade:"idadeInfrator",comandante:"comandante",historico_resumido:"mo",materialidade:"materialidade",observacao:"observacao1",entorpecentes:"entorpecentes",maconha:"maconha",cocaina:"cocaina",pasta_base:"pastaBase",crack:"crack",skank:"skank",quantidade_armas:"quantArmas",quantidade_arma_branca:"quantArmaBranca",arma_branca:"armaBranca",armas:"armas",quantidade_municoes:"quantMunicoes",municoes:"municoes",veiculos_restricao:"veiculosRestricao",foragidos:"foragidos",disparo:"disparo",auto_resistencia:"autoResistencia",quantidade_autos_infracao:"quantAutoInfracao",auto_infracao:"autoInfracao",balanca_precisao:"balanca",tatico_setorial:"taticoSetorial",observacao_final:"observacaoFinal",latitude:"latitude",longitude:"longitude",endereco_formatado:"enderecoFormatado"};
       Object.keys(mapa).forEach(k => definirCampo(mapa[k],x[k]));
       atualizarSubtipos();
       definirCampo("crime",x.crime);
+      pessoasSalvas.vitimas.forEach(p => adicionarPessoa("vitima",p));
+      pessoasSalvas.infratores.forEach(p => adicionarPessoa("infrator",p));
       if (googleAddressElement) googleAddressElement.value = x.endereco_formatado || x.endereco || "";
       data.dispatchEvent(new Event("change"));
       horaInicial.dispatchEvent(new Event("change"));
@@ -1015,7 +1074,7 @@
           auto_infracao: document.getElementById("autoInfracao").value || null,
           balanca_precisao: tratarNI(document.getElementById("balanca").value),
           tatico_setorial: document.getElementById("taticoSetorial").value === "true",
-          observacao_final: document.getElementById("observacaoFinal").value || null
+          observacao_final: montarObservacaoFinal()
         };
 
         let error = null;
@@ -1041,6 +1100,8 @@
         }
         alert("Ocorrência salva com sucesso!");
         formulario.reset();
+        document.getElementById("vitimasAdicionais").replaceChildren();
+        document.getElementById("infratoresAdicionais").replaceChildren();
         semana.value = "";
         mes.value = "";
         turno.value = "";
