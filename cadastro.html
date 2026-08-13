@@ -636,6 +636,8 @@
 
     let catalogos = {tipos:[],subtipos:[],bairros:[],locais:[],comandantes:[]};
     let googleAddressElement = null;
+    let geocodificadorGoogle = null;
+    let temporizadorNumeroEndereco = null;
     function preencherLista(id, itens) {
       document.getElementById(id).innerHTML = itens.map(v => '<option value="'+String(v).replace(/"/g,"&quot;")+'"></option>').join("");
     }
@@ -770,10 +772,37 @@
       if (bairro) document.getElementById("bairro").value = bairroPadronizado(bairro);
       document.getElementById("municipio").value = normalizarCatalogo(municipio || "BOA VISTA");
       document.getElementById("statusEndereco").textContent = "Endereço confirmado no Google Maps" + (estado ? " — " + estado : "") + ".";
+      if (document.getElementById("numeroEndereco").value.trim()) await atualizarCoordenadasPeloNumero();
+    }
+    async function atualizarCoordenadasPeloNumero() {
+      const numero = document.getElementById("numeroEndereco").value.trim();
+      const logradouro = document.getElementById("endereco").value.trim();
+      if (!numero || /^(S\/?N|SEM N[ÚU]MERO)$/i.test(numero) || !logradouro || !geocodificadorGoogle) return false;
+      const bairro = document.getElementById("bairro").value.trim();
+      const consulta = [logradouro + ", " + numero, bairro, "Boa Vista", "RR", "Brasil"].filter(Boolean).join(", ");
+      document.getElementById("statusEndereco").textContent = "Localizando o número " + numero + " no Google Maps...";
+      try {
+        const resposta = await geocodificadorGoogle.geocode({address:consulta, componentRestrictions:{country:"BR"}});
+        const resultado = resposta.results && resposta.results[0];
+        if (!resultado || !resultado.geometry || !resultado.geometry.location) {
+          document.getElementById("statusEndereco").textContent = "Rua confirmada, mas o Google não encontrou a posição exata desse número.";
+          return false;
+        }
+        document.getElementById("latitude").value = resultado.geometry.location.lat();
+        document.getElementById("longitude").value = resultado.geometry.location.lng();
+        document.getElementById("enderecoFormatado").value = resultado.formatted_address || consulta;
+        document.getElementById("statusEndereco").textContent = "Endereço e número confirmados no Google Maps. O ponto exato será usado no mapa criminal.";
+        return true;
+      } catch (erro) {
+        console.error("Falha ao localizar o número do endereço.", erro);
+        document.getElementById("statusEndereco").textContent = "Rua confirmada, mas não foi possível localizar esse número agora.";
+        return false;
+      }
     }
     async function iniciarAutocompleteGoogle() {
       try {
         const {PlaceAutocompleteElement} = await google.maps.importLibrary("places");
+        geocodificadorGoogle = new google.maps.Geocoder();
         googleAddressElement = new PlaceAutocompleteElement({
           includedRegionCodes: ["br"],
           locationRestriction: {north:3.15,south:2.55,east:-60.35,west:-61.05}
@@ -784,6 +813,11 @@
           document.getElementById("statusEndereco").textContent = "A pesquisa do Google Maps não está disponível. Verifique se a Places API (New) está ativada.";
         });
         document.getElementById("enderecoAutocomplete").replaceChildren(googleAddressElement);
+        document.getElementById("numeroEndereco").addEventListener("input", () => {
+          clearTimeout(temporizadorNumeroEndereco);
+          temporizadorNumeroEndereco = setTimeout(atualizarCoordenadasPeloNumero, 800);
+        });
+        document.getElementById("numeroEndereco").addEventListener("blur", atualizarCoordenadasPeloNumero);
       } catch (erro) {
         console.error("Falha ao carregar o Google Maps.", erro);
         document.getElementById("statusEndereco").textContent = "Não foi possível carregar a pesquisa do Google Maps. Atualize a página.";
@@ -878,6 +912,7 @@
 
     formulario.addEventListener("submit", async (evento) => {
       evento.preventDefault();
+      if (document.getElementById("numeroEndereco").value.trim()) await atualizarCoordenadasPeloNumero();
       const tipoEscolhido = catalogos.tipos.find(t => t.nome === document.getElementById("ocorrencia").value);
       if (!tipoEscolhido) { alert("Selecione um Tipo de Ocorrência válido na lista."); return; }
       const subtipoDigitado = document.getElementById("crime").value;
