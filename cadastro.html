@@ -185,7 +185,7 @@
 
     .campo-com-acao { display: flex; gap: 8px; align-items: stretch; }
     .campo-com-acao input { flex: 1; }
-    #enderecoAutocomplete, #enderecoBusca { display: block; width: 100%; }
+    #enderecoAutocomplete, gmp-place-autocomplete { display: block; width: 100%; }
     .botao-adicionar { width: 44px; min-width: 44px; padding: 0; font-size: 25px; font-weight: bold; line-height: 1; border-radius: 8px; }
     dialog { width: min(460px, 92vw); border: 0; border-radius: 14px; padding: 0; box-shadow: 0 20px 60px rgba(15,23,42,.28); }
     dialog::backdrop { background: rgba(15,23,42,.62); }
@@ -346,7 +346,7 @@
         <div class="grade">
           <div class="campo triplo">
             <label for="endereco">Endereço</label>
-            <div id="enderecoAutocomplete"><div class="campo-com-acao"><input id="enderecoBusca" type="text" autocomplete="off" placeholder="Digite uma rua ou avenida de Boa Vista/RR"><button class="botao-adicionar" id="buscarEndereco" type="button" title="Pesquisar endereço" aria-label="Pesquisar endereço">⌕</button></div><select id="resultadoEndereco" style="display:none;margin-top:8px"></select></div>
+            <div id="enderecoAutocomplete"></div>
             <small id="statusEndereco" style="color:#64748b">Pesquise e selecione um endereço real de Boa Vista/RR.</small>
             <input id="endereco" name="endereco" type="hidden"><input id="latitude" type="hidden"><input id="longitude" type="hidden"><input id="enderecoFormatado" type="hidden">
           </div>
@@ -755,7 +755,7 @@
       const lat = localizacao && localizacao.lat();
       const lng = localizacao && localizacao.lng();
       document.getElementById("endereco").value = normalizarCatalogo(logradouro);
-      document.getElementById("enderecoBusca").value = lugar.formattedAddress || lugar.formatted_address || logradouro;
+      if (googleAddressElement) googleAddressElement.value = lugar.formattedAddress || lugar.formatted_address || logradouro;
       document.getElementById("enderecoFormatado").value = lugar.formattedAddress || lugar.formatted_address || logradouro;
       document.getElementById("latitude").value = lat ?? "";
       document.getElementById("longitude").value = lng ?? "";
@@ -764,62 +764,22 @@
       document.getElementById("statusEndereco").textContent = "Endereço confirmado no Google Maps" + (estado ? " — " + estado : "") + ".";
     }
     async function iniciarAutocompleteGoogle() {
-      const busca = document.getElementById("enderecoBusca");
-      const botao = document.getElementById("buscarEndereco");
-      const resultado = document.getElementById("resultadoEndereco");
-      resultado.style.display = "none";
-      const limitesBoaVista = new google.maps.LatLngBounds(
-        {lat: 2.55, lng: -61.05},
-        {lat: 3.15, lng: -60.35}
-      );
-      const autocomplete = new google.maps.places.Autocomplete(busca, {
-        bounds: limitesBoaVista,
-        componentRestrictions: {country: "br"},
-        fields: ["address_components", "formatted_address", "geometry", "name"],
-        strictBounds: false,
-        types: ["geocode"]
-      });
-      googleAddressElement = busca;
-      autocomplete.addListener("place_changed", async () => {
-        const lugar = autocomplete.getPlace();
-        if (!lugar || !lugar.geometry) {
-          document.getElementById("statusEndereco").textContent = "Selecione um endereço da lista do Google Maps.";
-          return;
-        }
-        await selecionarEnderecoGoogle({place:lugar});
-      });
-      const geocoder = new google.maps.Geocoder();
-      async function pesquisar() {
-        const termo = busca.value.trim();
-        if (termo.length < 3) return;
-        botao.disabled = true;
-        document.getElementById("statusEndereco").textContent = "Pesquisando endereço no Google Maps...";
-        try {
-          const resposta = await geocoder.geocode({
-            address: termo + ", Boa Vista, RR, Brasil",
-            bounds: limitesBoaVista,
-            componentRestrictions: {country:"BR"}
-          });
-          const lugar = resposta.results && resposta.results[0];
-          if (!lugar) {
-            document.getElementById("statusEndereco").textContent = "Nenhum endereço encontrado. Revise a pesquisa.";
-            return;
-          }
-          await selecionarEnderecoGoogle({place:lugar});
-        } catch (erro) {
-          console.error(erro);
-          document.getElementById("statusEndereco").textContent = "Não foi possível pesquisar no Google Maps. Tente novamente.";
-        } finally {
-          botao.disabled = false;
-        }
+      try {
+        const {PlaceAutocompleteElement} = await google.maps.importLibrary("places");
+        googleAddressElement = new PlaceAutocompleteElement({
+          includedRegionCodes: ["br"],
+          locationRestriction: {north:3.15,south:2.55,east:-60.35,west:-61.05}
+        });
+        googleAddressElement.placeholder = "Digite uma rua ou avenida de Boa Vista/RR";
+        googleAddressElement.addEventListener("gmp-select", selecionarEnderecoGoogle);
+        googleAddressElement.addEventListener("gmp-error", () => {
+          document.getElementById("statusEndereco").textContent = "A pesquisa do Google Maps não está disponível. Verifique se a Places API (New) está ativada.";
+        });
+        document.getElementById("enderecoAutocomplete").replaceChildren(googleAddressElement);
+      } catch (erro) {
+        console.error("Falha ao carregar o Google Maps.", erro);
+        document.getElementById("statusEndereco").textContent = "Não foi possível carregar a pesquisa do Google Maps. Atualize a página.";
       }
-      botao.addEventListener("click", pesquisar);
-      busca.addEventListener("keydown", evento => {
-        if (evento.key === "Enter") {
-          evento.preventDefault();
-          pesquisar();
-        }
-      });
     }
     const data = document.getElementById("data");
     const semana = document.getElementById("semana");
