@@ -313,7 +313,7 @@
         <div class="grade">
           <div class="campo duplo">
             <label for="ocorrencia">Tipo de Ocorrência *</label>
-            <input id="ocorrencia" name="ocorrencia" type="text" list="listaOcorrencias" autocomplete="off" placeholder="Digite para pesquisar e selecione" required><datalist id="listaOcorrencias"></datalist>
+            <div class="campo-com-acao"><input id="ocorrencia" name="ocorrencia" type="text" list="listaOcorrencias" autocomplete="off" placeholder="Digite para pesquisar e selecione" required><button class="botao-adicionar" id="abrirNovoTipoOcorrencia" type="button" title="Cadastrar novo tipo de ocorrência" aria-label="Cadastrar novo tipo de ocorrência">+</button></div><datalist id="listaOcorrencias"></datalist>
           </div>
 
           <div class="campo duplo"><label for="crime">Subtipo da Ocorrência</label><input id="crime" type="text" list="listaSubtipos" autocomplete="off" placeholder="Selecione primeiro o tipo de ocorrência"><datalist id="listaSubtipos"></datalist><small id="fundamentoLegal" style="color:#64748b"></small></div>
@@ -666,6 +666,14 @@
       </div>
     </form>
   </dialog>
+  <dialog id="modalTipoOcorrencia">
+    <form class="modal-conteudo" id="formNovoTipoOcorrencia" method="dialog">
+      <h3>Cadastrar novo tipo de ocorrência</h3>
+      <p>Use um nome curto e padronizado. Antes de salvar, confira se a opção já existe na lista.</p>
+      <div class="campo"><label for="novoTipoOcorrencia">Tipo de ocorrência</label><input id="novoTipoOcorrencia" maxlength="120" autocomplete="off" placeholder="Ex.: SUICÍDIO" required></div>
+      <div class="modal-acoes"><button class="botao-secundario" id="cancelarNovoTipoOcorrencia" type="button">Cancelar</button><button type="submit">Salvar tipo</button></div>
+    </form>
+  </dialog>
   <dialog id="modalBairro">
     <form class="modal-conteudo" id="formNovoBairro" method="dialog"><h3>Cadastrar novo bairro</h3><p>Cadastre apenas se o bairro ainda não estiver na lista.</p><div class="campo"><label for="novoBairro">Nome do bairro</label><input id="novoBairro" maxlength="100" required></div><div class="modal-acoes"><button class="botao-secundario" id="cancelarNovoBairro" type="button">Cancelar</button><button type="submit">Salvar bairro</button></div></form>
   </dialog>
@@ -783,6 +791,28 @@
     });
     document.getElementById("ocorrencia").addEventListener("input", atualizarSubtipos);
     document.getElementById("ocorrencia").addEventListener("change", atualizarSubtipos);
+    const modalTipoOcorrencia = document.getElementById("modalTipoOcorrencia");
+    document.getElementById("abrirNovoTipoOcorrencia").addEventListener("click", function() {
+      document.getElementById("novoTipoOcorrencia").value = normalizarCatalogo(document.getElementById("ocorrencia").value);
+      modalTipoOcorrencia.showModal();
+    });
+    document.getElementById("cancelarNovoTipoOcorrencia").addEventListener("click", () => modalTipoOcorrencia.close());
+    document.getElementById("formNovoTipoOcorrencia").addEventListener("submit", async function(evento) {
+      evento.preventDefault();
+      const nome = normalizarCatalogo(document.getElementById("novoTipoOcorrencia").value);
+      if (nome.length < 3) { alert("Informe um nome com pelo menos 3 caracteres."); return; }
+      const existente = catalogos.tipos.find(t => normalizarCatalogo(t.nome) === nome);
+      if (existente) { document.getElementById("ocorrencia").value = existente.nome; modalTipoOcorrencia.close(); atualizarSubtipos(); return; }
+      const resposta = await banco.rpc("cadastrar_tipo_ocorrencia_publico", {p_nome:nome});
+      if (resposta.error) { alert("Não foi possível cadastrar o tipo: " + resposta.error.message); return; }
+      const novo = resposta.data;
+      catalogos.tipos.push(novo);
+      catalogos.tipos.sort((a,b)=>a.nome.localeCompare(b.nome,"pt-BR"));
+      preencherLista("listaOcorrencias", catalogos.tipos.map(t=>t.nome));
+      document.getElementById("ocorrencia").value = novo.nome;
+      modalTipoOcorrencia.close();
+      atualizarSubtipos();
+    });
     document.getElementById("crime").addEventListener("change", function() {
       const subtipo = catalogos.subtipos.find(s => s.nome === this.value);
       document.getElementById("fundamentoLegal").textContent = subtipo && subtipo.fundamento_legal ? subtipo.fundamento_legal : "";
