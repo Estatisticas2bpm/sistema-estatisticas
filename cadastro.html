@@ -402,7 +402,7 @@
 
           <div class="campo duplo">
             <label for="localEntrega">Local de entrega do relatório</label>
-            <input id="localEntrega" name="localEntrega" type="text" list="listaLocais" autocomplete="off" placeholder="Digite para pesquisar e selecione"><datalist id="listaLocais"></datalist>
+            <div class="campo-com-acao"><input id="localEntrega" name="localEntrega" type="text" list="listaLocais" autocomplete="off" placeholder="Digite para pesquisar e selecione"><button class="botao-adicionar" id="abrirNovoLocalEntrega" type="button" title="Cadastrar novo local de entrega" aria-label="Cadastrar novo local de entrega">+</button></div><datalist id="listaLocais"></datalist>
           </div>
         </div>
       </section>
@@ -693,6 +693,9 @@
       <div class="modal-acoes"><button class="botao-secundario" id="cancelarNovoTipoOcorrencia" type="button">Cancelar</button><button type="submit">Salvar tipo</button></div>
     </form>
   </dialog>
+  <dialog id="modalNovoLocalEntrega">
+    <form class="modal-conteudo" id="formNovoLocalEntrega" method="dialog"><h3>Cadastrar local de entrega</h3><p>Cadastre somente se o local ainda não estiver na lista.</p><div class="campo"><label for="novoLocalEntrega">Nome ou sigla do local</label><input id="novoLocalEntrega" maxlength="120" required placeholder="Ex.: DEAM"></div><div class="modal-acoes"><button class="botao-secundario" id="cancelarNovoLocalEntrega" type="button">Cancelar</button><button type="submit">Adicionar local</button></div></form>
+  </dialog>
   <dialog id="modalBairro">
     <form class="modal-conteudo" id="formNovoBairro" method="dialog"><h3>Cadastrar novo bairro</h3><p>Cadastre apenas se o bairro ainda não estiver na lista.</p><div class="campo"><label for="novoBairro">Nome do bairro</label><input id="novoBairro" maxlength="100" required></div><div class="modal-acoes"><button class="botao-secundario" id="cancelarNovoBairro" type="button">Cancelar</button><button type="submit">Salvar bairro</button></div></form>
   </dialog>
@@ -744,6 +747,30 @@
       preencherLista("listaLocais", catalogos.locais);
       preencherLista("listaComandantes", catalogos.comandantes || []);
     }
+    const modalNovoLocalEntrega = document.getElementById("modalNovoLocalEntrega");
+    const novoLocalEntrega = document.getElementById("novoLocalEntrega");
+    document.getElementById("abrirNovoLocalEntrega").addEventListener("click", () => {
+      novoLocalEntrega.value = padronizarLocalEntrega(document.getElementById("localEntrega").value);
+      modalNovoLocalEntrega.showModal();
+      novoLocalEntrega.focus();
+    });
+    document.getElementById("cancelarNovoLocalEntrega").addEventListener("click", () => modalNovoLocalEntrega.close());
+    document.getElementById("formNovoLocalEntrega").addEventListener("submit", evento => {
+      evento.preventDefault();
+      const nome = padronizarLocalEntrega(novoLocalEntrega.value);
+      if (nome.length < 2) { alert("Informe um nome ou sigla válido para o local de entrega."); return; }
+      const existente = catalogos.locais.find(local => chaveLocalEntrega(local) === chaveLocalEntrega(nome));
+      if (existente) {
+        document.getElementById("localEntrega").value = existente;
+        modalNovoLocalEntrega.close();
+        return;
+      }
+      catalogos.locais.push(nome);
+      catalogos.locais.sort((a,b)=>a.localeCompare(b,"pt-BR"));
+      preencherLista("listaLocais",catalogos.locais);
+      document.getElementById("localEntrega").value = nome;
+      modalNovoLocalEntrega.close();
+    });
     const modalComandante = document.getElementById("modalComandante");
     const campoComandante = document.getElementById("comandante");
     const novoComandante = document.getElementById("novoComandante");
