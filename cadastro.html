@@ -1079,11 +1079,19 @@
         const sexo = bloco.match(/Sexo:\s*([^\n]*?)(?:\s+Nasc:|\s+Idade|\n)/i);
         const idade = bloco.match(/Idade\s*:?[ ]*(\d{1,3})/i);
         const papel = textoComparavel(resultado[2]);
-        const pessoa = {nome:resultado[1].trim(), nacionalidade:nacionalidadeCodigo(nacionalidade && nacionalidade[1]), sexo:sexoCodigo(sexo && sexo[1]), idade:idade ? idade[1] : ""};
+        const pessoa = {
+          nome:resultado[1].trim(),
+          nacionalidade:nacionalidadeCodigo(nacionalidade && nacionalidade[1]),
+          sexo:sexoCodigo(sexo && sexo[1]),
+          idade:idade ? idade[1] : "",
+          policialMilitar:/Profiss[ãa]o:\s*Policial Militar/i.test(bloco)
+        };
         if (papel.includes("VITIMA")) pessoas.vitimas.push(pessoa);
         else if (papel.includes("AUTOR") || papel.includes("INFRATOR")) pessoas.infratores.push(pessoa);
         else pessoas.envolvidos.push(pessoa);
       }
+      if (pessoas.vitimas.length || pessoas.infratores.length) pessoas.envolvidos = [];
+      else pessoas.envolvidos = pessoas.envolvidos.filter(pessoa => !pessoa.policialMilitar);
       return pessoas;
     }
     function extrairDadosOcorrenciaPdf(texto) {
