@@ -1128,6 +1128,34 @@
         .replace(/\s+/g," ")
         .trim();
     }
+    function resumirMaterialidadePdf(valor) {
+      const bruto = String(valor || "").replace(/\s+/g," ").trim();
+      if (!bruto || /Nenhum Objeto Informado/i.test(bruto)) return "";
+      const objetos = [];
+      bruto.split(/(?=\bGrupo\s+)/i).forEach(bloco => {
+        if (!/^Grupo\s+/i.test(bloco)) return;
+        const subgrupo = bloco.match(/\bSubgrupo\s+(.+?)(?=\s+Identificador\s+[ÚU]nico\b|\s+Descri[çc][ãa]o\b|\s+Situa[çc][ãa]o\b)/i);
+        const descricao = bloco.match(/\bDescri[çc][ãa]o\s+(.+?)(?=\s+Situa[çc][ãa]o\b|\s+Nome\s+Envolvido\b|\s+Grupo\s+|\s+Impresso\s+por:|\s+RELATO\/HIST[ÓO]RICO\b|$)/i);
+        let objeto = (descricao && descricao[1] || subgrupo && subgrupo[1] || "")
+          .replace(/\bIdentificador\s+[ÚU]nico\s+\S+/gi, " ")
+          .replace(/\s+/g," ")
+          .trim();
+        if (!objeto) return;
+        const tipo = subgrupo ? subgrupo[1].replace(/\s+/g," ").trim() : "";
+        if (tipo && !textoComparavel(objeto).includes(textoComparavel(tipo))) objeto = tipo + " — " + objeto;
+        objeto = objeto.toLocaleLowerCase("pt-BR");
+        const chave = textoComparavel(objeto);
+        if (!objetos.some(item => item.chave === chave)) objetos.push({chave,texto:"01 " + objeto});
+      });
+      if (objetos.length) return objetos.map(item=>item.texto).join("; ") + ".";
+      return bruto
+        .replace(/\bImpresso por:[\s\S]*$/i," ")
+        .replace(/\b(?:Identificador [ÚU]nico|Nome Envolvido|Envolvimentos)\b[^;]*/gi," ")
+        .replace(/\b(?:P[áa]gina|Data de Impress[ãa]o|C[óo]digo Verificador|C[óo]digo CRC|PPe|GOVERNO DO ESTADO)[\s\S]*$/i," ")
+        .replace(/\s+/g," ")
+        .trim()
+        .slice(0,600);
+    }
     function ocultarNomesEmMaiusculas(relato) {
       const preservados = new Set(["BOA VISTA","MARIA DA PENHA","POLÍCIA MILITAR","POLICIA MILITAR"]);
       return String(relato || "").replace(/\b[A-ZÁÉÍÓÚÂÊÔÃÕÇ]{2,}(?:\s+[A-ZÁÉÍÓÚÂÊÔÃÕÇ]{2,}){1,4}\b/gu, nome => preservados.has(nome) ? nome : "[PESSOA ENVOLVIDA]");
@@ -1210,7 +1238,7 @@
         comandante: comandante ? comandante[1].trim() : "",
         natureza: natureza ? natureza[1].replace(/N[ãa]o Houve/gi," ").replace(/\s+/g," ").trim() : "",
         historico: relato,
-        materialidade: objetos && !/Nenhum Objeto Informado/i.test(objetos[1]) ? objetos[1].replace(/\s+/g," ").trim() : "",
+        materialidade: objetos ? resumirMaterialidadePdf(objetos[1]) : "",
         enderecoReferencia: local ? `${local[3].trim()}${local[4] ? ", nº " + local[4].trim() : ""} - ${local[2].trim()}` : "",
         logradouroPdf: local ? local[3].trim() : "",
         numeroPdf: local && local[4] ? local[4].trim() : "",
