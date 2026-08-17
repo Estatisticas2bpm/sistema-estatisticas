@@ -1444,6 +1444,14 @@
 
         if (error) {
           console.error(error);
+          const duplicada = error.code === "23505" || String(error.message || "").includes("ocorrencia_numero_unico");
+          if (duplicada) {
+            const numeroExistente = registro.numero_bo;
+            if (confirm(`A ocorrência ${numeroExistente} já está cadastrada e não pode ser duplicada. Deseja abrir o registro existente para consultar ou editar?`)) {
+              location.href = "consulta.html?q=" + encodeURIComponent(numeroExistente);
+            }
+            return;
+          }
           alert("Erro ao salvar a ocorrência: " + error.message);
           return;
         }
