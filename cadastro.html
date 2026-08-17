@@ -706,6 +706,18 @@
     let googleAddressElement = null;
     let geocodificadorGoogle = null;
     let temporizadorNumeroEndereco = null;
+    const ALIASES_LOCAIS_ENTREGA = {
+      "1DP":"1º DP", "2DP":"2º DP", "3DP":"3º DP", "4DP":"4º DP", "5DP":"5º DP",
+      "2BPM":"2º BPM", "PCI":"PC I", "PCII":"PC II", "NCPA":"NPCA",
+      "DRFVA":"DRRFVAT", "DPIPD":"DPIPCD"
+    };
+    function chaveLocalEntrega(valor) {
+      return String(valor || "").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/[^A-Z0-9]/g,"");
+    }
+    function padronizarLocalEntrega(valor) {
+      const informado = String(valor || "").trim().replace(/\s+/g," ").toUpperCase();
+      return ALIASES_LOCAIS_ENTREGA[chaveLocalEntrega(informado)] || informado;
+    }
     function preencherLista(id, itens) {
       document.getElementById(id).innerHTML = itens.map(v => '<option value="'+String(v).replace(/"/g,"&quot;")+'"></option>').join("");
     }
@@ -726,6 +738,7 @@
       if (resposta.error) { console.error(resposta.error); return; }
       catalogos = resposta.data || catalogos;
       catalogos.comandantes = respostaComandantes.error ? [] : (respostaComandantes.data || []);
+      catalogos.locais = [...new Set((catalogos.locais || []).map(padronizarLocalEntrega).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"pt-BR"));
       preencherLista("listaOcorrencias", catalogos.tipos.map(t => t.nome));
       preencherLista("listaBairros", catalogos.bairros);
       preencherLista("listaLocais", catalogos.locais);
@@ -1412,6 +1425,7 @@
       x.observacao_final = pessoasSalvas.texto;
       const mapa = {data_ocorrencia:"data",status_atendimento:"statusAtendimento",motivo_repressao:"motivoRepressao",municipio:"municipio",vtr:"vtr",tipo_registro:"tipoRegistro",numero_bo:"numeroBo",hora_inicial:"horaInicial",hora_final:"horaFinal",ocorrencia:"ocorrencia",crime:"crime",numero_prisoes:"numeroPrisoes",numero_conduzidos:"numeroConduzidos",orientacoes:"orientacoes",veiculos_recuperados:"veiculosRecuperados",endereco:"endereco",numero_endereco:"numeroEndereco",bairro:"bairro",local_entrega:"localEntrega",vitima_nacionalidade:"nacVitima",vitima_sexo:"sexoVitima",vitima_idade:"idadeVitima",infrator_nacionalidade:"nacInfrator",infrator_sexo:"sexoInfrator",infrator_idade:"idadeInfrator",comandante:"comandante",historico_resumido:"mo",materialidade:"materialidade",observacao:"observacao1",entorpecentes:"entorpecentes",maconha:"maconha",cocaina:"cocaina",pasta_base:"pastaBase",crack:"crack",skank:"skank",quantidade_armas:"quantArmas",quantidade_arma_branca:"quantArmaBranca",arma_branca:"armaBranca",armas:"armas",quantidade_municoes:"quantMunicoes",municoes:"municoes",veiculos_restricao:"veiculosRestricao",foragidos:"foragidos",disparo:"disparo",auto_resistencia:"autoResistencia",quantidade_autos_infracao:"quantAutoInfracao",auto_infracao:"autoInfracao",balanca_precisao:"balanca",observacao_final:"observacaoFinal",latitude:"latitude",longitude:"longitude",endereco_formatado:"enderecoFormatado"};
       Object.keys(mapa).forEach(k => definirCampo(mapa[k],x[k]));
+      definirCampo("localEntrega",padronizarLocalEntrega(x.local_entrega));
       marcarResultadosExistentes(x);
       atualizarSubtipos();
       definirCampo("crime",x.crime);
@@ -1442,6 +1456,9 @@
       const comandanteDigitado = normalizarComandante(campoComandante.value);
       if (comandanteDigitado && !catalogos.comandantes.includes(comandanteDigitado)) { alert("Selecione um comandante válido na lista ou use o botão + para cadastrá-lo."); return; }
       campoComandante.value = comandanteDigitado;
+      const localEntregaDigitado = padronizarLocalEntrega(document.getElementById("localEntrega").value);
+      if (localEntregaDigitado && !catalogos.locais.includes(localEntregaDigitado)) { alert("Selecione um Local de entrega válido na lista padronizada."); return; }
+      document.getElementById("localEntrega").value = localEntregaDigitado;
       const bairroDigitado = normalizarCatalogo(document.getElementById("bairro").value);
       if (!bairroDigitado) { alert("Informe o bairro da ocorrência. Se o Google Maps não identificar corretamente, preencha o campo manualmente."); return; }
       document.getElementById("bairro").value = bairroDigitado;
@@ -1480,7 +1497,7 @@
           latitude: document.getElementById("latitude").value || null,
           longitude: document.getElementById("longitude").value || null,
           endereco_formatado: document.getElementById("enderecoFormatado").value || null,
-          local_entrega: document.getElementById("localEntrega").value || null,
+          local_entrega: localEntregaDigitado || null,
 
           vitima_nacionalidade: tratarNI(document.getElementById("nacVitima").value),
           vitima_sexo: tratarNI(document.getElementById("sexoVitima").value),
