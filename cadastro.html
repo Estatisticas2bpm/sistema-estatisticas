@@ -372,9 +372,9 @@
           </div>
 
           <div class="campo duplo">
-            <label for="bairro">Bairro identificado pelo endereço</label>
-            <input id="bairro" name="bairro" type="text" readonly placeholder="Preenchido automaticamente pelo Google Maps">
-            <small style="color:#64748b">Não é necessário preencher novamente.</small>
+            <label for="bairro">Bairro</label>
+            <input id="bairro" name="bairro" type="text" list="listaBairros" autocomplete="off" placeholder="Preenchido pelo Google ou informado manualmente">
+            <small style="color:#64748b">Confira o bairro preenchido pelo Google. Se estiver vazio ou incorreto, você pode editar manualmente.</small>
             <datalist id="listaBairros"></datalist><button id="abrirNovoBairro" type="button" hidden aria-hidden="true" tabindex="-1">+</button>
           </div>
 
@@ -1127,7 +1127,7 @@
       if (comandanteDigitado && !catalogos.comandantes.includes(comandanteDigitado)) { alert("Selecione um comandante válido na lista ou use o botão + para cadastrá-lo."); return; }
       campoComandante.value = comandanteDigitado;
       const bairroDigitado = normalizarCatalogo(document.getElementById("bairro").value);
-      if (!bairroDigitado) { alert("O Google Maps não identificou o bairro deste endereço. Selecione outra sugestão de endereço mais completa."); return; }
+      if (!bairroDigitado) { alert("Informe o bairro da ocorrência. Se o Google Maps não identificar corretamente, preencha o campo manualmente."); return; }
       document.getElementById("bairro").value = bairroDigitado;
       if (!document.getElementById("endereco").value || !document.getElementById("latitude").value || !document.getElementById("longitude").value) { alert("Pesquise o endereço e selecione uma sugestão do Google Maps antes de salvar."); return; }
 
