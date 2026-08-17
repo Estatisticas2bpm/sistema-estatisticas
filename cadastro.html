@@ -1581,7 +1581,8 @@
           const duplicada = error.code === "23505" || String(error.message || "").includes("ocorrencia_numero_unico");
           if (duplicada) {
             const numeroExistente = registro.numero_bo;
-            if (confirm(`A ocorrência ${numeroExistente} já está cadastrada e não pode ser duplicada. Deseja abrir o registro existente para consultar ou editar?`)) {
+            const anoExistente = String(registro.data_ocorrencia || "").slice(0,4);
+            if (confirm(`A ocorrência ${registro.tipo_registro || ""} ${numeroExistente} do ano ${anoExistente} já está cadastrada e não pode ser duplicada. Deseja abrir o registro existente para consultar ou editar?`)) {
               location.href = "consulta.html?q=" + encodeURIComponent(numeroExistente);
             }
             return;
