@@ -468,6 +468,9 @@
             <input id="idadeInfrator" name="idadeInfrator" type="number" min="0" max="130">
           </div>
           <div id="infratoresAdicionais" style="display:contents"></div>
+
+          <div class="cabecalho-pessoas"><div class="subtitulo">Envolvidos sem classificação específica</div><button class="botao-adicionar adicionar-pessoa" id="adicionarEnvolvido" type="button">+ Adicionar envolvido</button></div>
+          <div id="envolvidosAdicionais" style="display:contents"></div>
         </div>
       </section>
 
@@ -1039,13 +1042,18 @@
 
     const MARCADOR_PESSOAS = "[[PESSOAS_ENVOLVIDAS]]";
     function adicionarPessoa(tipo, dados = {}) {
-      const vitima = tipo === "vitima";
-      const recipiente = document.getElementById(vitima ? "vitimasAdicionais" : "infratoresAdicionais");
-      const numero = recipiente.children.length + 2;
+      const configuracoes = {
+        vitima: {recipiente:"vitimasAdicionais", rotulo:"Vítima", inicio:2, nacionalidade:"nacVitima", sexo:"sexoVitima"},
+        infrator: {recipiente:"infratoresAdicionais", rotulo:"Infrator", inicio:2, nacionalidade:"nacInfrator", sexo:"sexoInfrator"},
+        envolvido: {recipiente:"envolvidosAdicionais", rotulo:"Envolvido", inicio:1, nacionalidade:"nacVitima", sexo:"sexoVitima"}
+      };
+      const configuracao = configuracoes[tipo];
+      const recipiente = document.getElementById(configuracao.recipiente);
+      const numero = recipiente.children.length + configuracao.inicio;
       const bloco = document.createElement("div");
       bloco.className = "pessoa-adicional";
       bloco.dataset.tipo = tipo;
-      bloco.innerHTML = `<div class="campo"><label>${vitima ? "Vítima" : "Infrator"} ${numero} — Nacionalidade</label><select data-pessoa="nacionalidade">${document.getElementById(vitima ? "nacVitima" : "nacInfrator").innerHTML}</select></div><div class="campo"><label>Sexo</label><select data-pessoa="sexo">${document.getElementById(vitima ? "sexoVitima" : "sexoInfrator").innerHTML}</select></div><div class="campo"><label>Idade</label><input data-pessoa="idade" type="number" min="0" max="130"></div><button class="botao-adicionar remover-pessoa" type="button" title="Remover esta pessoa">×</button>`;
+      bloco.innerHTML = `<div class="campo"><label>${configuracao.rotulo} ${numero} — Nacionalidade</label><select data-pessoa="nacionalidade">${document.getElementById(configuracao.nacionalidade).innerHTML}</select></div><div class="campo"><label>Sexo</label><select data-pessoa="sexo">${document.getElementById(configuracao.sexo).innerHTML}</select></div><div class="campo"><label>Idade</label><input data-pessoa="idade" type="number" min="0" max="130"></div><button class="botao-adicionar remover-pessoa" type="button" title="Remover esta pessoa">×</button>`;
       bloco.querySelector('[data-pessoa="nacionalidade"]').value = dados.nacionalidade || "";
       bloco.querySelector('[data-pessoa="sexo"]').value = dados.sexo || "";
       bloco.querySelector('[data-pessoa="idade"]').value = dados.idade || "";
@@ -1053,7 +1061,8 @@
       recipiente.appendChild(bloco);
     }
     function pessoasAdicionais(tipo) {
-      const recipiente = document.getElementById(tipo === "vitima" ? "vitimasAdicionais" : "infratoresAdicionais");
+      const recipientes = {vitima:"vitimasAdicionais", infrator:"infratoresAdicionais", envolvido:"envolvidosAdicionais"};
+      const recipiente = document.getElementById(recipientes[tipo]);
       return Array.from(recipiente.querySelectorAll(".pessoa-adicional")).map(bloco => ({
         nacionalidade: tratarNI(bloco.querySelector('[data-pessoa="nacionalidade"]').value),
         sexo: tratarNI(bloco.querySelector('[data-pessoa="sexo"]').value),
@@ -1063,21 +1072,23 @@
     function separarPessoas(valor) {
       const texto = String(valor || "");
       const posicao = texto.indexOf(MARCADOR_PESSOAS);
-      if (posicao < 0) return {texto, vitimas:[], infratores:[]};
+      if (posicao < 0) return {texto, vitimas:[], infratores:[], envolvidos:[]};
       try {
         const dados = JSON.parse(texto.slice(posicao + MARCADOR_PESSOAS.length));
-        return {texto:texto.slice(0,posicao).trim(),vitimas:dados.vitimas || [],infratores:dados.infratores || []};
-      } catch (_) { return {texto,vitimas:[],infratores:[]}; }
+        return {texto:texto.slice(0,posicao).trim(),vitimas:dados.vitimas || [],infratores:dados.infratores || [],envolvidos:dados.envolvidos || []};
+      } catch (_) { return {texto,vitimas:[],infratores:[],envolvidos:[]}; }
     }
     function montarObservacaoFinal() {
       const texto = document.getElementById("observacaoFinal").value.trim();
-      const dados = {vitimas:pessoasAdicionais("vitima"),infratores:pessoasAdicionais("infrator")};
-      return dados.vitimas.length || dados.infratores.length
+      const dados = {vitimas:pessoasAdicionais("vitima"),infratores:pessoasAdicionais("infrator"),envolvidos:pessoasAdicionais("envolvido")};
+      return dados.vitimas.length || dados.infratores.length || dados.envolvidos.length
         ? (texto ? texto + "\n" : "") + MARCADOR_PESSOAS + JSON.stringify(dados)
         : (texto || null);
     }
     document.getElementById("adicionarVitima").addEventListener("click", () => adicionarPessoa("vitima"));
     document.getElementById("adicionarInfrator").addEventListener("click", () => adicionarPessoa("infrator"));
+    document.getElementById("adicionarEnvolvido").addEventListener("click", () => adicionarPessoa("envolvido"));
+    adicionarPessoa("envolvido");
 
 
     const idEdicao = new URLSearchParams(location.search).get("id");
@@ -1104,6 +1115,9 @@
       definirCampo("crime",x.crime);
       pessoasSalvas.vitimas.forEach(p => adicionarPessoa("vitima",p));
       pessoasSalvas.infratores.forEach(p => adicionarPessoa("infrator",p));
+      document.getElementById("envolvidosAdicionais").replaceChildren();
+      pessoasSalvas.envolvidos.forEach(p => adicionarPessoa("envolvido",p));
+      if (!pessoasSalvas.envolvidos.length) adicionarPessoa("envolvido");
       if (googleAddressElement) googleAddressElement.value = x.endereco_formatado || x.endereco || "";
       data.dispatchEvent(new Event("change"));
       horaInicial.dispatchEvent(new Event("change"));
@@ -1230,6 +1244,8 @@
         formulario.reset();
         document.getElementById("vitimasAdicionais").replaceChildren();
         document.getElementById("infratoresAdicionais").replaceChildren();
+        document.getElementById("envolvidosAdicionais").replaceChildren();
+        adicionarPessoa("envolvido");
         semana.value = "";
         mes.value = "";
         turno.value = "";
