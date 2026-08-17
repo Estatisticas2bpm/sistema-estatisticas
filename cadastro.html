@@ -954,7 +954,10 @@
       const consulta = [logradouro + ", " + numero, bairro, "Boa Vista", "RR", "Brasil"].filter(Boolean).join(", ");
       document.getElementById("statusEndereco").textContent = "Localizando o número " + numero + " no Google Maps...";
       try {
-        const resposta = await geocodificadorGoogle.geocode({address:consulta, componentRestrictions:{country:"BR"}});
+        const resposta = await Promise.race([
+          geocodificadorGoogle.geocode({address:consulta, componentRestrictions:{country:"BR"}}),
+          new Promise((_, rejeitar) => setTimeout(() => rejeitar(new Error("TIMEOUT_GEOCODIFICACAO")), 8000))
+        ]);
         const resultado = resposta.results && resposta.results[0];
         if (!resultado || !resultado.geometry || !resultado.geometry.location) {
           document.getElementById("statusEndereco").textContent = "Rua confirmada, mas o Google não encontrou a posição exata desse número.";
@@ -1461,7 +1464,8 @@
       document.getElementById("envolvidosAdicionais").replaceChildren();
       pessoasSalvas.envolvidos.forEach(p => adicionarPessoa("envolvido",p));
       if (!pessoasSalvas.envolvidos.length) adicionarPessoa("envolvido");
-      if (googleAddressElement) googleAddressElement.value = x.endereco_formatado || x.endereco || "";
+      const enderecoGoogleEdicao = document.getElementById("enderecoGoogle");
+      if (enderecoGoogleEdicao) enderecoGoogleEdicao.value = x.endereco_formatado || x.endereco || "";
       data.dispatchEvent(new Event("change"));
       horaInicial.dispatchEvent(new Event("change"));
       statusAtendimento.dispatchEvent(new Event("change"));
@@ -1475,7 +1479,15 @@
 
     formulario.addEventListener("submit", async (evento) => {
       evento.preventDefault();
-      if (document.getElementById("numeroEndereco").value.trim()) await atualizarCoordenadasPeloNumero();
+      const botaoSalvar = formulario.querySelector('button[type="submit"]');
+      const textoOriginalBotao = botaoSalvar.textContent;
+      if (document.getElementById("numeroEndereco").value.trim()) {
+        botaoSalvar.disabled = true;
+        botaoSalvar.textContent = "Validando endereço...";
+        await atualizarCoordenadasPeloNumero();
+        botaoSalvar.disabled = false;
+        botaoSalvar.textContent = textoOriginalBotao;
+      }
       const tipoEscolhido = catalogos.tipos.find(t => t.nome === document.getElementById("ocorrencia").value);
       if (!tipoEscolhido) { alert("Selecione um Tipo de Ocorrência válido na lista."); return; }
       const subtipoDigitado = document.getElementById("crime").value;
@@ -1492,7 +1504,6 @@
       if (!document.getElementById("endereco").value || !document.getElementById("latitude").value || !document.getElementById("longitude").value) { alert("Pesquise o endereço e selecione uma sugestão do Google Maps antes de salvar."); return; }
       if (importacaoPdfPendente && !confirm("Você conferiu os dados preenchidos pelo PDF, corrigiu o que for necessário e confirma que deseja salvar esta ocorrência?")) return;
 
-      const botaoSalvar = formulario.querySelector('button[type="submit"]');
       botaoSalvar.disabled = true;
       botaoSalvar.textContent = "Salvando...";
 
