@@ -1045,22 +1045,49 @@
     }
     function resumirRelatoPdf(relato) {
       const limpo = String(relato || "")
-        .replace(/Era o que tinha a relatar\.?/gi, "")
+        .replace(/(?:Era o que tinha|Era o que havia|Diante dos fatos, era o que havia) a relatar\.?/gi, "")
         .replace(/\s+/g, " ")
         .trim();
-      if (limpo.length <= 1400) return limpo;
+      if (limpo.length <= 950) return limpo;
       const frases = limpo.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [limpo];
-      const termosImportantes = ["VITIMA","INFRATOR","AUTOR","RELATOU","INFORMOU","CONSTAT","AMEAC","AGRESS","LESAO","DANO","APREEND","ARMA","DROGA","CONDUZ","PRISAO","ALGEMA","PROVIDENCIA","ORIENTOU"];
+      const termosImportantes = ["VITIMA","INFRATOR","AUTOR","RELATOU","INFORMOU","CONSTAT","AMEAC","AGRESS","LESAO","DANO","PATRIMON","CELULAR","ARREMESS","DESTRUI","EVADIU","APREEND","ARMA","DROGA","CONDUZ","PRISAO","ALGEMA","PROVIDENCIA","ORIENTOU","MEDIDA PROTETIVA"];
       const escolhidas = new Set(frases.slice(0,2).map((_,indice)=>indice));
       frases.map((frase,indice) => ({indice,pontos:termosImportantes.filter(termo=>textoComparavel(frase).includes(termo)).length}))
         .sort((a,b)=>b.pontos-a.pontos || a.indice-b.indice)
-        .slice(0,4)
+        .slice(0,3)
         .forEach(item=>escolhidas.add(item.indice));
+      const indiceProvidencia = frases.findLastIndex(frase => /ORIENTA|PROVID[ÊE]NCIA|DELEGACIA|CONDUZID|APRESENTAD/i.test(frase));
+      if (indiceProvidencia >= 0) escolhidas.add(indiceProvidencia);
       let resumo = "";
       frases.filter((_,indice)=>escolhidas.has(indice)).forEach(frase => {
-        if (!resumo || (resumo + " " + frase).length <= 1300) resumo += (resumo ? " " : "") + frase.trim();
+        if (!resumo || (resumo + " " + frase).length <= 950) resumo += (resumo ? " " : "") + frase.trim();
       });
       return resumo;
+    }
+    function limparRelatoPdfBruto(valor) {
+      const linhasIgnoradas = [
+        /^Impresso por:/i,
+        /^Data de Impress[ãa]o:/i,
+        /^C[óo]digo Verificador/i,
+        /^GOVERNO DO ESTADO DE RORAIMA$/i,
+        /^POL[ÍI]CIA MILITAR$/i,
+        /^\d+[ªº]\s+COMPANHIA DO \d+[º°]\s+BATALH[ÃA]O/i,
+        /^BOLETIM DE OCORR[ÊE]NCIA/i,
+        /^N[º°]:\s*\d+\/\d+/i,
+        /^PPe\s*-\s*Procedimentos Policiais/i
+      ];
+      return String(valor || "").split(/\r?\n/)
+        .map(linha=>linha.trim())
+        .filter(linha=>linha && !linhasIgnoradas.some(padrao=>padrao.test(linha)))
+        .join(" ")
+        .replace(/\bP[áa]gina\s+\d+\s+de\s+\d+\b/gi, " ")
+        .replace(/\bPP\s*Pg\.\s*\d+\/\d+\b/gi, " ")
+        .replace(/\s+/g," ")
+        .trim();
+    }
+    function ocultarNomesEmMaiusculas(relato) {
+      const preservados = new Set(["BOA VISTA","MARIA DA PENHA","POLÍCIA MILITAR","POLICIA MILITAR"]);
+      return String(relato || "").replace(/\b[A-ZÁÉÍÓÚÂÊÔÃÕÇ]{2,}(?:\s+[A-ZÁÉÍÓÚÂÊÔÃÕÇ]{2,}){1,4}\b/gu, nome => preservados.has(nome) ? nome : "[PESSOA ENVOLVIDA]");
     }
     function melhorItemCatalogo(itens, referencia, tipoPrincipal = false) {
       const alvo = textoComparavel(referencia);
@@ -1123,7 +1150,8 @@
       const objetos = texto.match(/OBJETO\(S\) ENVOLVIDO\(S\)\s*([\s\S]*?)(?=RELATO\/HIST[ÓO]RICO)/i);
       const local = texto.match(/Local do Fato[\s\S]*?Munic[íi]pio:\s*([^\n]+)[\s\S]*?Bairro:\s*([^\n]+)[\s\S]*?Logradouro:\s*([^\n]*?)(?:\s+N[º°]:\s*([^\n]+))?\n/i);
       const pessoas = extrairPessoasPdf(texto);
-      let relato = historico ? historico[1].replace(/\s+/g," ").trim() : "";
+      let relato = historico ? limparRelatoPdfBruto(historico[1]) : "";
+      relato = ocultarNomesEmMaiusculas(relato);
       pessoas.vitimas.forEach(p => { if (p.nome) relato = relato.replace(new RegExp(p.nome.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"gi"),"A VÍTIMA"); });
       pessoas.infratores.forEach(p => { if (p.nome) relato = relato.replace(new RegExp(p.nome.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"gi"),"O INFRATOR"); });
       pessoas.envolvidos.forEach(p => { if (p.nome) relato = relato.replace(new RegExp(p.nome.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"gi"),"O ENVOLVIDO"); });
