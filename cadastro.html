@@ -1043,6 +1043,25 @@
       if (s.startsWith("MASC")) return "M";
       return s ? "Outro" : "";
     }
+    function resumirRelatoPdf(relato) {
+      const limpo = String(relato || "")
+        .replace(/Era o que tinha a relatar\.?/gi, "")
+        .replace(/\s+/g, " ")
+        .trim();
+      if (limpo.length <= 1400) return limpo;
+      const frases = limpo.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [limpo];
+      const termosImportantes = ["VITIMA","INFRATOR","AUTOR","RELATOU","INFORMOU","CONSTAT","AMEAC","AGRESS","LESAO","DANO","APREEND","ARMA","DROGA","CONDUZ","PRISAO","ALGEMA","PROVIDENCIA","ORIENTOU"];
+      const escolhidas = new Set(frases.slice(0,2).map((_,indice)=>indice));
+      frases.map((frase,indice) => ({indice,pontos:termosImportantes.filter(termo=>textoComparavel(frase).includes(termo)).length}))
+        .sort((a,b)=>b.pontos-a.pontos || a.indice-b.indice)
+        .slice(0,4)
+        .forEach(item=>escolhidas.add(item.indice));
+      let resumo = "";
+      frases.filter((_,indice)=>escolhidas.has(indice)).forEach(frase => {
+        if (!resumo || (resumo + " " + frase).length <= 1300) resumo += (resumo ? " " : "") + frase.trim();
+      });
+      return resumo;
+    }
     function melhorItemCatalogo(itens, referencia, tipoPrincipal = false) {
       const alvo = textoComparavel(referencia);
       let melhor = null;
@@ -1090,8 +1109,6 @@
         else if (papel.includes("AUTOR") || papel.includes("INFRATOR")) pessoas.infratores.push(pessoa);
         else pessoas.envolvidos.push(pessoa);
       }
-      if (pessoas.vitimas.length || pessoas.infratores.length) pessoas.envolvidos = [];
-      else pessoas.envolvidos = pessoas.envolvidos.filter(pessoa => !pessoa.policialMilitar);
       return pessoas;
     }
     function extrairDadosOcorrenciaPdf(texto) {
@@ -1107,9 +1124,12 @@
       const local = texto.match(/Local do Fato[\s\S]*?Munic[íi]pio:\s*([^\n]+)[\s\S]*?Bairro:\s*([^\n]+)[\s\S]*?Logradouro:\s*([^\n]*?)(?:\s+N[º°]:\s*([^\n]+))?\n/i);
       const pessoas = extrairPessoasPdf(texto);
       let relato = historico ? historico[1].replace(/\s+/g," ").trim() : "";
-      [...pessoas.vitimas,...pessoas.infratores,...pessoas.envolvidos].forEach(p => {
-        if (p.nome) relato = relato.replace(new RegExp(p.nome.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"gi"),"[PESSOA ENVOLVIDA]");
-      });
+      pessoas.vitimas.forEach(p => { if (p.nome) relato = relato.replace(new RegExp(p.nome.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"gi"),"A VÍTIMA"); });
+      pessoas.infratores.forEach(p => { if (p.nome) relato = relato.replace(new RegExp(p.nome.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"gi"),"O INFRATOR"); });
+      pessoas.envolvidos.forEach(p => { if (p.nome) relato = relato.replace(new RegExp(p.nome.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"gi"),"O ENVOLVIDO"); });
+      relato = resumirRelatoPdf(relato);
+      if (pessoas.vitimas.length || pessoas.infratores.length) pessoas.envolvidos = [];
+      else pessoas.envolvidos = pessoas.envolvidos.filter(pessoa => !pessoa.policialMilitar);
       return {
         numeroBo: bo ? String(Number(bo[1])) : "",
         data: inicio ? dataIso(inicio[1]) : "",
@@ -1121,8 +1141,40 @@
         historico: relato,
         materialidade: objetos && !/Nenhum Objeto Informado/i.test(objetos[1]) ? objetos[1].replace(/\s+/g," ").trim() : "",
         enderecoReferencia: local ? `${local[3].trim()}${local[4] ? ", nº " + local[4].trim() : ""} - ${local[2].trim()}` : "",
+        logradouroPdf: local ? local[3].trim() : "",
+        numeroPdf: local && local[4] ? local[4].trim() : "",
+        bairroPdf: local ? local[2].trim() : "",
         pessoas
       };
+    }
+    async function preencherEnderecoPdfAutomatico(dados) {
+      if (!dados.logradouroPdf) return false;
+      for (let tentativa=0; tentativa<16 && !geocodificadorGoogle; tentativa++) await new Promise(resolve=>setTimeout(resolve,250));
+      if (!geocodificadorGoogle) return false;
+      const consulta = [dados.logradouroPdf + (dados.numeroPdf ? ", " + dados.numeroPdf : ""), dados.bairroPdf, "Boa Vista", "RR", "Brasil"].filter(Boolean).join(", ");
+      try {
+        const resposta = await Promise.race([
+          geocodificadorGoogle.geocode({address:consulta, componentRestrictions:{country:"BR"}}),
+          new Promise((_,rejeitar)=>setTimeout(()=>rejeitar(new Error("Tempo limite da busca de endereço.")),8000))
+        ]);
+        const resultado = resposta.results && resposta.results[0];
+        if (!resultado || resultado.partial_match || !resultado.geometry || !resultado.geometry.location) return false;
+        const componentes = resultado.address_components || [];
+        const municipio = componenteEndereco(componentes,["locality","administrative_area_level_2"]);
+        const rotaGoogle = componenteEndereco(componentes,["route"]);
+        const palavrasPdf = textoComparavel(dados.logradouroPdf).split(" ").filter(p=>p.length>2 && !["RUA","AVENIDA","AV"].includes(p));
+        const rotaNormalizada = textoComparavel(rotaGoogle);
+        const correspondentes = palavrasPdf.filter(p=>rotaNormalizada.includes(p)).length;
+        const correspondenciaSegura = palavrasPdf.length ? correspondentes / palavrasPdf.length >= 0.65 : false;
+        if (textoComparavel(municipio) !== "BOA VISTA" || !correspondenciaSegura) return false;
+        document.getElementById("numeroEndereco").value = "";
+        await selecionarEnderecoGoogle({place:resultado});
+        document.getElementById("numeroEndereco").value = dados.numeroPdf || "";
+        return Boolean(document.getElementById("latitude").value && document.getElementById("longitude").value);
+      } catch (erro) {
+        console.warn("Endereço do PDF não confirmado automaticamente.", erro);
+        return false;
+      }
     }
     async function lerTextoPdfLocal(arquivo) {
       const pdfjsLib = await import(PDFJS_URL);
@@ -1183,8 +1235,10 @@
       const relato = textoComparavel(dados.historico);
       definirResultadoImportado("resultadoConducao","numeroConduzidos", relato.includes("CONDUZ") && dados.pessoas.infratores.length ? dados.pessoas.infratores.length : 0);
       definirResultadoImportado("resultadoOrientacao","orientacoes", relato.includes("ORIENTOU") || relato.includes("ORIENTADA") ? 1 : 0);
+      const enderecoAutomatico = await preencherEnderecoPdfAutomatico(dados);
       data.dispatchEvent(new Event("change"));
       horaInicial.dispatchEvent(new Event("change"));
+      return enderecoAutomatico;
     }
     arquivoOcorrenciaPdf.addEventListener("change", async () => {
       const arquivo = arquivoOcorrenciaPdf.files && arquivoOcorrenciaPdf.files[0];
@@ -1199,12 +1253,12 @@
         if (texto.trim().length < 150) throw new Error("Não foi possível encontrar texto suficiente. O PDF pode estar digitalizado como imagem.");
         const dados = extrairDadosOcorrenciaPdf(texto);
         if (!dados.numeroBo && !dados.data && !dados.historico) throw new Error("O documento não corresponde ao modelo de ocorrência reconhecido pelo sistema.");
-        await preencherRascunhoPdf(dados);
+        const enderecoAutomatico = await preencherRascunhoPdf(dados);
         importacaoPdfPendente = true;
         const totalPessoas = dados.pessoas.vitimas.length + dados.pessoas.infratores.length + dados.pessoas.envolvidos.length;
-        const pendencias = [!document.getElementById("ocorrencia").value && "tipo de ocorrência", !document.getElementById("comandante").value && "comandante", "endereço no Google Maps"].filter(Boolean);
+        const pendencias = [!document.getElementById("ocorrencia").value && "tipo de ocorrência", !document.getElementById("comandante").value && "comandante", !enderecoAutomatico && "endereço no Google Maps"].filter(Boolean);
         statusImportacaoPdf.className = "status-importacao sucesso";
-        statusImportacaoPdf.innerHTML = `<strong>Rascunho preenchido.</strong> ${totalPessoas} pessoa(s) identificada(s). Confira todos os campos antes de salvar.<br><strong>Endereço informado no PDF:</strong> ${escaparHtml(dados.enderecoReferencia || "não identificado")}.<br><strong>Pendente de conferência:</strong> ${escaparHtml(pendencias.join(", "))}. O PDF já foi descartado da memória.`;
+        statusImportacaoPdf.innerHTML = `<strong>Rascunho preenchido.</strong> ${totalPessoas} pessoa(s) identificada(s). Confira todos os campos antes de salvar.<br><strong>Endereço informado no PDF:</strong> ${escaparHtml(dados.enderecoReferencia || "não identificado")}.<br><strong>Localização:</strong> ${enderecoAutomatico ? "endereço confirmado automaticamente no Google Maps; confira antes de salvar" : "não confirmada automaticamente; pesquise o endereço manualmente"}.<br><strong>Pendente de conferência:</strong> ${escaparHtml(pendencias.join(", ") || "somente a revisão geral")}. O PDF já foi descartado da memória.`;
         formulario.scrollIntoView({behavior:"smooth",block:"start"});
       } catch (erro) {
         console.error(erro);
