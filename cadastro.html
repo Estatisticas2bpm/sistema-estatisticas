@@ -185,6 +185,12 @@
 
     .campo-com-acao { display: flex; gap: 8px; align-items: stretch; }
     .campo-com-acao input { flex: 1; }
+    .resultados-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; }
+    .resultado-opcao { display:flex; align-items:center; gap:9px; min-height:46px; padding:10px 12px; border:1px solid #cbd5e1; border-radius:10px; background:#f8fafc; cursor:pointer; font-weight:700; color:#334155; }
+    .resultado-opcao:has(input:checked) { border-color:#2563eb; background:#eff6ff; color:#1d4ed8; }
+    .resultado-opcao input { width:18px; height:18px; margin:0; flex:none; accent-color:#2563eb; }
+    .resultado-quantidades { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; margin-top:14px; }
+    .resultado-quantidades > [hidden] { display:none !important; }
     #enderecoAutocomplete, gmp-place-autocomplete { display: block; width: 100%; }
     #enderecoAutocomplete { position: relative; }
     #enderecoSugestoes { position:absolute; z-index:1000; left:0; right:0; top:100%; background:#fff; border:1px solid #cbd5e1; border-radius:0 0 10px 10px; box-shadow:0 10px 20px rgba(15,23,42,.14); overflow:hidden; }
@@ -208,6 +214,8 @@
       .grade { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .campo.triplo { grid-column: span 2; }
       .pessoa-adicional { grid-template-columns:1fr 1fr; }
+      .resultados-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .resultado-quantidades { grid-template-columns:repeat(2,minmax(0,1fr)); }
     }
 
     @media (max-width: 600px) {
@@ -215,6 +223,7 @@
       .topo, .acoes { flex-direction: column; }
       .grade { grid-template-columns: 1fr; }
       .campo.duplo, .campo.triplo, .campo.inteiro { grid-column: auto; }
+      .resultados-grid, .resultado-quantidades { grid-template-columns:1fr; }
       .acoes a, .acoes button { width: 100%; text-align: center; }
       .cabecalho-pessoas { align-items:flex-start; flex-direction:column; }
       .cabecalho-pessoas button { width:100%; }
@@ -318,39 +327,23 @@
           </div>
 
           <div class="campo duplo"><label for="crime">Subtipo da Ocorrência</label><input id="crime" type="text" list="listaSubtipos" autocomplete="off" placeholder="Selecione primeiro o tipo de ocorrência"><datalist id="listaSubtipos"></datalist><small id="fundamentoLegal" style="color:#64748b"></small></div>
-          <div class="campo duplo"><label for="detalhes">Detalhes</label><input id="detalhes" name="detalhes" type="text" placeholder="Informações complementares"></div>
-
-          <div class="campo">
-            <label for="numeroPrisoes">Nº de prisões</label>
-            <input id="numeroPrisoes" name="numeroPrisoes" type="number" min="0">
-          </div>
-
-          <div class="campo">
-            <label for="providencia1">Providência 1</label>
-            <select id="providencia1" name="providencia1">
-              <option value="">Selecione</option>
-              <option>PRISÃO</option>
-              <option>CONDUÇÃO</option>
-              <option>ORIENTAÇÃO</option>
-              <option>OUTROS</option>
-              <option>NI — Não Informado</option>
-            </select>
-          </div>
-
-          <div class="campo"><label for="numeroConduzidos">Nº de conduzidos</label><input id="numeroConduzidos" name="numeroConduzidos" type="number" min="0"></div>
-          <div class="campo"><label for="orientacoes">Nº de orientações</label><input id="orientacoes" type="number" min="0"></div>
-          <div class="campo"><label for="veiculosRecuperados">Veículos recuperados</label><input id="veiculosRecuperados" type="number" min="0"></div>
-
-          <div class="campo">
-            <label for="providencia2">Providência 2</label>
-            <select id="providencia2" name="providencia2">
-              <option value="">Selecione</option>
-              <option>PRISÃO</option>
-              <option>CONDUÇÃO</option>
-              <option>ORIENTAÇÃO</option>
-              <option>OUTROS</option>
-              <option>NI — Não Informado</option>
-            </select>
+          <div class="campo inteiro">
+            <label>Resultados do atendimento</label>
+            <div class="resultados-grid">
+              <label class="resultado-opcao"><input id="resultadoPrisao" type="checkbox"> Prisão</label>
+              <label class="resultado-opcao"><input id="resultadoConducao" type="checkbox"> Condução</label>
+              <label class="resultado-opcao"><input id="resultadoOrientacao" type="checkbox"> Orientação</label>
+              <label class="resultado-opcao"><input id="resultadoVeiculo" type="checkbox"> Veículo recuperado</label>
+              <label class="resultado-opcao"><input id="resultadoOutro" type="checkbox"> Outro resultado</label>
+            </div>
+            <div class="resultado-quantidades">
+              <div class="campo" id="campoQtdPrisao" hidden><label for="numeroPrisoes">Quantidade de prisões</label><input id="numeroPrisoes" type="number" min="1"></div>
+              <div class="campo" id="campoQtdConducao" hidden><label for="numeroConduzidos">Quantidade de conduzidos</label><input id="numeroConduzidos" type="number" min="1"></div>
+              <div class="campo" id="campoQtdOrientacao" hidden><label for="orientacoes">Quantidade de orientações</label><input id="orientacoes" type="number" min="1"></div>
+              <div class="campo" id="campoQtdVeiculo" hidden><label for="veiculosRecuperados">Quantidade de veículos</label><input id="veiculosRecuperados" type="number" min="1"></div>
+              <div class="campo inteiro" id="campoOutroResultado" hidden><label for="outroResultadoDescricao">Descrição do outro resultado</label><input id="outroResultadoDescricao" type="text" maxlength="200" placeholder="Descreva brevemente o resultado"></div>
+            </div>
+            <small style="color:#64748b">Marque somente os resultados que ocorreram neste atendimento.</small>
           </div>
 
         </div>
@@ -791,6 +784,47 @@
     });
     document.getElementById("ocorrencia").addEventListener("input", atualizarSubtipos);
     document.getElementById("ocorrencia").addEventListener("change", atualizarSubtipos);
+    const configuracaoResultados = [
+      ["resultadoPrisao","campoQtdPrisao","numeroPrisoes"],
+      ["resultadoConducao","campoQtdConducao","numeroConduzidos"],
+      ["resultadoOrientacao","campoQtdOrientacao","orientacoes"],
+      ["resultadoVeiculo","campoQtdVeiculo","veiculosRecuperados"],
+      ["resultadoOutro","campoOutroResultado","outroResultadoDescricao"]
+    ];
+    function atualizarCampoResultado(checkId, campoId, entradaId, limpar) {
+      const marcado = document.getElementById(checkId).checked;
+      document.getElementById(campoId).hidden = !marcado;
+      const entrada = document.getElementById(entradaId);
+      entrada.required = marcado;
+      if (marcado && entrada.type === "number" && !entrada.value) entrada.value = "1";
+      if (!marcado && limpar) entrada.value = "";
+    }
+    configuracaoResultados.forEach(([checkId,campoId,entradaId]) => {
+      document.getElementById(checkId).addEventListener("change", () => atualizarCampoResultado(checkId,campoId,entradaId,true));
+    });
+    function marcarResultadosExistentes(registro) {
+      const providencias = [registro.providencia_1,registro.providencia_2].filter(Boolean);
+      const definicoes = [
+        ["resultadoPrisao","campoQtdPrisao","numeroPrisoes",Number(registro.numero_prisoes)>0 || providencias.includes("PRISÃO")],
+        ["resultadoConducao","campoQtdConducao","numeroConduzidos",Number(registro.numero_conduzidos)>0 || providencias.includes("CONDUÇÃO")],
+        ["resultadoOrientacao","campoQtdOrientacao","orientacoes",Number(registro.orientacoes)>0 || providencias.includes("ORIENTAÇÃO")],
+        ["resultadoVeiculo","campoQtdVeiculo","veiculosRecuperados",Number(registro.veiculos_recuperados)>0],
+        ["resultadoOutro","campoOutroResultado","outroResultadoDescricao",providencias.includes("OUTROS") || Boolean(registro.detalhes)]
+      ];
+      definicoes.forEach(([checkId,campoId,entradaId,marcado]) => {
+        document.getElementById(checkId).checked = marcado;
+        if (entradaId === "outroResultadoDescricao" && marcado) document.getElementById(entradaId).value = registro.detalhes || "OUTRO RESULTADO";
+        atualizarCampoResultado(checkId,campoId,entradaId,false);
+      });
+    }
+    function providenciasDosResultados() {
+      const lista = [];
+      if (document.getElementById("resultadoPrisao").checked) lista.push("PRISÃO");
+      if (document.getElementById("resultadoConducao").checked) lista.push("CONDUÇÃO");
+      if (document.getElementById("resultadoOrientacao").checked) lista.push("ORIENTAÇÃO");
+      if (document.getElementById("resultadoOutro").checked) lista.push("OUTROS");
+      return lista;
+    }
     const modalTipoOcorrencia = document.getElementById("modalTipoOcorrencia");
     document.getElementById("abrirNovoTipoOcorrencia").addEventListener("click", function() {
       document.getElementById("novoTipoOcorrencia").value = normalizarCatalogo(document.getElementById("ocorrencia").value);
@@ -1056,8 +1090,9 @@
       const x = resposta.data;
       const pessoasSalvas = separarPessoas(x.observacao_final);
       x.observacao_final = pessoasSalvas.texto;
-      const mapa = {data_ocorrencia:"data",status_atendimento:"statusAtendimento",motivo_repressao:"motivoRepressao",municipio:"municipio",vtr:"vtr",tipo_registro:"tipoRegistro",numero_bo:"numeroBo",hora_inicial:"horaInicial",hora_final:"horaFinal",ocorrencia:"ocorrencia",crime:"crime",detalhes:"detalhes",numero_prisoes:"numeroPrisoes",providencia_1:"providencia1",numero_conduzidos:"numeroConduzidos",orientacoes:"orientacoes",veiculos_recuperados:"veiculosRecuperados",providencia_2:"providencia2",endereco:"endereco",numero_endereco:"numeroEndereco",bairro:"bairro",local_entrega:"localEntrega",vitima_nacionalidade:"nacVitima",vitima_sexo:"sexoVitima",vitima_idade:"idadeVitima",infrator_nacionalidade:"nacInfrator",infrator_sexo:"sexoInfrator",infrator_idade:"idadeInfrator",comandante:"comandante",historico_resumido:"mo",materialidade:"materialidade",observacao:"observacao1",entorpecentes:"entorpecentes",maconha:"maconha",cocaina:"cocaina",pasta_base:"pastaBase",crack:"crack",skank:"skank",quantidade_armas:"quantArmas",quantidade_arma_branca:"quantArmaBranca",arma_branca:"armaBranca",armas:"armas",quantidade_municoes:"quantMunicoes",municoes:"municoes",veiculos_restricao:"veiculosRestricao",foragidos:"foragidos",disparo:"disparo",auto_resistencia:"autoResistencia",quantidade_autos_infracao:"quantAutoInfracao",auto_infracao:"autoInfracao",balanca_precisao:"balanca",observacao_final:"observacaoFinal",latitude:"latitude",longitude:"longitude",endereco_formatado:"enderecoFormatado"};
+      const mapa = {data_ocorrencia:"data",status_atendimento:"statusAtendimento",motivo_repressao:"motivoRepressao",municipio:"municipio",vtr:"vtr",tipo_registro:"tipoRegistro",numero_bo:"numeroBo",hora_inicial:"horaInicial",hora_final:"horaFinal",ocorrencia:"ocorrencia",crime:"crime",numero_prisoes:"numeroPrisoes",numero_conduzidos:"numeroConduzidos",orientacoes:"orientacoes",veiculos_recuperados:"veiculosRecuperados",endereco:"endereco",numero_endereco:"numeroEndereco",bairro:"bairro",local_entrega:"localEntrega",vitima_nacionalidade:"nacVitima",vitima_sexo:"sexoVitima",vitima_idade:"idadeVitima",infrator_nacionalidade:"nacInfrator",infrator_sexo:"sexoInfrator",infrator_idade:"idadeInfrator",comandante:"comandante",historico_resumido:"mo",materialidade:"materialidade",observacao:"observacao1",entorpecentes:"entorpecentes",maconha:"maconha",cocaina:"cocaina",pasta_base:"pastaBase",crack:"crack",skank:"skank",quantidade_armas:"quantArmas",quantidade_arma_branca:"quantArmaBranca",arma_branca:"armaBranca",armas:"armas",quantidade_municoes:"quantMunicoes",municoes:"municoes",veiculos_restricao:"veiculosRestricao",foragidos:"foragidos",disparo:"disparo",auto_resistencia:"autoResistencia",quantidade_autos_infracao:"quantAutoInfracao",auto_infracao:"autoInfracao",balanca_precisao:"balanca",observacao_final:"observacaoFinal",latitude:"latitude",longitude:"longitude",endereco_formatado:"enderecoFormatado"};
       Object.keys(mapa).forEach(k => definirCampo(mapa[k],x[k]));
+      marcarResultadosExistentes(x);
       atualizarSubtipos();
       definirCampo("crime",x.crime);
       pessoasSalvas.vitimas.forEach(p => adicionarPessoa("vitima",p));
@@ -1094,6 +1129,7 @@
       botaoSalvar.textContent = "Salvando...";
 
       try {
+        const providenciasSelecionadas = providenciasDosResultados();
         const registro = {
           data_ocorrencia: document.getElementById("data").value,
           status_atendimento: statusAtendimento.value,
@@ -1107,13 +1143,13 @@
 
           ocorrencia: document.getElementById("ocorrencia").value.trim(),
           crime: document.getElementById("crime").value || null,
-          detalhes: document.getElementById("detalhes").value || null,
-          numero_prisoes: document.getElementById("numeroPrisoes").value || null,
-          providencia_1: tratarNI(document.getElementById("providencia1").value),
-          numero_conduzidos: document.getElementById("numeroConduzidos").value || null,
-          orientacoes: document.getElementById("orientacoes").value || 0,
-          veiculos_recuperados: document.getElementById("veiculosRecuperados").value || 0,
-          providencia_2: tratarNI(document.getElementById("providencia2").value),
+          detalhes: document.getElementById("resultadoOutro").checked ? document.getElementById("outroResultadoDescricao").value.trim() || null : null,
+          numero_prisoes: document.getElementById("resultadoPrisao").checked ? document.getElementById("numeroPrisoes").value : null,
+          providencia_1: providenciasSelecionadas[0] || null,
+          numero_conduzidos: document.getElementById("resultadoConducao").checked ? document.getElementById("numeroConduzidos").value : null,
+          orientacoes: document.getElementById("resultadoOrientacao").checked ? document.getElementById("orientacoes").value : 0,
+          veiculos_recuperados: document.getElementById("resultadoVeiculo").checked ? document.getElementById("veiculosRecuperados").value : 0,
+          providencia_2: providenciasSelecionadas[1] || null,
           endereco: document.getElementById("endereco").value || null,
           numero_endereco: document.getElementById("numeroEndereco").value || null,
           bairro: document.getElementById("bairro").value || null,
