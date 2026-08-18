@@ -1193,6 +1193,61 @@
       }
       return pessoas;
     }
+    function quantidadeObjetoPdf(descricao, padrao) {
+      const trecho = String(descricao || "");
+      const achado = trecho.match(new RegExp("(\\d{1,4})\\s+(?:" + padrao + ")", "i"));
+      return achado ? Math.max(1, Number(achado[1])) : 1;
+    }
+    function extrairItensOperacionaisPdf(valor) {
+      const dados = {armas:[],municoes:[],entorpecentes:[],recuperados:[],armasBrancas:[],balanca:false};
+      String(valor || "").split(/(?=\bGrupo\s+)/i).forEach(bloco => {
+        if (!/^Grupo\s+/i.test(bloco)) return;
+        const grupo = (bloco.match(/^Grupo\s+(.+?)\s+Subgrupo\s+/i) || [,"OUTRO"])[1].trim();
+        const subgrupo = (bloco.match(/\bSubgrupo\s+(.+?)(?=\s+Identificador\s+[ÚU]nico\b|\s+Descri[çc][ãa]o\b|\s+Situa[çc][ãa]o\b)/i) || [,""])[1].trim();
+        const descricao = (bloco.match(/\bDescri[çc][ãa]o\s+(.+?)(?=\s+Situa[çc][ãa]o\b|\s+Nome\s+Envolvido\b|$)/i) || [,subgrupo])[1].replace(/\s+/g," ").trim();
+        const situacao = (bloco.match(/\bSitua[çc][ãa]o\s+(.+?)(?=\s+Nome\s+Envolvido\b|$)/i) || [,""])[1];
+        const chave = textoComparavel([grupo,subgrupo,descricao].join(" "));
+        const calibre = (descricao.match(/(?:CALIBRE|CAL\.?)[\s:]*(\.?\d{1,3}(?:\s*MM)?|12|20|28|32|36)/i) || subgrupo.match(/(?:CALIBRE|CAL\.?)[\s:]*(\.?\d{1,3}(?:\s*MM)?|12|20|28|32|36)/i) || [])[1] || null;
+        if (chave.includes("ARMA DE FOGO")) {
+          if (chave.includes("SIMULACRO") || chave.includes("REPLICA")) dados.armas.push({categoria:"SIMULACRO",quantidade:quantidadeObjetoPdf(descricao,"SIMULACRO|ARMA"),tipo:null,calibre:null,detalhes:descricao});
+          else {
+            const tipos = TIPOS_ARMA_FOGO.filter(t=>t!=="OUTRO");
+            dados.armas.push({categoria:"ARMA DE FOGO",quantidade:quantidadeObjetoPdf(descricao,"PISTOLA|REVOLVER|ESPINGARDA|FUZIL|CARABINA|SUBMETRALHADORA|GARRUCHA|ARMA"),tipo:tipos.find(t=>chave.includes(textoComparavel(t))) || "OUTRO",calibre,detalhes:descricao});
+          }
+          return;
+        }
+        if (chave.includes("MUNICAO") || chave.includes("CARTUCHO")) {
+          dados.municoes.push({quantidade:quantidadeObjetoPdf(descricao,"MUNICOES?|CARTUCHOS?"),calibre,detalhes:descricao}); return;
+        }
+        if (chave.includes("ARMA BRANCA") || /\b(FACA|CANIVETE|FACAO)\b/.test(chave)) {
+          dados.armasBrancas.push({quantidade:quantidadeObjetoPdf(descricao,"FACAS?|CANIVETES?|FACOES?"),descricao}); return;
+        }
+        const tipoDroga = TIPOS_ENTORPECENTES.filter(t=>t!=="OUTRO").find(t=>chave.includes(textoComparavel(t)));
+        if (tipoDroga || chave.includes("ENTORPECENTE") || chave.includes("DROGA")) {
+          const quantidade = Number((descricao.match(/(\d+(?:[.,]\d+)?)\s*(KG|QUILOGRAMA|G|GRAMA|UNIDADE|PORCAO)/i)||[])[1]?.replace(",",".")) || quantidadeObjetoPdf(descricao,"PORCOES?|UNIDADES?");
+          const unidadeTexto = textoComparavel((descricao.match(/\d+(?:[.,]\d+)?\s*(KG|QUILOGRAMA|G|GRAMA|UNIDADE|PORCAO)/i)||[])[1]);
+          const unidade = unidadeTexto.includes("KG") || unidadeTexto.includes("QUILOGRAMA") ? "QUILOGRAMA (kg)" : unidadeTexto === "G" || unidadeTexto.includes("GRAMA") ? "GRAMA (g)" : unidadeTexto.includes("PORCAO") ? "PORÇÃO" : "UNIDADE";
+          dados.entorpecentes.push({tipo:tipoDroga || "OUTRO",quantidade,unidade,detalhes:descricao}); return;
+        }
+        if (chave.includes("BALANCA") && chave.includes("PRECISAO")) dados.balanca = true;
+        if (!/RECUPERAD|APREENDID|ENCONTRAD/i.test(situacao)) return;
+        let tipo = "OUTRO";
+        if (chave.includes("BICICLETA ELETRICA")) tipo="BICICLETA ELÉTRICA";
+        else if (chave.includes("BICICLETA MOTORIZADA")) tipo="BICICLETA MOTORIZADA";
+        else if (chave.includes("MOTOCICLETA")) tipo="MOTOCICLETA";
+        else if (chave.includes("MOTONETA")) tipo="MOTONETA";
+        else if (chave.includes("CAMINHONETE")) tipo="CAMINHONETE";
+        else if (chave.includes("CAMINHAO")) tipo="CAMINHÃO";
+        else if (chave.includes("ONIBUS")) tipo="ÔNIBUS/MICRO-ÔNIBUS";
+        else if (chave.includes("BICICLETA")) tipo="BICICLETA";
+        else if (chave.includes("CELULAR")) tipo="CELULAR";
+        else if (chave.includes("TABLET")) tipo="TABLET";
+        else if (chave.includes("NOTEBOOK")) tipo="NOTEBOOK";
+        else if (chave.includes("VEICULO")) tipo="CARRO";
+        dados.recuperados.push({tipo,quantidade:quantidadeObjetoPdf(descricao,tipo === "OUTRO" ? ".+" : textoComparavel(tipo).replace(/ /g,"\\s+")),detalhes:descricao});
+      });
+      return dados;
+    }
     function extrairDadosOcorrenciaPdf(texto) {
       const bo = texto.match(/BOLETIM DE OCORR[ÊE]NCIA[\s\S]{0,30}?0*(\d{4,10})\s*\/\s*(20\d{2})/i)
         || texto.match(/(?:^|\s)0*(\d{4,10})\s*\/\s*(20\d{2})(?:\s|$)/m);
@@ -1205,6 +1260,7 @@
       const objetos = texto.match(/OBJETO\(S\) ENVOLVIDO\(S\)\s*([\s\S]*?)(?=RELATO\/HIST[ÓO]RICO)/i);
       const local = texto.match(/Local do Fato[\s\S]*?Munic[íi]pio:\s*([^\n]+)[\s\S]*?Bairro:\s*([^\n]+)[\s\S]*?Logradouro:\s*([^\n]*?)(?:\s+N[º°]:\s*([^\n]+))?\n/i);
       const pessoas = extrairPessoasPdf(texto);
+      const itensOperacionais = extrairItensOperacionaisPdf(objetos ? objetos[1] : "");
       let relato = historico ? limparRelatoPdfBruto(historico[1]) : "";
       relato = ocultarNomesEmMaiusculas(relato);
       pessoas.vitimas.forEach(p => { if (p.nome) relato = relato.replace(new RegExp(p.nome.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"gi"),"A VÍTIMA"); });
@@ -1227,7 +1283,13 @@
         logradouroPdf: local ? local[3].trim() : "",
         numeroPdf: local && local[4] ? local[4].trim() : "",
         bairroPdf: local ? local[2].trim() : "",
-        pessoas
+        pessoas,
+        itensOperacionais,
+        indicadores:{
+          disparo:/DISPARO(?:S)?\s+DE\s+ARMA|EFETUOU\s+DISPARO/i.test(texto),
+          autoResistencia:/AUTO\s+DE\s+RESIST[ÊE]NCIA|RESIST[ÊE]NCIA\s+[ÀA]\s+PRIS[ÃA]O/i.test(texto),
+          foragidos:(texto.match(/(\d+)\s+FORAGID[OA]S?\s+(?:CAPTURAD|LOCALIZAD)/i)||[])[1] || ""
+        }
       };
     }
     async function preencherEnderecoPdfAutomatico(dados) {
@@ -1315,6 +1377,24 @@
       document.getElementById("envolvidosAdicionais").replaceChildren();
       dados.pessoas.envolvidos.forEach(p => adicionarPessoa("envolvido",p));
       if (!dados.pessoas.envolvidos.length) adicionarPessoa("envolvido");
+      document.getElementById("armasItens").replaceChildren();
+      document.getElementById("municoesItens").replaceChildren();
+      document.getElementById("entorpecentesItens").replaceChildren();
+      document.getElementById("itensRecuperados").replaceChildren();
+      dados.itensOperacionais.armas.forEach(adicionarArmaItem);
+      dados.itensOperacionais.municoes.forEach(adicionarMunicaoItem);
+      dados.itensOperacionais.entorpecentes.forEach(adicionarEntorpecenteItem);
+      dados.itensOperacionais.recuperados.forEach(adicionarItemRecuperado);
+      atualizarListaVazia(document.getElementById("armasItens"),"Nenhuma arma ou simulacro informado.");
+      atualizarListaVazia(document.getElementById("municoesItens"),"Nenhuma munição informada.");
+      atualizarListaVazia(document.getElementById("entorpecentesItens"),"Nenhum entorpecente informado.");
+      atualizarListaVazia(document.getElementById("itensRecuperados"),"Nenhum objeto ou veículo informado.");
+      document.getElementById("quantArmaBranca").value = dados.itensOperacionais.armasBrancas.reduce((total,item)=>total+item.quantidade,0) || "";
+      document.getElementById("armaBranca").value = dados.itensOperacionais.armasBrancas.map(item=>item.descricao).join("; ");
+      document.getElementById("balanca").value = dados.itensOperacionais.balanca ? "SIM" : "";
+      document.getElementById("disparo").value = dados.indicadores.disparo ? "SIM" : "";
+      document.getElementById("autoResistencia").value = dados.indicadores.autoResistencia ? "SIM" : "";
+      document.getElementById("foragidos").value = dados.indicadores.foragidos;
       const relato = textoComparavel(dados.historico);
       definirResultadoImportado("resultadoConducao","numeroConduzidos", relato.includes("CONDUZ") && dados.pessoas.infratores.length ? dados.pessoas.infratores.length : 0);
       definirResultadoImportado("resultadoOrientacao","orientacoes", relato.includes("ORIENTOU") || relato.includes("ORIENTADA") ? 1 : 0);
@@ -1339,9 +1419,10 @@
         const enderecoAutomatico = await preencherRascunhoPdf(dados);
         importacaoPdfPendente = true;
         const totalPessoas = dados.pessoas.vitimas.length + dados.pessoas.infratores.length + dados.pessoas.envolvidos.length;
+        const totalItens = dados.itensOperacionais.armas.length + dados.itensOperacionais.municoes.length + dados.itensOperacionais.entorpecentes.length + dados.itensOperacionais.recuperados.length + dados.itensOperacionais.armasBrancas.length;
         const pendencias = [!document.getElementById("ocorrencia").value && "tipo de ocorrência", !document.getElementById("comandante").value && "comandante", !enderecoAutomatico && "endereço no Google Maps"].filter(Boolean);
         statusImportacaoPdf.className = "status-importacao sucesso";
-        statusImportacaoPdf.innerHTML = `<strong>Rascunho preenchido.</strong> ${totalPessoas} pessoa(s) identificada(s). Confira todos os campos antes de salvar.<br><strong>Endereço informado no PDF:</strong> ${escaparHtml(dados.enderecoReferencia || "não identificado")}.<br><strong>Localização:</strong> ${enderecoAutomatico ? "endereço confirmado automaticamente no Google Maps; confira antes de salvar" : "não confirmada automaticamente; pesquise o endereço manualmente"}.<br><strong>Pendente de conferência:</strong> ${escaparHtml(pendencias.join(", ") || "somente a revisão geral")}. O PDF já foi descartado da memória.`;
+        statusImportacaoPdf.innerHTML = `<strong>Rascunho preenchido.</strong> ${totalPessoas} pessoa(s) e ${totalItens} item(ns) operacional(is) identificados. Confira todos os campos antes de salvar.<br><strong>Endereço informado no PDF:</strong> ${escaparHtml(dados.enderecoReferencia || "não identificado")}.<br><strong>Localização:</strong> ${enderecoAutomatico ? "endereço confirmado automaticamente no Google Maps; confira antes de salvar" : "não confirmada automaticamente; pesquise o endereço manualmente"}.<br><strong>Pendente de conferência:</strong> ${escaparHtml(pendencias.join(", ") || "somente a revisão geral")}. O PDF já foi descartado da memória.`;
         formulario.scrollIntoView({behavior:"smooth",block:"start"});
       } catch (erro) {
         console.error(erro);
