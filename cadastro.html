@@ -636,10 +636,7 @@
               <div class="campo triplo"><label for="autoInfracao">Descrição ou números dos autos</label><input id="autoInfracao" name="autoInfracao" type="text" placeholder="Opcional"></div>
             </div>
           </div>
-          <div class="bloco-indicadores">
-            <h3>Materiais e equipamentos</h3><p>Itens operacionais que exigem indicador próprio.</p>
-            <div class="grade"><div class="campo"><label for="balanca">Balança de precisão apreendida</label><select id="balanca" name="balanca"><option value="">Selecione</option><option>NÃO</option><option>SIM</option><option>NI — Não Informado</option></select></div></div>
-          </div>
+          <input id="balanca" name="balanca" type="hidden">
 
           <div class="campo inteiro">
             <label for="observacaoFinal">Observação final</label>
@@ -1243,6 +1240,7 @@
         else if (chave.includes("CELULAR")) tipo="CELULAR";
         else if (chave.includes("TABLET")) tipo="TABLET";
         else if (chave.includes("NOTEBOOK")) tipo="NOTEBOOK";
+        else if (chave.includes("BALANCA") && chave.includes("PRECISAO")) tipo="BALANÇA DE PRECISÃO";
         else if (chave.includes("VEICULO")) tipo="CARRO";
         dados.recuperados.push({tipo,quantidade:quantidadeObjetoPdf(descricao,tipo === "OUTRO" ? ".+" : textoComparavel(tipo).replace(/ /g,"\\s+")),detalhes:descricao});
       });
@@ -1529,7 +1527,7 @@
     adicionarPessoa("envolvido");
 
     const TIPOS_ARMA_FOGO = ["PISTOLA","REVÓLVER","ESPINGARDA","FUZIL","CARABINA","SUBMETRALHADORA","GARRUCHA","ARMA ARTESANAL","OUTRO"];
-    const TIPOS_ITENS_RECUPERADOS = ["CARRO","MOTOCICLETA","MOTONETA","CAMINHONETE","CAMINHÃO","ÔNIBUS/MICRO-ÔNIBUS","BICICLETA","BICICLETA ELÉTRICA","BICICLETA MOTORIZADA","VEÍCULO ELÉTRICO","CELULAR","TABLET","NOTEBOOK","OUTRO"];
+    const TIPOS_ITENS_RECUPERADOS = ["CARRO","MOTOCICLETA","MOTONETA","CAMINHONETE","CAMINHÃO","ÔNIBUS/MICRO-ÔNIBUS","BICICLETA","BICICLETA ELÉTRICA","BICICLETA MOTORIZADA","VEÍCULO ELÉTRICO","CELULAR","TABLET","NOTEBOOK","BALANÇA DE PRECISÃO","OUTRO"];
     const TIPOS_ENTORPECENTES = ["MACONHA","COCAÍNA","PASTA BASE","CRACK","SKANK","ECSTASY","LSD","OUTRO"];
     const UNIDADES_ENTORPECENTES = ["GRAMA (g)","QUILOGRAMA (kg)","UNIDADE","PORÇÃO","OUTRO"];
     function opcoesHtml(opcoes, selecionado) {
@@ -1610,6 +1608,7 @@
       document.getElementById("municoes").value = municoesItens.map(item => [item.quantidade + " munição(ões)", item.calibre, item.detalhes].filter(Boolean).join(" ")).join("; ");
       const tiposVeiculo = new Set(TIPOS_ITENS_RECUPERADOS.slice(0,10));
       document.getElementById("veiculosRestricao").value = recuperados.filter(item=>tiposVeiculo.has(item.tipo)).reduce((total,item)=>total+item.quantidade,0) || "";
+      document.getElementById("balanca").value = recuperados.some(item=>item.tipo === "BALANÇA DE PRECISÃO") ? "SIM" : "NÃO";
       document.getElementById("entorpecentes").value = entorpecentesItens.length ? "SIM" : "NÃO";
       const camposDrogas = {"MACONHA":"maconha","COCAÍNA":"cocaina","PASTA BASE":"pastaBase","CRACK":"crack","SKANK":"skank"};
       Object.values(camposDrogas).forEach(id => document.getElementById(id).value = "");
@@ -1623,7 +1622,8 @@
       document.getElementById("entorpecentesItens").replaceChildren();
       const armasSalvas = Array.isArray(x.armas_itens) && x.armas_itens.length ? x.armas_itens : (Number(x.quantidade_armas) > 0 ? [{categoria:textoComparavel(x.armas).includes("SIMULACRO") ? "SIMULACRO" : "ARMA DE FOGO",quantidade:Number(x.quantidade_armas),tipo:"OUTRO",detalhes:x.armas || null}] : []);
       const municoesSalvas = Array.isArray(x.municoes_itens) && x.municoes_itens.length ? x.municoes_itens : (Number(x.quantidade_municoes) > 0 ? [{quantidade:Number(x.quantidade_municoes),calibre:null,detalhes:x.municoes || null}] : []);
-      const itensSalvos = Array.isArray(x.itens_recuperados) && x.itens_recuperados.length ? x.itens_recuperados : (Number(x.veiculos_restricao) > 0 ? [{tipo:"OUTRO",quantidade:Number(x.veiculos_restricao),detalhes:"Registro anterior à classificação detalhada"}] : []);
+      const itensSalvos = Array.isArray(x.itens_recuperados) && x.itens_recuperados.length ? [...x.itens_recuperados] : (Number(x.veiculos_restricao) > 0 ? [{tipo:"OUTRO",quantidade:Number(x.veiculos_restricao),detalhes:"Registro anterior à classificação detalhada"}] : []);
+      if (textoComparavel(x.balanca_precisao) === "SIM" && !itensSalvos.some(item=>item.tipo === "BALANÇA DE PRECISÃO")) itensSalvos.push({tipo:"BALANÇA DE PRECISÃO",quantidade:1,detalhes:"Registro anterior à classificação detalhada"});
       const entorpecentesSalvos = Array.isArray(x.entorpecentes_itens) && x.entorpecentes_itens.length ? x.entorpecentes_itens : [["MACONHA",x.maconha],["COCAÍNA",x.cocaina],["PASTA BASE",x.pasta_base],["CRACK",x.crack],["SKANK",x.skank]].filter(([,quantidade])=>Number(quantidade)>0).map(([tipo,quantidade])=>({tipo,quantidade:Number(quantidade),unidade:"GRAMA (g)",detalhes:"Registro anterior à classificação detalhada"}));
       armasSalvas.forEach(adicionarArmaItem);
       municoesSalvas.forEach(adicionarMunicaoItem);
