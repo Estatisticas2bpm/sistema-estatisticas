@@ -1090,6 +1090,13 @@
         .replace(/\s+/g, " ")
         .trim();
       const comparavel = textoComparavel(limpo);
+      if (comparavel.includes("DESCUMPRIMENTO") && comparavel.includes("CAUTELAR") && comparavel.includes("REEDUCAND") && comparavel.includes("DICAP")) {
+        const quantidade = /\bDOIS\s+INDIVIDUOS\b/.test(comparavel) || (limpo.match(/\bO INFRATOR\b/gi) || []).length >= 2 ? "DOIS INDIVÍDUOS" : "INDIVÍDUOS";
+        const contexto = comparavel.includes("PATRULHAMENTO") ? "DURANTE PATRULHAMENTO, " : "";
+        const suspeita = comparavel.includes("FUNDADA SUSPEITA") || comparavel.includes("ATITUDE SUSPEITA") || comparavel.includes("EVITAR") || comparavel.includes("BAIXARAM A CABECA") ? " EM ATITUDE SUSPEITA" : "";
+        const conducao = quantidade === "DOIS INDIVÍDUOS" ? "AMBOS FORAM" : "FORAM";
+        return `RESUMO: ${contexto}${quantidade}${suspeita} FORAM ABORDADOS E IDENTIFICADOS COMO REEDUCANDOS EM DESCUMPRIMENTO DE MEDIDAS CAUTELARES. APÓS CONSULTA À DICAP, ${conducao} CONDUZIDOS À UNIDADE PARA AS PROVIDÊNCIAS CABÍVEIS.`;
+      }
       if ((comparavel.includes("FURTO") || comparavel.includes("ROUBO") || comparavel.includes("SUBTRAIRAM")) && comparavel.includes("MOTOCICLETA")) {
         const modelo = (limpo.match(/motocicleta\s+([A-Z0-9ÁÉÍÓÚÂÊÔÃÕÇ/ -]{4,50}?)(?=,\s*(?:de\s+cor|cor|ano|placa)|\.)/i) || [,"MOTOCICLETA"])[1].trim().toUpperCase();
         const partes = [];
@@ -1101,8 +1108,8 @@
         return "RESUMO: " + resumo.toUpperCase();
       }
       const nucleo = limpo.replace(/^[\s\S]{0,500}?(?:relatar os seguintes fatos|relatou que|informou que)\s*:\s*/i,"");
-      const frases = nucleo.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [nucleo];
-      const termosImportantes = ["AUTOR","INFRATOR","INVADI","SUBTRAI","AMEAC","AGRESS","LESAO","DANIFIC","PATRIMON","EVADIU","APREEND","ARMA","DROGA","CONDUZ","PRISAO","LOCALIZ","RECUPER","PROVIDENCIA","ORIENTOU","MEDIDA PROTETIVA"];
+      const frases = (nucleo.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [nucleo]).filter(frase => !/USO DE ALGEMAS|ESTADO F[ÍI]SICO|INTEGRIDADE F[ÍI]SICA|FERIMENTO|ERA O QUE|IMPRESSO POR|C[ÓO]DIGO VERIFICADOR/i.test(frase));
+      const termosImportantes = ["AUTOR","INFRATOR","INVADI","SUBTRAI","AMEAC","AGRESS","LESAO","DANIFIC","PATRIMON","EVADIU","APREEND","ARMA","DROGA","CONDUZ","PRISAO","LOCALIZ","RECUPER","PROVIDENCIA","ORIENTOU","MEDIDA PROTETIVA","DESCUMPRIMENTO","CAUTELAR","ABORD","DICAP","REEDUCANDO","PATRULHAMENTO"];
       const escolhidas = new Set();
       frases.map((frase,indice) => ({indice,pontos:termosImportantes.filter(termo=>textoComparavel(frase).includes(termo)).length}))
         .sort((a,b)=>b.pontos-a.pontos || a.indice-b.indice)
