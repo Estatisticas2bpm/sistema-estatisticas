@@ -1276,9 +1276,9 @@
         }
         const tipoDroga = TIPOS_ENTORPECENTES.filter(t=>t!=="OUTRO").find(t=>chave.includes(textoComparavel(t)));
         if (tipoDroga || chave.includes("ENTORPECENTE") || chave.includes("DROGA")) {
-          const quantidade = Number((descricao.match(/(\d+(?:[.,]\d+)?)\s*(KG|QUILOGRAMA|G|GRAMA|UNIDADE|PORCAO)/i)||[])[1]?.replace(",",".")) || quantidadeObjetoPdf(descricao,"PORCOES?|UNIDADES?");
-          const unidadeTexto = textoComparavel((descricao.match(/\d+(?:[.,]\d+)?\s*(KG|QUILOGRAMA|G|GRAMA|UNIDADE|PORCAO)/i)||[])[1]);
-          const unidade = unidadeTexto.includes("KG") || unidadeTexto.includes("QUILOGRAMA") ? "QUILOGRAMA (kg)" : unidadeTexto === "G" || unidadeTexto.includes("GRAMA") ? "GRAMA (g)" : unidadeTexto.includes("PORCAO") ? "PORÇÃO" : "UNIDADE";
+          const quantidade = Number((descricao.match(/(\d+(?:[.,]\d+)?)\s*(KG|QUILOGRAMA|G|GRAMA|UNIDADE|PORCAO|INVOLUCRO)/i)||[])[1]?.replace(",",".")) || quantidadeObjetoPdf(descricao,"PORCOES?|UNIDADES?|INVOLUCROS?");
+          const unidadeTexto = textoComparavel((descricao.match(/\d+(?:[.,]\d+)?\s*(KG|QUILOGRAMA|G|GRAMA|UNIDADE|PORCAO|INVOLUCRO)/i)||[])[1]);
+          const unidade = unidadeTexto.includes("KG") || unidadeTexto.includes("QUILOGRAMA") ? "QUILOGRAMA (kg)" : unidadeTexto === "G" || unidadeTexto.includes("GRAMA") ? "GRAMA (g)" : unidadeTexto.includes("INVOLUCRO") ? "INVÓLUCRO" : unidadeTexto.includes("PORCAO") ? "PORÇÃO" : "UNIDADE";
           dados.entorpecentes.push({tipo:tipoDroga || "OUTRO",quantidade,unidade,detalhes:descricao}); return;
         }
         if (chave.includes("BALANCA") && chave.includes("PRECISAO")) dados.balanca = true;
@@ -1596,7 +1596,7 @@
     const TIPOS_ARMA_FOGO = ["PISTOLA","REVÓLVER","ESPINGARDA","FUZIL","CARABINA","SUBMETRALHADORA","GARRUCHA","ARMA ARTESANAL","OUTRO"];
     const TIPOS_ITENS_RECUPERADOS = ["CARRO","MOTOCICLETA","MOTONETA","CAMINHONETE","CAMINHÃO","ÔNIBUS/MICRO-ÔNIBUS","BICICLETA","BICICLETA ELÉTRICA","BICICLETA MOTORIZADA","VEÍCULO ELÉTRICO","CELULAR","TABLET","NOTEBOOK","BALANÇA DE PRECISÃO","OUTRO"];
     const TIPOS_ENTORPECENTES = ["MACONHA","COCAÍNA","PASTA BASE","CRACK","SKANK","ECSTASY","LSD","OUTRO"];
-    const UNIDADES_ENTORPECENTES = ["GRAMA (g)","QUILOGRAMA (kg)","UNIDADE","PORÇÃO","OUTRO"];
+    const UNIDADES_ENTORPECENTES = ["GRAMA (g)","QUILOGRAMA (kg)","UNIDADE","PORÇÃO","INVÓLUCRO","OUTRO"];
     const CATEGORIAS_BENS_SUBTRAIDOS = ["AUTOMÓVEL","MOTOCICLETA","BICICLETA","CELULAR","OUTROS"];
     function opcoesHtml(opcoes, selecionado) {
       return '<option value="">Selecione</option>' + opcoes.map(opcao => `<option${opcao === selecionado ? " selected" : ""}>${opcao}</option>`).join("");
