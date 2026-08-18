@@ -204,6 +204,19 @@
     .pessoa-adicional { grid-column:1/-1; display:grid; grid-template-columns:2fr 1fr 1fr auto; gap:14px; align-items:end; padding:14px; border:1px solid #dbe4ee; border-radius:12px; background:#f8fafc; }
     .pessoa-adicional .campo { margin:0; }
     .remover-pessoa { background:#b91c1c; width:42px; min-width:42px; padding:9px 0; }
+    .grupo-estruturado { grid-column:1/-1; padding:16px; border:1px solid #dbe4ee; border-radius:12px; background:#f8fafc; }
+    .grupo-estruturado + .grupo-estruturado { margin-top:4px; }
+    .grupo-estruturado-cabecalho { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; }
+    .grupo-estruturado-cabecalho h3 { margin:0; color:var(--azul-escuro); font-size:16px; }
+    .grupo-estruturado-acoes { display:flex; flex-wrap:wrap; gap:8px; }
+    .botao-item { padding:9px 13px; font-size:14px; }
+    .lista-itens { display:grid; gap:12px; }
+    .lista-vazia { margin:0; padding:14px; border:1px dashed #cbd5e1; border-radius:9px; color:#64748b; text-align:center; background:#fff; }
+    .item-estruturado { display:grid; grid-template-columns:1.15fr .55fr 1fr 1fr 1.7fr auto; gap:12px; align-items:end; padding:14px; border:1px solid #cbd5e1; border-radius:10px; background:#fff; }
+    .item-estruturado.municao { grid-template-columns:.7fr 1fr 2fr auto; }
+    .item-estruturado.recuperado { grid-template-columns:1.1fr .6fr 2fr auto; }
+    .item-estruturado [hidden] { display:none !important; }
+    .remover-item { background:#b91c1c; width:42px; min-width:42px; padding:10px 0; }
     .importador-pdf { margin:18px 0; padding:18px; border:1px solid #bfdbfe; border-radius:14px; background:linear-gradient(135deg,#eff6ff,#f8fafc); }
     .importador-pdf h2 { margin:0 0 6px; color:#1e3a8a; }
     .importador-pdf p { margin:5px 0; color:#475569; }
@@ -227,6 +240,7 @@
       .pessoa-adicional { grid-template-columns:1fr 1fr; }
       .resultados-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
       .resultado-quantidades { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .item-estruturado, .item-estruturado.municao, .item-estruturado.recuperado { grid-template-columns:1fr 1fr; }
     }
 
     @media (max-width: 600px) {
@@ -240,6 +254,10 @@
       .cabecalho-pessoas button { width:100%; }
       .pessoa-adicional { grid-template-columns:1fr; }
       .remover-pessoa { width:100%; }
+      .grupo-estruturado-cabecalho { align-items:flex-start; flex-direction:column; }
+      .grupo-estruturado-acoes, .grupo-estruturado-acoes button { width:100%; }
+      .item-estruturado, .item-estruturado.municao, .item-estruturado.recuperado { grid-template-columns:1fr; }
+      .remover-item { width:100%; }
     }
   </style>
 </head>
@@ -581,25 +599,32 @@
         <h2>8. Armas e munições</h2>
 
         <div class="grade">
-          <div class="campo">
-            <label for="quantArmas">Quantidade de armas</label>
-            <input id="quantArmas" name="quantArmas" type="number" min="0">
+          <div class="grupo-estruturado">
+            <div class="grupo-estruturado-cabecalho">
+              <h3>Armas de fogo e simulacros</h3>
+              <div class="grupo-estruturado-acoes">
+                <button class="botao-item" id="adicionarArmaFogo" type="button">+ Adicionar arma de fogo</button>
+                <button class="botao-item" id="adicionarSimulacro" type="button">+ Adicionar simulacro</button>
+              </div>
+            </div>
+            <div class="lista-itens" id="armasItens"><p class="lista-vazia">Nenhuma arma ou simulacro informado.</p></div>
           </div>
 
-          <div class="campo triplo"><label for="armas">Armas e simulacros</label><input id="armas" name="armas" type="text" placeholder="Tipo, marca, calibre, cor e situação"></div>
+          <input id="quantArmas" name="quantArmas" type="hidden">
+          <input id="armas" name="armas" type="hidden">
+
           <div class="campo"><label for="quantArmaBranca">Quantidade de armas brancas</label><input id="quantArmaBranca" type="number" min="0"></div>
           <div class="campo triplo"><label for="armaBranca">Armas brancas</label><input id="armaBranca" type="text" placeholder="Faca, canivete, facão..."></div>
 
-          <div class="campo">
-            <label for="quantMunicoes">Quantidade de munições</label>
-            <input id="quantMunicoes" name="quantMunicoes" type="number" min="0">
+          <div class="grupo-estruturado">
+            <div class="grupo-estruturado-cabecalho">
+              <h3>Munições apreendidas</h3>
+              <button class="botao-item" id="adicionarMunicao" type="button">+ Adicionar munição</button>
+            </div>
+            <div class="lista-itens" id="municoesItens"><p class="lista-vazia">Nenhuma munição informada.</p></div>
           </div>
-
-          <div class="campo triplo">
-            <label for="municoes">Munições</label>
-            <input id="municoes" name="municoes" type="text"
-                   placeholder="Calibre e demais detalhes">
-          </div>
+          <input id="quantMunicoes" name="quantMunicoes" type="hidden">
+          <input id="municoes" name="municoes" type="hidden">
         </div>
       </section>
 
@@ -607,10 +632,14 @@
         <h2>9. Outros indicadores operacionais</h2>
 
         <div class="grade">
-          <div class="campo">
-            <label for="veiculosRestricao">Veículos com restrição capturados</label>
-            <input id="veiculosRestricao" name="veiculosRestricao" type="number" min="0">
+          <div class="grupo-estruturado">
+            <div class="grupo-estruturado-cabecalho">
+              <h3>Objetos e veículos recuperados/apreendidos</h3>
+              <button class="botao-item" id="adicionarItemRecuperado" type="button">+ Adicionar item</button>
+            </div>
+            <div class="lista-itens" id="itensRecuperados"><p class="lista-vazia">Nenhum objeto ou veículo informado.</p></div>
           </div>
+          <input id="veiculosRestricao" name="veiculosRestricao" type="hidden">
 
           <div class="campo">
             <label for="foragidos">Foragidos</label>
@@ -1463,6 +1492,96 @@
     document.getElementById("adicionarEnvolvido").addEventListener("click", () => adicionarPessoa("envolvido"));
     adicionarPessoa("envolvido");
 
+    const TIPOS_ARMA_FOGO = ["PISTOLA","REVÓLVER","ESPINGARDA","FUZIL","CARABINA","SUBMETRALHADORA","GARRUCHA","ARMA ARTESANAL","OUTRO"];
+    const TIPOS_ITENS_RECUPERADOS = ["CARRO","MOTOCICLETA","MOTONETA","CAMINHONETE","CAMINHÃO","ÔNIBUS/MICRO-ÔNIBUS","BICICLETA","BICICLETA ELÉTRICA","BICICLETA MOTORIZADA","VEÍCULO ELÉTRICO","CELULAR","TABLET","NOTEBOOK","OUTRO"];
+    function opcoesHtml(opcoes, selecionado) {
+      return '<option value="">Selecione</option>' + opcoes.map(opcao => `<option${opcao === selecionado ? " selected" : ""}>${opcao}</option>`).join("");
+    }
+    function atualizarListaVazia(recipiente, texto) {
+      const vazio = recipiente.querySelector(".lista-vazia");
+      const temItens = recipiente.querySelector(".item-estruturado");
+      if (temItens && vazio) vazio.remove();
+      if (!temItens && !vazio) recipiente.insertAdjacentHTML("beforeend", `<p class="lista-vazia">${texto}</p>`);
+    }
+    function adicionarArmaItem(dados = {}) {
+      const recipiente = document.getElementById("armasItens");
+      const categoria = dados.categoria === "SIMULACRO" ? "SIMULACRO" : "ARMA DE FOGO";
+      const bloco = document.createElement("div");
+      bloco.className = "item-estruturado";
+      bloco.innerHTML = `<div class="campo"><label>Categoria</label><select data-item="categoria"><option>ARMA DE FOGO</option><option>SIMULACRO</option></select></div><div class="campo"><label>Quantidade</label><input data-item="quantidade" type="number" min="1" value="${Number(dados.quantidade) || 1}"></div><div class="campo tipo-arma"><label>Tipo da arma</label><select data-item="tipo">${opcoesHtml(TIPOS_ARMA_FOGO,dados.tipo)}</select></div><div class="campo calibre-arma"><label>Calibre</label><input data-item="calibre" value="${escaparHtml(dados.calibre || "")}" placeholder="Ex.: 9 mm ou .38"></div><div class="campo"><label>Detalhes/observações</label><input data-item="detalhes" value="${escaparHtml(dados.detalhes || "")}" placeholder="Informação opcional"></div><button class="remover-item" type="button" title="Remover este item">×</button>`;
+      bloco.querySelector('[data-item="categoria"]').value = categoria;
+      const atualizarCategoria = () => {
+        const simulacro = bloco.querySelector('[data-item="categoria"]').value === "SIMULACRO";
+        bloco.querySelector(".tipo-arma").hidden = simulacro;
+        bloco.querySelector(".calibre-arma").hidden = simulacro;
+        bloco.querySelector('[data-item="detalhes"]').placeholder = simulacro ? "Tipo/descrição do simulacro" : "Informação opcional";
+      };
+      bloco.querySelector('[data-item="categoria"]').addEventListener("change", atualizarCategoria);
+      bloco.querySelector(".remover-item").addEventListener("click", () => { bloco.remove(); atualizarListaVazia(recipiente,"Nenhuma arma ou simulacro informado."); });
+      recipiente.appendChild(bloco);
+      atualizarCategoria();
+      atualizarListaVazia(recipiente,"Nenhuma arma ou simulacro informado.");
+    }
+    function adicionarMunicaoItem(dados = {}) {
+      const recipiente = document.getElementById("municoesItens");
+      const bloco = document.createElement("div");
+      bloco.className = "item-estruturado municao";
+      bloco.innerHTML = `<div class="campo"><label>Quantidade</label><input data-item="quantidade" type="number" min="1" value="${Number(dados.quantidade) || 1}"></div><div class="campo"><label>Calibre</label><input data-item="calibre" value="${escaparHtml(dados.calibre || "")}" placeholder="Ex.: 9 mm ou .38"></div><div class="campo"><label>Detalhes/observações</label><input data-item="detalhes" value="${escaparHtml(dados.detalhes || "")}" placeholder="Informação opcional"></div><button class="remover-item" type="button" title="Remover esta munição">×</button>`;
+      bloco.querySelector(".remover-item").addEventListener("click", () => { bloco.remove(); atualizarListaVazia(recipiente,"Nenhuma munição informada."); });
+      recipiente.appendChild(bloco);
+      atualizarListaVazia(recipiente,"Nenhuma munição informada.");
+    }
+    function adicionarItemRecuperado(dados = {}) {
+      const recipiente = document.getElementById("itensRecuperados");
+      const bloco = document.createElement("div");
+      bloco.className = "item-estruturado recuperado";
+      bloco.innerHTML = `<div class="campo"><label>Tipo do objeto/veículo</label><select data-item="tipo">${opcoesHtml(TIPOS_ITENS_RECUPERADOS,dados.tipo)}</select></div><div class="campo"><label>Quantidade</label><input data-item="quantidade" type="number" min="1" value="${Number(dados.quantidade) || 1}"></div><div class="campo"><label>Detalhes/observações</label><input data-item="detalhes" value="${escaparHtml(dados.detalhes || "")}" placeholder="Marca, modelo, cor ou situação, se necessário"></div><button class="remover-item" type="button" title="Remover este item">×</button>`;
+      bloco.querySelector(".remover-item").addEventListener("click", () => { bloco.remove(); atualizarListaVazia(recipiente,"Nenhum objeto ou veículo informado."); });
+      recipiente.appendChild(bloco);
+      atualizarListaVazia(recipiente,"Nenhum objeto ou veículo informado.");
+    }
+    function coletarItens(recipienteId, campos) {
+      return Array.from(document.querySelectorAll(`#${recipienteId} .item-estruturado`)).map(bloco => Object.fromEntries(campos.map(campo => {
+        const valor = bloco.querySelector(`[data-item="${campo}"]`)?.value.trim() || "";
+        return [campo, campo === "quantidade" ? Number(valor) || 0 : valor || null];
+      }))).filter(item => item.quantidade > 0);
+    }
+    function coletarArmasItens() {
+      return coletarItens("armasItens",["categoria","quantidade","tipo","calibre","detalhes"]).map(item => item.categoria === "SIMULACRO" ? {...item,tipo:null,calibre:null} : item);
+    }
+    function coletarMunicoesItens() { return coletarItens("municoesItens",["quantidade","calibre","detalhes"]); }
+    function coletarItensRecuperados() { return coletarItens("itensRecuperados",["tipo","quantidade","detalhes"]); }
+    function sincronizarCamposLegadosEstruturados() {
+      const armasItens = coletarArmasItens();
+      const municoesItens = coletarMunicoesItens();
+      const recuperados = coletarItensRecuperados();
+      document.getElementById("quantArmas").value = armasItens.reduce((total,item)=>total+item.quantidade,0) || "";
+      document.getElementById("armas").value = armasItens.map(item => [item.quantidade, item.categoria === "SIMULACRO" ? "SIMULACRO" : item.tipo, item.calibre, item.detalhes].filter(Boolean).join(" ")).join("; ");
+      document.getElementById("quantMunicoes").value = municoesItens.reduce((total,item)=>total+item.quantidade,0) || "";
+      document.getElementById("municoes").value = municoesItens.map(item => [item.quantidade + " munição(ões)", item.calibre, item.detalhes].filter(Boolean).join(" ")).join("; ");
+      const tiposVeiculo = new Set(TIPOS_ITENS_RECUPERADOS.slice(0,10));
+      document.getElementById("veiculosRestricao").value = recuperados.filter(item=>tiposVeiculo.has(item.tipo)).reduce((total,item)=>total+item.quantidade,0) || "";
+      return {armasItens,municoesItens,recuperados};
+    }
+    function carregarItensEstruturados(x) {
+      document.getElementById("armasItens").replaceChildren();
+      document.getElementById("municoesItens").replaceChildren();
+      document.getElementById("itensRecuperados").replaceChildren();
+      const armasSalvas = Array.isArray(x.armas_itens) && x.armas_itens.length ? x.armas_itens : (Number(x.quantidade_armas) > 0 ? [{categoria:textoComparavel(x.armas).includes("SIMULACRO") ? "SIMULACRO" : "ARMA DE FOGO",quantidade:Number(x.quantidade_armas),tipo:"OUTRO",detalhes:x.armas || null}] : []);
+      const municoesSalvas = Array.isArray(x.municoes_itens) && x.municoes_itens.length ? x.municoes_itens : (Number(x.quantidade_municoes) > 0 ? [{quantidade:Number(x.quantidade_municoes),calibre:null,detalhes:x.municoes || null}] : []);
+      const itensSalvos = Array.isArray(x.itens_recuperados) && x.itens_recuperados.length ? x.itens_recuperados : (Number(x.veiculos_restricao) > 0 ? [{tipo:"OUTRO",quantidade:Number(x.veiculos_restricao),detalhes:"Registro anterior à classificação detalhada"}] : []);
+      armasSalvas.forEach(adicionarArmaItem);
+      municoesSalvas.forEach(adicionarMunicaoItem);
+      itensSalvos.forEach(adicionarItemRecuperado);
+      atualizarListaVazia(document.getElementById("armasItens"),"Nenhuma arma ou simulacro informado.");
+      atualizarListaVazia(document.getElementById("municoesItens"),"Nenhuma munição informada.");
+      atualizarListaVazia(document.getElementById("itensRecuperados"),"Nenhum objeto ou veículo informado.");
+    }
+    document.getElementById("adicionarArmaFogo").addEventListener("click",()=>adicionarArmaItem({categoria:"ARMA DE FOGO"}));
+    document.getElementById("adicionarSimulacro").addEventListener("click",()=>adicionarArmaItem({categoria:"SIMULACRO"}));
+    document.getElementById("adicionarMunicao").addEventListener("click",()=>adicionarMunicaoItem());
+    document.getElementById("adicionarItemRecuperado").addEventListener("click",()=>adicionarItemRecuperado());
+
 
     const idEdicao = new URLSearchParams(location.search).get("id");
     function definirCampo(id, valor) {
@@ -1483,6 +1602,7 @@
       x.observacao_final = pessoasSalvas.texto;
       const mapa = {data_ocorrencia:"data",status_atendimento:"statusAtendimento",motivo_repressao:"motivoRepressao",municipio:"municipio",vtr:"vtr",tipo_registro:"tipoRegistro",numero_bo:"numeroBo",hora_inicial:"horaInicial",hora_final:"horaFinal",ocorrencia:"ocorrencia",crime:"crime",numero_prisoes:"numeroPrisoes",numero_conduzidos:"numeroConduzidos",orientacoes:"orientacoes",veiculos_recuperados:"veiculosRecuperados",endereco:"endereco",numero_endereco:"numeroEndereco",bairro:"bairro",local_entrega:"localEntrega",vitima_nacionalidade:"nacVitima",vitima_sexo:"sexoVitima",vitima_idade:"idadeVitima",infrator_nacionalidade:"nacInfrator",infrator_sexo:"sexoInfrator",infrator_idade:"idadeInfrator",comandante:"comandante",historico_resumido:"mo",materialidade:"materialidade",observacao:"observacao1",entorpecentes:"entorpecentes",maconha:"maconha",cocaina:"cocaina",pasta_base:"pastaBase",crack:"crack",skank:"skank",quantidade_armas:"quantArmas",quantidade_arma_branca:"quantArmaBranca",arma_branca:"armaBranca",armas:"armas",quantidade_municoes:"quantMunicoes",municoes:"municoes",veiculos_restricao:"veiculosRestricao",foragidos:"foragidos",disparo:"disparo",auto_resistencia:"autoResistencia",quantidade_autos_infracao:"quantAutoInfracao",auto_infracao:"autoInfracao",balanca_precisao:"balanca",observacao_final:"observacaoFinal",latitude:"latitude",longitude:"longitude",endereco_formatado:"enderecoFormatado"};
       Object.keys(mapa).forEach(k => definirCampo(mapa[k],x[k]));
+      carregarItensEstruturados(x);
       definirCampo("localEntrega",padronizarLocalEntrega(x.local_entrega));
       marcarResultadosExistentes(x);
       atualizarSubtipos();
@@ -1537,6 +1657,7 @@
 
       try {
         const providenciasSelecionadas = providenciasDosResultados();
+        const itensEstruturados = sincronizarCamposLegadosEstruturados();
         const registro = {
           data_ocorrencia: document.getElementById("data").value,
           status_atendimento: statusAtendimento.value,
@@ -1587,13 +1708,16 @@
           skank: document.getElementById("skank").value || null,
 
           quantidade_armas: document.getElementById("quantArmas").value || null,
+          armas_itens: itensEstruturados.armasItens,
           quantidade_arma_branca: document.getElementById("quantArmaBranca").value || 0,
           arma_branca: document.getElementById("armaBranca").value || null,
           armas: document.getElementById("armas").value || null,
           quantidade_municoes: document.getElementById("quantMunicoes").value || null,
+          municoes_itens: itensEstruturados.municoesItens,
           municoes: document.getElementById("municoes").value || null,
 
           veiculos_restricao: document.getElementById("veiculosRestricao").value || null,
+          itens_recuperados: itensEstruturados.recuperados,
           foragidos: document.getElementById("foragidos").value || null,
           disparo: tratarNI(document.getElementById("disparo").value),
           auto_resistencia: tratarNI(document.getElementById("autoResistencia").value),
