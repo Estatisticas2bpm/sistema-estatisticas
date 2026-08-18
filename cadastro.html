@@ -215,6 +215,11 @@
     .item-estruturado { display:grid; grid-template-columns:1.15fr .55fr 1fr 1fr 1.7fr auto; gap:12px; align-items:end; padding:14px; border:1px solid #cbd5e1; border-radius:10px; background:#fff; }
     .item-estruturado.municao { grid-template-columns:.7fr 1fr 2fr auto; }
     .item-estruturado.recuperado { grid-template-columns:1.1fr .6fr 2fr auto; }
+    .item-estruturado.entorpecente { grid-template-columns:1.2fr .65fr .9fr 1.8fr auto; }
+    .bloco-indicadores { grid-column:1/-1; padding:16px; border:1px solid #dbe4ee; border-radius:12px; background:#f8fafc; }
+    .bloco-indicadores h3 { margin:0 0 5px; color:var(--azul-escuro); font-size:16px; }
+    .bloco-indicadores > p { margin:0 0 14px; color:#64748b; font-size:13px; }
+    .bloco-indicadores .grade { gap:14px; }
     .item-estruturado [hidden] { display:none !important; }
     .remover-item { background:#b91c1c; width:42px; min-width:42px; padding:10px 0; }
     .importador-pdf { margin:18px 0; padding:18px; border:1px solid #bfdbfe; border-radius:14px; background:linear-gradient(135deg,#eff6ff,#f8fafc); }
@@ -240,7 +245,7 @@
       .pessoa-adicional { grid-template-columns:1fr 1fr; }
       .resultados-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
       .resultado-quantidades { grid-template-columns:repeat(2,minmax(0,1fr)); }
-      .item-estruturado, .item-estruturado.municao, .item-estruturado.recuperado { grid-template-columns:1fr 1fr; }
+      .item-estruturado, .item-estruturado.municao, .item-estruturado.recuperado, .item-estruturado.entorpecente { grid-template-columns:1fr 1fr; }
     }
 
     @media (max-width: 600px) {
@@ -256,7 +261,7 @@
       .remover-pessoa { width:100%; }
       .grupo-estruturado-cabecalho { align-items:flex-start; flex-direction:column; }
       .grupo-estruturado-acoes, .grupo-estruturado-acoes button { width:100%; }
-      .item-estruturado, .item-estruturado.municao, .item-estruturado.recuperado { grid-template-columns:1fr; }
+      .item-estruturado, .item-estruturado.municao, .item-estruturado.recuperado, .item-estruturado.entorpecente { grid-template-columns:1fr; }
       .remover-item { width:100%; }
     }
   </style>
@@ -556,42 +561,17 @@
 
       <section>
         <h2>7. Entorpecentes</h2>
-
         <div class="grade">
-          <div class="campo">
-            <label for="entorpecentes">Registro de entorpecentes</label>
-            <select id="entorpecentes" name="entorpecentes">
-              <option value="">Selecione</option>
-              <option>SIM</option>
-              <option>NÃO</option>
-              <option>NI — Não Informado</option>
-            </select>
+          <div class="grupo-estruturado">
+            <div class="grupo-estruturado-cabecalho">
+              <div><h3>Substâncias apreendidas</h3><small>Cadastre somente quando houver apreensão.</small></div>
+              <button class="botao-item" id="adicionarEntorpecente" type="button">+ Adicionar entorpecente</button>
+            </div>
+            <div class="lista-itens" id="entorpecentesItens"><p class="lista-vazia">Nenhum entorpecente informado.</p></div>
           </div>
-
-          <div class="campo">
-            <label for="maconha">Maconha</label>
-            <input id="maconha" name="maconha" type="number" min="0" step="any">
-          </div>
-
-          <div class="campo">
-            <label for="cocaina">Cocaína</label>
-            <input id="cocaina" name="cocaina" type="number" min="0" step="any">
-          </div>
-
-          <div class="campo">
-            <label for="pastaBase">Pasta base</label>
-            <input id="pastaBase" name="pastaBase" type="number" min="0" step="any">
-          </div>
-
-          <div class="campo">
-            <label for="crack">Crack</label>
-            <input id="crack" name="crack" type="number" min="0" step="any">
-          </div>
-
-          <div class="campo">
-            <label for="skank">Skank</label>
-            <input id="skank" name="skank" type="number" min="0" step="any">
-          </div>
+          <input id="entorpecentes" name="entorpecentes" type="hidden">
+          <input id="maconha" name="maconha" type="hidden"><input id="cocaina" name="cocaina" type="hidden">
+          <input id="pastaBase" name="pastaBase" type="hidden"><input id="crack" name="crack" type="hidden"><input id="skank" name="skank" type="hidden">
         </div>
       </section>
 
@@ -641,49 +621,24 @@
           </div>
           <input id="veiculosRestricao" name="veiculosRestricao" type="hidden">
 
-          <div class="campo">
-            <label for="foragidos">Foragidos</label>
-            <input id="foragidos" name="foragidos" type="number" min="0">
+          <div class="bloco-indicadores">
+            <h3>Resultados operacionais</h3><p>Prisões especiais e emprego de arma de fogo.</p>
+            <div class="grade">
+              <div class="campo"><label for="foragidos">Foragidos capturados</label><input id="foragidos" name="foragidos" type="number" min="0"></div>
+              <div class="campo"><label for="disparo">Disparo de arma de fogo</label><select id="disparo" name="disparo"><option value="">Selecione</option><option>NÃO</option><option>SIM</option><option>NI — Não Informado</option></select></div>
+              <div class="campo"><label for="autoResistencia">Auto de resistência/prisão</label><select id="autoResistencia" name="autoResistencia"><option value="">Selecione</option><option>NÃO</option><option>SIM</option><option>NI — Não Informado</option></select></div>
+            </div>
           </div>
-
-          <div class="campo">
-            <label for="disparo">Disparo</label>
-            <select id="disparo" name="disparo">
-              <option value="">Selecione</option>
-              <option>SIM</option>
-              <option>NÃO</option>
-              <option>NI — Não Informado</option>
-            </select>
+          <div class="bloco-indicadores">
+            <h3>Fiscalização de trânsito</h3><p>Preencha apenas quando houver autuação.</p>
+            <div class="grade">
+              <div class="campo"><label for="quantAutoInfracao">Quantidade de autos de infração</label><input id="quantAutoInfracao" name="quantAutoInfracao" type="number" min="0"></div>
+              <div class="campo triplo"><label for="autoInfracao">Descrição ou números dos autos</label><input id="autoInfracao" name="autoInfracao" type="text" placeholder="Opcional"></div>
+            </div>
           </div>
-
-          <div class="campo">
-            <label for="autoResistencia">Auto de resistência/prisão</label>
-            <select id="autoResistencia" name="autoResistencia">
-              <option value="">Selecione</option>
-              <option>SIM</option>
-              <option>NÃO</option>
-              <option>NI — Não Informado</option>
-            </select>
-          </div>
-
-          <div class="campo">
-            <label for="quantAutoInfracao">Quantidade de autos de infração</label>
-            <input id="quantAutoInfracao" name="quantAutoInfracao" type="number" min="0">
-          </div>
-
-          <div class="campo duplo">
-            <label for="autoInfracao">Auto de infração</label>
-            <input id="autoInfracao" name="autoInfracao" type="text">
-          </div>
-
-          <div class="campo">
-            <label for="balanca">Balança de precisão</label>
-            <select id="balanca" name="balanca">
-              <option value="">Selecione</option>
-              <option>SIM</option>
-              <option>NÃO</option>
-              <option>NI — Não Informado</option>
-            </select>
+          <div class="bloco-indicadores">
+            <h3>Materiais e equipamentos</h3><p>Itens operacionais que exigem indicador próprio.</p>
+            <div class="grade"><div class="campo"><label for="balanca">Balança de precisão apreendida</label><select id="balanca" name="balanca"><option value="">Selecione</option><option>NÃO</option><option>SIM</option><option>NI — Não Informado</option></select></div></div>
           </div>
 
           <div class="campo inteiro">
@@ -1494,6 +1449,8 @@
 
     const TIPOS_ARMA_FOGO = ["PISTOLA","REVÓLVER","ESPINGARDA","FUZIL","CARABINA","SUBMETRALHADORA","GARRUCHA","ARMA ARTESANAL","OUTRO"];
     const TIPOS_ITENS_RECUPERADOS = ["CARRO","MOTOCICLETA","MOTONETA","CAMINHONETE","CAMINHÃO","ÔNIBUS/MICRO-ÔNIBUS","BICICLETA","BICICLETA ELÉTRICA","BICICLETA MOTORIZADA","VEÍCULO ELÉTRICO","CELULAR","TABLET","NOTEBOOK","OUTRO"];
+    const TIPOS_ENTORPECENTES = ["MACONHA","COCAÍNA","PASTA BASE","CRACK","SKANK","ECSTASY","LSD","OUTRO"];
+    const UNIDADES_ENTORPECENTES = ["GRAMA (g)","QUILOGRAMA (kg)","UNIDADE","PORÇÃO","OUTRO"];
     function opcoesHtml(opcoes, selecionado) {
       return '<option value="">Selecione</option>' + opcoes.map(opcao => `<option${opcao === selecionado ? " selected" : ""}>${opcao}</option>`).join("");
     }
@@ -1540,6 +1497,15 @@
       recipiente.appendChild(bloco);
       atualizarListaVazia(recipiente,"Nenhum objeto ou veículo informado.");
     }
+    function adicionarEntorpecenteItem(dados = {}) {
+      const recipiente = document.getElementById("entorpecentesItens");
+      const bloco = document.createElement("div");
+      bloco.className = "item-estruturado entorpecente";
+      bloco.innerHTML = `<div class="campo"><label>Substância</label><select data-item="tipo">${opcoesHtml(TIPOS_ENTORPECENTES,dados.tipo)}</select></div><div class="campo"><label>Quantidade</label><input data-item="quantidade" type="number" min="0" step="any" value="${Number(dados.quantidade) || ""}"></div><div class="campo"><label>Unidade</label><select data-item="unidade">${opcoesHtml(UNIDADES_ENTORPECENTES,dados.unidade)}</select></div><div class="campo"><label>Detalhes/observações</label><input data-item="detalhes" value="${escaparHtml(dados.detalhes || "")}" placeholder="Informação opcional"></div><button class="remover-item" type="button" title="Remover este entorpecente" aria-label="Remover entorpecente">×</button>`;
+      bloco.querySelector(".remover-item").addEventListener("click", () => { bloco.remove(); atualizarListaVazia(recipiente,"Nenhum entorpecente informado."); });
+      recipiente.appendChild(bloco);
+      atualizarListaVazia(recipiente,"Nenhum entorpecente informado.");
+    }
     function coletarItens(recipienteId, campos) {
       return Array.from(document.querySelectorAll(`#${recipienteId} .item-estruturado`)).map(bloco => Object.fromEntries(campos.map(campo => {
         const valor = bloco.querySelector(`[data-item="${campo}"]`)?.value.trim() || "";
@@ -1551,36 +1517,47 @@
     }
     function coletarMunicoesItens() { return coletarItens("municoesItens",["quantidade","calibre","detalhes"]); }
     function coletarItensRecuperados() { return coletarItens("itensRecuperados",["tipo","quantidade","detalhes"]); }
+    function coletarEntorpecentesItens() { return coletarItens("entorpecentesItens",["tipo","quantidade","unidade","detalhes"]); }
     function sincronizarCamposLegadosEstruturados() {
       const armasItens = coletarArmasItens();
       const municoesItens = coletarMunicoesItens();
       const recuperados = coletarItensRecuperados();
+      const entorpecentesItens = coletarEntorpecentesItens();
       document.getElementById("quantArmas").value = armasItens.reduce((total,item)=>total+item.quantidade,0) || "";
       document.getElementById("armas").value = armasItens.map(item => [item.quantidade, item.categoria === "SIMULACRO" ? "SIMULACRO" : item.tipo, item.calibre, item.detalhes].filter(Boolean).join(" ")).join("; ");
       document.getElementById("quantMunicoes").value = municoesItens.reduce((total,item)=>total+item.quantidade,0) || "";
       document.getElementById("municoes").value = municoesItens.map(item => [item.quantidade + " munição(ões)", item.calibre, item.detalhes].filter(Boolean).join(" ")).join("; ");
       const tiposVeiculo = new Set(TIPOS_ITENS_RECUPERADOS.slice(0,10));
       document.getElementById("veiculosRestricao").value = recuperados.filter(item=>tiposVeiculo.has(item.tipo)).reduce((total,item)=>total+item.quantidade,0) || "";
-      return {armasItens,municoesItens,recuperados};
+      document.getElementById("entorpecentes").value = entorpecentesItens.length ? "SIM" : "NÃO";
+      const camposDrogas = {"MACONHA":"maconha","COCAÍNA":"cocaina","PASTA BASE":"pastaBase","CRACK":"crack","SKANK":"skank"};
+      Object.values(camposDrogas).forEach(id => document.getElementById(id).value = "");
+      entorpecentesItens.forEach(item => { const id = camposDrogas[item.tipo]; if (id) document.getElementById(id).value = (Number(document.getElementById(id).value)||0) + item.quantidade; });
+      return {armasItens,municoesItens,recuperados,entorpecentesItens};
     }
     function carregarItensEstruturados(x) {
       document.getElementById("armasItens").replaceChildren();
       document.getElementById("municoesItens").replaceChildren();
       document.getElementById("itensRecuperados").replaceChildren();
+      document.getElementById("entorpecentesItens").replaceChildren();
       const armasSalvas = Array.isArray(x.armas_itens) && x.armas_itens.length ? x.armas_itens : (Number(x.quantidade_armas) > 0 ? [{categoria:textoComparavel(x.armas).includes("SIMULACRO") ? "SIMULACRO" : "ARMA DE FOGO",quantidade:Number(x.quantidade_armas),tipo:"OUTRO",detalhes:x.armas || null}] : []);
       const municoesSalvas = Array.isArray(x.municoes_itens) && x.municoes_itens.length ? x.municoes_itens : (Number(x.quantidade_municoes) > 0 ? [{quantidade:Number(x.quantidade_municoes),calibre:null,detalhes:x.municoes || null}] : []);
       const itensSalvos = Array.isArray(x.itens_recuperados) && x.itens_recuperados.length ? x.itens_recuperados : (Number(x.veiculos_restricao) > 0 ? [{tipo:"OUTRO",quantidade:Number(x.veiculos_restricao),detalhes:"Registro anterior à classificação detalhada"}] : []);
+      const entorpecentesSalvos = Array.isArray(x.entorpecentes_itens) && x.entorpecentes_itens.length ? x.entorpecentes_itens : [["MACONHA",x.maconha],["COCAÍNA",x.cocaina],["PASTA BASE",x.pasta_base],["CRACK",x.crack],["SKANK",x.skank]].filter(([,quantidade])=>Number(quantidade)>0).map(([tipo,quantidade])=>({tipo,quantidade:Number(quantidade),unidade:"GRAMA (g)",detalhes:"Registro anterior à classificação detalhada"}));
       armasSalvas.forEach(adicionarArmaItem);
       municoesSalvas.forEach(adicionarMunicaoItem);
       itensSalvos.forEach(adicionarItemRecuperado);
+      entorpecentesSalvos.forEach(adicionarEntorpecenteItem);
       atualizarListaVazia(document.getElementById("armasItens"),"Nenhuma arma ou simulacro informado.");
       atualizarListaVazia(document.getElementById("municoesItens"),"Nenhuma munição informada.");
       atualizarListaVazia(document.getElementById("itensRecuperados"),"Nenhum objeto ou veículo informado.");
+      atualizarListaVazia(document.getElementById("entorpecentesItens"),"Nenhum entorpecente informado.");
     }
     document.getElementById("adicionarArmaFogo").addEventListener("click",()=>adicionarArmaItem({categoria:"ARMA DE FOGO"}));
     document.getElementById("adicionarSimulacro").addEventListener("click",()=>adicionarArmaItem({categoria:"SIMULACRO"}));
     document.getElementById("adicionarMunicao").addEventListener("click",()=>adicionarMunicaoItem());
     document.getElementById("adicionarItemRecuperado").addEventListener("click",()=>adicionarItemRecuperado());
+    document.getElementById("adicionarEntorpecente").addEventListener("click",()=>adicionarEntorpecenteItem());
 
 
     const idEdicao = new URLSearchParams(location.search).get("id");
@@ -1701,6 +1678,7 @@
           observacao: document.getElementById("observacao1").value || null,
 
           entorpecentes: tratarNI(document.getElementById("entorpecentes").value),
+          entorpecentes_itens: itensEstruturados.entorpecentesItens,
           maconha: document.getElementById("maconha").value || null,
           cocaina: document.getElementById("cocaina").value || null,
           pasta_base: document.getElementById("pastaBase").value || null,
