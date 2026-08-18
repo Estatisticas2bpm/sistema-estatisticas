@@ -216,6 +216,8 @@
     .item-estruturado.municao { grid-template-columns:.7fr 1fr 2fr auto; }
     .item-estruturado.recuperado { grid-template-columns:1.1fr .6fr 2fr auto; }
     .item-estruturado.entorpecente { grid-template-columns:1.2fr .65fr .9fr 1.8fr auto; }
+    .item-estruturado.subtraido { grid-template-columns:repeat(4,minmax(0,1fr)) auto; }
+    .item-estruturado.subtraido .detalhe-largo { grid-column:span 2; }
     .bloco-indicadores { grid-column:1/-1; padding:16px; border:1px solid #dbe4ee; border-radius:12px; background:#f8fafc; }
     .bloco-indicadores h3 { margin:0 0 5px; color:var(--azul-escuro); font-size:16px; }
     .bloco-indicadores > p { margin:0 0 14px; color:#64748b; font-size:13px; }
@@ -246,6 +248,7 @@
       .resultados-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
       .resultado-quantidades { grid-template-columns:repeat(2,minmax(0,1fr)); }
       .item-estruturado, .item-estruturado.municao, .item-estruturado.recuperado, .item-estruturado.entorpecente { grid-template-columns:1fr 1fr; }
+      .item-estruturado.subtraido { grid-template-columns:1fr 1fr; }
     }
 
     @media (max-width: 600px) {
@@ -262,6 +265,7 @@
       .grupo-estruturado-cabecalho { align-items:flex-start; flex-direction:column; }
       .grupo-estruturado-acoes, .grupo-estruturado-acoes button { width:100%; }
       .item-estruturado, .item-estruturado.municao, .item-estruturado.recuperado, .item-estruturado.entorpecente { grid-template-columns:1fr; }
+      .item-estruturado.subtraido { grid-template-columns:1fr; }.item-estruturado.subtraido .detalhe-largo{grid-column:auto}
       .remover-item { width:100%; }
     }
   </style>
@@ -560,7 +564,20 @@
       </section>
 
       <section>
-        <h2>7. Entorpecentes</h2>
+        <h2>7. Bens subtraídos</h2>
+        <div class="grade">
+          <div class="grupo-estruturado">
+            <div class="grupo-estruturado-cabecalho">
+              <div><h3>Bens roubados ou furtados</h3><small>O bem continuará contado como subtraído mesmo se for recuperado posteriormente.</small></div>
+              <button class="botao-item" id="adicionarBemSubtraido" type="button">+ Adicionar bem</button>
+            </div>
+            <div class="lista-itens" id="bensSubtraidos"><p class="lista-vazia">Nenhum bem subtraído informado.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>8. Entorpecentes</h2>
         <div class="grade">
           <div class="grupo-estruturado">
             <div class="grupo-estruturado-cabecalho">
@@ -576,7 +593,7 @@
       </section>
 
       <section>
-        <h2>8. Armas e munições</h2>
+        <h2>9. Armas e munições</h2>
 
         <div class="grade">
           <div class="grupo-estruturado">
@@ -609,7 +626,7 @@
       </section>
 
       <section>
-        <h2>9. Outros indicadores operacionais</h2>
+        <h2>10. Outros indicadores operacionais</h2>
 
         <div class="grade">
           <div class="grupo-estruturado">
@@ -1218,7 +1235,7 @@
       return achado ? Math.max(1, Number(achado[1])) : 1;
     }
     function extrairItensOperacionaisPdf(valor) {
-      const dados = {armas:[],municoes:[],entorpecentes:[],recuperados:[],armasBrancas:[],balanca:false};
+      const dados = {armas:[],municoes:[],entorpecentes:[],recuperados:[],subtraidos:[],armasBrancas:[],balanca:false};
       String(valor || "").split(/(?=\bGrupo\s+)/i).forEach(bloco => {
         if (!/^Grupo\s+/i.test(bloco)) return;
         const grupo = (bloco.match(/^Grupo\s+(.+?)\s+Subgrupo\s+/i) || [,"OUTRO"])[1].trim();
@@ -1227,6 +1244,22 @@
         const situacao = (bloco.match(/\bSitua[çc][ãa]o\s+(.+?)(?=\s+Nome\s+Envolvido\b|$)/i) || [,""])[1];
         const chave = textoComparavel([grupo,subgrupo,descricao].join(" "));
         const calibre = (descricao.match(/(?:CALIBRE|CAL\.?)[\s:]*(\.?\d{1,3}(?:\s*MM)?|12|20|28|32|36)/i) || subgrupo.match(/(?:CALIBRE|CAL\.?)[\s:]*(\.?\d{1,3}(?:\s*MM)?|12|20|28|32|36)/i) || [])[1] || null;
+        const situacaoNormalizada = textoComparavel(situacao);
+        if (/FURTAD|ROUBAD/.test(situacaoNormalizada)) {
+          let categoria = "OUTROS";
+          if (chave.includes("MOTOCICLETA") || chave.includes("MOTONETA")) categoria="MOTOCICLETA";
+          else if (chave.includes("AUTOMOVEL") || chave.includes("VEICULO") || chave.includes("CARRO") || chave.includes("CAMINHONETE")) categoria="AUTOMÓVEL";
+          else if (chave.includes("BICICLETA")) categoria="BICICLETA";
+          else if (chave.includes("CELULAR")) categoria="CELULAR";
+          const marcaModelo = (bloco.match(/\bMarca\/Modelo\s+(.+?)(?=\s+Ve[íi]culo Adulterado|\s+Quantidade|\s+Situa[çc][ãa]o|$)/i)||[,""])[1].trim();
+          const cor = (bloco.match(/\bCor\s+(.+?)(?=\s+UF Ve[íi]culo|\s+Marca\/Modelo|\s+IMEI|$)/i)||[,""])[1].trim();
+          const placa = (bloco.match(/\bPlaca\s+([A-Z0-9-]+)/i)||[,""])[1].trim();
+          const imei = (bloco.match(/\bIMEI\s*:?[ ]*([0-9-]{8,20})/i)||[,""])[1].trim();
+          const chassi = (bloco.match(/\bN[úu]mero do Chassi\s+([A-Z0-9-]+)/i)||[,""])[1].trim();
+          const serie = (bloco.match(/\bN[úu]mero de S[ée]rie\s*:?[ ]*([A-Z0-9-]+)/i)||[,""])[1].trim();
+          const quantidadeCampo = Number(((bloco.match(/\bQuantidade\s+(\d+(?:[.,]\d+)?)/i)||[])[1]||"1").replace(",","."))||1;
+          dados.subtraidos.push({tipoSubtracao:situacaoNormalizada.includes("ROUBAD")?"ROUBO":"FURTO",categoria,quantidade:quantidadeCampo,descricao:descricao||subgrupo,marcaModelo,cor,placa,imei,identificador:chassi||serie,situacao:/RECUPERAD|APREENDID|ENCONTRAD/.test(situacaoNormalizada)?"RECUPERADO":"SUBTRAÍDO"});
+        }
         if (chave.includes("ARMA DE FOGO")) {
           if (chave.includes("SIMULACRO") || chave.includes("REPLICA")) dados.armas.push({categoria:"SIMULACRO",quantidade:quantidadeObjetoPdf(descricao,"SIMULACRO|ARMA"),tipo:null,calibre:null,detalhes:descricao});
           else {
@@ -1268,6 +1301,26 @@
       });
       return dados;
     }
+    function extrairBemSubtraidoDoRelato(relato, natureza) {
+      const texto = String(relato || "").replace(/\s+/g," ").trim();
+      const chave = textoComparavel(`${natureza || ""} ${texto}`);
+      const tipoSubtracao = chave.includes("ROUBO") || chave.includes("ROUBAD") ? "ROUBO" : chave.includes("FURTO") || chave.includes("FURTAD") || chave.includes("SUBTRAI") ? "FURTO" : "";
+      if (!tipoSubtracao) return null;
+      let categoria = "OUTROS";
+      if (/MOTOCICLETA|MOTONETA|MOTO\b/.test(chave)) categoria = "MOTOCICLETA";
+      else if (/AUTOMOVEL|CARRO|CAMINHONETE|CAMINHAO|VEICULO/.test(chave)) categoria = "AUTOMÓVEL";
+      else if (/BICICLETA/.test(chave)) categoria = "BICICLETA";
+      else if (/CELULAR|APARELHO TELEFONICO|SMARTPHONE/.test(chave)) categoria = "CELULAR";
+      const placa = (texto.match(/\bPLACA\s*:?[ ]*([A-Z]{3}[0-9A-Z][0-9A-Z]{3})\b/i)||[,""])[1];
+      const imei = (texto.match(/\bIMEI\s*:?[ ]*([0-9-]{8,20})\b/i)||[,""])[1];
+      const chassi = (texto.match(/\bCHASSI\s*:?[ ]*([A-Z0-9-]{8,25})\b/i)||[,""])[1];
+      const cor = (texto.match(/\b(?:DE\s+)?COR\s+([A-ZÁÉÍÓÚÂÊÔÃÕÇ]+)(?=,|\.|\s+ANO|\s+PLACA|\s+CHASSI|$)/i)||[,""])[1];
+      let marcaModelo = "";
+      if (categoria === "MOTOCICLETA") marcaModelo = (texto.match(/\b(?:MOTOCICLETA|MOTONETA)\s+([A-Z0-9./ -]{3,60}?)(?=,\s*(?:DE\s+)?COR|,\s*ANO|,\s*PLACA|\.|$)/i)||[,""])[1].trim();
+      else if (categoria === "AUTOMÓVEL") marcaModelo = (texto.match(/\b(?:AUTOMÓVEL|VEÍCULO|CARRO|CAMINHONETE)\s+([A-Z0-9./ -]{3,60}?)(?=,\s*(?:DE\s+)?COR|,\s*ANO|,\s*PLACA|\.|$)/i)||[,""])[1].trim();
+      const descricao = marcaModelo || (categoria === "OUTROS" ? "BEM MENCIONADO NO RELATO" : categoria);
+      return {tipoSubtracao,categoria,quantidade:1,descricao,marcaModelo,cor,placa,imei,identificador:chassi,situacao:/RECUPERAD|LOCALIZAD|ENCONTRAD/.test(chave)?"RECUPERADO":"SUBTRAÍDO"};
+    }
     function extrairDadosOcorrenciaPdf(texto) {
       const bo = texto.match(/BOLETIM DE OCORR[ÊE]NCIA[\s\S]{0,30}?0*(\d{4,10})\s*\/\s*(20\d{2})/i)
         || texto.match(/(?:^|\s)0*(\d{4,10})\s*\/\s*(20\d{2})(?:\s|$)/m);
@@ -1281,6 +1334,10 @@
       const local = texto.match(/Local do Fato[\s\S]*?Munic[íi]pio:\s*([^\n]+)[\s\S]*?Bairro:\s*([^\n]+)[\s\S]*?Logradouro:\s*([^\n]*?)(?:\s+N[º°]:\s*([^\n]+))?\n/i);
       const pessoas = extrairPessoasPdf(texto);
       const itensOperacionais = extrairItensOperacionaisPdf(objetos ? objetos[1] : "");
+      if (!itensOperacionais.subtraidos.length) {
+        const bemDoRelato = extrairBemSubtraidoDoRelato(historico ? historico[1] : "", natureza ? natureza[1] : "");
+        if (bemDoRelato) itensOperacionais.subtraidos.push(bemDoRelato);
+      }
       let relato = historico ? limparRelatoPdfBruto(historico[1]) : "";
       relato = ocultarNomesEmMaiusculas(relato);
       pessoas.vitimas.forEach(p => { if (p.nome) relato = relato.replace(new RegExp(p.nome.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"gi"),"A VÍTIMA"); });
@@ -1386,14 +1443,17 @@
       document.getElementById("municoesItens").replaceChildren();
       document.getElementById("entorpecentesItens").replaceChildren();
       document.getElementById("itensRecuperados").replaceChildren();
+      document.getElementById("bensSubtraidos").replaceChildren();
       dados.itensOperacionais.armas.forEach(adicionarArmaItem);
       dados.itensOperacionais.municoes.forEach(adicionarMunicaoItem);
       dados.itensOperacionais.entorpecentes.forEach(adicionarEntorpecenteItem);
       dados.itensOperacionais.recuperados.forEach(adicionarItemRecuperado);
+      dados.itensOperacionais.subtraidos.forEach(adicionarBemSubtraido);
       atualizarListaVazia(document.getElementById("armasItens"),"Nenhuma arma ou simulacro informado.");
       atualizarListaVazia(document.getElementById("municoesItens"),"Nenhuma munição informada.");
       atualizarListaVazia(document.getElementById("entorpecentesItens"),"Nenhum entorpecente informado.");
       atualizarListaVazia(document.getElementById("itensRecuperados"),"Nenhum objeto ou veículo informado.");
+      atualizarListaVazia(document.getElementById("bensSubtraidos"),"Nenhum bem subtraído informado.");
       document.getElementById("quantArmaBranca").value = dados.itensOperacionais.armasBrancas.reduce((total,item)=>total+item.quantidade,0) || "";
       document.getElementById("armaBranca").value = dados.itensOperacionais.armasBrancas.map(item=>item.descricao).join("; ");
       document.getElementById("balanca").value = dados.itensOperacionais.balanca ? "SIM" : "";
@@ -1424,7 +1484,7 @@
         const enderecoPreparado = await preencherRascunhoPdf(dados);
         importacaoPdfPendente = true;
         const totalPessoas = dados.pessoas.vitimas.length + dados.pessoas.infratores.length + dados.pessoas.envolvidos.length;
-        const totalItens = dados.itensOperacionais.armas.length + dados.itensOperacionais.municoes.length + dados.itensOperacionais.entorpecentes.length + dados.itensOperacionais.recuperados.length + dados.itensOperacionais.armasBrancas.length;
+        const totalItens = dados.itensOperacionais.armas.length + dados.itensOperacionais.municoes.length + dados.itensOperacionais.entorpecentes.length + dados.itensOperacionais.recuperados.length + dados.itensOperacionais.subtraidos.length + dados.itensOperacionais.armasBrancas.length;
         const pendencias = [!document.getElementById("ocorrencia").value && "tipo de ocorrência", !document.getElementById("comandante").value && "comandante", "selecionar o endereço correto pela lupa"].filter(Boolean);
         statusImportacaoPdf.className = "status-importacao sucesso";
         statusImportacaoPdf.innerHTML = `<strong>Rascunho preenchido.</strong> ${totalPessoas} pessoa(s) e ${totalItens} item(ns) operacional(is) identificados. Confira todos os campos antes de salvar.<br><strong>Endereço informado no PDF:</strong> ${escaparHtml(dados.enderecoReferencia || "não identificado")}.<br><strong>Pesquisa preparada:</strong> ${enderecoPreparado ? "logradouro e bairro preenchidos sem o número; clique na lupa e selecione o endereço correto" : "endereço não identificado; pesquise manualmente"}.<br><strong>Pendente de conferência:</strong> ${escaparHtml(pendencias.join(", ") || "somente a revisão geral")}. O PDF já foi descartado da memória.`;
@@ -1537,6 +1597,7 @@
     const TIPOS_ITENS_RECUPERADOS = ["CARRO","MOTOCICLETA","MOTONETA","CAMINHONETE","CAMINHÃO","ÔNIBUS/MICRO-ÔNIBUS","BICICLETA","BICICLETA ELÉTRICA","BICICLETA MOTORIZADA","VEÍCULO ELÉTRICO","CELULAR","TABLET","NOTEBOOK","BALANÇA DE PRECISÃO","OUTRO"];
     const TIPOS_ENTORPECENTES = ["MACONHA","COCAÍNA","PASTA BASE","CRACK","SKANK","ECSTASY","LSD","OUTRO"];
     const UNIDADES_ENTORPECENTES = ["GRAMA (g)","QUILOGRAMA (kg)","UNIDADE","PORÇÃO","OUTRO"];
+    const CATEGORIAS_BENS_SUBTRAIDOS = ["AUTOMÓVEL","MOTOCICLETA","BICICLETA","CELULAR","OUTROS"];
     function opcoesHtml(opcoes, selecionado) {
       return '<option value="">Selecione</option>' + opcoes.map(opcao => `<option${opcao === selecionado ? " selected" : ""}>${opcao}</option>`).join("");
     }
@@ -1592,6 +1653,14 @@
       recipiente.appendChild(bloco);
       atualizarListaVazia(recipiente,"Nenhum entorpecente informado.");
     }
+    function adicionarBemSubtraido(dados = {}) {
+      const recipiente = document.getElementById("bensSubtraidos");
+      const bloco = document.createElement("div");
+      bloco.className = "item-estruturado subtraido";
+      bloco.innerHTML = `<div class="campo"><label>Tipo</label><select data-item="tipoSubtracao">${opcoesHtml(["ROUBO","FURTO"],dados.tipoSubtracao)}</select></div><div class="campo"><label>Categoria do bem</label><select data-item="categoria">${opcoesHtml(CATEGORIAS_BENS_SUBTRAIDOS,dados.categoria)}</select></div><div class="campo"><label>Quantidade</label><input data-item="quantidade" type="number" min="1" value="${Number(dados.quantidade)||1}"></div><div class="campo"><label>Situação</label><select data-item="situacao">${opcoesHtml(["SUBTRAÍDO","RECUPERADO"],dados.situacao||"SUBTRAÍDO")}</select></div><div class="campo detalhe-largo"><label>Descrição do bem</label><input data-item="descricao" value="${escaparHtml(dados.descricao||"")}" placeholder="Descrição objetiva"></div><div class="campo detalhe-largo"><label>Marca/modelo</label><input data-item="marcaModelo" value="${escaparHtml(dados.marcaModelo||"")}" placeholder="Quando informado"></div><div class="campo"><label>Cor</label><input data-item="cor" value="${escaparHtml(dados.cor||"")}"></div><div class="campo"><label>Placa</label><input data-item="placa" value="${escaparHtml(dados.placa||"")}"></div><div class="campo"><label>IMEI</label><input data-item="imei" value="${escaparHtml(dados.imei||"")}"></div><div class="campo"><label>Outro identificador</label><input data-item="identificador" value="${escaparHtml(dados.identificador||"")}" placeholder="Chassi, série etc."></div><button class="remover-item" type="button" aria-label="Remover bem subtraído" title="Remover este bem">×</button>`;
+      bloco.querySelector(".remover-item").addEventListener("click",()=>{bloco.remove();atualizarListaVazia(recipiente,"Nenhum bem subtraído informado.")});
+      recipiente.appendChild(bloco);atualizarListaVazia(recipiente,"Nenhum bem subtraído informado.");
+    }
     function coletarItens(recipienteId, campos) {
       return Array.from(document.querySelectorAll(`#${recipienteId} .item-estruturado`)).map(bloco => Object.fromEntries(campos.map(campo => {
         const valor = bloco.querySelector(`[data-item="${campo}"]`)?.value.trim() || "";
@@ -1604,11 +1673,13 @@
     function coletarMunicoesItens() { return coletarItens("municoesItens",["quantidade","calibre","detalhes"]); }
     function coletarItensRecuperados() { return coletarItens("itensRecuperados",["tipo","quantidade","detalhes"]); }
     function coletarEntorpecentesItens() { return coletarItens("entorpecentesItens",["tipo","quantidade","unidade","detalhes"]); }
+    function coletarBensSubtraidos() { return coletarItens("bensSubtraidos",["tipoSubtracao","categoria","quantidade","situacao","descricao","marcaModelo","cor","placa","imei","identificador"]); }
     function sincronizarCamposLegadosEstruturados() {
       const armasItens = coletarArmasItens();
       const municoesItens = coletarMunicoesItens();
       const recuperados = coletarItensRecuperados();
       const entorpecentesItens = coletarEntorpecentesItens();
+      const bensSubtraidos = coletarBensSubtraidos();
       document.getElementById("quantArmas").value = armasItens.reduce((total,item)=>total+item.quantidade,0) || "";
       document.getElementById("armas").value = armasItens.map(item => [item.quantidade, item.categoria === "SIMULACRO" ? "SIMULACRO" : item.tipo, item.calibre, item.detalhes].filter(Boolean).join(" ")).join("; ");
       document.getElementById("quantMunicoes").value = municoesItens.reduce((total,item)=>total+item.quantidade,0) || "";
@@ -1620,32 +1691,37 @@
       const camposDrogas = {"MACONHA":"maconha","COCAÍNA":"cocaina","PASTA BASE":"pastaBase","CRACK":"crack","SKANK":"skank"};
       Object.values(camposDrogas).forEach(id => document.getElementById(id).value = "");
       entorpecentesItens.forEach(item => { const id = camposDrogas[item.tipo]; if (id) document.getElementById(id).value = (Number(document.getElementById(id).value)||0) + item.quantidade; });
-      return {armasItens,municoesItens,recuperados,entorpecentesItens};
+      return {armasItens,municoesItens,recuperados,entorpecentesItens,bensSubtraidos};
     }
     function carregarItensEstruturados(x) {
       document.getElementById("armasItens").replaceChildren();
       document.getElementById("municoesItens").replaceChildren();
       document.getElementById("itensRecuperados").replaceChildren();
       document.getElementById("entorpecentesItens").replaceChildren();
+      document.getElementById("bensSubtraidos").replaceChildren();
       const armasSalvas = Array.isArray(x.armas_itens) && x.armas_itens.length ? x.armas_itens : (Number(x.quantidade_armas) > 0 ? [{categoria:textoComparavel(x.armas).includes("SIMULACRO") ? "SIMULACRO" : "ARMA DE FOGO",quantidade:Number(x.quantidade_armas),tipo:"OUTRO",detalhes:x.armas || null}] : []);
       const municoesSalvas = Array.isArray(x.municoes_itens) && x.municoes_itens.length ? x.municoes_itens : (Number(x.quantidade_municoes) > 0 ? [{quantidade:Number(x.quantidade_municoes),calibre:null,detalhes:x.municoes || null}] : []);
       const itensSalvos = Array.isArray(x.itens_recuperados) && x.itens_recuperados.length ? [...x.itens_recuperados] : (Number(x.veiculos_restricao) > 0 ? [{tipo:"OUTRO",quantidade:Number(x.veiculos_restricao),detalhes:"Registro anterior à classificação detalhada"}] : []);
       if (textoComparavel(x.balanca_precisao) === "SIM" && !itensSalvos.some(item=>item.tipo === "BALANÇA DE PRECISÃO")) itensSalvos.push({tipo:"BALANÇA DE PRECISÃO",quantidade:1,detalhes:"Registro anterior à classificação detalhada"});
       const entorpecentesSalvos = Array.isArray(x.entorpecentes_itens) && x.entorpecentes_itens.length ? x.entorpecentes_itens : [["MACONHA",x.maconha],["COCAÍNA",x.cocaina],["PASTA BASE",x.pasta_base],["CRACK",x.crack],["SKANK",x.skank]].filter(([,quantidade])=>Number(quantidade)>0).map(([tipo,quantidade])=>({tipo,quantidade:Number(quantidade),unidade:"GRAMA (g)",detalhes:"Registro anterior à classificação detalhada"}));
+      const bensSubtraidosSalvos = Array.isArray(x.bens_subtraidos) ? x.bens_subtraidos : [];
       armasSalvas.forEach(adicionarArmaItem);
       municoesSalvas.forEach(adicionarMunicaoItem);
       itensSalvos.forEach(adicionarItemRecuperado);
       entorpecentesSalvos.forEach(adicionarEntorpecenteItem);
+      bensSubtraidosSalvos.forEach(adicionarBemSubtraido);
       atualizarListaVazia(document.getElementById("armasItens"),"Nenhuma arma ou simulacro informado.");
       atualizarListaVazia(document.getElementById("municoesItens"),"Nenhuma munição informada.");
       atualizarListaVazia(document.getElementById("itensRecuperados"),"Nenhum objeto ou veículo informado.");
       atualizarListaVazia(document.getElementById("entorpecentesItens"),"Nenhum entorpecente informado.");
+      atualizarListaVazia(document.getElementById("bensSubtraidos"),"Nenhum bem subtraído informado.");
     }
     document.getElementById("adicionarArmaFogo").addEventListener("click",()=>adicionarArmaItem({categoria:"ARMA DE FOGO"}));
     document.getElementById("adicionarSimulacro").addEventListener("click",()=>adicionarArmaItem({categoria:"SIMULACRO"}));
     document.getElementById("adicionarMunicao").addEventListener("click",()=>adicionarMunicaoItem());
     document.getElementById("adicionarItemRecuperado").addEventListener("click",()=>adicionarItemRecuperado());
     document.getElementById("adicionarEntorpecente").addEventListener("click",()=>adicionarEntorpecenteItem());
+    document.getElementById("adicionarBemSubtraido").addEventListener("click",()=>adicionarBemSubtraido());
 
 
     const idEdicao = new URLSearchParams(location.search).get("id");
@@ -1764,6 +1840,7 @@
           historico_resumido: document.getElementById("mo").value || null,
           materialidade: document.getElementById("materialidade").value || null,
           observacao: document.getElementById("observacao1").value || null,
+          bens_subtraidos: itensEstruturados.bensSubtraidos,
 
           entorpecentes: tratarNI(document.getElementById("entorpecentes").value),
           entorpecentes_itens: itensEstruturados.entorpecentesItens,
