@@ -287,7 +287,7 @@
     <section class="importador-pdf" aria-labelledby="tituloImportarPdf">
       <h2 id="tituloImportarPdf">Preencher cadastro pelo PDF da ocorrência</h2>
       <p>O documento é processado temporariamente no seu navegador e não é enviado nem armazenado pelo sistema.</p>
-      <p>Os dados encontrados serão preenchidos como rascunho para conferência. O endereço deverá ser pesquisado e confirmado manualmente no Google Maps.</p>
+      <p>Os dados encontrados serão preenchidos como rascunho. Para o endereço, o sistema prepara logradouro e bairro; clique na lupa e confirme o resultado correto no mapa.</p>
       <div class="importador-acoes">
         <label class="botao-importar-pdf" for="arquivoOcorrenciaPdf">Selecionar PDF</label>
         <input class="arquivo-pdf" id="arquivoOcorrenciaPdf" type="file" accept="application/pdf,.pdf">
@@ -1291,33 +1291,18 @@
       };
     }
     async function preencherEnderecoPdfAutomatico(dados) {
-      if (!dados.logradouroPdf) return false;
-      for (let tentativa=0; tentativa<16 && !geocodificadorGoogle; tentativa++) await new Promise(resolve=>setTimeout(resolve,250));
-      if (!geocodificadorGoogle) return false;
-      const consulta = [dados.logradouroPdf + (dados.numeroPdf ? ", " + dados.numeroPdf : ""), dados.bairroPdf, "Boa Vista", "RR", "Brasil"].filter(Boolean).join(", ");
-      try {
-        const resposta = await Promise.race([
-          geocodificadorGoogle.geocode({address:consulta, componentRestrictions:{country:"BR"}}),
-          new Promise((_,rejeitar)=>setTimeout(()=>rejeitar(new Error("Tempo limite da busca de endereço.")),8000))
-        ]);
-        const resultado = resposta.results && resposta.results[0];
-        if (!resultado || resultado.partial_match || !resultado.geometry || !resultado.geometry.location) return false;
-        const componentes = resultado.address_components || [];
-        const municipio = componenteEndereco(componentes,["locality","administrative_area_level_2"]);
-        const rotaGoogle = componenteEndereco(componentes,["route"]);
-        const palavrasPdf = textoComparavel(dados.logradouroPdf).split(" ").filter(p=>p.length>2 && !["RUA","AVENIDA","AV"].includes(p));
-        const rotaNormalizada = textoComparavel(rotaGoogle);
-        const correspondentes = palavrasPdf.filter(p=>rotaNormalizada.includes(p)).length;
-        const correspondenciaSegura = palavrasPdf.length ? correspondentes / palavrasPdf.length >= 0.65 : false;
-        if (textoComparavel(municipio) !== "BOA VISTA" || !correspondenciaSegura) return false;
-        document.getElementById("numeroEndereco").value = "";
-        await selecionarEnderecoGoogle({place:resultado});
-        document.getElementById("numeroEndereco").value = dados.numeroPdf || "";
-        return Boolean(document.getElementById("latitude").value && document.getElementById("longitude").value);
-      } catch (erro) {
-        console.warn("Endereço do PDF não confirmado automaticamente.", erro);
-        return false;
-      }
+      const logradouro = String(dados.logradouroPdf || "").replace(/\s+N[º°:]?\s*\d+.*$/i,"").trim();
+      const bairro = String(dados.bairroPdf || "").replace(/\s+CEP\s*:?.*$/i,"").trim();
+      document.getElementById("enderecoAproximado").value = [logradouro,bairro].filter(Boolean).join(", ");
+      document.getElementById("enderecoGoogle").value = "";
+      document.getElementById("endereco").value = "";
+      document.getElementById("enderecoFormatado").value = "";
+      document.getElementById("latitude").value = "";
+      document.getElementById("longitude").value = "";
+      document.getElementById("bairro").value = "";
+      document.getElementById("numeroEndereco").value = "";
+      document.getElementById("statusEndereco").textContent = logradouro ? "Endereço do PDF preparado. Clique na lupa e selecione o resultado correto." : "Endereço não identificado no PDF. Pesquise manualmente.";
+      return Boolean(logradouro);
     }
     async function lerTextoPdfLocal(arquivo) {
       const pdfjsLib = await import(PDFJS_URL);
@@ -1396,10 +1381,10 @@
       const relato = textoComparavel(dados.historico);
       definirResultadoImportado("resultadoConducao","numeroConduzidos", relato.includes("CONDUZ") && dados.pessoas.infratores.length ? dados.pessoas.infratores.length : 0);
       definirResultadoImportado("resultadoOrientacao","orientacoes", relato.includes("ORIENTOU") || relato.includes("ORIENTADA") ? 1 : 0);
-      const enderecoAutomatico = await preencherEnderecoPdfAutomatico(dados);
+      const enderecoPreparado = await preencherEnderecoPdfAutomatico(dados);
       data.dispatchEvent(new Event("change"));
       horaInicial.dispatchEvent(new Event("change"));
-      return enderecoAutomatico;
+      return enderecoPreparado;
     }
     arquivoOcorrenciaPdf.addEventListener("change", async () => {
       const arquivo = arquivoOcorrenciaPdf.files && arquivoOcorrenciaPdf.files[0];
@@ -1414,13 +1399,13 @@
         if (texto.trim().length < 150) throw new Error("Não foi possível encontrar texto suficiente. O PDF pode estar digitalizado como imagem.");
         const dados = extrairDadosOcorrenciaPdf(texto);
         if (!dados.numeroBo && !dados.data && !dados.historico) throw new Error("O documento não corresponde ao modelo de ocorrência reconhecido pelo sistema.");
-        const enderecoAutomatico = await preencherRascunhoPdf(dados);
+        const enderecoPreparado = await preencherRascunhoPdf(dados);
         importacaoPdfPendente = true;
         const totalPessoas = dados.pessoas.vitimas.length + dados.pessoas.infratores.length + dados.pessoas.envolvidos.length;
         const totalItens = dados.itensOperacionais.armas.length + dados.itensOperacionais.municoes.length + dados.itensOperacionais.entorpecentes.length + dados.itensOperacionais.recuperados.length + dados.itensOperacionais.armasBrancas.length;
-        const pendencias = [!document.getElementById("ocorrencia").value && "tipo de ocorrência", !document.getElementById("comandante").value && "comandante", !enderecoAutomatico && "endereço no Google Maps"].filter(Boolean);
+        const pendencias = [!document.getElementById("ocorrencia").value && "tipo de ocorrência", !document.getElementById("comandante").value && "comandante", "selecionar o endereço correto pela lupa"].filter(Boolean);
         statusImportacaoPdf.className = "status-importacao sucesso";
-        statusImportacaoPdf.innerHTML = `<strong>Rascunho preenchido.</strong> ${totalPessoas} pessoa(s) e ${totalItens} item(ns) operacional(is) identificados. Confira todos os campos antes de salvar.<br><strong>Endereço informado no PDF:</strong> ${escaparHtml(dados.enderecoReferencia || "não identificado")}.<br><strong>Localização:</strong> ${enderecoAutomatico ? "endereço confirmado automaticamente no Google Maps; confira antes de salvar" : "não confirmada automaticamente; pesquise o endereço manualmente"}.<br><strong>Pendente de conferência:</strong> ${escaparHtml(pendencias.join(", ") || "somente a revisão geral")}. O PDF já foi descartado da memória.`;
+        statusImportacaoPdf.innerHTML = `<strong>Rascunho preenchido.</strong> ${totalPessoas} pessoa(s) e ${totalItens} item(ns) operacional(is) identificados. Confira todos os campos antes de salvar.<br><strong>Endereço informado no PDF:</strong> ${escaparHtml(dados.enderecoReferencia || "não identificado")}.<br><strong>Pesquisa preparada:</strong> ${enderecoPreparado ? "logradouro e bairro preenchidos sem o número; clique na lupa e selecione o endereço correto" : "endereço não identificado; pesquise manualmente"}.<br><strong>Pendente de conferência:</strong> ${escaparHtml(pendencias.join(", ") || "somente a revisão geral")}. O PDF já foi descartado da memória.`;
         formulario.scrollIntoView({behavior:"smooth",block:"start"});
       } catch (erro) {
         console.error(erro);
