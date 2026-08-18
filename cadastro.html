@@ -1072,21 +1072,32 @@
         .replace(/(?:Era o que tinha|Era o que havia|Diante dos fatos, era o que havia) a relatar\.?/gi, "")
         .replace(/\s+/g, " ")
         .trim();
-      if (limpo.length <= 950) return limpo;
-      const frases = limpo.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [limpo];
-      const termosImportantes = ["VITIMA","INFRATOR","AUTOR","RELATOU","INFORMOU","CONSTAT","AMEAC","AGRESS","LESAO","DANO","PATRIMON","CELULAR","ARREMESS","DESTRUI","EVADIU","APREEND","ARMA","DROGA","CONDUZ","PRISAO","ALGEMA","PROVIDENCIA","ORIENTOU","MEDIDA PROTETIVA"];
-      const escolhidas = new Set(frases.slice(0,2).map((_,indice)=>indice));
+      const comparavel = textoComparavel(limpo);
+      if ((comparavel.includes("FURTO") || comparavel.includes("ROUBO") || comparavel.includes("SUBTRAIRAM")) && comparavel.includes("MOTOCICLETA")) {
+        const modelo = (limpo.match(/motocicleta\s+([A-Z0-9ÁÉÍÓÚÂÊÔÃÕÇ/ -]{4,50}?)(?=,\s*(?:de\s+cor|cor|ano|placa)|\.)/i) || [,"MOTOCICLETA"])[1].trim().toUpperCase();
+        const partes = [];
+        if ((comparavel.includes("ADENTRARAM") || comparavel.includes("INVADIRAM")) && (comparavel.includes("RESIDENCIA") || comparavel.includes("IMOVEL"))) partes.push("AUTORES INVADIRAM A RESIDÊNCIA" + (comparavel.includes("REPOUSO NOTURNO") || /22H|23H|00H|01H|02H|03H|04H|05H|06H/.test(comparavel) ? " DURANTE A MADRUGADA" : ""));
+        if (comparavel.includes("PORTAO") && (comparavel.includes("QUEBRARAM") || comparavel.includes("DANIFIC"))) partes.push("DANIFICARAM O PORTÃO ELÉTRICO");
+        partes.push("SUBTRAÍRAM UMA MOTOCICLETA " + modelo);
+        let resumo = partes.join(", ").replace(/, ([^,]+)$/," E $1") + ".";
+        if ((comparavel.includes("LOCALIZADOR") || comparavel.includes("RASTREADOR")) && (comparavel.includes("NAO ENCONTRARAM") || comparavel.includes("NADA FOI CONSTATADO") || comparavel.includes("NAO FOI LOCALIZ"))) resumo += " O VEÍCULO POSSUÍA RASTREADOR, PORÉM NÃO FOI LOCALIZADO APÓS BUSCAS NA ÁREA INDICADA.";
+        return "RESUMO: " + resumo.toUpperCase();
+      }
+      const nucleo = limpo.replace(/^[\s\S]{0,500}?(?:relatar os seguintes fatos|relatou que|informou que)\s*:\s*/i,"");
+      const frases = nucleo.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [nucleo];
+      const termosImportantes = ["AUTOR","INFRATOR","INVADI","SUBTRAI","AMEAC","AGRESS","LESAO","DANIFIC","PATRIMON","EVADIU","APREEND","ARMA","DROGA","CONDUZ","PRISAO","LOCALIZ","RECUPER","PROVIDENCIA","ORIENTOU","MEDIDA PROTETIVA"];
+      const escolhidas = new Set();
       frases.map((frase,indice) => ({indice,pontos:termosImportantes.filter(termo=>textoComparavel(frase).includes(termo)).length}))
         .sort((a,b)=>b.pontos-a.pontos || a.indice-b.indice)
-        .slice(0,3)
+        .slice(0,4)
         .forEach(item=>escolhidas.add(item.indice));
       const indiceProvidencia = frases.findLastIndex(frase => /ORIENTA|PROVID[ÊE]NCIA|DELEGACIA|CONDUZID|APRESENTAD/i.test(frase));
       if (indiceProvidencia >= 0) escolhidas.add(indiceProvidencia);
       let resumo = "";
       frases.filter((_,indice)=>escolhidas.has(indice)).forEach(frase => {
-        if (!resumo || (resumo + " " + frase).length <= 950) resumo += (resumo ? " " : "") + frase.trim();
+        if (!resumo || (resumo + " " + frase).length <= 600) resumo += (resumo ? " " : "") + frase.trim();
       });
-      return resumo;
+      return "RESUMO: " + resumo.replace(/\s+/g," ").trim().toUpperCase();
     }
     function limparRelatoPdfBruto(valor) {
       const linhasIgnoradas = [
@@ -1115,6 +1126,16 @@
       const objetos = [];
       bruto.split(/(?=\bGrupo\s+)/i).forEach(bloco => {
         if (!/^Grupo\s+/i.test(bloco)) return;
+        if (/^Grupo\s+Ve[íi]culo\b/i.test(bloco)) {
+          const modelo = (bloco.match(/\bMarca\/Modelo\s+(.+?)(?=\s+Ve[íi]culo Adulterado|\s+Quantidade|\s+Situa[çc][ãa]o|$)/i) || [,""])[1].trim();
+          const cor = (bloco.match(/\bCor\s+(.+?)(?=\s+UF Ve[íi]culo|\s+Marca\/Modelo|$)/i) || [,""])[1].trim();
+          const placa = (bloco.match(/\bPlaca\s+([A-Z0-9-]+)/i) || [,""])[1].trim();
+          const ano = (bloco.match(/\bAno\/Modelo Fabrica[çc][ãa]o\s+(\d{4}\/\d{4})/i) || [,""])[1].trim();
+          const situacaoBruta = (bloco.match(/\bSitua[çc][ãa]o\s+(.+?)(?=\s+[ÚU]ltima Atualiza[çc][ãa]o|\s+Nome Envolvido|$)/i) || [,""])[1];
+          const situacao = ["FURTADO","ROUBADO","RECUPERADO","APREENDIDO","ENCONTRADO"].find(item=>textoComparavel(situacaoBruta).includes(item)) || "ENVOLVIDO";
+          const detalhes = [modelo,cor && "COR " + cor,placa && "PLACA " + placa,ano && "ANO/MODELO " + ano].filter(Boolean).join(", ");
+          if (detalhes) { objetos.push({chave:textoComparavel(detalhes),texto:`VEÍCULO ${situacao}: ${detalhes.toUpperCase()}`}); return; }
+        }
         const subgrupo = bloco.match(/\bSubgrupo\s+(.+?)(?=\s+Identificador\s+[ÚU]nico\b|\s+Descri[çc][ãa]o\b|\s+Situa[çc][ãa]o\b)/i);
         const descricao = bloco.match(/\bDescri[çc][ãa]o\s+(.+?)(?=\s+Situa[çc][ãa]o\b|\s+Nome\s+Envolvido\b|\s+Grupo\s+|\s+Impresso\s+por:|\s+RELATO\/HIST[ÓO]RICO\b|$)/i);
         let objeto = (descricao && descricao[1] || subgrupo && subgrupo[1] || "")
@@ -1124,7 +1145,7 @@
         if (!objeto) return;
         const tipo = subgrupo ? subgrupo[1].replace(/\s+/g," ").trim() : "";
         if (tipo && !textoComparavel(objeto).includes(textoComparavel(tipo))) objeto = tipo + " — " + objeto;
-        objeto = objeto.toLocaleLowerCase("pt-BR");
+        objeto = objeto.toUpperCase();
         const chave = textoComparavel(objeto);
         if (!objetos.some(item => item.chave === chave)) objetos.push({chave,texto:"01 " + objeto});
       });
@@ -1135,7 +1156,8 @@
         .replace(/\b(?:P[áa]gina|Data de Impress[ãa]o|C[óo]digo Verificador|C[óo]digo CRC|PPe|GOVERNO DO ESTADO)[\s\S]*$/i," ")
         .replace(/\s+/g," ")
         .trim()
-        .slice(0,600);
+        .slice(0,600)
+        .toUpperCase();
     }
     function ocultarNomesEmMaiusculas(relato) {
       const preservados = new Set(["BOA VISTA","MARIA DA PENHA","POLÍCIA MILITAR","POLICIA MILITAR"]);
