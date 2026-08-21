@@ -1,0 +1,105 @@
+name: Profissionalizar cores do dashboard
+
+on:
+  push:
+    paths:
+      - '.github/workflows/profissionalizar-cores-dashboard.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Aplicar identidade visual policial
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          p=Path('dashboard.html')
+          s=p.read_text(encoding='utf-8')
+
+          # 1) Paleta institucional centralizada no CSS
+          s=s.replace(
+            ":root{--navy:#102a43;--blue:#2563eb;--cyan:#0891b2;--green:#059669;--amber:#d97706;--red:#dc2626;--bg:#eef3f8;--line:#dbe4ee;--muted:#64748b}",
+            ":root{--navy:#0B2239;--blue:#1F5A8A;--steel:#496B86;--teal:#2F7278;--cyan:#2F7278;--green:#39705A;--amber:#B7791F;--red:#A63D40;--purple:#665C83;--gray:#667085;--bg:#EEF2F6;--line:#D7E0E8;--muted:#667085}"
+          )
+          s=s.replace("header{background:linear-gradient(120deg,#102a43,#174b78);", "header{background:linear-gradient(120deg,#071A2B,#0B2239 58%,#173B57);")
+          s=s.replace(".btn{background:var(--blue);color:#fff}.btn.green{background:var(--green)}", ".btn{background:var(--blue);color:#fff}.btn.green{background:var(--green)}")
+          s=s.replace(".card.green:before{background:var(--green)}.card.red:before{background:var(--red)}.card.amber:before{background:var(--amber)}", ".card.green:before{background:var(--green)}.card.teal:before{background:var(--teal)}.card.steel:before{background:var(--steel)}.card.red:before{background:var(--red)}.card.amber:before{background:var(--amber)}")
+          s=s.replace(".up{color:var(--red);font-weight:700}.down{color:var(--green);font-weight:700}", ".up{color:var(--red);font-weight:700}.down{color:var(--green);font-weight:700}.crit-up{color:var(--red);font-weight:800}.crit-down{color:var(--green);font-weight:800}.prod-up{color:var(--teal);font-weight:800}.prod-down{color:var(--amber);font-weight:800}.neutral-var{color:var(--steel);font-weight:800}")
+
+          # 2) Cores coerentes nos KPIs principais
+          s=s.replace('<div class="card green"><small>Ocorrências atendidas</small>', '<div class="card teal"><small>Ocorrências atendidas</small>')
+          s=s.replace('<div class="card amber"><small>Documentos produzidos</small>', '<div class="card steel"><small>Documentos produzidos</small>')
+          s=s.replace('<div class="card green"><small>Prisões</small>', '<div class="card amber"><small>Prisões</small>')
+          s=s.replace('<div class="card"><small>Conduzidos</small>', '<div class="card steel"><small>Conduzidos</small>')
+
+          # 3) Paleta JS central + mapeamentos fixos por significado
+          alvo="const db=supabase.createClient('https://jppmhhukujigxupgskdk.supabase.co','sb_publishable_ZVnU35i2x9zwppQqYg7UYw_mzaT43aG');"
+          novo=alvo+"const CORES={navy:'#0B2239',blue:'#1F5A8A',steel:'#496B86',teal:'#2F7278',green:'#39705A',amber:'#B7791F',red:'#A63D40',purple:'#665C83',gray:'#667085',light:'#C8D1DA'};"
+          if alvo not in s: raise SystemExit('Inicialização Supabase não encontrada')
+          s=s.replace(alvo,novo,1)
+
+          # 4) Funções de semântica de cor
+          marcador="function rank(a,c,limit=999){"
+          funcoes="function normalizarSexo(v){let k=chaveOcorrencia(v);if(k==='M'||k==='MASCULINO')return 'M';if(k==='F'||k==='FEMININO')return 'F';if(k==='NI'||k==='NAO INFORMADO'||k==='NÃO INFORMADO')return 'NI';return 'OUTRO'}function corSexo(v){return v==='M'?CORES.blue:v==='F'?CORES.purple:v==='NI'?CORES.gray:CORES.amber}function corDocumento(v){let k=chaveOcorrencia(v);return k==='BO'?CORES.blue:k==='TS'?CORES.teal:k==='AME'?CORES.green:k==='TCO'?CORES.amber:k==='ROP'?CORES.steel:CORES.gray}function classeVariacao(nome,a,b){let k=chaveOcorrencia(nome),crime=k==='TOTAL DE OCORRENCIAS'||k.includes('MARIA DA PENHA')||k.includes('VIOLENCIA DOMESTICA');if(a===b)return 'neutral-var';if(crime)return a>b?'crit-up':'crit-down';return a>b?'prod-up':'prod-down'}"
+          if marcador not in s: raise SystemExit('Função rank não encontrada')
+          s=s.replace(marcador,funcoes+marcador,1)
+
+          # 5) Documentos: cores fixas por tipo, não por posição; variação como produtividade
+          s=s.replace("<td class=\"${cls(x[1],docsP[x[0]]||0)}\">${variacao(x[1],docsP[x[0]]||0)}</td>", "<td class=\"${classeVariacao('Documentos produzidos',x[1],docsP[x[0]]||0)}\">${variacao(x[1],docsP[x[0]]||0)}</td>",1)
+          s=s.replace("chart('chartDocs','doughnut',docs.map(x=>x[0]),docs.map(x=>x[1]),'Documentos',['#2563eb','#0891b2','#059669','#d97706','#7c3aed']);", "chart('chartDocs','doughnut',docs.map(x=>x[0]),docs.map(x=>x[1]),'Documentos',docs.map(x=>corDocumento(x[0])));")
+
+          # 6) Gráficos quantitativos com cores institucionais sóbrias
+          s=s.replace("chart('chartOcorrencias','bar',ocorr.slice(0,10).map(x=>x[0]),ocorr.slice(0,10).map(x=>x[1]),'Ocorrências','#2563eb');", "chart('chartOcorrencias','bar',ocorr.slice(0,10).map(x=>x[0]),ocorr.slice(0,10).map(x=>x[1]),'Ocorrências',CORES.blue);")
+          s=s.replace("chart('chartBairros','bar',bs.slice(0,12).map(x=>x[0]),bs.slice(0,12).map(x=>x[1]),'Bairros','#0891b2');", "chart('chartBairros','bar',bs.slice(0,12).map(x=>x[0]),bs.slice(0,12).map(x=>x[1]),'Bairros',CORES.teal);")
+          s=s.replace("chart('chartDias','line',dias.map(x=>x.replace('-FEIRA','')),mat.map(x=>x[5]),'Ocorrências','#7c3aed');", "chart('chartDias','line',dias.map(x=>x.replace('-FEIRA','')),mat.map(x=>x[5]),'Ocorrências',CORES.steel);")
+          s=s.replace("chart('chartBensSubtraidos','bar',categorias,categorias.map(c=>contagens[c]),'Bens subtraídos',['#2563eb','#0891b2','#7c3aed','#d97706','#64748b']);", "chart('chartBensSubtraidos','bar',categorias,categorias.map(c=>contagens[c]),'Bens subtraídos',[CORES.blue,CORES.steel,CORES.purple,CORES.amber,CORES.gray]);")
+
+          # 7) Sexo: cor fixa por categoria em ambos os gráficos e NI unificado
+          antigo="function perfil(a,prefix,chartId,box){let pessoas=listaPessoas(a,prefix),nacs=rank(pessoas,x=>normalizarNacionalidade(x.nacionalidade),20),sex=rank(pessoas,'sexo',8),idades=pessoas.map(x=>num(x.idade)).filter(Boolean);chart(chartId,'doughnut',sex.map(x=>x[0]),sex.map(x=>x[1]),'Sexo',['#2563eb','#ec4899','#64748b','#d97706']);"
+          novo="function perfil(a,prefix,chartId,box){let pessoas=listaPessoas(a,prefix),nacs=rank(pessoas,x=>normalizarNacionalidade(x.nacionalidade),20),sex=rank(pessoas,x=>normalizarSexo(x.sexo),8),idades=pessoas.map(x=>num(x.idade)).filter(Boolean);chart(chartId,'doughnut',sex.map(x=>x[0]),sex.map(x=>x[1]),'Sexo',sex.map(x=>corSexo(x[0])));"
+          if antigo not in s: raise SystemExit('Função perfil não encontrada')
+          s=s.replace(antigo,novo,1)
+
+          # 8) Cards de produtividade com semântica visual
+          antigo="let pro=[['Prisões','numero_prisoes'],['Conduzidos','numero_conduzidos'],['Orientações','orientacoes'],['Foragidos','foragidos'],['Veículos recuperados','veiculos_recuperados'],['Veículos com restrição','veiculos_restricao'],['Armas','quantidade_armas'],['Munições','quantidade_municoes'],['Autos de infração','quantidade_autos_infracao']];produtividade.innerHTML=pro.map(x=>`<div class=\"card\"><small>${x[0]}</small><strong>${soma(a,x[1])}</strong></div>`).join('')+`<div class=\"card green\"><small>TCOs produzidos</small><strong>${ta.length}</strong></div>`;"
+          novo="let pro=[['Prisões','numero_prisoes','amber'],['Conduzidos','numero_conduzidos','steel'],['Orientações','orientacoes','teal'],['Foragidos','foragidos','amber'],['Veículos recuperados','veiculos_recuperados','green'],['Veículos com restrição','veiculos_restricao','amber'],['Armas','quantidade_armas','blue'],['Munições','quantidade_municoes','steel'],['Autos de infração','quantidade_autos_infracao','teal']];produtividade.innerHTML=pro.map(x=>`<div class=\"card ${x[2]||''}\"><small>${x[0]}</small><strong>${soma(a,x[1])}</strong></div>`).join('')+`<div class=\"card teal\"><small>TCOs produzidos</small><strong>${ta.length}</strong></div>`;"
+          if antigo not in s: raise SystemExit('Bloco de produtividade não encontrado')
+          s=s.replace(antigo,novo,1)
+
+          # 9) Comparativo: cor depende do significado do indicador
+          antigo="function indicador(nome,a,b){return `<tr><td>${esc(nome)}</td><td>${a}</td><td>${b}</td><td>${a-b}</td><td class=\"${cls(a,b)}\">${variacao(a,b)}</td></tr>`}"
+          novo="function indicador(nome,a,b){return `<tr><td>${esc(nome)}</td><td>${a}</td><td>${b}</td><td>${a-b}</td><td class=\"${classeVariacao(nome,a,b)}\">${variacao(a,b)}</td></tr>`}"
+          if antigo not in s: raise SystemExit('Função indicador não encontrada')
+          s=s.replace(antigo,novo,1)
+
+          p.write_text(s,encoding='utf-8')
+
+      - name: Validar alterações
+        run: |
+          grep -q "const CORES" dashboard.html
+          grep -q "normalizarSexo" dashboard.html
+          grep -q "corDocumento" dashboard.html
+          grep -q "classeVariacao" dashboard.html
+          grep -q "card teal" dashboard.html
+          grep -q "CORES.steel" dashboard.html
+
+      - name: Publicar
+        run: |
+          if git diff --quiet; then
+            echo "Nenhuma alteração necessária"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dashboard.html
+          git commit -m "Profissionaliza cores e semântica visual do dashboard"
+          git push
