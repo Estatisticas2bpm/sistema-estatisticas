@@ -1,0 +1,26 @@
+name: Executar patch entorpecentes
+
+on:
+  push:
+    paths:
+      - '.github/workflows/run-patch-entorpecentes-site.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Aplicar patch
+        run: python scripts/patch_entorpecentes_site.py
+      - name: Publicar arquivos
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cadastro.html dashboard.html relatorio.html
+          if ! git diff --cached --quiet; then
+            git commit -m "Implementa entorpecentes visuais sem peso"
+            git push
+          fi
