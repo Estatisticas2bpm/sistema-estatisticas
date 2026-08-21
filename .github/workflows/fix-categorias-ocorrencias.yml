@@ -1,0 +1,69 @@
+name: Corrigir categorias duplicadas de ocorrências
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-categorias-ocorrencias.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  corrigir:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Corrigir dashboard e página inicial
+        shell: python
+        run: |
+          from pathlib import Path
+
+          # Dashboard completo
+          p = Path('dashboard.html')
+          s = p.read_text(encoding='utf-8')
+
+          alvo = "function render(){let a=filtrar(atual),p=filtrar(anterior),ta=filtrarTcos(tcosAtual),tp=filtrarTcos(tcosAnterior),"
+          insere = "function chaveOcorrencia(v){return norm(v).normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toUpperCase()}function categoriaPrincipal(x){let original=norm(x.ocorrencia||x.crime),k=chaveOcorrencia(original);if(k.includes('MARIA DA PENHA')||k.includes('VIOLENCIA DOMESTICA'))return 'MARIA DA PENHA / VIOLÊNCIA DOMÉSTICA';return original}\n" + alvo
+          if alvo not in s:
+            raise SystemExit('Ponto de inserção do dashboard não encontrado')
+          s = s.replace(alvo, insere, 1)
+
+          antigo = "let ocorr=rank(a,x=>x.ocorrencia||x.crime,15);rows('tabOcorrencias',ocorr.map((x,i)=>{let g=a.filter(y=>norm(y.ocorrencia||y.crime)===x[0]),"
+          novo = "let ocorr=rank(a,categoriaPrincipal,15);rows('tabOcorrencias',ocorr.map((x,i)=>{let g=a.filter(y=>categoriaPrincipal(y)===x[0]),"
+          if antigo not in s:
+            raise SystemExit('Ranking principal do dashboard não encontrado')
+          s = s.replace(antigo, novo, 1)
+
+          antigo2 = "indicador('Maria da Penha',a.filter(x=>norm(x.ocorrencia).includes('MARIA DA PENHA')).length,p.filter(x=>norm(x.ocorrencia).includes('MARIA DA PENHA')).length)"
+          novo2 = "indicador('Maria da Penha / Violência Doméstica',a.filter(x=>categoriaPrincipal(x)==='MARIA DA PENHA / VIOLÊNCIA DOMÉSTICA').length,p.filter(x=>categoriaPrincipal(x)==='MARIA DA PENHA / VIOLÊNCIA DOMÉSTICA').length)"
+          if antigo2 in s:
+            s = s.replace(antigo2, novo2, 1)
+
+          p.write_text(s, encoding='utf-8')
+
+          # Página inicial - Top 5
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          antigo = 'function rank(arr,campo,fallback){var m={};arr.forEach(function(x){var k=(x[campo]||x[fallback]||"NÃO INFORMADO").trim();m[k]=(m[k]||0)+1});return Object.entries(m).sort(function(a,b){return b[1]-a[1]}).slice(0,5)}'
+          novo = 'function categoriaPrincipalIndex(x){var original=(x.ocorrencia||x.crime||"NÃO INFORMADO").trim(),k=original.normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toUpperCase();if(k.includes("MARIA DA PENHA")||k.includes("VIOLENCIA DOMESTICA"))return "MARIA DA PENHA / VIOLÊNCIA DOMÉSTICA";return original}function rank(arr,campo,fallback){var m={};arr.forEach(function(x){var k=campo==="ocorrencia"?categoriaPrincipalIndex(x):(x[campo]||x[fallback]||"NÃO INFORMADO").trim();m[k]=(m[k]||0)+1});return Object.entries(m).sort(function(a,b){return b[1]-a[1]}).slice(0,5)}'
+          if antigo not in s:
+            raise SystemExit('Função rank da página inicial não encontrada')
+          s = s.replace(antigo, novo, 1)
+          p.write_text(s, encoding='utf-8')
+
+      - name: Validar
+        run: |
+          grep -q "categoriaPrincipal" dashboard.html
+          grep -q "MARIA DA PENHA / VIOLÊNCIA DOMÉSTICA" dashboard.html
+          grep -q "categoriaPrincipalIndex" index.html
+
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dashboard.html index.html
+          git commit -m "Consolida categorias equivalentes de ocorrências"
+          git push
