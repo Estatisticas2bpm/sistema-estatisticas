@@ -6,7 +6,7 @@
   <title>Consultar ocorrências</title>
   <style>
     * { box-sizing: border-box; }
-    :root { --azul-escuro:#132b46; --azul:#2556d8; --fundo:#eef2f6; --borda:#d7e0ea; --texto:#1f2937; --suave:#64748b; }
+    :root { --azul-escuro:#132b46; --azul:#2556d8; --verde:#14845f; --fundo:#eef2f6; --borda:#d7e0ea; --texto:#1f2937; --suave:#64748b; }
     body { margin:0; font-family:Arial,Helvetica,sans-serif; background:var(--fundo); color:var(--texto); }
     header { padding:24px 20px; background:var(--azul-escuro); color:white; }
     .topo { width:min(1200px,94%); margin:auto; display:flex; justify-content:space-between; align-items:center; gap:20px; }
@@ -25,25 +25,26 @@
     th,td { padding:12px 10px; border-bottom:1px solid var(--borda); text-align:left; vertical-align:top; }
     th { background:#f8fafc; color:var(--azul-escuro); white-space:nowrap; }
     .vazio { padding:28px; text-align:center; color:var(--suave); }
-    @media(max-width:700px) { .topo { align-items:flex-start; flex-direction:column; } .filtros { grid-template-columns:1fr; } button { width:100%; } }
     .btnEditar{display:inline-block;border:1px solid #2556d8;background:#fff;color:#2556d8;border-radius:7px;padding:7px 10px;font-weight:bold;text-decoration:none;margin-right:6px}
     .btnEditar:hover{background:#2556d8;color:#fff}
-    .btnTco{display:inline-block;border:1px solid #14845f;background:#fff;color:#116b4e;border-radius:7px;padding:7px 10px;font-weight:bold;text-decoration:none;margin-right:6px}
-    .btnTco:hover{background:#14845f;color:#fff}
+    .btnTco{display:inline-block;border:1px solid var(--verde);background:#fff;color:#116b4e;border-radius:7px;padding:7px 10px;font-weight:bold;text-decoration:none;margin-right:6px}
+    .btnTco:hover{background:var(--verde);color:#fff}
     .btnExcluir{border:1px solid #dc3545;background:#fff;color:#c82333;border-radius:7px;padding:7px 10px;font-weight:bold;cursor:pointer}
     .btnExcluir:hover{background:#dc3545;color:#fff}.btnExcluir:disabled{opacity:.55;cursor:wait}
+    .tco-lista{display:flex;flex-wrap:wrap;gap:6px;min-width:140px}.tco-badge{display:inline-flex;align-items:center;gap:5px;background:#ecfdf5;border:1px solid #a7f3d0;color:#047857;border-radius:999px;padding:5px 8px;font-size:12px;font-weight:800;white-space:nowrap}.tco-vazio{color:#94a3b8;font-size:12px}.acoes-linha{white-space:nowrap}
+    @media(max-width:700px) { .topo { align-items:flex-start; flex-direction:column; } .filtros { grid-template-columns:1fr; } button { width:100%; } }
   </style>
 </head>
 <body>
   <header><div class="topo"><div><h1>Consultar ocorrências</h1><p>Sistema de Estatísticas Operacionais</p></div><a class="voltar" href="index.html">← Voltar ao painel</a></div></header>
   <main><section class="painel">
     <div class="filtros">
-      <div><label for="busca">Pesquisar</label><input id="busca" type="search" placeholder="Nº BO, ocorrência ou bairro"></div>
+      <div><label for="busca">Pesquisar</label><input id="busca" type="search" placeholder="Nº BO, Nº TCO, ocorrência ou bairro"></div>
       <div><label for="dataFiltro">Data</label><input id="dataFiltro" type="date"></div>
       <button id="btnPesquisar" type="button">Pesquisar</button>
     </div>
     <p id="status" class="status">Carregando ocorrências...</p>
-    <div class="tabela-wrap"><table><thead><tr><th>Data</th><th>Tipo</th><th>Nº BO/ROP</th><th>Ocorrência</th><th>Bairro</th><th>Ações</th></tr></thead><tbody id="resultado"></tbody></table></div>
+    <div class="tabela-wrap"><table><thead><tr><th>Data</th><th>Tipo</th><th>Nº BO/ROP</th><th>TCO vinculado</th><th>Ocorrência</th><th>Bairro</th><th>Ações</th></tr></thead><tbody id="resultado"></tbody></table></div>
   </section></main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
@@ -62,10 +63,17 @@
       const partes = valor.split("-");
       return partes[2] + "/" + partes[1] + "/" + partes[0];
     }
+    function renderTcos(item) {
+      const tcos = Array.isArray(item.tcos) ? item.tcos : [];
+      if (!tcos.length) return '<span class="tco-vazio">—</span>';
+      return '<div class="tco-lista">' + tcos.map(function(t) {
+        return '<span class="tco-badge" title="TCO produzido em '+escapar(formatarData(t.data_tco))+'">TCO '+escapar(t.numero_tco)+'</span>';
+      }).join('') + '</div>';
+    }
     async function carregar() {
       statusEl.textContent = "Carregando ocorrências...";
       resultado.innerHTML = "";
-      const resposta = await banco.rpc("consultar_ocorrencias_publicas", {
+      const resposta = await banco.rpc("consultar_ocorrencias_publicas_v2", {
         termo_busca: busca.value.trim() || null,
         data_busca: dataFiltro.value || null
       });
@@ -77,16 +85,18 @@
       const dados = resposta.data || [];
       statusEl.textContent = dados.length + " ocorrência(s) encontrada(s).";
       if (!dados.length) {
-        resultado.innerHTML = '<tr><td colspan="6" class="vazio">Nenhum registro encontrado.</td></tr>';
+        resultado.innerHTML = '<tr><td colspan="7" class="vazio">Nenhum registro encontrado.</td></tr>';
         return;
       }
       resultado.innerHTML = dados.map(function(item) {
+        const tcos = Array.isArray(item.tcos) ? item.tcos : [];
+        const textoBotaoTco = tcos.length ? '＋ Outro TCO' : '＋ TCO';
         const botaoTco = item.tipo_registro === "BO"
-          ? '<a class="btnTco" href="tco.html?bo_id='+encodeURIComponent(item.id)+'">＋ TCO</a>'
+          ? '<a class="btnTco" href="tco.html?bo_id='+encodeURIComponent(item.id)+'">'+textoBotaoTco+'</a>'
           : '';
         return "<tr><td>" + formatarData(item.data_ocorrencia) + "</td><td>" +
           escapar(item.tipo_registro || "—") + "</td><td>" + escapar(item.numero_bo) +
-          "</td><td>" + escapar(item.ocorrencia) + "</td><td>" + escapar(item.bairro || "—") + "</td><td>"+botaoTco+"<a class=\"btnEditar\" href=\"cadastro.html?id="+encodeURIComponent(item.id)+"\">Editar</a><button class=\"btnExcluir\" data-id=\""+escapar(item.id)+"\" data-bo=\""+escapar(item.numero_bo)+"\">Excluir</button></td></tr>";
+          "</td><td>" + renderTcos(item) + "</td><td>" + escapar(item.ocorrencia) + "</td><td>" + escapar(item.bairro || "—") + "</td><td class=\"acoes-linha\">"+botaoTco+"<a class=\"btnEditar\" href=\"cadastro.html?id="+encodeURIComponent(item.id)+"\">Editar</a><button class=\"btnExcluir\" data-id=\""+escapar(item.id)+"\" data-bo=\""+escapar(item.numero_bo)+"\">Excluir</button></td></tr>";
       }).join("");
     }
     resultado.addEventListener("click", async function(e) {
