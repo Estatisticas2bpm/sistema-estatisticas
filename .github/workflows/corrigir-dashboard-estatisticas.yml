@@ -1,0 +1,79 @@
+name: Corrigir dashboard estatístico
+
+on:
+  push:
+    paths:
+      - '.github/workflows/corrigir-dashboard-estatisticas.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  corrigir:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Aplicar correções
+        shell: python
+        run: |
+          from pathlib import Path
+
+          p=Path('dashboard.html')
+          s=p.read_text(encoding='utf-8')
+
+          alvo="function rank(a,c,limit=999){let m={};a.forEach(x=>{let k=norm(typeof c==='function'?c(x):x[c]);m[k]=(m[k]||0)+1});return Object.entries(m).sort((x,y)=>y[1]-x[1]||x[0].localeCompare(y[0])).slice(0,limit)}"
+          novo="function normalizarBairro(v){let k=chaveOcorrencia(v),m={'AIRTON ROCHA':'DR AIRTON ROCHA','DOUTOR AIRTON ROCHA':'DR AIRTON ROCHA','DR AIRTON ROCHA':'DR AIRTON ROCHA','DOUTOR SILVIO BOTELHO':'DR SILVIO BOTELHO','SILVIO BOTELHO':'DR SILVIO BOTELHO','DR SILVIO BOTELHO':'DR SILVIO BOTELHO','DOUTOR SILVIO LEITE':'DR SILVIO LEITE','SILVIO LEITE':'DR SILVIO LEITE','DR SILVIO LEITE':'DR SILVIO LEITE','GOVERNADOR AQUILINO MOTA DUARTE':'GOV AQUILINO MOTA DUARTE','GOV AQUILINO MOTA DUARTE':'GOV AQUILINO MOTA DUARTE','JARDIM EQUATORIAL':'EQUATORIAL','PROFESSORA ARACELI SOUTO MAIOR':'ARACELI','PSICULTURA':'PISCICULTURA'};return m[k]||norm(v)}function normalizarNacionalidade(v){let k=chaveOcorrencia(v);if(['BR','BR - BRASILEIRA','BR — BRASILEIRA','BRASILEIRA','BRASILEIRO'].includes(k))return 'BR — Brasileira';if(['VE','VE - VENEZUELANA','VE — VENEZUELANA','VENEZUELANA','VENEZUELANO'].includes(k))return 'VE — Venezuelana';if(k==='NI'||k==='NAO INFORMADO')return 'NI';return norm(v)}function rank(a,c,limit=999){let m={};a.forEach(x=>{let k=norm(typeof c==='function'?c(x):x[c]);m[k]=(m[k]||0)+1});return Object.entries(m).sort((x,y)=>y[1]-x[1]||x[0].localeCompare(y[0])).slice(0,limit)}"
+          if alvo not in s: raise SystemExit('rank não encontrado')
+          s=s.replace(alvo,novo,1)
+
+          alvo="function listarBensSubtraidos(registros){let lista=[];registros.forEach(o=>(Array.isArray(o.bens_subtraidos)?o.bens_subtraidos:[]).forEach(b=>lista.push({...b,data_ocorrencia:o.data_ocorrencia,numero_bo:o.numero_bo,ocorrencia:o.ocorrencia})));return lista}"
+          novo="function listarBensSubtraidos(registros){let mapa={};registros.forEach(o=>(Array.isArray(o.bens_subtraidos)?o.bens_subtraidos:[]).forEach(b=>{let item={...b,data_ocorrencia:o.data_ocorrencia,numero_bo:o.numero_bo,ocorrencia:o.ocorrencia},k=[o.id||'',o.numero_bo||'',norm(b.tipoSubtracao),norm(b.categoria),norm(b.descricao),norm(b.marcaModelo),norm(b.cor),norm(b.placa),norm(b.imei),norm(b.identificador),norm(b.situacao)].join('|');if(mapa[k])mapa[k].quantidade=num(mapa[k].quantidade)+Math.max(1,num(b.quantidade));else mapa[k]={...item,quantidade:Math.max(1,num(b.quantidade))}}));return Object.values(mapa)}"
+          if alvo not in s: raise SystemExit('listarBensSubtraidos não encontrado')
+          s=s.replace(alvo,novo,1)
+
+          alvo="function detalhesEntorpecentes(registros){let m={};"
+          insercao="function detalhesArmas(registros){let m={};registros.forEach(o=>{let itens=Array.isArray(o.armas_itens)?o.armas_itens:[];if(itens.length)itens.forEach(i=>{let k=norm(i.categoria)==='SIMULACRO'?'SIMULACRO':norm(i.tipo||i.categoria||'NÃO INFORMADO');m[k]=(m[k]||0)+num(i.quantidade)});else if(num(o.quantidade_armas)>0){let txt=norm(o.armas),k=chaveOcorrencia(txt).includes('SIMULACRO')?'SIMULACRO':chaveOcorrencia(txt).includes('PISTOLA')?'PISTOLA':chaveOcorrencia(txt).includes('REVOLVER')?'REVÓLVER':'TIPO NÃO INFORMADO';m[k]=(m[k]||0)+num(o.quantidade_armas)}});return Object.entries(m).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1])}function detalhesMunicoes(registros){let m={};registros.forEach(o=>{let itens=Array.isArray(o.municoes_itens)?o.municoes_itens:[];if(itens.length)itens.forEach(i=>{let k=i.calibre?'Calibre '+norm(i.calibre):'Calibre não informado';m[k]=(m[k]||0)+num(i.quantidade)});else if(num(o.quantidade_municoes)>0){let txt=norm(o.municoes),match=txt.match(/(?:CALIBRE\\s*)?(\\.\\d+|\\d+\\s*MM)/i),k=match?'Calibre '+match[1].toUpperCase().replace(/\\s+/g,''):'Calibre não informado';m[k]=(m[k]||0)+num(o.quantidade_municoes)}});return Object.entries(m).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1])}\nfunction detalhesEntorpecentes(registros){let m={};"
+          if alvo not in s: raise SystemExit('detalhesEntorpecentes não encontrado')
+          s=s.replace(alvo,insercao,1)
+
+          s=s.replace("bs=rank(g,'bairro',3).map(z=>z[0]).join(' / ')","bs=rank(g,x=>normalizarBairro(x.bairro),3).map(z=>z[0]).join(' / ')")
+          s=s.replace("let bs=rank(a,'bairro',999),bp=Object.fromEntries(rank(p,'bairro'));","let bs=rank(a,x=>normalizarBairro(x.bairro),999),bp=Object.fromEntries(rank(p,x=>normalizarBairro(x.bairro)));",1)
+
+          antigo="let armasDet=agruparItens(a,'armas_itens',i=>norm(i.categoria)==='SIMULACRO'?'SIMULACRO':norm(i.tipo));if(!armasDet.length)armasDet=rank(a.filter(x=>x.armas),'armas',8);let munDet=agruparItens(a,'municoes_itens',i=>i.calibre?'Calibre '+norm(i.calibre):'Calibre não informado');if(!munDet.length)munDet=rank(a.filter(x=>x.municoes),'municoes',8);"
+          novo="let armasDet=detalhesArmas(a);let munDet=detalhesMunicoes(a);"
+          if antigo not in s: raise SystemExit('detalhamento de armas/munições não encontrado')
+          s=s.replace(antigo,novo,1)
+
+          antigo="function perfil(a,prefix,chartId,box){let pessoas=listaPessoas(a,prefix),nacs=rank(pessoas,'nacionalidade',20),sex=rank(pessoas,'sexo',8),idades=pessoas.map(x=>num(x.idade)).filter(Boolean);"
+          novo="function perfil(a,prefix,chartId,box){let pessoas=listaPessoas(a,prefix),nacs=rank(pessoas,x=>normalizarNacionalidade(x.nacionalidade),20),sex=rank(pessoas,'sexo',8),idades=pessoas.map(x=>num(x.idade)).filter(Boolean);"
+          if antigo not in s: raise SystemExit('perfil não encontrado')
+          s=s.replace(antigo,novo,1)
+
+          p.write_text(s,encoding='utf-8')
+
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          antigo='function categoriaPrincipalIndex(x){var original=(x.ocorrencia||x.crime||"NÃO INFORMADO").trim(),k=original.normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toUpperCase();if(k.includes("MARIA DA PENHA")||k.includes("VIOLENCIA DOMESTICA"))return "MARIA DA PENHA / VIOLÊNCIA DOMÉSTICA";return original}function rank(arr,campo,fallback){var m={};arr.forEach(function(x){var k=campo==="ocorrencia"?categoriaPrincipalIndex(x):(x[campo]||x[fallback]||"NÃO INFORMADO").trim();m[k]=(m[k]||0)+1});return Object.entries(m).sort(function(a,b){return b[1]-a[1]}).slice(0,5)}'
+          novo='function categoriaPrincipalIndex(x){var original=(x.ocorrencia||x.crime||"NÃO INFORMADO").trim(),k=original.normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toUpperCase();if(k.includes("MARIA DA PENHA")||k.includes("VIOLENCIA DOMESTICA"))return "MARIA DA PENHA / VIOLÊNCIA DOMÉSTICA";return original}function bairroPrincipalIndex(v){var original=(v||"NÃO INFORMADO").trim(),k=original.normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toUpperCase(),m={"AIRTON ROCHA":"DR AIRTON ROCHA","DOUTOR AIRTON ROCHA":"DR AIRTON ROCHA","DR AIRTON ROCHA":"DR AIRTON ROCHA","DOUTOR SILVIO BOTELHO":"DR SILVIO BOTELHO","SILVIO BOTELHO":"DR SILVIO BOTELHO","DR SILVIO BOTELHO":"DR SILVIO BOTELHO","DOUTOR SILVIO LEITE":"DR SILVIO LEITE","SILVIO LEITE":"DR SILVIO LEITE","DR SILVIO LEITE":"DR SILVIO LEITE","GOVERNADOR AQUILINO MOTA DUARTE":"GOV AQUILINO MOTA DUARTE","JARDIM EQUATORIAL":"EQUATORIAL","PROFESSORA ARACELI SOUTO MAIOR":"ARACELI","PSICULTURA":"PISCICULTURA"};return m[k]||original}function rank(arr,campo,fallback){var m={};arr.forEach(function(x){var k=campo==="ocorrencia"?categoriaPrincipalIndex(x):campo==="bairro"?bairroPrincipalIndex(x.bairro):(x[campo]||x[fallback]||"NÃO INFORMADO").trim();m[k]=(m[k]||0)+1});return Object.entries(m).sort(function(a,b){return b[1]-a[1]}).slice(0,5)}'
+          if antigo not in s: raise SystemExit('rank index não encontrado')
+          s=s.replace(antigo,novo,1)
+          p.write_text(s,encoding='utf-8')
+
+      - name: Validar
+        run: |
+          grep -q "normalizarBairro" dashboard.html
+          grep -q "normalizarNacionalidade" dashboard.html
+          grep -q "detalhesArmas" dashboard.html
+          grep -q "detalhesMunicoes" dashboard.html
+          grep -q "bairroPrincipalIndex" index.html
+
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dashboard.html index.html
+          git commit -m "Corrige padronização de bairros nacionalidades e apreensões"
+          git push
