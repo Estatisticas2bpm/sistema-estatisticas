@@ -1,0 +1,23 @@
+name: Executar patch entorpecentes debug
+on: [push]
+permissions:
+  contents: write
+jobs:
+  run:
+    if: github.event.head_commit.message == 'Executa e registra diagnóstico do patch de entorpecentes'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Executar
+        run: |
+          set +e
+          python scripts/patch_entorpecentes_site.py > patch-entorpecentes.log 2>&1
+          echo "exit_code=$?" >> patch-entorpecentes.log
+          set -e
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cadastro.html dashboard.html relatorio.html patch-entorpecentes.log
+          git commit -m "Diagnóstico e aplicação do patch de entorpecentes"
+          git push
