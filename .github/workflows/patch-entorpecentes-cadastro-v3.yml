@@ -1,0 +1,64 @@
+name: Patch cadastro entorpecentes v3
+on:
+  push:
+    paths:
+      - '.github/workflows/patch-entorpecentes-cadastro-v3.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch cadastro
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+          p=Path('cadastro.html')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('<div><h3>Substâncias apreendidas</h3><small>Cadastre somente quando houver apreensão.</small></div>','<div><h3>Substâncias apreendidas</h3><small>Registre somente o constatado visualmente: tipo, forma de apresentação e quantidade de unidades. Não informe peso (g, kg ou mg).</small></div>')
+          s=s.replace('<div class="lista-itens" id="entorpecentesItens"><p class="lista-vazia">Nenhum entorpecente informado.</p></div>','<div id="avisoEntorpecentesLegados" hidden style="margin-bottom:12px;padding:12px;border:1px solid #f59e0b;border-radius:9px;background:#fffbeb;color:#92400e"><strong>Registro legado:</strong> esta ocorrência possui informação antiga de droga em peso. O dado foi preservado no banco, mas não será convertido nem somado como unidade visual.</div><div class="lista-itens" id="entorpecentesItens"><p class="lista-vazia">Nenhum entorpecente informado.</p></div>')
+          s=s.replace('const TIPOS_ENTORPECENTES = ["MACONHA","COCAÍNA","PASTA BASE","CRACK","SKANK","ECSTASY","LSD","OUTRO"];\n    const UNIDADES_ENTORPECENTES = ["GRAMA (g)","QUILOGRAMA (kg)","UNIDADE","PORÇÃO","INVÓLUCRO","OUTRO"];','const TIPOS_ENTORPECENTES = ["MACONHA","COCAÍNA","CRACK","SKUNK","ECSTASY","OUTROS"];\n    const FORMAS_ENTORPECENTES = ["INVÓLUCRO","PORÇÃO","TABLETE","TIJOLO","PAPELOTE","PINO","COMPRIMIDO","SACOLA","OUTROS"];')
+          s=re.sub(r'        const tipoDroga = TIPOS_ENTORPECENTES\.filter\(t=>t!=="OUTRO"\).*?\n        if \(tipoDroga \|\| chave\.includes\("ENTORPECENTE"\) \|\| chave\.includes\("DROGA"\)\) \{.*?\n        \}', '''        let tipoDroga = TIPOS_ENTORPECENTES.filter(t=>t!=="OUTROS").find(t=>chave.includes(textoComparavel(t)));
+        if (!tipoDroga && chave.includes("SKANK")) tipoDroga = "SKUNK";
+        if (!tipoDroga && (chave.includes("PASTA BASE") || chave.includes("LSD"))) tipoDroga = "OUTROS";
+        if (tipoDroga || chave.includes("ENTORPECENTE") || chave.includes("DROGA")) {
+          const achado = descricao.match(/\\b(\\d+)\\s*(INV[ÓO]LUCROS?|POR[ÇC][ÕO]ES?|TABLETES?|TIJOLOS?|PAPELOTES?|PINOS?|COMPRIMIDOS?|SACOLAS?)\\b/i);
+          if (!achado) return;
+          const formaChave = textoComparavel(achado[2]);
+          const forma = formaChave.includes("INVOLUCRO") ? "INVÓLUCRO" : formaChave.includes("PORCAO") ? "PORÇÃO" : formaChave.includes("TABLETE") ? "TABLETE" : formaChave.includes("TIJOLO") ? "TIJOLO" : formaChave.includes("PAPELOTE") ? "PAPELOTE" : formaChave.includes("PINO") ? "PINO" : formaChave.includes("COMPRIMIDO") ? "COMPRIMIDO" : formaChave.includes("SACOLA") ? "SACOLA" : "OUTROS";
+          dados.entorpecentes.push({tipo:tipoDroga || "OUTROS",quantidade:Number(achado[1]),forma_apresentacao:forma,detalhes:descricao}); return;
+        }''',s,count=1,flags=re.S)
+          s=re.sub(r'    function adicionarEntorpecenteItem\(dados = \{\}\) \{.*?\n    \}\n    function adicionarBemSubtraido', '''    function adicionarEntorpecenteItem(dados = {}) {
+      const recipiente = document.getElementById("entorpecentesItens");
+      const bloco = document.createElement("div");
+      bloco.className = "item-estruturado entorpecente";
+      let tipo = String(dados.tipo || "").toUpperCase();
+      if (tipo === "SKANK") tipo = "SKUNK";
+      if (["PASTA BASE","LSD","OUTRO"].includes(tipo)) tipo = "OUTROS";
+      let forma = String(dados.forma_apresentacao || dados.forma || dados.unidade || "").toUpperCase();
+      if (["UNIDADE","OUTRO"].includes(forma)) forma = "OUTROS";
+      if (!FORMAS_ENTORPECENTES.includes(forma)) forma = "OUTROS";
+      bloco.innerHTML = `<div class="campo"><label>Tipo de entorpecente</label><select data-item="tipo" required>${opcoesHtml(TIPOS_ENTORPECENTES,tipo)}</select></div><div class="campo"><label>Forma de apresentação</label><select data-item="forma_apresentacao" required>${opcoesHtml(FORMAS_ENTORPECENTES,forma)}</select></div><div class="campo"><label>Quantidade</label><input data-item="quantidade" type="number" min="1" step="1" inputmode="numeric" value="${Number.isInteger(Number(dados.quantidade)) && Number(dados.quantidade)>0 ? Number(dados.quantidade) : 1}" required></div><div class="campo"><label>Detalhes/observações</label><input data-item="detalhes" value="${escaparHtml(dados.detalhes || "")}" placeholder="Informação opcional"></div><button class="remover-item" type="button" title="Remover este entorpecente" aria-label="Remover entorpecente">×</button>`;
+      bloco.querySelector(".remover-item").addEventListener("click", () => { bloco.remove(); atualizarListaVazia(recipiente,"Nenhum entorpecente informado."); });
+      recipiente.appendChild(bloco);
+      atualizarListaVazia(recipiente,"Nenhum entorpecente informado.");
+    }
+    function adicionarBemSubtraido''',s,count=1,flags=re.S)
+          s=s.replace('function coletarEntorpecentesItens() { return coletarItens("entorpecentesItens",["tipo","quantidade","unidade","detalhes"]); }','function coletarEntorpecentesItens() { return coletarItens("entorpecentesItens",["tipo","forma_apresentacao","quantidade","detalhes"]); }')
+          s=re.sub(r'      const camposDrogas = \{"MACONHA":"maconha".*?\n      entorpecentesItens\.forEach\(item => \{.*?\n','',s,count=1,flags=re.S)
+          s=re.sub(r'      const entorpecentesSalvos = .*?;\n      const bensSubtraidosSalvos =', '''      const entorpecentesSalvos = Array.isArray(x.entorpecentes_itens) ? x.entorpecentes_itens : [];
+      const possuiEntorpecenteLegado = [x.maconha,x.cocaina,x.pasta_base,x.crack,x.skank].some(v=>Number(v)>0);
+      const avisoEntorpecentesLegados = document.getElementById("avisoEntorpecentesLegados");
+      if (avisoEntorpecentesLegados) avisoEntorpecentesLegados.hidden = !possuiEntorpecenteLegado;
+      const bensSubtraidosSalvos =''',s,count=1,flags=re.S)
+          for key in ['maconha','cocaina','pasta_base','crack','skank']:
+              s=re.sub(rf'^\s*{key}: document\.getElementById\("[^\"]+"\)\.value \|\| null,\n','',s,count=1,flags=re.M)
+          p.write_text(s,encoding='utf-8')
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cadastro.html
+          if ! git diff --cached --quiet; then git commit -m "Corrige cadastro de entorpecentes sem peso" && git push; fi
