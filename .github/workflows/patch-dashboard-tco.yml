@@ -1,0 +1,81 @@
+name: Integrar TCOs ao dashboard
+
+on:
+  push:
+    paths:
+      - '.github/workflows/patch-dashboard-tco.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-dashboard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Aplicar integração dos TCOs
+        shell: python
+        run: |
+          from pathlib import Path
+
+          p = Path('dashboard.html')
+          s = p.read_text(encoding='utf-8')
+
+          trocas = [
+            (
+              "let atual=[],anterior=[],charts={};",
+              "let atual=[],anterior=[],tcosAtual=[],tcosAnterior=[],charts={};"
+            ),
+            (
+              "function chart(id,type,labels,data,label,color='#2563eb')",
+              "function filtrarTcos(base){let campos=[['ocorrencia',x=>x.ocorrencia],['subtipo',x=>x.crime],['bairro',x=>x.bairro],['comandante',x=>x.comandante],['vtr',x=>x.vtr]];return base.filter(x=>{if(documento.value&&documento.value!=='TCO')return false;if(sisc.value&&x.sisc!==sisc.value)return false;if(companhia.value&&x.companhia!==companhia.value)return false;if(status.value&&x.status_atendimento!==status.value)return false;if(turno.value&&x.turno!==turno.value)return false;return campos.every(([id,get])=>!$(id).value||norm(get(x)).toLowerCase().includes($(id).value.toLowerCase()))})}\nfunction docsComTco(registros,tcos){let m=Object.fromEntries(rank(registros,'tipo_registro'));m.TCO=(m.TCO||0)+tcos.length;return Object.entries(m).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]))}\nfunction chart(id,type,labels,data,label,color='#2563eb')"
+            ),
+            (
+              "function render(){let a=filtrar(atual),p=filtrar(anterior),at=a.filter(x=>x.status_atendimento!=='DEMANDA REPRIMIDA'),rep=a.filter(x=>x.status_atendimento==='DEMANDA REPRIMIDA');kTotal.textContent=a.length;kAtendidas.textContent=at.length;kReprimidas.textContent=rep.length;kDocumentos.textContent=a.length;kPrisoes.textContent=soma(a,'numero_prisoes');kConduzidos.textContent=soma(a,'numero_conduzidos');vTotal.textContent=comparar.value==='nenhum'?'':`${variacao(a.length,p.length)} em relação ao comparado`;",
+              "function render(){let a=filtrar(atual),p=filtrar(anterior),ta=filtrarTcos(tcosAtual),tp=filtrarTcos(tcosAnterior),at=a.filter(x=>x.status_atendimento!=='DEMANDA REPRIMIDA'),rep=a.filter(x=>x.status_atendimento==='DEMANDA REPRIMIDA');kTotal.textContent=a.length;kAtendidas.textContent=at.length;kReprimidas.textContent=rep.length;kDocumentos.textContent=a.length+ta.length;kPrisoes.textContent=soma(a,'numero_prisoes');kConduzidos.textContent=soma(a,'numero_conduzidos');vTotal.textContent=comparar.value==='nenhum'?'':`${variacao(a.length,p.length)} em relação ao comparado`;"
+            ),
+            (
+              "let docs=rank(a,'tipo_registro'),docsP=Object.fromEntries(rank(p,'tipo_registro'));",
+              "let docs=docsComTco(a,ta),docsP=Object.fromEntries(docsComTco(p,tp));"
+            ),
+            (
+              "produtividade.innerHTML=pro.map(x=>`<div class=\"card\"><small>${x[0]}</small><strong>${soma(a,x[1])}</strong></div>`).join('');",
+              "produtividade.innerHTML=pro.map(x=>`<div class=\"card\"><small>${x[0]}</small><strong>${soma(a,x[1])}</strong></div>`).join('')+`<div class=\"card green\"><small>TCOs produzidos</small><strong>${ta.length}</strong></div>`;"
+            ),
+            (
+              "rows('tabComparativo',[indicador('Total de ocorrências',a.length,p.length),...pro.map(x=>indicador(x[0],soma(a,x[1]),soma(p,x[1]))),indicador('Maria da Penha',a.filter(x=>norm(x.ocorrencia).includes('MARIA DA PENHA')).length,p.filter(x=>norm(x.ocorrencia).includes('MARIA DA PENHA')).length)].join(''));",
+              "rows('tabComparativo',[indicador('Total de ocorrências',a.length,p.length),indicador('TCOs produzidos',ta.length,tp.length),indicador('Documentos produzidos',a.length+ta.length,p.length+tp.length),...pro.map(x=>indicador(x[0],soma(a,x[1]),soma(p,x[1]))),indicador('Maria da Penha',a.filter(x=>norm(x.ocorrencia).includes('MARIA DA PENHA')).length,p.filter(x=>norm(x.ocorrencia).includes('MARIA DA PENHA')).length)].join(''));"
+            ),
+            (
+              "async function carregar(){loading.style.display='grid';let calls=[db.rpc('obter_dados_dashboard',{data_inicio:ini.value,data_fim:fim.value})];if(comparar.value!=='nenhum'){let p=periodoComparado();calls.push(db.rpc('obter_dados_dashboard',{data_inicio:p[0],data_fim:p[1]}))}let r=await Promise.all(calls);if(r[0].error){loading.textContent='Erro ao carregar: '+r[0].error.message;return}atual=r[0].data||[];anterior=r[1]?.data||[];render()}",
+              "async function carregar(){loading.style.display='grid';let calls=[db.rpc('obter_dados_dashboard',{data_inicio:ini.value,data_fim:fim.value}),db.rpc('obter_tcos_dashboard',{data_inicio:ini.value,data_fim:fim.value})],temComparacao=comparar.value!=='nenhum';if(temComparacao){let pc=periodoComparado();calls.push(db.rpc('obter_dados_dashboard',{data_inicio:pc[0],data_fim:pc[1]}),db.rpc('obter_tcos_dashboard',{data_inicio:pc[0],data_fim:pc[1]}))}let r=await Promise.all(calls);if(r[0].error){loading.textContent='Erro ao carregar: '+r[0].error.message;return}if(r[1].error){loading.textContent='Erro ao carregar TCOs: '+r[1].error.message;return}atual=r[0].data||[];tcosAtual=r[1].data||[];anterior=temComparacao?(r[2].data||[]):[];tcosAnterior=temComparacao?(r[3].data||[]):[];render()}"
+            )
+          ]
+
+          for antigo, novo in trocas:
+            if antigo not in s:
+              raise SystemExit('Trecho esperado não encontrado: ' + antigo[:100])
+            s = s.replace(antigo, novo, 1)
+
+          p.write_text(s, encoding='utf-8')
+
+      - name: Validar alterações
+        run: |
+          grep -q "obter_tcos_dashboard" dashboard.html
+          grep -q "TCOs produzidos" dashboard.html
+          grep -q "docsComTco" dashboard.html
+
+      - name: Commit da integração
+        run: |
+          if git diff --quiet; then
+            echo "Sem alterações pendentes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dashboard.html
+          git commit -m "Integra TCOs vinculados ao dashboard"
+          git push
