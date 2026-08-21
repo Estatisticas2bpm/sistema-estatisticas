@@ -1,0 +1,50 @@
+name: Consolidar comandantes no dashboard
+
+on:
+  push:
+    paths:
+      - '.github/workflows/consolidar-comandantes-dashboard.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Consolidar identidades dos comandantes
+        shell: python
+        run: |
+          from pathlib import Path
+
+          p=Path('dashboard.html')
+          s=p.read_text(encoding='utf-8')
+
+          marcador="function render(){let a=filtrar(atual),p=filtrar(anterior),ta=filtrarTcos(tcosAtual),tp=filtrarTcos(tcosAnterior),"
+          funcoes="function chaveComandante(v){let k=chaveOcorrencia(v).replace(/\\./g,'').replace(/\\s+/g,' ').trim();return k.replace(/^(AL SGT|AL CAS|AL CHO|TEN CEL|CEL|MAJ|CAP|TEN|TEM|ASP|ST|SGT|SAG|CB|SD)( PM)? /,'').trim()}function gruposComandantes(registros){let m={};registros.forEach(o=>{let chave=chaveComandante(o.comandante);if(!chave)chave='NÃO INFORMADO';if(!m[chave])m[chave]={chave,nome:norm(o.comandante),data:o.data_ocorrencia||'',registros:[]};m[chave].registros.push(o);if(String(o.data_ocorrencia||'')>String(m[chave].data||'')){m[chave].data=o.data_ocorrencia||'';m[chave].nome=norm(o.comandante)}});return Object.values(m).sort((x,y)=>y.registros.length-x.registros.length||x.nome.localeCompare(y.nome))}\n"
+          if marcador not in s: raise SystemExit('Ponto de inserção não encontrado')
+          s=s.replace(marcador,funcoes+marcador,1)
+
+          antigo="let cs=rank(a,'comandante'),cp={};p.forEach(x=>cp[norm(x.comandante)]=(cp[norm(x.comandante)]||0)+1);rows('tabComandantes',cs.map((x,i)=>{let g=a.filter(y=>norm(y.comandante)===x[0]);return `<tr><td class=\"rank\">${i+1}º</td><td>${esc(x[0])}</td><td>${x[1]}</td><td>${soma(g,'quantidade_armas')}</td><td>${soma(g,'veiculos_recuperados')+soma(g,'veiculos_restricao')}</td><td>${soma(g,'foragidos')}</td><td>${g.filter(y=>(Array.isArray(y.entorpecentes_itens)&&y.entorpecentes_itens.some(i=>num(i.quantidade)>0))||norm(y.entorpecentes)==='SIM').length}</td></tr>`}).join(''));"
+          novo="let cs=gruposComandantes(a);rows('tabComandantes',cs.map((x,i)=>{let g=x.registros;return `<tr><td class=\"rank\">${i+1}º</td><td>${esc(x.nome)}</td><td>${g.length}</td><td>${soma(g,'quantidade_armas')}</td><td>${soma(g,'veiculos_recuperados')+soma(g,'veiculos_restricao')}</td><td>${soma(g,'foragidos')}</td><td>${g.filter(y=>(Array.isArray(y.entorpecentes_itens)&&y.entorpecentes_itens.some(i=>num(i.quantidade)>0))||norm(y.entorpecentes)==='SIM').length}</td></tr>`}).join(''));"
+          if antigo not in s: raise SystemExit('Bloco de comandantes não encontrado')
+          s=s.replace(antigo,novo,1)
+
+          p.write_text(s,encoding='utf-8')
+
+      - name: Validar
+        run: |
+          grep -q "chaveComandante" dashboard.html
+          grep -q "gruposComandantes" dashboard.html
+
+      - name: Publicar
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dashboard.html
+          git commit -m "Consolida policiais duplicados no ranking de comandantes"
+          git push
