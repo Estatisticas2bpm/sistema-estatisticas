@@ -1727,6 +1727,7 @@
 
 
     const idEdicao = new URLSearchParams(location.search).get("id");
+    let registroOriginalEdicao = null;
     function definirCampo(id, valor) {
       const el = document.getElementById(id);
       if (!el || valor === null || valor === undefined) return;
@@ -1741,6 +1742,7 @@
       const resposta = await banco.rpc("obter_ocorrencia_publica", {p_id:idEdicao});
       if (resposta.error || !resposta.data) { alert("Não foi possível carregar a ocorrência para edição."); return; }
       const x = resposta.data;
+      registroOriginalEdicao = x;
       const pessoasSalvas = separarPessoas(x.observacao_final);
       x.observacao_final = pessoasSalvas.texto;
       const mapa = {data_ocorrencia:"data",status_atendimento:"statusAtendimento",motivo_repressao:"motivoRepressao",municipio:"municipio",vtr:"vtr",tipo_registro:"tipoRegistro",numero_bo:"numeroBo",hora_inicial:"horaInicial",hora_final:"horaFinal",ocorrencia:"ocorrencia",crime:"crime",numero_conduzidos:"numeroConduzidos",orientacoes:"orientacoes",veiculos_recuperados:"veiculosRecuperados",endereco:"endereco",numero_endereco:"numeroEndereco",bairro:"bairro",local_entrega:"localEntrega",vitima_nacionalidade:"nacVitima",vitima_sexo:"sexoVitima",vitima_idade:"idadeVitima",infrator_nacionalidade:"nacInfrator",infrator_sexo:"sexoInfrator",infrator_idade:"idadeInfrator",comandante:"comandante",historico_resumido:"mo",materialidade:"materialidade",observacao:"observacao1",entorpecentes:"entorpecentes",maconha:"maconha",cocaina:"cocaina",pasta_base:"pastaBase",crack:"crack",skank:"skank",quantidade_armas:"quantArmas",quantidade_arma_branca:"quantArmaBranca",arma_branca:"armaBranca",armas:"armas",quantidade_municoes:"quantMunicoes",municoes:"municoes",veiculos_restricao:"veiculosRestricao",foragidos:"foragidos",disparo:"disparo",auto_resistencia:"autoResistencia",quantidade_autos_infracao:"quantAutoInfracao",auto_infracao:"autoInfracao",balanca_precisao:"balanca",observacao_final:"observacaoFinal",latitude:"latitude",longitude:"longitude",endereco_formatado:"enderecoFormatado"};
@@ -1793,7 +1795,10 @@
       const bairroDigitado = normalizarCatalogo(document.getElementById("bairro").value);
       if (!bairroDigitado) { alert("Informe o bairro da ocorrência. Se o Google Maps não identificar corretamente, preencha o campo manualmente."); return; }
       document.getElementById("bairro").value = bairroDigitado;
-      if (!document.getElementById("endereco").value || !document.getElementById("latitude").value || !document.getElementById("longitude").value) { alert("Pesquise o endereço e selecione uma sugestão do Google Maps antes de salvar."); return; }
+      const enderecoAtual = document.getElementById("endereco").value;
+      const numeroAtual = document.getElementById("numeroEndereco").value;
+      const enderecoFoiAlterado = !idEdicao || !registroOriginalEdicao || normalizarCatalogo(enderecoAtual) !== normalizarCatalogo(registroOriginalEdicao.endereco) || String(numeroAtual||"").trim() !== String(registroOriginalEdicao.numero_endereco||"").trim();
+      if ((!enderecoAtual || !document.getElementById("latitude").value || !document.getElementById("longitude").value) && enderecoFoiAlterado) { alert("O endereço foi alterado. Pesquise e selecione uma sugestão do Google Maps antes de salvar."); return; }
       if (importacaoPdfPendente && !confirm("Você conferiu os dados preenchidos pelo PDF, corrigiu o que for necessário e confirma que deseja salvar esta ocorrência?")) return;
 
       botaoSalvar.disabled = true;
