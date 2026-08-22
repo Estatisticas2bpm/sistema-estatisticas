@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Aplicar patch
         shell: python
         run: |
@@ -24,10 +26,11 @@ jobs:
           s,n=re.subn(padrao,novo,s,count=1,flags=re.S)
           if n!=1 and 'id="conducoes"' not in s:
               raise SystemExit('Não foi possível trocar os KPIs')
-          padrao_js=r'var rr=await Promise\.all\(\[db\.rpc\("obter_dados_dashboard",\{data_inicio:iso\(inicio\),data_fim:iso\(fim\)\}\),db\.rpc\("obter_catalogos_cadastro"\)\]\);var d=rr\[0\]\.data\|\|\[\],cats=rr\[1\]\.data\|\|\{\};var a=.*?;total\.textContent=d\.length;atendidas\.textContent=a;reprimidas\.textContent=rep;taxa\.textContent=\(d\.length\?Math\.round\(a\*100/d\.length\):0\)\+"%";'
+          antigo='var rr=await Promise.all([db.rpc("obter_dados_dashboard",{data_inicio:iso(inicio),data_fim:iso(fim)}),db.rpc("obter_catalogos_cadastro")]);var d=rr[0].data||[],cats=rr[1].data||{};var a=d.filter(function(x){return x.status_atendimento!=="DEMANDA REPRIMIDA"}).length,rep=d.length-a;total.textContent=d.length;atendidas.textContent=a;reprimidas.textContent=rep;taxa.textContent=(d.length?Math.round(a*100/d.length):0)+"%";'
           novo_js='var rr=await Promise.all([db.rpc("obter_dados_dashboard",{data_inicio:iso(inicio),data_fim:iso(fim)}),db.rpc("obter_tcos_dashboard",{data_inicio:iso(inicio),data_fim:iso(fim)}),db.rpc("obter_catalogos_cadastro")]);var d=rr[0].data||[],tcos=rr[1].data||[],cats=rr[2].data||{};total.textContent=d.length;conducoes.textContent=d.reduce(function(s,x){return s+(Number(x.conducoes_operacionais)||0)},0);tcosProduzidos.textContent=tcos.length;veiculosRecuperadosKpi.textContent=d.reduce(function(s,x){return s+(Number(x.veiculos_recuperados)||0)},0);'
-          s,n2=re.subn(padrao_js,novo_js,s,count=1,flags=re.S)
-          if n2!=1 and 'tcosProduzidos.textContent=tcos.length' not in s:
+          if antigo in s:
+              s=s.replace(antigo,novo_js,1)
+          if 'tcosProduzidos.textContent=tcos.length' not in s:
               raise SystemExit('Não foi possível trocar a carga dos KPIs')
           p.write_text(s,encoding='utf-8')
       - name: Validar
@@ -41,4 +44,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git diff --cached --quiet || (git commit -m "Atualiza visão rápida com conduções TCOs e veículos" && git push)
+          if ! git diff --cached --quiet; then
+            git commit -m "Atualiza visão rápida com conduções TCOs e veículos"
+            git pull --rebase origin main
+            git push
+          fi
