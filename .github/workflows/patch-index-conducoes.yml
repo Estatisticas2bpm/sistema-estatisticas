@@ -1,0 +1,44 @@
+name: Atualizar KPIs da página inicial
+on:
+  push:
+    paths:
+      - '.github/workflows/patch-index-conducoes.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Aplicar patch
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          padrao=r'<article class="kpi" style="--accent:#14845f">.*?</article>\s*<article class="kpi" style="--accent:#d84955">.*?</article>\s*<article class="kpi" style="--accent:#18a0ae">.*?</article>'
+          novo='''<article class="kpi" style="--accent:#496B86"><div class="kpiTop"><div class="kpiIcon">⇢</div></div><label>Conduções</label><strong id="conducoes">—</strong><small>pessoas conduzidas no mês</small></article>
+<article class="kpi" style="--accent:#B7791F"><div class="kpiTop"><div class="kpiIcon">▤</div></div><label>TCOs Produzidos</label><strong id="tcosProduzidos">—</strong><small>termos produzidos no mês</small></article>
+<article class="kpi" style="--accent:#39705A"><div class="kpiTop"><div class="kpiIcon">↺</div></div><label>Veículos Recuperados</label><strong id="veiculosRecuperadosKpi">—</strong><small>recuperados no mês</small></article>'''
+          s,n=re.subn(padrao,novo,s,count=1,flags=re.S)
+          if n!=1 and 'id="conducoes"' not in s:
+              raise SystemExit('Não foi possível trocar os KPIs')
+          padrao_js=r'var rr=await Promise\.all\(\[db\.rpc\("obter_dados_dashboard",\{data_inicio:iso\(inicio\),data_fim:iso\(fim\)\}\),db\.rpc\("obter_catalogos_cadastro"\)\]\);var d=rr\[0\]\.data\|\|\[\],cats=rr\[1\]\.data\|\|\{\};var a=.*?;total\.textContent=d\.length;atendidas\.textContent=a;reprimidas\.textContent=rep;taxa\.textContent=\(d\.length\?Math\.round\(a\*100/d\.length\):0\)\+"%";'
+          novo_js='var rr=await Promise.all([db.rpc("obter_dados_dashboard",{data_inicio:iso(inicio),data_fim:iso(fim)}),db.rpc("obter_tcos_dashboard",{data_inicio:iso(inicio),data_fim:iso(fim)}),db.rpc("obter_catalogos_cadastro")]);var d=rr[0].data||[],tcos=rr[1].data||[],cats=rr[2].data||{};total.textContent=d.length;conducoes.textContent=d.reduce(function(s,x){return s+(Number(x.conducoes_operacionais)||0)},0);tcosProduzidos.textContent=tcos.length;veiculosRecuperadosKpi.textContent=d.reduce(function(s,x){return s+(Number(x.veiculos_recuperados)||0)},0);'
+          s,n2=re.subn(padrao_js,novo_js,s,count=1,flags=re.S)
+          if n2!=1 and 'tcosProduzidos.textContent=tcos.length' not in s:
+              raise SystemExit('Não foi possível trocar a carga dos KPIs')
+          p.write_text(s,encoding='utf-8')
+      - name: Validar
+        run: |
+          grep -q 'id="conducoes"' index.html
+          grep -q 'id="tcosProduzidos"' index.html
+          grep -q 'id="veiculosRecuperadosKpi"' index.html
+          ! grep -q 'id="atendidas"' index.html
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet || (git commit -m "Atualiza visão rápida com conduções TCOs e veículos" && git push)
