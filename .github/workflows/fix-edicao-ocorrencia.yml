@@ -1,0 +1,255 @@
+name: Corrigir salvamento da edição
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-edicao-ocorrencia.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  corrigir:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Corrigir cadastro e edição
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          p = Path('cadastro.html')
+          s = p.read_text(encoding='utf-8')
+
+          def rep(old, new, label):
+              global s
+              if old not in s:
+                  raise SystemExit(f'Trecho não encontrado: {label}')
+              s = s.replace(old, new, 1)
+
+          # Evita o bloqueio silencioso da validação nativa do navegador.
+          rep('<form id="formOcorrencia">', '<form id="formOcorrencia" novalidate>', 'form novalidate')
+
+          # Mensagem visível de erro/sucesso junto ao botão de salvar.
+          rep(
+              '      <div class="acoes">\n        <a class="botao-secundario" href="index.html">Cancelar e voltar</a>\n        <button type="submit">Salvar ocorrência</button>\n      </div>',
+              '      <div id="statusSalvar" hidden style="padding:13px 15px;border-radius:9px;background:#fff7ed;border:1px solid #fdba74;color:#9a3412;font-weight:700"></div>\n      <div class="acoes">\n        <a class="botao-secundario" href="index.html">Cancelar e voltar</a>\n        <button type="submit">Salvar ocorrência</button>\n      </div>',
+              'status salvar'
+          )
+
+          # Texto institucional de entorpecentes.
+          rep(
+              '<div><h3>Substâncias apreendidas</h3><small>Cadastre somente quando houver apreensão.</small></div>',
+              '<div><h3>Substâncias apreendidas</h3><small>Informe somente tipo, forma de apresentação e quantidade visual de unidades. Não registre peso (g, kg ou mg).</small></div>',
+              'texto entorpecentes'
+          )
+          rep(
+              '<div class="lista-itens" id="entorpecentesItens"><p class="lista-vazia">Nenhum entorpecente informado.</p></div>',
+              '<div id="avisoEntorpecentesLegados" hidden style="margin-bottom:12px;padding:12px;border:1px solid #f59e0b;border-radius:9px;background:#fffbeb;color:#92400e"><strong>Registro legado:</strong> esta ocorrência possui informação antiga de entorpecentes em peso. O dado foi preservado historicamente, mas não será convertido nem somado como unidade visual.</div><div class="lista-itens" id="entorpecentesItens"><p class="lista-vazia">Nenhum entorpecente informado.</p></div>',
+              'aviso legado'
+          )
+
+          # Identidade de comandante para aceitar graduações históricas sem duplicar policial.
+          rep(
+              '    function normalizarComandante(valor) {\n      return String(valor || "").trim().replace(/\\s+/g," ").toUpperCase();\n    }',
+              '    function normalizarComandante(valor) {\n      return String(valor || "").trim().replace(/\\s+/g," ").toUpperCase();\n    }\n    function chaveComandanteCadastro(valor) {\n      return normalizarComandante(valor).normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").replace(/\\./g,"").replace(/^(AL SGT|AL CAS|AL CHO|TEN CEL|CEL|MAJ|CAP|TEN|TEM|ASP|ST|SGT|SAG|CB|SD)( PM)?\\s+/,"").trim();\n    }',
+              'chave comandante'
+          )
+
+          # Nova estrutura institucional de entorpecentes.
+          rep(
+              '    const TIPOS_ENTORPECENTES = ["MACONHA","COCAÍNA","PASTA BASE","CRACK","SKANK","ECSTASY","LSD","OUTRO"];\n    const UNIDADES_ENTORPECENTES = ["GRAMA (g)","QUILOGRAMA (kg)","UNIDADE","PORÇÃO","INVÓLUCRO","OUTRO"];',
+              '    const TIPOS_ENTORPECENTES = ["MACONHA","COCAÍNA","CRACK","SKUNK","ECSTASY","OUTROS"];\n    const FORMAS_ENTORPECENTES = ["INVÓLUCRO","PORÇÃO","TABLETE","TIJOLO","PAPELOTE","PINO","COMPRIMIDO","SACOLA","OUTROS"];',
+              'listas entorpecentes'
+          )
+
+          old_add = '''    function adicionarEntorpecenteItem(dados = {}) {
+      const recipiente = document.getElementById("entorpecentesItens");
+      const bloco = document.createElement("div");
+      bloco.className = "item-estruturado entorpecente";
+      bloco.innerHTML = `<div class="campo"><label>Substância</label><select data-item="tipo">${opcoesHtml(TIPOS_ENTORPECENTES,dados.tipo)}</select></div><div class="campo"><label>Quantidade</label><input data-item="quantidade" type="number" min="0" step="any" value="${Number(dados.quantidade) || ""}"></div><div class="campo"><label>Unidade</label><select data-item="unidade">${opcoesHtml(UNIDADES_ENTORPECENTES,dados.unidade)}</select></div><div class="campo"><label>Detalhes/observações</label><input data-item="detalhes" value="${escaparHtml(dados.detalhes || "")}" placeholder="Informação opcional"></div><button class="remover-item" type="button" title="Remover este entorpecente" aria-label="Remover entorpecente">×</button>`;
+      bloco.querySelector(".remover-item").addEventListener("click", () => { bloco.remove(); atualizarListaVazia(recipiente,"Nenhum entorpecente informado."); });
+      recipiente.appendChild(bloco);
+      atualizarListaVazia(recipiente,"Nenhum entorpecente informado.");
+    }'''
+          new_add = '''    function adicionarEntorpecenteItem(dados = {}) {
+      const recipiente = document.getElementById("entorpecentesItens");
+      const bloco = document.createElement("div");
+      bloco.className = "item-estruturado entorpecente";
+      let tipo = dados.tipo === "SKANK" ? "SKUNK" : (dados.tipo || "");
+      if (["PASTA BASE","LSD","OUTRO"].includes(tipo)) tipo = "OUTROS";
+      let forma = dados.forma_apresentacao || dados.forma || dados.unidade || "";
+      if (["UNIDADE","OUTRO"].includes(forma)) forma = "OUTROS";
+      if (/GRAMA|QUILO|MILIGRAMA|\\bKG\\b|\\bMG\\b/i.test(forma)) forma = "";
+      bloco.innerHTML = `<div class="campo"><label>Tipo de entorpecente</label><select data-item="tipo">${opcoesHtml(TIPOS_ENTORPECENTES,tipo)}</select></div><div class="campo"><label>Forma de apresentação</label><select data-item="forma_apresentacao">${opcoesHtml(FORMAS_ENTORPECENTES,forma)}</select></div><div class="campo"><label>Quantidade</label><input data-item="quantidade" type="number" min="1" step="1" inputmode="numeric" value="${Number.isInteger(Number(dados.quantidade)) && Number(dados.quantidade)>0 ? Number(dados.quantidade) : 1}"></div><div class="campo"><label>Detalhes/observações</label><input data-item="detalhes" value="${escaparHtml(dados.detalhes || "")}" placeholder="Informação opcional"></div><button class="remover-item" type="button" title="Remover este entorpecente" aria-label="Remover entorpecente">×</button>`;
+      bloco.querySelector(".remover-item").addEventListener("click", () => { bloco.remove(); atualizarListaVazia(recipiente,"Nenhum entorpecente informado."); });
+      recipiente.appendChild(bloco);
+      atualizarListaVazia(recipiente,"Nenhum entorpecente informado.");
+    }'''
+          rep(old_add, new_add, 'adicionar entorpecente')
+
+          rep(
+              '    function coletarEntorpecentesItens() { return coletarItens("entorpecentesItens",["tipo","quantidade","unidade","detalhes"]); }',
+              '    function coletarEntorpecentesItens() { return coletarItens("entorpecentesItens",["tipo","forma_apresentacao","quantidade","detalhes"]); }',
+              'coletar entorpecentes'
+          )
+
+          old_sync = '''      document.getElementById("entorpecentes").value = entorpecentesItens.length ? "SIM" : "NÃO";
+      const camposDrogas = {"MACONHA":"maconha","COCAÍNA":"cocaina","PASTA BASE":"pastaBase","CRACK":"crack","SKANK":"skank"};
+      Object.values(camposDrogas).forEach(id => document.getElementById(id).value = "");
+      entorpecentesItens.forEach(item => { const id = camposDrogas[item.tipo]; if (id) document.getElementById(id).value = (Number(document.getElementById(id).value)||0) + item.quantidade; });
+      return {armasItens,municoesItens,recuperados,entorpecentesItens,bensSubtraidos};'''
+          new_sync = '''      document.getElementById("entorpecentes").value = entorpecentesItens.length ? "SIM" : "NÃO";
+      return {armasItens,municoesItens,recuperados,entorpecentesItens,bensSubtraidos};'''
+          rep(old_sync, new_sync, 'sincronizar entorpecentes')
+
+          old_load = '      const entorpecentesSalvos = Array.isArray(x.entorpecentes_itens) && x.entorpecentes_itens.length ? x.entorpecentes_itens : [["MACONHA",x.maconha],["COCAÍNA",x.cocaina],["PASTA BASE",x.pasta_base],["CRACK",x.crack],["SKANK",x.skank]].filter(([,quantidade])=>Number(quantidade)>0).map(([tipo,quantidade])=>({tipo,quantidade:Number(quantidade),unidade:"GRAMA (g)",detalhes:"Registro anterior à classificação detalhada"}));\n      const bensSubtraidosSalvos = Array.isArray(x.bens_subtraidos) ? x.bens_subtraidos : [];'
+          new_load = '      const entorpecentesSalvos = Array.isArray(x.entorpecentes_itens) ? x.entorpecentes_itens.map(item => ({...item,tipo:item.tipo === "SKANK" ? "SKUNK" : (["PASTA BASE","LSD","OUTRO"].includes(item.tipo) ? "OUTROS" : item.tipo),forma_apresentacao:item.forma_apresentacao || item.forma || (["INVÓLUCRO","PORÇÃO","TABLETE","TIJOLO","PAPELOTE","PINO","COMPRIMIDO","SACOLA","OUTROS"].includes(item.unidade) ? item.unidade : null)})).filter(item => item.tipo && item.forma_apresentacao && Number.isInteger(Number(item.quantidade)) && Number(item.quantidade)>0) : [];\n      const possuiEntorpecenteLegado = [x.maconha,x.cocaina,x.pasta_base,x.crack,x.skank].some(v=>Number(v)>0);\n      const avisoLegado = document.getElementById("avisoEntorpecentesLegados"); if (avisoLegado) avisoLegado.hidden = !possuiEntorpecenteLegado;\n      const bensSubtraidosSalvos = Array.isArray(x.bens_subtraidos) ? x.bens_subtraidos : [];'
+          rep(old_load, new_load, 'carregar entorpecentes legados')
+
+          # PDF: jamais transformar peso em quantidade visual.
+          old_pdf = '''        const tipoDroga = TIPOS_ENTORPECENTES.filter(t=>t!=="OUTRO").find(t=>chave.includes(textoComparavel(t)));
+        if (tipoDroga || chave.includes("ENTORPECENTE") || chave.includes("DROGA")) {
+          const quantidade = Number((descricao.match(/(\\d+(?:[.,]\\d+)?)\\s*(KG|QUILOGRAMA|G|GRAMA|UNIDADE|PORCAO|INVOLUCRO)/i)||[])[1]?.replace(",",".")) || quantidadeObjetoPdf(descricao,"PORCOES?|UNIDADES?|INVOLUCROS?");
+          const unidadeTexto = textoComparavel((descricao.match(/\\d+(?:[.,]\\d+)?\\s*(KG|QUILOGRAMA|G|GRAMA|UNIDADE|PORCAO|INVOLUCRO)/i)||[])[1]);
+          const unidade = unidadeTexto.includes("KG") || unidadeTexto.includes("QUILOGRAMA") ? "QUILOGRAMA (kg)" : unidadeTexto === "G" || unidadeTexto.includes("GRAMA") ? "GRAMA (g)" : unidadeTexto.includes("INVOLUCRO") ? "INVÓLUCRO" : unidadeTexto.includes("PORCAO") ? "PORÇÃO" : "UNIDADE";
+          dados.entorpecentes.push({tipo:tipoDroga || "OUTRO",quantidade,unidade,detalhes:descricao}); return;
+        }'''
+          new_pdf = '''        let tipoDroga = TIPOS_ENTORPECENTES.filter(t=>t!=="OUTROS").find(t=>chave.includes(textoComparavel(t)));
+        if (!tipoDroga && chave.includes("SKANK")) tipoDroga = "SKUNK";
+        if (!tipoDroga && chave.includes("PASTA BASE")) tipoDroga = "OUTROS";
+        if (tipoDroga || chave.includes("ENTORPECENTE") || chave.includes("DROGA")) {
+          const achado = descricao.match(/\\b(\\d+)\\s*(INV[ÓO]LUCROS?|POR[ÇC][ÕO]ES?|TABLETES?|TIJOLOS?|PAPELOTES?|PINOS?|COMPRIMIDOS?|SACOLAS?)\\b/i);
+          if (!achado) return;
+          const formaChave = textoComparavel(achado[2]);
+          const forma = formaChave.includes("INVOLUCRO") ? "INVÓLUCRO" : formaChave.includes("PORCAO") ? "PORÇÃO" : formaChave.includes("TABLETE") ? "TABLETE" : formaChave.includes("TIJOLO") ? "TIJOLO" : formaChave.includes("PAPELOTE") ? "PAPELOTE" : formaChave.includes("PINO") ? "PINO" : formaChave.includes("COMPRIMIDO") ? "COMPRIMIDO" : formaChave.includes("SACOLA") ? "SACOLA" : "OUTROS";
+          dados.entorpecentes.push({tipo:tipoDroga || "OUTROS",quantidade:Number(achado[1]),forma_apresentacao:forma,detalhes:descricao}); return;
+        }'''
+          rep(old_pdf, new_pdf, 'extrator PDF drogas')
+
+          # Guarda o registro original para permitir edição de dados históricos sem coordenadas antigas.
+          rep(
+              '    const idEdicao = new URLSearchParams(location.search).get("id");',
+              '    const idEdicao = new URLSearchParams(location.search).get("id");\n    let registroOriginalEdicao = null;',
+              'registro original'
+          )
+          rep(
+              '      const x = resposta.data;\n      const pessoasSalvas = separarPessoas(x.observacao_final);',
+              '      const x = resposta.data;\n      registroOriginalEdicao = x;\n      const pessoasSalvas = separarPessoas(x.observacao_final);',
+              'guardar original'
+          )
+
+          # Após preencher a ocorrência histórica, troca somente a exibição do comandante por seu cadastro canônico atual.
+          rep(
+              '      carregarItensEstruturados(x);\n      definirCampo("localEntrega",padronizarLocalEntrega(x.local_entrega));',
+              '      carregarItensEstruturados(x);\n      const chaveCmtOriginal = chaveComandanteCadastro(x.comandante);\n      const cmtCanonico = catalogos.comandantes.find(c => chaveComandanteCadastro(c) === chaveCmtOriginal);\n      if (cmtCanonico) campoComandante.value = cmtCanonico;\n      definirCampo("localEntrega",padronizarLocalEntrega(x.local_entrega));',
+              'comandante canônico edição'
+          )
+
+          # Funções de erro e validação explícita.
+          marker = '    formulario.addEventListener("submit", async (evento) => {'
+          if marker not in s:
+              raise SystemExit('Marcador submit não encontrado')
+          helpers = '''    function mostrarErroSalvar(mensagem, elemento) {
+      const box = document.getElementById("statusSalvar");
+      box.hidden = false; box.textContent = mensagem;
+      if (elemento) { elemento.scrollIntoView({behavior:"smooth",block:"center"}); try { elemento.focus(); } catch (_) {} }
+    }
+    function limparErroSalvar() { const box=document.getElementById("statusSalvar"); box.hidden=true; box.textContent=""; }
+    function validarCamposObrigatorios() {
+      const obrigatorios = [
+        ["data","Informe a data da ocorrência."],["statusAtendimento","Informe a situação do atendimento."],["municipio","Informe o município."],
+        ["tipoRegistro","Informe o tipo de registro."],["numeroBo","Informe o número do BO/ROP."],["horaInicial","Informe a hora inicial."],["ocorrencia","Informe o tipo de ocorrência."]
+      ];
+      for (const [id,msg] of obrigatorios) { const el=document.getElementById(id); if (!String(el.value||"").trim()) { mostrarErroSalvar(msg,el); return false; } }
+      if (statusAtendimento.value === "DEMANDA REPRIMIDA" && !motivoRepressao.value.trim()) { mostrarErroSalvar("Informe o motivo da demanda reprimida.",motivoRepressao); return false; }
+      for (const [checkId,,entradaId] of configuracaoResultados) { const chk=document.getElementById(checkId),el=document.getElementById(entradaId); if (chk.checked && !String(el.value||"").trim()) { mostrarErroSalvar("Preencha o resultado operacional selecionado.",el); return false; } }
+      return true;
+    }
+'''
+          s = s.replace(marker, helpers + marker, 1)
+
+          # Início do submit: limpa status e faz validação sem silêncio.
+          rep(
+              '    formulario.addEventListener("submit", async (evento) => {\n      evento.preventDefault();\n      const botaoSalvar = formulario.querySelector(\'button[type="submit"]\');',
+              '    formulario.addEventListener("submit", async (evento) => {\n      evento.preventDefault();\n      limparErroSalvar();\n      if (!validarCamposObrigatorios()) return;\n      const botaoSalvar = formulario.querySelector(\'button[type="submit"]\');',
+              'início submit'
+          )
+
+          # Comandante: aceita mesma identidade mesmo com graduação histórica e grava a versão canônica.
+          rep(
+              '      const comandanteDigitado = normalizarComandante(campoComandante.value);\n      if (comandanteDigitado && !catalogos.comandantes.includes(comandanteDigitado)) { alert("Selecione um comandante válido na lista ou use o botão + para cadastrá-lo."); return; }\n      campoComandante.value = comandanteDigitado;',
+              '      const comandanteDigitado = normalizarComandante(campoComandante.value);\n      const comandanteCanonico = comandanteDigitado ? catalogos.comandantes.find(c => normalizarComandante(c) === comandanteDigitado || chaveComandanteCadastro(c) === chaveComandanteCadastro(comandanteDigitado)) : null;\n      if (comandanteDigitado && !comandanteCanonico) { mostrarErroSalvar("Selecione um comandante válido na lista ou use o botão + para cadastrá-lo.",campoComandante); return; }\n      campoComandante.value = comandanteCanonico || comandanteDigitado;',
+              'validação comandante'
+          )
+          s = s.replace('          comandante: comandanteDigitado || null,', '          comandante: (comandanteCanonico || comandanteDigitado) || null,', 1)
+
+          # Validação de endereço: registro histórico sem coordenada pode ser salvo se o endereço não foi alterado.
+          rep(
+              '      if (!document.getElementById("endereco").value || !document.getElementById("latitude").value || !document.getElementById("longitude").value) { alert("Pesquise o endereço e selecione uma sugestão do Google Maps antes de salvar."); return; }',
+              '      const enderecoAtual = document.getElementById("endereco").value;\n      const numeroAtual = document.getElementById("numeroEndereco").value;\n      const enderecoFoiAlterado = !idEdicao || !registroOriginalEdicao || normalizarCatalogo(enderecoAtual) !== normalizarCatalogo(registroOriginalEdicao.endereco) || String(numeroAtual||"").trim() !== String(registroOriginalEdicao.numero_endereco||"").trim();\n      if ((!enderecoAtual || !document.getElementById("latitude").value || !document.getElementById("longitude").value) && enderecoFoiAlterado) { mostrarErroSalvar("Pesquise o endereço e selecione uma sugestão do Google Maps antes de salvar.",document.getElementById("enderecoGoogle")); return; }',
+              'validação endereço'
+          )
+
+          # Não envia campos legados de peso; o RPC já preserva os históricos existentes quando as chaves não são enviadas.
+          for trecho in [
+              '          maconha: document.getElementById("maconha").value || null,\n',
+              '          cocaina: document.getElementById("cocaina").value || null,\n',
+              '          pasta_base: document.getElementById("pastaBase").value || null,\n',
+              '          crack: document.getElementById("crack").value || null,\n',
+              '          skank: document.getElementById("skank").value || null,\n'
+          ]:
+              if trecho not in s:
+                  raise SystemExit('Campo legado não encontrado no payload')
+              s = s.replace(trecho, '', 1)
+
+          # Mostra erros no próprio formulário, além do alert, e preserva o texto do botão de edição.
+          rep(
+              '          alert("Erro ao salvar a ocorrência: " + error.message);\n          return;',
+              '          mostrarErroSalvar("Erro ao salvar: " + error.message);\n          alert("Erro ao salvar a ocorrência: " + error.message);\n          return;',
+              'erro supabase'
+          )
+          rep(
+              '        alert("Ocorreu um erro inesperado ao salvar.");',
+              '        mostrarErroSalvar("Ocorreu um erro inesperado ao salvar: " + (erro.message || erro));\n        alert("Ocorreu um erro inesperado ao salvar: " + (erro.message || erro));',
+              'erro inesperado'
+          )
+          rep(
+              '        botaoSalvar.textContent = "Salvar ocorrência";',
+              '        botaoSalvar.textContent = textoOriginalBotao;',
+              'texto botão'
+          )
+
+          p.write_text(s, encoding='utf-8')
+
+      - name: Verificar sintaxe JavaScript
+        shell: python
+        run: |
+          from pathlib import Path
+          import re, subprocess, sys, tempfile
+          s=Path('cadastro.html').read_text(encoding='utf-8')
+          scripts=re.findall(r'<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)</script>',s,re.I)
+          if not scripts: raise SystemExit('Nenhum script inline encontrado')
+          for i,js in enumerate(scripts):
+              f=Path(f'/tmp/cadastro_script_{i}.js'); f.write_text(js,encoding='utf-8')
+              r=subprocess.run(['node','--check',str(f)],capture_output=True,text=True)
+              if r.returncode:
+                  print(r.stderr); raise SystemExit('Erro de sintaxe JS')
+          assert 'FORMAS_ENTORPECENTES' in s
+          assert 'UNIDADES_ENTORPECENTES' not in s
+          assert 'novalidate' in s
+          assert 'mostrarErroSalvar' in s
+          assert 'chaveComandanteCadastro' in s
+          print('Cadastro validado com sucesso')
+
+      - name: Publicar correção
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cadastro.html
+          git commit -m "Corrige salvamento e edição de ocorrências"
+          git push
