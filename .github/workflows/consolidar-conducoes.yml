@@ -1,0 +1,131 @@
+name: Consolidar conduções
+
+on:
+  push:
+    paths:
+      - '.github/workflows/consolidar-conducoes.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Atualizar cadastro, painel, dashboard e relatório
+        shell: python
+        run: |
+          from pathlib import Path
+
+          def trocar(s, antigo, novo, nome, obrigatorio=True):
+              if antigo not in s:
+                  if obrigatorio:
+                      raise SystemExit(f'Trecho não encontrado em {nome}: {antigo[:120]}')
+                  return s
+              return s.replace(antigo, novo, 1)
+
+          # --------------------------------------------------------------
+          # CADASTRO: daqui para frente só existe CONDUÇÃO
+          # --------------------------------------------------------------
+          p=Path('cadastro.html'); s=p.read_text(encoding='utf-8')
+          s=s.replace('grid-template-columns:repeat(5,minmax(0,1fr))','grid-template-columns:repeat(4,minmax(0,1fr))',1)
+          s=s.replace('              <label class="resultado-opcao"><input id="resultadoPrisao" type="checkbox"> Prisão</label>\n','',1)
+          s=s.replace('              <div class="campo" id="campoQtdPrisao" hidden><label for="numeroPrisoes">Quantidade de prisões</label><input id="numeroPrisoes" type="number" min="1"></div>\n','',1)
+          s=s.replace('      ["resultadoPrisao","campoQtdPrisao","numeroPrisoes"],\n','',1)
+          s=s.replace('        ["resultadoPrisao","campoQtdPrisao","numeroPrisoes",Number(registro.numero_prisoes)>0 || providencias.includes("PRISÃO")],\n','',1)
+          s=trocar(s,
+              '["resultadoConducao","campoQtdConducao","numeroConduzidos",Number(registro.numero_conduzidos)>0 || providencias.includes("CONDUÇÃO")],',
+              '["resultadoConducao","campoQtdConducao","numeroConduzidos",Math.max(Number(registro.numero_conduzidos)||0,Number(registro.numero_prisoes)||0)>0 || providencias.includes("CONDUÇÃO") || providencias.includes("PRISÃO")],',
+              'cadastro.html')
+          s=s.replace('      if (document.getElementById("resultadoPrisao").checked) lista.push("PRISÃO");\n','',1)
+          s=s.replace('numero_prisoes:"numeroPrisoes",','',1)
+          s=s.replace('          numero_prisoes: document.getElementById("resultadoPrisao").checked ? document.getElementById("numeroPrisoes").value : null,\n','',1)
+
+          # Ao editar cadastro antigo, preencher quantidade de conduções com a métrica consolidada.
+          marcador='      marcarResultadosExistentes(x);\n'
+          if marcador in s:
+              s=s.replace(marcador, marcador+'      if (document.getElementById("resultadoConducao").checked) document.getElementById("numeroConduzidos").value = Math.max(Number(x.numero_conduzidos)||0,Number(x.numero_prisoes)||0);\n',1)
+
+          if 'resultadoPrisao' in s or 'numeroPrisoes' in s:
+              raise SystemExit('Ainda existem referências visuais a prisão no cadastro')
+          p.write_text(s,encoding='utf-8')
+
+          # --------------------------------------------------------------
+          # PÁGINA INICIAL: 4 KPIs realmente úteis
+          # --------------------------------------------------------------
+          p=Path('index.html'); s=p.read_text(encoding='utf-8')
+          antigo='''<article class="kpi" style="--accent:#14845f"><div class="kpiTop"><div class="kpiIcon">✓</div></div><label>Ocorrências Atendidas</label><strong id="atendidas">—</strong><small id="atendidasNota">atendimentos realizados</small></article>
+<article class="kpi" style="--accent:#d84955"><div class="kpiTop"><div class="kpiIcon">!</div></div><label>Demandas Reprimidas</label><strong id="reprimidas">—</strong><small>sem atendimento</small></article>
+<article class="kpi" style="--accent:#18a0ae"><div class="kpiTop"><div class="kpiIcon">◔</div></div><label>Taxa de Atendimento</label><strong id="taxa">—</strong><small>do total recebido</small></article>'''
+          novo='''<article class="kpi" style="--accent:#496B86"><div class="kpiTop"><div class="kpiIcon">⇢</div></div><label>Conduções</label><strong id="conducoes">—</strong><small>pessoas conduzidas no mês</small></article>
+<article class="kpi" style="--accent:#B7791F"><div class="kpiTop"><div class="kpiIcon">▤</div></div><label>TCOs Produzidos</label><strong id="tcosProduzidos">—</strong><small>termos produzidos no mês</small></article>
+<article class="kpi" style="--accent:#39705A"><div class="kpiTop"><div class="kpiIcon">↺</div></div><label>Veículos Recuperados</label><strong id="veiculosRecuperadosKpi">—</strong><small>recuperados no mês</small></article>'''
+          s=trocar(s,antigo,novo,'index.html')
+
+          antigo="var rr=await Promise.all([db.rpc(\"obter_dados_dashboard\",{data_inicio:iso(inicio),data_fim:iso(fim)}),db.rpc(\"obter_catalogos_cadastro\")]);var d=rr[0].data||[],cats=rr[1].data||{};var a=d.filter(function(x){return x.status_atendimento!==\"DEMANDA REPRIMIDA\"}).length,rep=d.length-a;total.textContent=d.length;atendidas.textContent=a;reprimidas.textContent=rep;taxa.textContent=(d.length?Math.round(a*100/d.length):0)+\"%\";"
+          novo="var rr=await Promise.all([db.rpc(\"obter_dados_dashboard\",{data_inicio:iso(inicio),data_fim:iso(fim)}),db.rpc(\"obter_tcos_dashboard\",{data_inicio:iso(inicio),data_fim:iso(fim)}),db.rpc(\"obter_catalogos_cadastro\")]);var d=rr[0].data||[],tcos=rr[1].data||[],cats=rr[2].data||{};total.textContent=d.length;conducoes.textContent=d.reduce(function(s,x){return s+(Number(x.conducoes_operacionais)||0)},0);tcosProduzidos.textContent=tcos.length;veiculosRecuperadosKpi.textContent=d.reduce(function(s,x){return s+(Number(x.veiculos_recuperados)||0)},0);"
+          s=trocar(s,antigo,novo,'index.html')
+          p.write_text(s,encoding='utf-8')
+
+          # --------------------------------------------------------------
+          # DASHBOARD COMPLETO
+          # --------------------------------------------------------------
+          p=Path('dashboard.html'); s=p.read_text(encoding='utf-8')
+          s=trocar(s,
+            '<div class="card amber"><small>Prisões</small><strong id="kPrisoes">0</strong></div><div class="card steel"><small>Conduzidos</small><strong id="kConduzidos">0</strong></div>',
+            '<div class="card steel"><small>Conduções</small><strong id="kConduzidos">0</strong><em>inclui compatibilidade com registros legados</em></div>',
+            'dashboard.html')
+          s=trocar(s,
+            "kDocumentos.textContent=a.length+ta.length;kPrisoes.textContent=soma(a,'numero_prisoes');kConduzidos.textContent=soma(a,'numero_conduzidos');",
+            "kDocumentos.textContent=a.length+ta.length;kConduzidos.textContent=soma(a,'conducoes_operacionais');",
+            'dashboard.html')
+          s=trocar(s,
+            "let pro=[['Prisões','numero_prisoes','amber'],['Conduzidos','numero_conduzidos','steel'],",
+            "let pro=[['Conduções','conducoes_operacionais','steel'],",
+            'dashboard.html')
+          # Segurança contra qualquer rótulo restante na interface principal.
+          s=s.replace('Prisões','Conduções')
+          s=s.replace('PRISÕES','CONDUÇÕES')
+          p.write_text(s,encoding='utf-8')
+
+          # --------------------------------------------------------------
+          # RELATÓRIO PDF
+          # --------------------------------------------------------------
+          p=Path('relatorio.html'); s=p.read_text(encoding='utf-8')
+          s=s.replace('Auto de Resistência / Prisão','Auto de Resistência')
+          s=s.replace("['PRISÕES',sum(d,'numero_prisoes')],['Nº DE CONDUZIDOS',sum(d,'numero_conduzidos')],", "['CONDUÇÕES',sum(d,'conducoes_operacionais')],")
+          s=s.replace('AUTO DE RESISTÊNCIA / PRISÃO','AUTO DE RESISTÊNCIA')
+          s=s.replace('AUTO DE RESISTÊNCIA E PRISÃO','AUTO DE RESISTÊNCIA')
+          s=s.replace("['PRISÕES',sum(d,'numero_prisoes'),sum(old,'numero_prisoes')],['CONDUZIDOS',sum(d,'numero_conduzidos'),sum(old,'numero_conduzidos')],", "['CONDUÇÕES',sum(d,'conducoes_operacionais'),sum(old,'conducoes_operacionais')],")
+          # Se a ordem estiver diferente, ainda elimina linhas isoladas restantes.
+          s=s.replace("['PRISÕES',sum(d,'numero_prisoes'),sum(old,'numero_prisoes')],",'')
+          s=s.replace("['CONDUZIDOS',sum(d,'numero_conduzidos'),sum(old,'numero_conduzidos')],", "['CONDUÇÕES',sum(d,'conducoes_operacionais'),sum(old,'conducoes_operacionais')],")
+          s=s.replace('PRISÕES','CONDUÇÕES')
+          p.write_text(s,encoding='utf-8')
+
+      - name: Validar
+        run: |
+          ! grep -q "resultadoPrisao" cadastro.html
+          ! grep -q "numeroPrisoes" cadastro.html
+          grep -q "Conduções" index.html
+          grep -q "TCOs Produzidos" index.html
+          grep -q "Veículos Recuperados" index.html
+          grep -q "conducoes_operacionais" dashboard.html
+          ! grep -qi "prisões" dashboard.html
+          grep -q "CONDUÇÕES" relatorio.html
+
+      - name: Publicar
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cadastro.html index.html dashboard.html relatorio.html
+          if git diff --cached --quiet; then
+            echo "Nenhuma alteração necessária"
+            exit 0
+          fi
+          git commit -m "Consolida prisões legadas em conduções"
+          git push
