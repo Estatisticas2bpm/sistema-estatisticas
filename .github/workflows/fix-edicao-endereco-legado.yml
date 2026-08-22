@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Corrigir bloqueio de endereço na edição
+      - name: Corrigir fluxo de edição
         shell: python
         run: |
           from pathlib import Path
@@ -36,8 +36,63 @@ jobs:
           novo='      const enderecoAtual = document.getElementById("endereco").value;\n      const numeroAtual = document.getElementById("numeroEndereco").value;\n      const enderecoFoiAlterado = !idEdicao || !registroOriginalEdicao || normalizarCatalogo(enderecoAtual) !== normalizarCatalogo(registroOriginalEdicao.endereco) || String(numeroAtual||"").trim() !== String(registroOriginalEdicao.numero_endereco||"").trim();\n      if ((!enderecoAtual || !document.getElementById("latitude").value || !document.getElementById("longitude").value) && enderecoFoiAlterado) { alert("O endereço foi alterado. Pesquise e selecione uma sugestão do Google Maps antes de salvar."); return; }'
           if antigo in s:
             s=s.replace(antigo,novo,1)
-          elif 'const enderecoFoiAlterado =' not in s:
-            raise SystemExit('validação de endereço não encontrada')
+
+          if '<form id="formOcorrencia">' in s:
+            s=s.replace('<form id="formOcorrencia">','<form id="formOcorrencia" novalidate>',1)
+
+          if 'function validarFormularioPrincipal()' not in s:
+            marcador='    formulario.addEventListener("submit", async (evento) => {\n      evento.preventDefault();\n      const botaoSalvar = formulario.querySelector(\'button[type="submit"]\');'
+            if marcador not in s: raise SystemExit('Bloco submit não encontrado')
+            novo_submit='''    function mostrarErroCampo(id, mensagem) {
+      const el = document.getElementById(id);
+      alert(mensagem);
+      if (el) {
+        el.scrollIntoView({behavior:"smooth",block:"center"});
+        setTimeout(()=>el.focus(),250);
+      }
+      return false;
+    }
+    function validarFormularioPrincipal() {
+      const obrigatorios = [
+        ["data","Informe a data da ocorrência."],
+        ["statusAtendimento","Informe a situação da ocorrência."],
+        ["municipio","Informe o município."],
+        ["tipoRegistro","Selecione o tipo de registro."],
+        ["numeroBo","Informe o número do BO/ROP."],
+        ["horaInicial","Informe a hora inicial."],
+        ["ocorrencia","Selecione o Tipo de Ocorrência."]
+      ];
+      for (const [id,msg] of obrigatorios) {
+        const el=document.getElementById(id);
+        if (!el || !String(el.value||"").trim()) return mostrarErroCampo(id,msg);
+      }
+      if (document.getElementById("resultadoConducao").checked && !Number(document.getElementById("numeroConduzidos").value)) return mostrarErroCampo("numeroConduzidos","Informe a quantidade de conduzidos.");
+      if (document.getElementById("resultadoOrientacao").checked && !Number(document.getElementById("orientacoes").value)) return mostrarErroCampo("orientacoes","Informe a quantidade de orientações.");
+      if (document.getElementById("resultadoVeiculo").checked && !Number(document.getElementById("veiculosRecuperados").value)) return mostrarErroCampo("veiculosRecuperados","Informe a quantidade de veículos recuperados.");
+      if (document.getElementById("resultadoOutro").checked && !document.getElementById("outroResultadoDescricao").value.trim()) return mostrarErroCampo("outroResultadoDescricao","Descreva o outro resultado do atendimento.");
+      return true;
+    }
+
+    formulario.addEventListener("submit", async (evento) => {
+      evento.preventDefault();
+      if (!validarFormularioPrincipal()) return;
+      const botaoSalvar = formulario.querySelector('button[type="submit"]');'''
+            s=s.replace(marcador,novo_submit,1)
+
+          antigo_tipo='      const tipoEscolhido = catalogos.tipos.find(t => t.nome === document.getElementById("ocorrencia").value);\n      if (!tipoEscolhido) { alert("Selecione um Tipo de Ocorrência válido na lista."); return; }'
+          if antigo_tipo in s:
+            novo_tipo='      const valorOcorrencia = normalizarCatalogo(document.getElementById("ocorrencia").value);\n      const tipoEscolhido = catalogos.tipos.find(t => normalizarCatalogo(t.nome) === valorOcorrencia);\n      if (!tipoEscolhido) { return mostrarErroCampo("ocorrencia","Selecione um Tipo de Ocorrência válido na lista."); }\n      document.getElementById("ocorrencia").value = tipoEscolhido.nome;'
+            s=s.replace(antigo_tipo,novo_tipo,1)
+
+          antigo_sub='      if (subtipoDigitado && !catalogos.subtipos.some(s => Number(s.tipo_id) === Number(tipoEscolhido.id) && s.nome === subtipoDigitado)) { alert("Selecione um Subtipo válido relacionado à ocorrência."); return; }'
+          if antigo_sub in s:
+            novo_sub='      if (subtipoDigitado && !catalogos.subtipos.some(s => Number(s.tipo_id) === Number(tipoEscolhido.id) && normalizarCatalogo(s.nome) === normalizarCatalogo(subtipoDigitado))) { return mostrarErroCampo("crime","Selecione um Subtipo válido relacionado à ocorrência."); }'
+            s=s.replace(antigo_sub,novo_sub,1)
+
+          antigo_final='      } finally {\n        botaoSalvar.disabled = false;\n        botaoSalvar.textContent = "Salvar ocorrência";\n      }'
+          if antigo_final in s:
+            novo_final='      } finally {\n        botaoSalvar.disabled = false;\n        botaoSalvar.textContent = textoOriginalBotao;\n      }'
+            s=s.replace(antigo_final,novo_final,1)
 
           p.write_text(s,encoding='utf-8')
       - name: Validar sintaxe
@@ -48,6 +103,9 @@ jobs:
           s=Path('cadastro.html').read_text(encoding='utf-8')
           assert 'registroOriginalEdicao = x;' in s
           assert 'const enderecoFoiAlterado =' in s
+          assert 'formOcorrencia" novalidate' in s
+          assert 'function validarFormularioPrincipal()' in s
+          assert 'mostrarErroCampo' in s
           scripts=re.findall(r'<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)</script>',s,re.I)
           for i,js in enumerate(scripts):
             f=Path(f'/tmp/check_{i}.js');f.write_text(js,encoding='utf-8')
@@ -59,5 +117,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add cadastro.html
-          git commit -m "Permite editar ocorrência legada sem geolocalização"
+          git commit -m "Corrige validação e salvamento na edição de ocorrências"
           git push
