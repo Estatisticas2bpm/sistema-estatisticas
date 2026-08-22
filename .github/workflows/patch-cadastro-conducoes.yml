@@ -1,0 +1,45 @@
+name: Cadastro somente com conduções
+on:
+  push:
+    paths:
+      - '.github/workflows/patch-cadastro-conducoes.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Aplicar patch
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('cadastro.html')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('grid-template-columns:repeat(5,minmax(0,1fr))','grid-template-columns:repeat(4,minmax(0,1fr))',1)
+          s=s.replace('              <label class="resultado-opcao"><input id="resultadoPrisao" type="checkbox"> Prisão</label>\n','')
+          s=s.replace('              <div class="campo" id="campoQtdPrisao" hidden><label for="numeroPrisoes">Quantidade de prisões</label><input id="numeroPrisoes" type="number" min="1"></div>\n','')
+          s=s.replace('      ["resultadoPrisao","campoQtdPrisao","numeroPrisoes"],\n','')
+          s=s.replace('        ["resultadoPrisao","campoQtdPrisao","numeroPrisoes",Number(registro.numero_prisoes)>0 || providencias.includes("PRISÃO")],\n','')
+          s=s.replace('["resultadoConducao","campoQtdConducao","numeroConduzidos",Number(registro.numero_conduzidos)>0 || providencias.includes("CONDUÇÃO")],','["resultadoConducao","campoQtdConducao","numeroConduzidos",Math.max(Number(registro.numero_conduzidos)||0,Number(registro.numero_prisoes)||0)>0 || providencias.includes("CONDUÇÃO") || providencias.includes("PRISÃO")],')
+          s=s.replace('      if (document.getElementById("resultadoPrisao").checked) lista.push("PRISÃO");\n','')
+          s=s.replace('numero_prisoes:"numeroPrisoes",','')
+          s=s.replace('          numero_prisoes: document.getElementById("resultadoPrisao").checked ? document.getElementById("numeroPrisoes").value : null,\n','')
+          marcador='      marcarResultadosExistentes(x);\n'
+          extra='      if (document.getElementById("resultadoConducao").checked) document.getElementById("numeroConduzidos").value = Math.max(Number(x.numero_conduzidos)||0,Number(x.numero_prisoes)||0);\n'
+          if marcador in s and extra not in s:
+              s=s.replace(marcador,marcador+extra,1)
+          if 'resultadoPrisao' in s or 'numeroPrisoes' in s:
+              raise SystemExit('Ainda há controles de prisão no cadastro')
+          p.write_text(s,encoding='utf-8')
+      - name: Validar
+        run: |
+          ! grep -q 'resultadoPrisao' cadastro.html
+          ! grep -q 'numeroPrisoes' cadastro.html
+          grep -q 'resultadoConducao' cadastro.html
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cadastro.html
+          git diff --cached --quiet || (git commit -m "Mantém somente conduções no cadastro" && git push)
