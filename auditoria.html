@@ -1,7 +1,8 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Auditoria de Dados - 2º BPM</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -15,17 +16,19 @@
 <section class="panel"><div class="filters"><label>Data inicial<input id="ini" type="date"></label><label>Data final<input id="fim" type="date"></label><label>Exibir<select id="filtro"><option value="">Todas as pendências</option><option value="alta">Somente críticas</option><option value="media">Somente importantes</option><option value="baixa">Somente avisos</option></select></label><button id="atualizar" class="btn">Atualizar auditoria</button></div><div id="status" class="status"></div></section>
 <section class="cards"><div class="card steel"><small>Registros analisados</small><strong id="kRegistros">0</strong></div><div class="card red"><small>Ocorrências com pendência</small><strong id="kPendentes">0</strong></div><div class="card red"><small>Pendências críticas</small><strong id="kAltas">0</strong></div><div class="card amber"><small>Pendências importantes</small><strong id="kMedias">0</strong></div><div class="card green"><small>Registros sem alerta</small><strong id="kOk">0</strong></div></section>
 <section class="panel summary"><div class="quality"><div class="score" id="score">—</div><div><h2>Qualidade da base</h2><p id="textoQualidade">Calculando a consistência dos registros...</p></div></div><div><h2 style="margin:0 0 10px">Principais pendências</h2><div class="issues" id="chips"></div></div></section>
-<section class="panel"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap"><div><h2 style="margin:0 0 5px">Registros que precisam de revisão</h2><p style="margin:0 0 16px;color:var(--muted)">Cada ocorrência aparece uma única vez. Todas as pendências restantes ficam agrupadas na mesma linha.</p></div><span id="contadorTabela" class="chip">0 ocorrência(s)</span></div><div class="tablewrap"><table><thead><tr><th>Prioridade</th><th>Data</th><th>BO</th><th>Ocorrência</th><th>Bairro</th><th>Pendências restantes</th><th>Ação</th></tr></thead><tbody id="tabela"></tbody></table></div></section>
+<section class="panel"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap"><div><h2 style="margin:0 0 5px">Registros que precisam de revisão</h2><p style="margin:0 0 16px;color:var(--muted)">Cada ocorrência aparece uma única vez. As pendências restantes ficam agrupadas na mesma linha.</p></div><span id="contadorTabela" class="chip">0 ocorrência(s)</span></div><div class="tablewrap"><table><thead><tr><th>Prioridade</th><th>Data</th><th>BO</th><th>Ocorrência</th><th>Bairro</th><th>Pendências restantes</th><th>Ação</th></tr></thead><tbody id="tabela"></tbody></table></div></section>
 </main>
 <script>
 const db=supabase.createClient('https://jppmhhukujigxupgskdk.supabase.co','sb_publishable_ZVnU35i2x9zwppQqYg7UYw_mzaT43aG');
-const $=id=>document.getElementById(id);let dados=[],pendencias=[];
+const $=id=>document.getElementById(id);let dados=[],pendencias=[],fonteAtual='';
 function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function fmt(v){if(!v)return '—';let p=String(v).split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:v}
-function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]))}
 function chave(v){return String(v??'').trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase()}
 function vazio(v){let k=chave(v);return !k||['NI','N/I','N','NA','NAO INFORMADO','NÃO INFORMADO','NULL','UNDEFINED'].includes(k)}
 function numero(v){let n=Number(v);return Number.isFinite(n)?n:0}
+function geoPreenchido(o){return !vazio(o.latitude)&&!vazio(o.longitude)}
+function geoParcial(o){return !vazio(o.latitude)!==!vazio(o.longitude)}
 function chaveRegistro(o){return String(o.id||[o.data_ocorrencia||'',o.numero_bo||'',o.ocorrencia||'',o.crime||''].join('|'))}
 function add(o,nivel,tipo,texto){pendencias.push({o,nivel,tipo,texto})}
 function auditarRegistro(o){
@@ -36,11 +39,10 @@ function auditarRegistro(o){
  if(vazio(o.endereco))add(o,'media','Endereço','Logradouro não informado.');
  if(vazio(o.comandante))add(o,'media','Comandante','Comandante da viatura não informado.');
  if(vazio(o.hora_inicial))add(o,'media','Horário','Hora inicial não informada; prejudica a análise por horário.');
- if(vazio(o.turno)&&vazio(o.hora_inicial))add(o,'baixa','Turno','Turno e hora inicial não informados.');
  if(vazio(o.status_atendimento))add(o,'baixa','Situação','Situação do atendimento não informada.');
  if(chave(o.status_atendimento)==='DEMANDA REPRIMIDA'&&vazio(o.motivo_repressao))add(o,'media','Demanda reprimida','Demanda reprimida sem motivo registrado.');
- if(o.__geo_parcial)add(o,'media','Georreferenciamento','Registro possui apenas uma das coordenadas geográficas.');
- else if(!o.__geo_ok&&!vazio(o.endereco))add(o,'baixa','Georreferenciamento','Endereço informado, mas a ocorrência ainda não aparece como georreferenciada no mapa criminal.');
+ if(geoParcial(o))add(o,'media','Georreferenciamento','Registro possui apenas uma das coordenadas geográficas.');
+ else if(!geoPreenchido(o)&&!vazio(o.endereco)&&!o.__geo_mapa)add(o,'baixa','Georreferenciamento','Endereço informado, mas latitude/longitude ainda não estão gravadas.');
  if(numero(o.numero_conduzidos)<0||numero(o.numero_prisoes)<0)add(o,'alta','Quantidade','Quantidade de conduzidos/prisões inválida.');
  let armas=Array.isArray(o.armas_itens)?o.armas_itens:[],mun=Array.isArray(o.municoes_itens)?o.municoes_itens:[];
  if(numero(o.quantidade_armas)>0&&!armas.length)add(o,'baixa','Materialidade legada','Há quantidade de arma no registro antigo, mas sem detalhamento estruturado.');
@@ -55,38 +57,39 @@ function render(){
  $('kRegistros').textContent=dados.length;$('kPendentes').textContent=todos.length;$('kAltas').textContent=altas;$('kMedias').textContent=medias;$('kOk').textContent=ok;$('score').textContent=qualidade+'%';
  $('textoQualidade').textContent=qualidade>=95?'Base com excelente nível de completude no período.':qualidade>=85?'Base com boa qualidade, mas ainda existem registros que merecem revisão.':qualidade>=70?'Há um volume relevante de registros incompletos; recomenda-se revisar as pendências prioritárias.':'A base possui muitas pendências no período e precisa de revisão antes de análises conclusivas.';
  let cont={};pendencias.forEach(p=>cont[p.tipo]=(cont[p.tipo]||0)+1);$('chips').innerHTML=Object.entries(cont).sort((a,b)=>b[1]-a[1]).slice(0,8).map(x=>'<span class="chip">'+esc(x[0])+': '+x[1]+'</span>').join('')||'<span class="chip">Nenhuma pendência encontrada</span>';
- let filtro=$('filtro').value;let vis=todos.filter(g=>!filtro||g.itens.some(p=>p.nivel===filtro));$('contadorTabela').textContent=vis.length+' ocorrência(s)';
- $('tabela').innerHTML=vis.map((g,i)=>{let n=nivelMax(g.itens),itens=filtro?g.itens.filter(p=>p.nivel===filtro):g.itens;return '<tr><td><span class="sev '+n+'">'+rotuloNivel(n)+'</span></td><td>'+fmt(g.o.data_ocorrencia)+'</td><td>'+esc(g.o.numero_bo||'—')+'</td><td>'+esc(g.o.ocorrencia||g.o.crime||'—')+'</td><td>'+esc(g.o.bairro||'—')+'</td><td><div class="pend-list">'+itens.map(p=>'<div class="pend-item"><b>'+esc(p.tipo)+':</b> <span>'+esc(p.texto)+'</span></div>').join('')+'</div></td><td><button class="edit" data-i="'+i+'">Corrigir</button></td></tr>'}).join('')||'<tr><td colspan="7" class="empty">Nenhuma pendência encontrada para este filtro.</td></tr>';
+ let filtro=$('filtro').value,vis=todos.filter(g=>!filtro||g.itens.some(p=>p.nivel===filtro));$('contadorTabela').textContent=vis.length+' ocorrência(s)';
+ $('tabela').innerHTML=vis.map((g,i)=>{let n=nivelMax(g.itens),itens=filtro?g.itens.filter(p=>p.nivel===filtro):g.itens;return '<tr><td><span class="sev '+n+'">'+rotuloNivel(n)+'</span></td><td>'+fmt(g.o.data_ocorrencia)+'</td><td>'+esc(g.o.numero_bo||'—')+'</td><td>'+esc(g.o.ocorrencia||g.o.crime||'—')+'</td><td>'+esc(g.o.bairro||'—')+'</td><td><div class="pend-list">'+itens.map(p=>'<div class="pend-item"><b>'+esc(p.tipo)+':</b> <span>'+esc(p.texto)+'</span></div>').join('')+'</div></td><td><button class="edit">Corrigir</button></td></tr>'}).join('')||'<tr><td colspan="7" class="empty">Nenhuma pendência encontrada para este filtro.</td></tr>';
  Array.from($('tabela').querySelectorAll('.edit')).forEach((b,i)=>b._registro=vis[i].o);
- let corrigido=new URLSearchParams(location.search).get('corrigido');
- $('status').className='status'+(corrigido?' ok':'');$('status').textContent=corrigido?'BO '+corrigido+' salvo. A auditoria foi recalculada com os dados atuais.':'Auditoria concluída em '+new Date().toLocaleString('pt-BR')+'.';$('loading').style.display='none';
+ let corrigido=new URLSearchParams(location.search).get('corrigido');$('status').className='status'+(corrigido?' ok':'');$('status').textContent=(corrigido?'BO '+corrigido+' salvo. Auditoria recalculada. ':'Auditoria concluída. ')+(fonteAtual?'Fonte: '+fonteAtual+'. ':'')+'Atualizado em '+new Date().toLocaleString('pt-BR')+'.';$('loading').style.display='none';
+}
+async function lerFonte(args){
+ let q=db.from('ocorrencias').select('*');if(args.data_inicio)q=q.gte('data_ocorrencia',args.data_inicio);if(args.data_fim)q=q.lte('data_ocorrencia',args.data_fim);q=q.order('data_ocorrencia',{ascending:false});
+ const [direto,rpc]=await Promise.all([q,db.rpc('obter_dados_dashboard',args)]);
+ if(!direto.error&&Array.isArray(direto.data)&&direto.data.length)return {dados:direto.data,fonte:'tabela real'};
+ if(rpc.error)throw rpc.error;return {dados:rpc.data||[],fonte:'RPC de compatibilidade'};
+}
+async function lerRegistro(id){
+ const direto=await db.from('ocorrencias').select('*').eq('id',id).maybeSingle();if(!direto.error&&direto.data)return direto.data;
+ const rpc=await db.rpc('obter_ocorrencia_publica',{p_id:id});if(rpc.error)throw rpc.error;return rpc.data||null;
 }
 async function localizarOcorrenciaParaEdicao(o){
- const numeroBo=String(o.numero_bo||'').trim(),dataOcorrencia=o.data_ocorrencia||null;if(o.id&&o.id!=='undefined'&&o.id!=='null')return o.id;if(!numeroBo)throw new Error('Esta pendência não possui número de BO para localizar o registro.');
+ if(o.id&&o.id!=='undefined'&&o.id!=='null')return o.id;const numeroBo=String(o.numero_bo||'').trim(),dataOcorrencia=o.data_ocorrencia||null;if(!numeroBo)throw new Error('Esta pendência não possui número de BO para localizar o registro.');
  let r=await db.rpc('consultar_ocorrencias_publicas_v2',{termo_busca:numeroBo,data_busca:dataOcorrencia});if(r.error)throw r.error;let lista=Array.isArray(r.data)?r.data:[],exato=lista.find(x=>String(x.numero_bo||'').trim()===numeroBo&&(!dataOcorrencia||x.data_ocorrencia===dataOcorrencia));
- if(!exato){r=await db.rpc('consultar_ocorrencias_publicas_v2',{termo_busca:numeroBo,data_busca:null});if(r.error)throw r.error;lista=Array.isArray(r.data)?r.data:[];exato=lista.find(x=>String(x.numero_bo||'').trim()===numeroBo&&(!dataOcorrencia||x.data_ocorrencia===dataOcorrencia))||lista.find(x=>String(x.numero_bo||'').trim()===numeroBo)}
- if(!exato||!exato.id)throw new Error('Não foi possível localizar o registro original deste BO.');return exato.id;
+ if(!exato){r=await db.rpc('consultar_ocorrencias_publicas_v2',{termo_busca:numeroBo,data_busca:null});if(r.error)throw r.error;lista=Array.isArray(r.data)?r.data:[];exato=lista.find(x=>String(x.numero_bo||'').trim()===numeroBo)}if(!exato||!exato.id)throw new Error('Não foi possível localizar o registro original deste BO.');return exato.id;
 }
 $('tabela').addEventListener('click',async e=>{let b=e.target.closest('.edit');if(!b)return;let o=b._registro;if(!o)return;let txt=b.textContent;b.disabled=true;b.textContent='Localizando...';try{let id=await localizarOcorrenciaParaEdicao(o),ret='auditoria.html?ini='+encodeURIComponent($('ini').value)+'&fim='+encodeURIComponent($('fim').value)+'&filtro='+encodeURIComponent($('filtro').value)+'&corrigido='+encodeURIComponent(o.numero_bo||'')+'&corrigido_id='+encodeURIComponent(id);location.href='cadastro.html?id='+encodeURIComponent(id)+'&retorno='+encodeURIComponent(ret)}catch(err){console.error(err);alert(err.message||'Não foi possível localizar esta ocorrência para edição.');b.disabled=false;b.textContent=txt}});
-function coordenadaValida(x){if(x.latitude==null||x.longitude==null||String(x.latitude).trim()===''||String(x.longitude).trim()==='')return false;let a=Number(x.latitude),b=Number(x.longitude);return Number.isFinite(a)&&Number.isFinite(b)&&a>2&&a<4&&b>-62&&b<-59}
 async function carregar(){
- $('loading').style.display='grid';$('loading').textContent='Auditando a base de dados...';let args={data_inicio:$('ini').value||null,data_fim:$('fim').value||null};let rr=await Promise.all([db.rpc('obter_dados_dashboard',args),db.rpc('obter_ocorrencias_mapa',{...args,tipo_filtro:null})]);if(rr[0].error){$('loading').textContent='Não foi possível executar a auditoria: '+rr[0].error.message;return}
- let mapa=rr[1].error?[]:(rr[1].data||[]),porId=new Map(),porBo=new Map();mapa.forEach(x=>{if(coordenadaValida(x)){if(x.id!=null)porId.set(String(x.id),x);if(x.numero_bo)porBo.set(chave(x.numero_bo)+'|'+String(x.data_ocorrencia||''),x)}});
- dados=(rr[0].data||[]).map(o=>{let g=porId.get(String(o.id))||porBo.get(chave(o.numero_bo)+'|'+String(o.data_ocorrencia||'')),latV=!vazio(o.latitude),lngV=!vazio(o.longitude);return {...o,__geo_ok:Boolean(g)||(latV&&lngV),__geo_parcial:latV!==lngV}});
- let qsCorrecao=new URLSearchParams(location.search),corrigidoId=qsCorrecao.get('corrigido_id'),corrigidoBo=qsCorrecao.get('corrigido');
- if(!corrigidoId&&corrigidoBo){const alvo=dados.find(o=>chave(o.numero_bo)===chave(corrigidoBo));if(alvo&&alvo.id!=null)corrigidoId=String(alvo.id)}
- if(corrigidoId){
-   const direto=await db.rpc('obter_ocorrencia_publica',{p_id:corrigidoId});
-   if(!direto.error&&direto.data){
-     const x=direto.data,latV=!vazio(x.latitude),lngV=!vazio(x.longitude),atual={...x,__geo_ok:latV&&lngV,__geo_parcial:latV!==lngV};
-     const idx=dados.findIndex(o=>String(o.id)===String(corrigidoId));
-     if(idx>=0) dados[idx]={...dados[idx],...atual};
-     else dados.push(atual);
-   }
- }
- render();
+ $('loading').style.display='grid';$('loading').textContent='Auditando a base de dados...';const args={data_inicio:$('ini').value||null,data_fim:$('fim').value||null};
+ try{
+  const [fonte,mapaResp]=await Promise.all([lerFonte(args),db.rpc('obter_ocorrencias_mapa',{...args,tipo_filtro:null})]);fonteAtual=fonte.fonte;
+  const mapa=mapaResp.error?[]:(mapaResp.data||[]),idsGeo=new Set(),bosGeo=new Set();mapa.forEach(x=>{if(geoPreenchido(x)){if(x.id!=null)idsGeo.add(String(x.id));if(x.numero_bo)bosGeo.add(chave(x.numero_bo)+'|'+String(x.data_ocorrencia||''))}});
+  dados=(fonte.dados||[]).map(o=>({...o,__geo_mapa:idsGeo.has(String(o.id))||bosGeo.has(chave(o.numero_bo)+'|'+String(o.data_ocorrencia||''))}));
+  const qs=new URLSearchParams(location.search),corrigidoId=qs.get('corrigido_id');if(corrigidoId){try{const x=await lerRegistro(corrigidoId);if(x){x.__geo_mapa=idsGeo.has(String(x.id))||bosGeo.has(chave(x.numero_bo)+'|'+String(x.data_ocorrencia||''));const idx=dados.findIndex(o=>String(o.id)===String(corrigidoId));if(idx>=0)dados[idx]=x;else dados.push(x)}}catch(err){console.error('Falha ao reler registro corrigido',err)}}
+  render();
+ }catch(err){console.error(err);$('loading').textContent='Não foi possível executar a auditoria: '+(err.message||err)}
 }
-$('atualizar').onclick=()=>{let u=new URL(location.href);u.searchParams.set('ini',$('ini').value);u.searchParams.set('fim',$('fim').value);u.searchParams.set('filtro',$('filtro').value);u.searchParams.delete('corrigido');history.replaceState(null,'',u);carregar()};$('filtro').onchange=render;
+$('atualizar').onclick=()=>{let u=new URL(location.href);u.searchParams.set('ini',$('ini').value);u.searchParams.set('fim',$('fim').value);u.searchParams.set('filtro',$('filtro').value);u.searchParams.delete('corrigido');u.searchParams.delete('corrigido_id');history.replaceState(null,'',u);carregar()};$('filtro').onchange=render;
 let qs=new URLSearchParams(location.search),h=new Date();$('ini').value=qs.get('ini')||iso(new Date(h.getFullYear(),0,1));$('fim').value=qs.get('fim')||iso(h);$('filtro').value=qs.get('filtro')||'';carregar();
 </script>
-</body></html>
+</body>
+</html>
