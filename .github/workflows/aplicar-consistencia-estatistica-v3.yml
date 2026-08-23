@@ -1,0 +1,49 @@
+name: Aplicar consistência estatística v3
+
+on:
+  push:
+    paths:
+      - '.github/workflows/aplicar-consistencia-estatistica-v3.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Aplicar patch consolidado
+        id: patch
+        shell: bash
+        run: |
+          set +e
+          python scripts/patch_entorpecentes_site.py > patch-consistencia-v3.log 2>&1
+          code=$?
+          cat patch-consistencia-v3.log
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Publicar resultado
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ "${{ steps.patch.outputs.code }}" = "0" ]; then
+            rm -f patch-consistencia-v3.log
+            git add cadastro.html dashboard.html relatorio.html
+            if ! git diff --cached --quiet; then
+              git commit -m "Corrige consistência estatística de cadastro dashboard e relatório"
+              git push
+            else
+              echo "Nenhuma alteração necessária."
+            fi
+          else
+            git add patch-consistencia-v3.log
+            git commit -m "Registra falha do patch de consistência estatística" || true
+            git push || true
+            exit 1
+          fi
