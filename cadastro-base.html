@@ -1,0 +1,1994 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadastrar ocorrência</title>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    :root {
+      --azul-escuro: #132b46;
+      --azul: #2556d8;
+      --azul-hover: #1e40af;
+      --fundo: #eef2f6;
+      --borda: #d7e0ea;
+      --texto: #1f2937;
+      --suave: #64748b;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--fundo);
+      color: var(--texto);
+    }
+
+    header {
+      padding: 24px 20px;
+      background: var(--azul-escuro);
+      color: white;
+    }
+
+    .topo {
+      width: min(1200px, 94%);
+      margin: auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+    }
+
+    header h1 {
+      margin: 0 0 5px;
+      font-size: 25px;
+    }
+
+    header p {
+      margin: 0;
+      opacity: .85;
+    }
+
+    .voltar {
+      color: white;
+      text-decoration: none;
+      border: 1px solid rgba(255,255,255,.45);
+      padding: 10px 16px;
+      border-radius: 8px;
+      white-space: nowrap;
+    }
+
+    main {
+      width: min(1200px, 94%);
+      margin: 28px auto;
+    }
+
+    .aviso {
+      margin-bottom: 18px;
+      padding: 14px 16px;
+      border-left: 4px solid var(--azul);
+      background: #ffffff;
+      border-radius: 8px;
+      color: #334155;
+    }
+
+    form {
+      display: grid;
+      gap: 18px;
+    }
+
+    section {
+      padding: 24px;
+      background: white;
+      border-radius: 13px;
+      box-shadow: 0 4px 16px rgba(0,0,0,.07);
+    }
+
+    section h2 {
+      margin: 0 0 18px;
+      font-size: 20px;
+      color: var(--azul-escuro);
+      border-bottom: 1px solid var(--borda);
+      padding-bottom: 12px;
+    }
+
+    .grade {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .campo {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .campo.duplo { grid-column: span 2; }
+    .campo.triplo { grid-column: span 3; }
+    .campo.inteiro { grid-column: 1 / -1; }
+
+    label {
+      font-size: 14px;
+      font-weight: bold;
+      color: #334155;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 11px 12px;
+      border: 1px solid var(--borda);
+      border-radius: 8px;
+      background: white;
+      color: var(--texto);
+      font: inherit;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: 2px solid rgba(37,86,216,.18);
+      border-color: var(--azul);
+    }
+
+    input[readonly] {
+      background: #f8fafc;
+      color: #475569;
+    }
+
+    textarea {
+      min-height: 92px;
+      resize: vertical;
+    }
+
+    .subtitulo {
+      grid-column: 1 / -1;
+      margin: 4px 0 -4px;
+      padding-top: 8px;
+      font-weight: bold;
+      color: var(--azul-escuro);
+    }
+
+    .acoes {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      padding: 4px 0 30px;
+    }
+
+    button, .botao-secundario {
+      border: 0;
+      border-radius: 9px;
+      padding: 13px 22px;
+      font-size: 16px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    button {
+      background: var(--azul);
+      color: white;
+    }
+
+    button:hover { background: var(--azul-hover); }
+
+    .botao-secundario {
+      background: white;
+      color: var(--azul-escuro);
+      border: 1px solid var(--borda);
+    }
+
+    .nota {
+      color: var(--suave);
+      font-size: 13px;
+      font-weight: normal;
+    }
+
+    .campo-com-acao { display: flex; gap: 8px; align-items: stretch; }
+    .campo-com-acao input { flex: 1; }
+    .resultados-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+    .resultado-opcao { display:flex; align-items:center; gap:9px; min-height:46px; padding:10px 12px; border:1px solid #cbd5e1; border-radius:10px; background:#f8fafc; cursor:pointer; font-weight:700; color:#334155; }
+    .resultado-opcao:has(input:checked) { border-color:#2563eb; background:#eff6ff; color:#1d4ed8; }
+    .resultado-opcao input { width:18px; height:18px; margin:0; flex:none; accent-color:#2563eb; }
+    .resultado-quantidades { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; margin-top:14px; }
+    .resultado-quantidades > [hidden] { display:none !important; }
+    #enderecoAutocomplete, gmp-place-autocomplete { display: block; width: 100%; }
+    #enderecoAutocomplete { position: relative; }
+    #enderecoSugestoes { position:absolute; z-index:1000; left:0; right:0; top:100%; background:#fff; border:1px solid #cbd5e1; border-radius:0 0 10px 10px; box-shadow:0 10px 20px rgba(15,23,42,.14); overflow:hidden; }
+    .sugestao-endereco-google { display:block; width:100%; min-height:44px; padding:10px 12px; border:0; border-bottom:1px solid #e2e8f0; background:#fff; color:#0f172a !important; -webkit-text-fill-color:#0f172a; font-size:15px; font-weight:600; line-height:1.35; text-align:left; cursor:pointer; }
+    .sugestao-endereco-google:hover,
+    .sugestao-endereco-google:focus-visible { background:#dbeafe; color:#1e3a8a !important; -webkit-text-fill-color:#1e3a8a; outline:none; }
+    .botao-adicionar { width: 44px; min-width: 44px; padding: 0; font-size: 25px; font-weight: bold; line-height: 1; border-radius: 8px; }
+    .cabecalho-pessoas { display:flex; justify-content:space-between; align-items:center; gap:12px; grid-column:1/-1; margin-top:6px; }
+    .cabecalho-pessoas .subtitulo { margin:0; }
+    .adicionar-pessoa { width:auto; min-width:0; padding:9px 13px; font-size:14px; }
+    .pessoa-adicional { grid-column:1/-1; display:grid; grid-template-columns:2fr 1fr 1fr auto; gap:14px; align-items:end; padding:14px; border:1px solid #dbe4ee; border-radius:12px; background:#f8fafc; }
+    .pessoa-adicional .campo { margin:0; }
+    .remover-pessoa { background:#b91c1c; width:42px; min-width:42px; padding:9px 0; }
+    .grupo-estruturado { grid-column:1/-1; padding:16px; border:1px solid #dbe4ee; border-radius:12px; background:#f8fafc; }
+    .grupo-estruturado + .grupo-estruturado { margin-top:4px; }
+    .grupo-estruturado-cabecalho { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; }
+    .grupo-estruturado-cabecalho h3 { margin:0; color:var(--azul-escuro); font-size:16px; }
+    .grupo-estruturado-acoes { display:flex; flex-wrap:wrap; gap:8px; }
+    .botao-item { padding:9px 13px; font-size:14px; }
+    .lista-itens { display:grid; gap:12px; }
+    .lista-vazia { margin:0; padding:14px; border:1px dashed #cbd5e1; border-radius:9px; color:#64748b; text-align:center; background:#fff; }
+    .item-estruturado { display:grid; grid-template-columns:1.15fr .55fr 1fr 1fr 1.7fr auto; gap:12px; align-items:end; padding:14px; border:1px solid #cbd5e1; border-radius:10px; background:#fff; }
+    .item-estruturado.municao { grid-template-columns:.7fr 1fr 2fr auto; }
+    .item-estruturado.recuperado { grid-template-columns:1.1fr .6fr 2fr auto; }
+    .item-estruturado.entorpecente { grid-template-columns:1.2fr .65fr .9fr 1.8fr auto; }
+    .item-estruturado.subtraido { grid-template-columns:repeat(4,minmax(0,1fr)) auto; }
+    .item-estruturado.subtraido .detalhe-largo { grid-column:span 2; }
+    .bloco-indicadores { grid-column:1/-1; padding:16px; border:1px solid #dbe4ee; border-radius:12px; background:#f8fafc; }
+    .bloco-indicadores h3 { margin:0 0 5px; color:var(--azul-escuro); font-size:16px; }
+    .bloco-indicadores > p { margin:0 0 14px; color:#64748b; font-size:13px; }
+    .bloco-indicadores .grade { gap:14px; }
+    .item-estruturado [hidden] { display:none !important; }
+    .remover-item { background:#b91c1c; width:42px; min-width:42px; padding:10px 0; }
+    .importador-pdf { margin:18px 0; padding:18px; border:1px solid #bfdbfe; border-radius:14px; background:linear-gradient(135deg,#eff6ff,#f8fafc); }
+    .importador-pdf h2 { margin:0 0 6px; color:#1e3a8a; }
+    .importador-pdf p { margin:5px 0; color:#475569; }
+    .importador-acoes { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-top:14px; }
+    .arquivo-pdf { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
+    .botao-importar-pdf { display:inline-flex; align-items:center; gap:8px; padding:11px 16px; border-radius:9px; background:#1d4ed8; color:#fff; font-weight:700; cursor:pointer; }
+    .botao-importar-pdf:hover { background:#1e40af; }
+    .status-importacao { margin-top:12px; padding:12px; border-radius:9px; background:#fff; border:1px solid #dbeafe; color:#334155; }
+    .status-importacao.sucesso { border-color:#86efac; background:#f0fdf4; color:#166534; }
+    .status-importacao.erro { border-color:#fca5a5; background:#fef2f2; color:#991b1b; }
+    dialog { width: min(460px, 92vw); border: 0; border-radius: 14px; padding: 0; box-shadow: 0 20px 60px rgba(15,23,42,.28); }
+    dialog::backdrop { background: rgba(15,23,42,.62); }
+    .modal-conteudo { padding: 24px; }
+    .modal-conteudo h3 { margin: 0 0 8px; color: var(--azul-escuro); }
+    .modal-conteudo p { margin: 0 0 18px; color: var(--suave); font-size: 14px; }
+    .modal-acoes { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+
+    @media (max-width: 900px) {
+      .grade { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .campo.triplo { grid-column: span 2; }
+      .pessoa-adicional { grid-template-columns:1fr 1fr; }
+      .resultados-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .resultado-quantidades { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .item-estruturado, .item-estruturado.municao, .item-estruturado.recuperado, .item-estruturado.entorpecente { grid-template-columns:1fr 1fr; }
+      .item-estruturado.subtraido { grid-template-columns:1fr 1fr; }
+    }
+
+    @media (max-width: 600px) {
+      .topo { align-items: flex-start; }
+      .topo, .acoes { flex-direction: column; }
+      .grade { grid-template-columns: 1fr; }
+      .campo.duplo, .campo.triplo, .campo.inteiro { grid-column: auto; }
+      .resultados-grid, .resultado-quantidades { grid-template-columns:1fr; }
+      .acoes a, .acoes button { width: 100%; text-align: center; }
+      .cabecalho-pessoas { align-items:flex-start; flex-direction:column; }
+      .cabecalho-pessoas button { width:100%; }
+      .pessoa-adicional { grid-template-columns:1fr; }
+      .remover-pessoa { width:100%; }
+      .grupo-estruturado-cabecalho { align-items:flex-start; flex-direction:column; }
+      .grupo-estruturado-acoes, .grupo-estruturado-acoes button { width:100%; }
+      .item-estruturado, .item-estruturado.municao, .item-estruturado.recuperado, .item-estruturado.entorpecente { grid-template-columns:1fr; }
+      .item-estruturado.subtraido { grid-template-columns:1fr; }.item-estruturado.subtraido .detalhe-largo{grid-column:auto}
+      .remover-item { width:100%; }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="topo">
+      <div>
+        <h1>Cadastrar ocorrência</h1>
+        <p>Sistema de Estatísticas Operacionais</p>
+      </div>
+
+      <a class="voltar" href="index.html">← Voltar ao painel</a>
+    </div>
+  </header>
+
+  <main>
+    <div class="aviso">
+      Preencha os dados operacionais. Os campos marcados com * são obrigatórios.
+    </div>
+
+    <section class="importador-pdf" aria-labelledby="tituloImportarPdf">
+      <h2 id="tituloImportarPdf">Preencher cadastro pelo PDF da ocorrência</h2>
+      <p>O documento é processado temporariamente no seu navegador e não é enviado nem armazenado pelo sistema.</p>
+      <p>Os dados encontrados serão preenchidos como rascunho. Para o endereço, o sistema prepara logradouro e bairro; clique na lupa e confirme o resultado correto no mapa. <small>Leitor PDF v2.1</small></p>
+      <div class="importador-acoes">
+        <label class="botao-importar-pdf" for="arquivoOcorrenciaPdf">Selecionar PDF</label>
+        <input class="arquivo-pdf" id="arquivoOcorrenciaPdf" type="file" accept="application/pdf,.pdf">
+        <span id="nomePdfSelecionado">Nenhum arquivo selecionado</span>
+      </div>
+      <div class="status-importacao" id="statusImportacaoPdf" hidden></div>
+    </section>
+
+    <form id="formOcorrencia" novalidate>
+      <section>
+        <h2>1. Identificação do registro</h2>
+
+        <div class="grade">
+          <div class="campo">
+            <label for="data">Data *</label>
+            <input id="data" name="data" type="date" required>
+          </div>
+
+          <div class="campo">
+            <label for="semana">Dia da semana</label>
+            <input id="semana" name="semana" type="text" readonly>
+          </div>
+
+          <div class="campo">
+            <label for="mes">Mês</label>
+            <input id="mes" name="mes" type="text" readonly>
+          </div>
+
+          <div class="campo"><label for="vtr">VTR</label><input id="vtr" name="vtr" type="text" placeholder="Ex.: 133"></div>
+          <div class="campo"><label for="statusAtendimento">Situação *</label><select id="statusAtendimento" required><option value="ATENDIDA">ATENDIDA</option><option value="DEMANDA REPRIMIDA">DEMANDA REPRIMIDA</option></select></div>
+          <div class="campo duplo" id="campoMotivo" style="display:none"><label for="motivoRepressao">Motivo da demanda reprimida *</label><input id="motivoRepressao" type="text" placeholder="Ex.: falta de viatura disponível"></div>
+          <div class="campo"><label for="municipio">Município *</label><input id="municipio" type="text" value="BOA VISTA" required></div>
+
+          <div class="campo">
+            <label for="tipoRegistro">Tipo *</label>
+            <select id="tipoRegistro" name="tipoRegistro" required>
+              <option value="">Selecione</option>
+              <option>BO</option>
+              <option>ROP</option>
+              <option value="TS">TÁTICO SETORIAL</option>
+              <option value="AME">AME</option>
+              <option>TCO</option>
+              <option>NI — Não Informado</option>
+            </select>
+          </div>
+
+          <div class="campo">
+            <label for="numeroBo">Nº BO/ROP *</label>
+            <input id="numeroBo" name="numeroBo" type="text" required>
+          </div>
+
+          <div class="campo">
+            <label for="horaInicial">Hora inicial *</label>
+            <input id="horaInicial" name="horaInicial" type="time" required>
+          </div>
+
+          <div class="campo">
+            <label for="horaFinal">Hora final</label>
+            <input id="horaFinal" name="horaFinal" type="time">
+          </div>
+
+          <div class="campo">
+            <label for="turno">Turno</label>
+            <select id="turno" name="turno">
+              <option value="">Selecione</option>
+              <option>MADRUGADA</option>
+              <option>MANHÃ</option>
+              <option>TARDE</option>
+              <option>NOITE</option>
+              <option>NI — Não Informado</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>2. Classificação e providências</h2>
+
+        <div class="grade">
+          <div class="campo duplo">
+            <label for="ocorrencia">Tipo de Ocorrência *</label>
+            <div class="campo-com-acao"><input id="ocorrencia" name="ocorrencia" type="text" list="listaOcorrencias" autocomplete="off" placeholder="Digite para pesquisar e selecione" required><button class="botao-adicionar" id="abrirNovoTipoOcorrencia" type="button" title="Cadastrar novo tipo de ocorrência" aria-label="Cadastrar novo tipo de ocorrência">+</button></div><datalist id="listaOcorrencias"></datalist>
+          </div>
+
+          <div class="campo duplo"><label for="crime">Subtipo da Ocorrência</label><input id="crime" type="text" list="listaSubtipos" autocomplete="off" placeholder="Selecione primeiro o tipo de ocorrência"><datalist id="listaSubtipos"></datalist><small id="fundamentoLegal" style="color:#64748b"></small></div>
+          <div class="campo inteiro">
+            <label>Resultados do atendimento</label>
+            <div class="resultados-grid">
+              <label class="resultado-opcao"><input id="resultadoConducao" type="checkbox"> Condução</label>
+              <label class="resultado-opcao"><input id="resultadoOrientacao" type="checkbox"> Orientação</label>
+              <label class="resultado-opcao"><input id="resultadoVeiculo" type="checkbox"> Veículo recuperado</label>
+              <label class="resultado-opcao"><input id="resultadoOutro" type="checkbox"> Outro resultado</label>
+            </div>
+            <div class="resultado-quantidades">
+              <div class="campo" id="campoQtdConducao" hidden><label for="numeroConduzidos">Quantidade de conduzidos</label><input id="numeroConduzidos" type="number" min="1"></div>
+              <div class="campo" id="campoQtdOrientacao" hidden><label for="orientacoes">Quantidade de orientações</label><input id="orientacoes" type="number" min="1"></div>
+              <div class="campo" id="campoQtdVeiculo" hidden><label for="veiculosRecuperados">Quantidade de veículos</label><input id="veiculosRecuperados" type="number" min="1"></div>
+              <div class="campo inteiro" id="campoOutroResultado" hidden><label for="outroResultadoDescricao">Descrição do outro resultado</label><input id="outroResultadoDescricao" type="text" maxlength="200" placeholder="Descreva brevemente o resultado"></div>
+            </div>
+            <small style="color:#64748b">Marque somente os resultados que ocorreram neste atendimento.</small>
+          </div>
+
+        </div>
+      </section>
+
+      <section>
+        <h2>3. Local da ocorrência</h2>
+
+        <div class="grade">
+          <div class="campo triplo">
+            <label for="endereco">Endereço</label>
+            <div id="enderecoAutocomplete"><input id="enderecoGoogle" type="text" autocomplete="off" placeholder="Digite uma rua ou avenida de Boa Vista/RR"><div id="enderecoSugestoes" hidden></div></div>
+            <details open style="margin-top:8px">
+              <summary style="cursor:pointer;color:#2563eb;font-weight:700">Não encontrou? Pesquisar endereço aproximado</summary>
+              <div class="campo-com-acao" style="margin-top:8px"><input id="enderecoAproximado" type="text" autocomplete="off" placeholder="Digite o endereço como foi informado"><button class="botao-adicionar" id="localizarEnderecoAproximado" type="button" title="Selecionar o resultado mais provável" aria-label="Selecionar o endereço mais provável">⌕</button></div>
+            </details>
+            <small id="statusEndereco" style="color:#64748b">Pesquise e selecione um endereço real de Boa Vista/RR.</small>
+            <input id="endereco" name="endereco" type="hidden"><input id="latitude" type="hidden"><input id="longitude" type="hidden"><input id="enderecoFormatado" type="hidden">
+          </div>
+
+          <div class="campo">
+            <label for="numeroEndereco">Número</label>
+            <input id="numeroEndereco" name="numeroEndereco" type="text"
+                   placeholder="Ex.: 847 ou S/N">
+          </div>
+
+          <div class="campo duplo">
+            <label for="bairro">Bairro</label>
+            <input id="bairro" name="bairro" type="text" list="listaBairros" autocomplete="off" placeholder="Preenchido pelo Google ou informado manualmente">
+            <small style="color:#64748b">Confira o bairro preenchido pelo Google. Se estiver vazio ou incorreto, você pode editar manualmente.</small>
+            <datalist id="listaBairros"></datalist><button id="abrirNovoBairro" type="button" hidden aria-hidden="true" tabindex="-1">+</button>
+          </div>
+
+          <div class="campo duplo">
+            <label for="localEntrega">Local de entrega do relatório</label>
+            <div class="campo-com-acao"><input id="localEntrega" name="localEntrega" type="text" list="listaLocais" autocomplete="off" placeholder="Digite para pesquisar e selecione"><button class="botao-adicionar" id="abrirNovoLocalEntrega" type="button" title="Cadastrar novo local de entrega" aria-label="Cadastrar novo local de entrega">+</button></div><datalist id="listaLocais"></datalist>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>4. Pessoas envolvidas</h2>
+
+        <div class="grade">
+          <div class="cabecalho-pessoas"><div class="subtitulo">Vítima 1</div><button class="botao-adicionar adicionar-pessoa" id="adicionarVitima" type="button">+ Adicionar vítima</button></div>
+
+          <div class="campo">
+            <label for="nacVitima">Nacionalidade</label>
+            <select id="nacVitima" name="nacVitima">
+              <option value="">Selecione</option>
+              <option value="BR">BR — Brasileira</option>
+              <option value="VE">VE — Venezuelana</option>
+              <option value="GY">GY — Guianense</option>
+              <option value="HT">HT — Haitiana</option>
+              <option value="CO">CO — Colombiana</option>
+              <option value="CU">CU — Cubana</option>
+              <option value="PE">PE — Peruana</option>
+              <option value="BO">BO — Boliviana</option>
+              <option value="AR">AR — Argentina</option>
+              <option value="PY">PY — Paraguaia</option>
+              <option value="SR">SR — Surinamesa</option>
+              <option value="FR">FR — Francesa</option>
+              <option value="OUTRA">Outra nacionalidade</option>
+              <option value="NI">NI — Não Informado</option>
+            </select>
+          </div>
+
+          <div class="campo">
+            <label for="sexoVitima">Sexo</label>
+            <select id="sexoVitima" name="sexoVitima">
+              <option value="">Selecione</option>
+              <option>F</option>
+              <option>M</option>
+              <option>Outro</option>
+              <option>NI — Não Informado</option>
+            </select>
+          </div>
+
+          <div class="campo">
+            <label for="idadeVitima">Idade</label>
+            <input id="idadeVitima" name="idadeVitima" type="number" min="0" max="130">
+          </div>
+          <div id="vitimasAdicionais" style="display:contents"></div>
+
+          <div class="cabecalho-pessoas"><div class="subtitulo">Infrator 1</div><button class="botao-adicionar adicionar-pessoa" id="adicionarInfrator" type="button">+ Adicionar infrator</button></div>
+
+          <div class="campo">
+            <label for="nacInfrator">Nacionalidade</label>
+            <select id="nacInfrator" name="nacInfrator">
+              <option value="">Selecione</option>
+              <option value="BR">BR — Brasileira</option>
+              <option value="VE">VE — Venezuelana</option>
+              <option value="GY">GY — Guianense</option>
+              <option value="HT">HT — Haitiana</option>
+              <option value="CO">CO — Colombiana</option>
+              <option value="CU">CU — Cubana</option>
+              <option value="PE">PE — Peruana</option>
+              <option value="BO">BO — Boliviana</option>
+              <option value="AR">AR — Argentina</option>
+              <option value="PY">PY — Paraguaia</option>
+              <option value="SR">SR — Surinamesa</option>
+              <option value="FR">FR — Francesa</option>
+              <option value="OUTRA">Outra nacionalidade</option>
+              <option value="NI">NI — Não Informado</option>
+            </select>
+          </div>
+
+          <div class="campo">
+            <label for="sexoInfrator">Sexo</label>
+            <select id="sexoInfrator" name="sexoInfrator">
+              <option value="">Selecione</option>
+              <option>F</option>
+              <option>M</option>
+              <option>Outro</option>
+              <option>NI — Não Informado</option>
+            </select>
+          </div>
+
+          <div class="campo">
+            <label for="idadeInfrator">Idade</label>
+            <input id="idadeInfrator" name="idadeInfrator" type="number" min="0" max="130">
+          </div>
+          <div id="infratoresAdicionais" style="display:contents"></div>
+
+          <div class="cabecalho-pessoas"><div class="subtitulo">Envolvidos sem classificação específica</div><button class="botao-adicionar adicionar-pessoa" id="adicionarEnvolvido" type="button">+ Adicionar envolvido</button></div>
+          <div id="envolvidosAdicionais" style="display:contents"></div>
+        </div>
+      </section>
+
+      <section>
+        <h2>5. Guarnição</h2>
+
+        <div class="grade">
+          <div class="campo">
+            <label for="comandante">Comandante da viatura</label>
+            <div class="campo-com-acao">
+              <input id="comandante" name="comandante" type="text" list="listaComandantes" autocomplete="off" placeholder="Pesquise e selecione">
+              <datalist id="listaComandantes"></datalist>
+              <button class="botao-adicionar" id="editarComandante" type="button" title="Editar comandante selecionado" aria-label="Editar comandante selecionado">✎</button>
+              <button class="botao-adicionar" id="abrirNovoComandante" type="button" title="Cadastrar novo comandante" aria-label="Cadastrar novo comandante">+</button>
+            </div>
+            <span class="nota">Use o padrão: graduação abreviada + nome de guerra.</span>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>6. Resumo e materialidade</h2>
+
+        <div class="grade">
+          <div class="campo inteiro">
+            <label for="mo">Histórico resumido / MO</label>
+            <textarea id="mo" name="mo"
+                      placeholder="Resumo objetivo do fato, sem nomes das pessoas."></textarea>
+          </div>
+
+          <div class="campo inteiro">
+            <label for="materialidade">Materialidade e objetos</label>
+            <textarea id="materialidade" name="materialidade"
+                      placeholder="Ex.: 01 celular; R$ 224,00; 01 bicicleta..."></textarea>
+          </div>
+
+          <div class="campo inteiro">
+            <label for="observacao1">Observação</label>
+            <textarea id="observacao1" name="observacao1"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>7. Bens subtraídos</h2>
+        <div class="grade">
+          <div class="grupo-estruturado">
+            <div class="grupo-estruturado-cabecalho">
+              <div><h3>Bens roubados ou furtados</h3><small>O bem continuará contado como subtraído mesmo se for recuperado posteriormente.</small></div>
+              <button class="botao-item" id="adicionarBemSubtraido" type="button">+ Adicionar bem</button>
+            </div>
+            <div class="lista-itens" id="bensSubtraidos"><p class="lista-vazia">Nenhum bem subtraído informado.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>8. Entorpecentes</h2>
+        <div class="grade">
+          <div class="grupo-estruturado">
+            <div class="grupo-estruturado-cabecalho">
+              <div><h3>Substâncias apreendidas</h3><small>Registre somente o que foi visualmente constatado: tipo, forma de apresentação e quantidade de unidades. Não informe peso (g, kg ou mg).</small></div>
+              <button class="botao-item" id="adicionarEntorpecente" type="button">+ Adicionar entorpecente</button>
+            </div>
+            <div id="avisoEntorpecentesLegados" hidden style="margin-bottom:12px;padding:12px;border:1px solid #f59e0b;border-radius:9px;background:#fffbeb;color:#92400e"><strong>Registro legado:</strong> esta ocorrência possui dados antigos de entorpecentes registrados em peso. O dado foi preservado, mas não será convertido nem somado como unidade visual.</div><div class="lista-itens" id="entorpecentesItens"><p class="lista-vazia">Nenhum entorpecente informado.</p></div>
+          </div>
+          <input id="entorpecentes" name="entorpecentes" type="hidden">
+          <input id="maconha" name="maconha" type="hidden"><input id="cocaina" name="cocaina" type="hidden">
+          <input id="pastaBase" name="pastaBase" type="hidden"><input id="crack" name="crack" type="hidden"><input id="skank" name="skank" type="hidden">
+        </div>
+      </section>
+
+      <section>
+        <h2>9. Armas e munições</h2>
+
+        <div class="grade">
+          <div class="grupo-estruturado">
+            <div class="grupo-estruturado-cabecalho">
+              <h3>Armas de fogo e simulacros</h3>
+              <div class="grupo-estruturado-acoes">
+                <button class="botao-item" id="adicionarArmaFogo" type="button">+ Adicionar arma de fogo</button>
+                <button class="botao-item" id="adicionarSimulacro" type="button">+ Adicionar simulacro</button>
+              </div>
+            </div>
+            <div class="lista-itens" id="armasItens"><p class="lista-vazia">Nenhuma arma ou simulacro informado.</p></div>
+          </div>
+
+          <input id="quantArmas" name="quantArmas" type="hidden">
+          <input id="armas" name="armas" type="hidden">
+
+          <div class="campo"><label for="quantArmaBranca">Quantidade de armas brancas</label><input id="quantArmaBranca" type="number" min="0"></div>
+          <div class="campo triplo"><label for="armaBranca">Armas brancas</label><input id="armaBranca" type="text" placeholder="Faca, canivete, facão..."></div>
+
+          <div class="grupo-estruturado">
+            <div class="grupo-estruturado-cabecalho">
+              <h3>Munições apreendidas</h3>
+              <button class="botao-item" id="adicionarMunicao" type="button">+ Adicionar munição</button>
+            </div>
+            <div class="lista-itens" id="municoesItens"><p class="lista-vazia">Nenhuma munição informada.</p></div>
+          </div>
+          <input id="quantMunicoes" name="quantMunicoes" type="hidden">
+          <input id="municoes" name="municoes" type="hidden">
+        </div>
+      </section>
+
+      <section>
+        <h2>10. Outros indicadores operacionais</h2>
+
+        <div class="grade">
+          <div class="grupo-estruturado">
+            <div class="grupo-estruturado-cabecalho">
+              <h3>Objetos e veículos recuperados/apreendidos</h3>
+              <button class="botao-item" id="adicionarItemRecuperado" type="button">+ Adicionar item</button>
+            </div>
+            <div class="lista-itens" id="itensRecuperados"><p class="lista-vazia">Nenhum objeto ou veículo informado.</p></div>
+          </div>
+          <input id="veiculosRestricao" name="veiculosRestricao" type="hidden">
+
+          <div class="bloco-indicadores">
+            <h3>Resultados operacionais</h3><p>Prisões especiais e emprego de arma de fogo.</p>
+            <div class="grade">
+              <div class="campo"><label for="foragidos">Foragidos capturados</label><input id="foragidos" name="foragidos" type="number" min="0"></div>
+              <div class="campo"><label for="disparo">Disparo de arma de fogo</label><select id="disparo" name="disparo"><option value="">Selecione</option><option>NÃO</option><option>SIM</option><option>NI — Não Informado</option></select></div>
+              <div class="campo"><label for="autoResistencia">Auto de resistência/prisão</label><select id="autoResistencia" name="autoResistencia"><option value="">Selecione</option><option>NÃO</option><option>SIM</option><option>NI — Não Informado</option></select></div>
+            </div>
+          </div>
+          <div class="bloco-indicadores">
+            <h3>Fiscalização de trânsito</h3><p>Preencha apenas quando houver autuação.</p>
+            <div class="grade">
+              <div class="campo"><label for="quantAutoInfracao">Quantidade de autos de infração</label><input id="quantAutoInfracao" name="quantAutoInfracao" type="number" min="0"></div>
+              <div class="campo triplo"><label for="autoInfracao">Descrição ou números dos autos</label><input id="autoInfracao" name="autoInfracao" type="text" placeholder="Opcional"></div>
+            </div>
+          </div>
+          <input id="balanca" name="balanca" type="hidden">
+
+          <div class="campo inteiro">
+            <label for="observacaoFinal">Observação final</label>
+            <textarea id="observacaoFinal" name="observacaoFinal"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <div class="acoes">
+        <a class="botao-secundario" href="index.html">Cancelar e voltar</a>
+        <button type="submit">Salvar ocorrência</button>
+      </div>
+    </form>
+  </main>
+
+  <dialog id="modalComandante">
+    <form class="modal-conteudo" id="formNovoComandante" method="dialog">
+      <h3 id="tituloModalComandante">Cadastrar novo comandante</h3>
+      <p>Informe somente a graduação abreviada e o nome de guerra. Ex.: SGT Sarmanha.</p>
+      <div class="campo">
+        <label for="novoComandante">Comandante</label>
+        <input id="novoComandante" type="text" maxlength="80" autocomplete="off" placeholder="Ex.: SGT Sarmanha" required>
+      </div>
+      <div class="modal-acoes">
+        <button class="botao-secundario" id="cancelarNovoComandante" type="button">Cancelar</button>
+        <button id="salvarNovoComandante" type="submit">Salvar comandante</button>
+      </div>
+    </form>
+  </dialog>
+  <dialog id="modalTipoOcorrencia">
+    <form class="modal-conteudo" id="formNovoTipoOcorrencia" method="dialog">
+      <h3>Cadastrar novo tipo de ocorrência</h3>
+      <p>Use um nome curto e padronizado. Antes de salvar, confira se a opção já existe na lista.</p>
+      <div class="campo"><label for="novoTipoOcorrencia">Tipo de ocorrência</label><input id="novoTipoOcorrencia" maxlength="120" autocomplete="off" placeholder="Ex.: SUICÍDIO" required></div>
+      <div class="modal-acoes"><button class="botao-secundario" id="cancelarNovoTipoOcorrencia" type="button">Cancelar</button><button type="submit">Salvar tipo</button></div>
+    </form>
+  </dialog>
+  <dialog id="modalNovoLocalEntrega">
+    <form class="modal-conteudo" id="formNovoLocalEntrega" method="dialog"><h3>Cadastrar local de entrega</h3><p>Cadastre somente se o local ainda não estiver na lista.</p><div class="campo"><label for="novoLocalEntrega">Nome ou sigla do local</label><input id="novoLocalEntrega" maxlength="120" required placeholder="Ex.: DEAM"></div><div class="modal-acoes"><button class="botao-secundario" id="cancelarNovoLocalEntrega" type="button">Cancelar</button><button type="submit">Adicionar local</button></div></form>
+  </dialog>
+  <dialog id="modalBairro">
+    <form class="modal-conteudo" id="formNovoBairro" method="dialog"><h3>Cadastrar novo bairro</h3><p>Cadastre apenas se o bairro ainda não estiver na lista.</p><div class="campo"><label for="novoBairro">Nome do bairro</label><input id="novoBairro" maxlength="100" required></div><div class="modal-acoes"><button class="botao-secundario" id="cancelarNovoBairro" type="button">Cancelar</button><button type="submit">Salvar bairro</button></div></form>
+  </dialog>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = "https://jppmhhukujigxupgskdk.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_ZVnU35i2x9zwppQqYg7UYw_mzaT43aG";
+    const banco = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let catalogos = {tipos:[],subtipos:[],bairros:[],locais:[],comandantes:[]};
+    let googleAddressElement = null;
+    let geocodificadorGoogle = null;
+    let temporizadorNumeroEndereco = null;
+    const ALIASES_LOCAIS_ENTREGA = {
+      "1DP":"1º DP", "2DP":"2º DP", "3DP":"3º DP", "4DP":"4º DP", "5DP":"5º DP",
+      "2BPM":"2º BPM", "PCI":"PC I", "PCII":"PC II", "NCPA":"NPCA",
+      "DRFVA":"DRRFVAT", "DPIPD":"DPIPCD"
+    };
+    function chaveLocalEntrega(valor) {
+      return String(valor || "").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/[^A-Z0-9]/g,"");
+    }
+    function padronizarLocalEntrega(valor) {
+      const informado = String(valor || "").trim().replace(/\s+/g," ").toUpperCase();
+      return ALIASES_LOCAIS_ENTREGA[chaveLocalEntrega(informado)] || informado;
+    }
+    function preencherLista(id, itens) {
+      document.getElementById(id).innerHTML = itens.map(v => '<option value="'+String(v).replace(/"/g,"&quot;")+'"></option>').join("");
+    }
+    function atualizarSubtipos() {
+      const tipo = catalogos.tipos.find(t => t.nome === document.getElementById("ocorrencia").value);
+      const lista = tipo ? catalogos.subtipos.filter(s => Number(s.tipo_id) === Number(tipo.id)) : [];
+      preencherLista("listaSubtipos", lista.map(s => s.nome));
+      const campo = document.getElementById("crime");
+      campo.placeholder = tipo ? "Digite para pesquisar e selecione" : "Selecione primeiro o tipo de ocorrência";
+      if (campo.value && !lista.some(s => s.nome === campo.value)) campo.value = "";
+      document.getElementById("fundamentoLegal").textContent = "";
+    }
+    async function carregarCatalogos() {
+      const [resposta, respostaComandantes] = await Promise.all([
+        banco.rpc("obter_catalogos_cadastro"),
+        banco.rpc("obter_comandantes_publicos")
+      ]);
+      if (resposta.error) { console.error(resposta.error); return; }
+      catalogos = resposta.data || catalogos;
+      catalogos.comandantes = respostaComandantes.error ? [] : (respostaComandantes.data || []);
+      catalogos.locais = [...new Set((catalogos.locais || []).map(padronizarLocalEntrega).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"pt-BR"));
+      preencherLista("listaOcorrencias", catalogos.tipos.map(t => t.nome));
+      preencherLista("listaBairros", catalogos.bairros);
+      preencherLista("listaLocais", catalogos.locais);
+      preencherLista("listaComandantes", catalogos.comandantes || []);
+    }
+    const modalNovoLocalEntrega = document.getElementById("modalNovoLocalEntrega");
+    const novoLocalEntrega = document.getElementById("novoLocalEntrega");
+    document.getElementById("abrirNovoLocalEntrega").addEventListener("click", () => {
+      novoLocalEntrega.value = padronizarLocalEntrega(document.getElementById("localEntrega").value);
+      modalNovoLocalEntrega.showModal();
+      novoLocalEntrega.focus();
+    });
+    document.getElementById("cancelarNovoLocalEntrega").addEventListener("click", () => modalNovoLocalEntrega.close());
+    document.getElementById("formNovoLocalEntrega").addEventListener("submit", evento => {
+      evento.preventDefault();
+      const nome = padronizarLocalEntrega(novoLocalEntrega.value);
+      if (nome.length < 2) { alert("Informe um nome ou sigla válido para o local de entrega."); return; }
+      const existente = catalogos.locais.find(local => chaveLocalEntrega(local) === chaveLocalEntrega(nome));
+      if (existente) {
+        document.getElementById("localEntrega").value = existente;
+        modalNovoLocalEntrega.close();
+        return;
+      }
+      catalogos.locais.push(nome);
+      catalogos.locais.sort((a,b)=>a.localeCompare(b,"pt-BR"));
+      preencherLista("listaLocais",catalogos.locais);
+      document.getElementById("localEntrega").value = nome;
+      modalNovoLocalEntrega.close();
+    });
+    const modalComandante = document.getElementById("modalComandante");
+    const campoComandante = document.getElementById("comandante");
+    const novoComandante = document.getElementById("novoComandante");
+    let comandanteEmEdicao = null;
+    function normalizarComandante(valor) {
+      return String(valor || "").trim().replace(/\s+/g," ").toUpperCase();
+    }
+    document.getElementById("abrirNovoComandante").addEventListener("click", function() {
+      comandanteEmEdicao = null;
+      document.getElementById("tituloModalComandante").textContent = "Cadastrar novo comandante";
+      novoComandante.value = normalizarComandante(campoComandante.value);
+      modalComandante.showModal();
+      novoComandante.focus();
+    });
+    document.getElementById("editarComandante").addEventListener("click", function() {
+      const atual = normalizarComandante(campoComandante.value);
+      if (!catalogos.comandantes.includes(atual)) {
+        alert("Primeiro selecione na lista o comandante que deseja editar.");
+        return;
+      }
+      comandanteEmEdicao = atual;
+      document.getElementById("tituloModalComandante").textContent = "Editar comandante";
+      novoComandante.value = atual;
+      modalComandante.showModal();
+      novoComandante.focus();
+    });
+    document.getElementById("cancelarNovoComandante").addEventListener("click", function() {
+      modalComandante.close();
+    });
+    document.getElementById("formNovoComandante").addEventListener("submit", async function(evento) {
+      evento.preventDefault();
+      const nome = normalizarComandante(novoComandante.value);
+      if (!/^(CEL|TEN CEL|MAJ|CAP|TEN|ASP|ST|SGT|CB|SD|AL SGT)\s+\S/.test(nome)) {
+        alert("Use o padrão Graduação + Nome de Guerra. Ex.: SGT Sarmanha.");
+        return;
+      }
+      const botao = document.getElementById("salvarNovoComandante");
+      botao.disabled = true;
+      botao.textContent = "Salvando...";
+      const resposta = comandanteEmEdicao
+        ? await banco.rpc("editar_comandante_publico", {p_nome_atual:comandanteEmEdicao,p_novo_nome:nome})
+        : await banco.rpc("cadastrar_comandante_publico", {p_nome:nome});
+      botao.disabled = false;
+      botao.textContent = "Salvar comandante";
+      if (resposta.error) { alert("Não foi possível cadastrar: " + resposta.error.message); return; }
+      if (comandanteEmEdicao) catalogos.comandantes = catalogos.comandantes.filter(v => v !== comandanteEmEdicao);
+      if (!catalogos.comandantes.includes(nome)) catalogos.comandantes.push(nome);
+      catalogos.comandantes.sort((a,b) => a.localeCompare(b,"pt-BR"));
+      preencherLista("listaComandantes", catalogos.comandantes);
+      campoComandante.value = nome;
+      comandanteEmEdicao = null;
+      modalComandante.close();
+    });
+    function normalizarCatalogo(valor) { return String(valor || "").trim().replace(/\s+/g," ").toUpperCase(); }
+    function bairroPadronizado(valor) {
+      const informado = normalizarCatalogo(valor);
+      const chave = informado.normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+      return catalogos.bairros.find(nome => normalizarCatalogo(nome).normalize("NFD").replace(/[\u0300-\u036f]/g,"") === chave) || informado;
+    }
+    const modalBairro = document.getElementById("modalBairro");
+    document.getElementById("abrirNovoBairro").addEventListener("click", function() {
+      document.getElementById("novoBairro").value = normalizarCatalogo(document.getElementById("bairro").value);
+      modalBairro.showModal();
+    });
+    document.getElementById("cancelarNovoBairro").addEventListener("click", () => modalBairro.close());
+    document.getElementById("formNovoBairro").addEventListener("submit", async function(evento) {
+      evento.preventDefault();
+      const nome = normalizarCatalogo(document.getElementById("novoBairro").value);
+      if (nome.length < 2) return;
+      const resposta = await banco.rpc("cadastrar_bairro_publico", {p_nome:nome});
+      if (resposta.error) { alert("Não foi possível cadastrar o bairro: "+resposta.error.message); return; }
+      if (!catalogos.bairros.includes(nome)) catalogos.bairros.push(nome);
+      catalogos.bairros.sort((a,b)=>a.localeCompare(b,"pt-BR"));
+      preencherLista("listaBairros",catalogos.bairros);
+      document.getElementById("bairro").value=nome;
+      modalBairro.close();
+    });
+    document.getElementById("ocorrencia").addEventListener("input", atualizarSubtipos);
+    document.getElementById("ocorrencia").addEventListener("change", atualizarSubtipos);
+    const configuracaoResultados = [
+      ["resultadoConducao","campoQtdConducao","numeroConduzidos"],
+      ["resultadoOrientacao","campoQtdOrientacao","orientacoes"],
+      ["resultadoVeiculo","campoQtdVeiculo","veiculosRecuperados"],
+      ["resultadoOutro","campoOutroResultado","outroResultadoDescricao"]
+    ];
+    function atualizarCampoResultado(checkId, campoId, entradaId, limpar) {
+      const marcado = document.getElementById(checkId).checked;
+      document.getElementById(campoId).hidden = !marcado;
+      const entrada = document.getElementById(entradaId);
+      entrada.required = marcado;
+      if (marcado && entrada.type === "number" && !entrada.value) entrada.value = "1";
+      if (!marcado && limpar) entrada.value = "";
+    }
+    configuracaoResultados.forEach(([checkId,campoId,entradaId]) => {
+      document.getElementById(checkId).addEventListener("change", () => atualizarCampoResultado(checkId,campoId,entradaId,true));
+    });
+    function marcarResultadosExistentes(registro) {
+      const providencias = [registro.providencia_1,registro.providencia_2].filter(Boolean);
+      const definicoes = [
+        ["resultadoConducao","campoQtdConducao","numeroConduzidos",Math.max(Number(registro.numero_conduzidos)||0,Number(registro.numero_prisoes)||0)>0 || providencias.includes("CONDUÇÃO") || providencias.includes("PRISÃO")],
+        ["resultadoOrientacao","campoQtdOrientacao","orientacoes",Number(registro.orientacoes)>0 || providencias.includes("ORIENTAÇÃO")],
+        ["resultadoVeiculo","campoQtdVeiculo","veiculosRecuperados",Number(registro.veiculos_recuperados)>0],
+        ["resultadoOutro","campoOutroResultado","outroResultadoDescricao",providencias.includes("OUTROS") || Boolean(registro.detalhes)]
+      ];
+      definicoes.forEach(([checkId,campoId,entradaId,marcado]) => {
+        document.getElementById(checkId).checked = marcado;
+        if (entradaId === "outroResultadoDescricao" && marcado) document.getElementById(entradaId).value = registro.detalhes || "OUTRO RESULTADO";
+        atualizarCampoResultado(checkId,campoId,entradaId,false);
+      });
+    }
+    function providenciasDosResultados() {
+      const lista = [];
+      if (document.getElementById("resultadoConducao").checked) lista.push("CONDUÇÃO");
+      if (document.getElementById("resultadoOrientacao").checked) lista.push("ORIENTAÇÃO");
+      if (document.getElementById("resultadoOutro").checked) lista.push("OUTROS");
+      return lista;
+    }
+    const modalTipoOcorrencia = document.getElementById("modalTipoOcorrencia");
+    document.getElementById("abrirNovoTipoOcorrencia").addEventListener("click", function() {
+      document.getElementById("novoTipoOcorrencia").value = normalizarCatalogo(document.getElementById("ocorrencia").value);
+      modalTipoOcorrencia.showModal();
+    });
+    document.getElementById("cancelarNovoTipoOcorrencia").addEventListener("click", () => modalTipoOcorrencia.close());
+    document.getElementById("formNovoTipoOcorrencia").addEventListener("submit", async function(evento) {
+      evento.preventDefault();
+      const nome = normalizarCatalogo(document.getElementById("novoTipoOcorrencia").value);
+      if (nome.length < 3) { alert("Informe um nome com pelo menos 3 caracteres."); return; }
+      const existente = catalogos.tipos.find(t => normalizarCatalogo(t.nome) === nome);
+      if (existente) { document.getElementById("ocorrencia").value = existente.nome; modalTipoOcorrencia.close(); atualizarSubtipos(); return; }
+      const resposta = await banco.rpc("cadastrar_tipo_ocorrencia_publico", {p_nome:nome});
+      if (resposta.error) { alert("Não foi possível cadastrar o tipo: " + resposta.error.message); return; }
+      const novo = resposta.data;
+      catalogos.tipos.push(novo);
+      catalogos.tipos.sort((a,b)=>a.nome.localeCompare(b.nome,"pt-BR"));
+      preencherLista("listaOcorrencias", catalogos.tipos.map(t=>t.nome));
+      document.getElementById("ocorrencia").value = novo.nome;
+      modalTipoOcorrencia.close();
+      atualizarSubtipos();
+    });
+    document.getElementById("crime").addEventListener("change", function() {
+      const subtipo = catalogos.subtipos.find(s => s.nome === this.value);
+      document.getElementById("fundamentoLegal").textContent = subtipo && subtipo.fundamento_legal ? subtipo.fundamento_legal : "";
+    });
+    function componenteEndereco(componentes, tipos) {
+      const item = (componentes || []).find(c => (c.types || []).some(t => tipos.includes(t)));
+      return item ? (item.longText || item.shortText || item.long_name || item.short_name || "") : "";
+    }
+    async function selecionarEnderecoGoogle(evento) {
+      const predicao = evento.placePrediction || (evento.detail && evento.detail.placePrediction);
+      const lugar = predicao && predicao.toPlace ? predicao.toPlace() : evento.place;
+      if (!lugar) return;
+      if (lugar.fetchFields) await lugar.fetchFields({fields:["addressComponents","formattedAddress","location","displayName"]});
+      const componentes = lugar.addressComponents || lugar.address_components || [];
+      const logradouro = componenteEndereco(componentes,["route"]) || lugar.displayName || lugar.name || "";
+      const bairro = componenteEndereco(componentes,["sublocality_level_1","sublocality","neighborhood","administrative_area_level_4"]);
+      const municipio = componenteEndereco(componentes,["locality","administrative_area_level_2"]);
+      const estado = componenteEndereco(componentes,["administrative_area_level_1"]);
+      const localizacao = lugar.location || (lugar.geometry && lugar.geometry.location);
+      const lat = localizacao && localizacao.lat();
+      const lng = localizacao && localizacao.lng();
+      document.getElementById("bairro").value = "";
+      document.getElementById("endereco").value = normalizarCatalogo(logradouro);
+      const campoGoogle = document.getElementById("enderecoGoogle");
+      if (campoGoogle) campoGoogle.value = lugar.formattedAddress || lugar.formatted_address || logradouro;
+      document.getElementById("enderecoFormatado").value = lugar.formattedAddress || lugar.formatted_address || logradouro;
+      document.getElementById("latitude").value = lat ?? "";
+      document.getElementById("longitude").value = lng ?? "";
+      if (bairro) document.getElementById("bairro").value = bairroPadronizado(bairro);
+      document.getElementById("municipio").value = normalizarCatalogo(municipio || "BOA VISTA");
+      document.getElementById("statusEndereco").textContent = "Endereço confirmado no Google Maps" + (estado ? " — " + estado : "") + ".";
+      if (document.getElementById("numeroEndereco").value.trim()) await atualizarCoordenadasPeloNumero();
+    }
+    async function atualizarCoordenadasPeloNumero() {
+      const numero = document.getElementById("numeroEndereco").value.trim();
+      const logradouro = document.getElementById("endereco").value.trim();
+      if (!numero || /^(S\/?N|SEM N[ÚU]MERO)$/i.test(numero) || !logradouro || !geocodificadorGoogle) return false;
+      const bairro = document.getElementById("bairro").value.trim();
+      const consulta = [logradouro + ", " + numero, bairro, "Boa Vista", "RR", "Brasil"].filter(Boolean).join(", ");
+      document.getElementById("statusEndereco").textContent = "Localizando o número " + numero + " no Google Maps...";
+      try {
+        const resposta = await Promise.race([
+          geocodificadorGoogle.geocode({address:consulta, componentRestrictions:{country:"BR"}}),
+          new Promise((_, rejeitar) => setTimeout(() => rejeitar(new Error("TIMEOUT_GEOCODIFICACAO")), 8000))
+        ]);
+        const resultado = resposta.results && resposta.results[0];
+        if (!resultado || !resultado.geometry || !resultado.geometry.location) {
+          document.getElementById("statusEndereco").textContent = "Rua confirmada, mas o Google não encontrou a posição exata desse número.";
+          return false;
+        }
+        document.getElementById("latitude").value = resultado.geometry.location.lat();
+        document.getElementById("longitude").value = resultado.geometry.location.lng();
+        document.getElementById("enderecoFormatado").value = resultado.formatted_address || consulta;
+        document.getElementById("statusEndereco").textContent = "Endereço e número confirmados no Google Maps. O ponto exato será usado no mapa criminal.";
+        return true;
+      } catch (erro) {
+        console.error("Falha ao localizar o número do endereço.", erro);
+        document.getElementById("statusEndereco").textContent = "Rua confirmada, mas não foi possível localizar esse número agora.";
+        return false;
+      }
+    }
+    async function iniciarAutocompleteGoogle() {
+      try {
+        const {AutocompleteSuggestion} = await google.maps.importLibrary("places");
+        geocodificadorGoogle = new google.maps.Geocoder();
+        const campoGoogle = document.getElementById("enderecoGoogle");
+        const caixaSugestoes = document.getElementById("enderecoSugestoes");
+        let temporizadorSugestoes;
+        async function buscarSugestoesGoogle(termo) {
+          const resposta = await AutocompleteSuggestion.fetchAutocompleteSuggestions({
+            input: termo,
+            includedRegionCodes: ["br"],
+            locationRestriction: {north:3.15,south:2.55,east:-60.35,west:-61.05}
+          });
+          return resposta.suggestions || [];
+        }
+        async function escolherSugestaoGoogle(sugestao) {
+          const predicao = sugestao.placePrediction;
+          if (!predicao) return;
+          await selecionarEnderecoGoogle({placePrediction:predicao});
+          caixaSugestoes.hidden = true;
+        }
+        campoGoogle.addEventListener("input", () => {
+          clearTimeout(temporizadorSugestoes);
+          const termo = campoGoogle.value.trim();
+          if (termo.length < 3) { caixaSugestoes.hidden = true; return; }
+          temporizadorSugestoes = setTimeout(async () => {
+            try {
+              const sugestoes = await buscarSugestoesGoogle(termo);
+              const sugestoesVisiveis = sugestoes.slice(0,5).map((sugestao) => ({
+                sugestao,
+                texto: sugestao.placePrediction && sugestao.placePrediction.text
+                  ? sugestao.placePrediction.text.toString().trim()
+                  : ""
+              })).filter((item) => item.texto);
+              caixaSugestoes.replaceChildren(...sugestoesVisiveis.map(({sugestao, texto}) => {
+                const botao = document.createElement("button");
+                botao.type = "button";
+                botao.className = "sugestao-endereco-google";
+                botao.textContent = texto;
+                botao.addEventListener("click", () => escolherSugestaoGoogle(sugestao));
+                return botao;
+              }));
+              caixaSugestoes.hidden = sugestoesVisiveis.length === 0;
+            } catch (erro) {
+              console.error("Falha ao pesquisar enderecos.", erro);
+              caixaSugestoes.hidden = true;
+            }
+          }, 350);
+        });
+        document.getElementById("localizarEnderecoAproximado").addEventListener("click", async () => {
+          const campo = document.getElementById("enderecoAproximado");
+          const termo = campo.value.trim();
+          if (termo.length < 3) return;
+          const botao = document.getElementById("localizarEnderecoAproximado");
+          botao.disabled = true;
+          document.getElementById("statusEndereco").textContent = "Procurando o endereço mais provável no Google Maps...";
+          try {
+            const sugestoes = await buscarSugestoesGoogle(termo);
+            if (!sugestoes.length) throw new Error("ZERO_RESULTS");
+            await escolherSugestaoGoogle(sugestoes[0]);
+            campo.value = sugestoes[0].placePrediction.text.toString();
+          } catch (erro) {
+            console.error("Falha na pesquisa aproximada.", erro);
+            document.getElementById("statusEndereco").textContent = "Não foi possível localizar esse endereço. Revise o nome informado.";
+          } finally { botao.disabled = false; }
+        });
+        document.getElementById("numeroEndereco").addEventListener("input", () => {
+          clearTimeout(temporizadorNumeroEndereco);
+          temporizadorNumeroEndereco = setTimeout(atualizarCoordenadasPeloNumero, 800);
+        });
+        document.getElementById("numeroEndereco").addEventListener("blur", atualizarCoordenadasPeloNumero);
+      } catch (erro) {
+        console.error("Falha ao carregar o Google Maps.", erro);
+        document.getElementById("statusEndereco").textContent = "Não foi possível carregar a pesquisa do Google Maps. Atualize a página.";
+      }
+    }
+    const data = document.getElementById("data");
+    const semana = document.getElementById("semana");
+    const mes = document.getElementById("mes");
+    const horaInicial = document.getElementById("horaInicial");
+    const turno = document.getElementById("turno");
+    const formulario = document.getElementById("formOcorrencia");
+    const statusAtendimento = document.getElementById("statusAtendimento");
+    const campoMotivo = document.getElementById("campoMotivo");
+    const motivoRepressao = document.getElementById("motivoRepressao");
+    const arquivoOcorrenciaPdf = document.getElementById("arquivoOcorrenciaPdf");
+    const statusImportacaoPdf = document.getElementById("statusImportacaoPdf");
+    let importacaoPdfPendente = false;
+    const PDFJS_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@5.7.284/build/pdf.min.mjs";
+    const PDFJS_WORKER_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@5.7.284/build/pdf.worker.min.mjs";
+
+    function textoComparavel(valor) {
+      return String(valor || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9]+/g, " ").trim().toUpperCase();
+    }
+    function escaparHtml(valor) {
+      return String(valor || "").replace(/[&<>"']/g, caractere => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[caractere]));
+    }
+    function dataIso(valor) {
+      const partes = String(valor || "").split("/");
+      return partes.length === 3 ? `${partes[2]}-${partes[1]}-${partes[0]}` : "";
+    }
+    function nacionalidadeCodigo(valor) {
+      const n = textoComparavel(valor);
+      const codigos = {BRASILEIRA:"BR",BRASILEIRO:"BR",VENEZUELANA:"VE",VENEZUELANO:"VE",GUIANENSE:"GY",HAITIANA:"HT",HAITIANO:"HT",COLOMBIANA:"CO",COLOMBIANO:"CO",CUBANA:"CU",CUBANO:"CU",PERUANA:"PE",PERUANO:"PE",BOLIVIANA:"BO",BOLIVIANO:"BO",ARGENTINA:"AR",ARGENTINO:"AR",PARAGUAIA:"PY",PARAGUAIO:"PY",SURINAMESA:"SR",SURINAMES:"SR",FRANCESA:"FR",FRANCES:"FR"};
+      return codigos[n] || (n ? "OUTRA" : "");
+    }
+    function sexoCodigo(valor) {
+      const s = textoComparavel(valor);
+      if (s.startsWith("FEMIN")) return "F";
+      if (s.startsWith("MASC")) return "M";
+      return s ? "Outro" : "";
+    }
+    function resumirRelatoPdf(relato) {
+      const limpo = String(relato || "")
+        .replace(/(?:Era o que tinha|Era o que havia|Diante dos fatos, era o que havia) a relatar\.?/gi, "")
+        .replace(/\s+/g, " ")
+        .trim();
+      const comparavel = textoComparavel(limpo);
+      if (comparavel.includes("DESCUMPRIMENTO") && comparavel.includes("CAUTELAR") && comparavel.includes("REEDUCAND") && comparavel.includes("DICAP")) {
+        const quantidade = /\bDOIS\s+INDIVIDUOS\b/.test(comparavel) || (limpo.match(/\bO INFRATOR\b/gi) || []).length >= 2 ? "DOIS INDIVÍDUOS" : "INDIVÍDUOS";
+        const contexto = comparavel.includes("PATRULHAMENTO") ? "DURANTE PATRULHAMENTO, " : "";
+        const suspeita = comparavel.includes("FUNDADA SUSPEITA") || comparavel.includes("ATITUDE SUSPEITA") || comparavel.includes("EVITAR") || comparavel.includes("BAIXARAM A CABECA") ? " EM ATITUDE SUSPEITA" : "";
+        const conducao = quantidade === "DOIS INDIVÍDUOS" ? "AMBOS FORAM" : "FORAM";
+        return `RESUMO: ${contexto}${quantidade}${suspeita} FORAM ABORDADOS E IDENTIFICADOS COMO REEDUCANDOS EM DESCUMPRIMENTO DE MEDIDAS CAUTELARES. APÓS CONSULTA À DICAP, ${conducao} CONDUZIDOS À UNIDADE PARA AS PROVIDÊNCIAS CABÍVEIS.`;
+      }
+      if ((comparavel.includes("FURTO") || comparavel.includes("ROUBO") || comparavel.includes("SUBTRAIRAM")) && comparavel.includes("MOTOCICLETA")) {
+        const modelo = (limpo.match(/motocicleta\s+([A-Z0-9ÁÉÍÓÚÂÊÔÃÕÇ/ -]{4,50}?)(?=,\s*(?:de\s+cor|cor|ano|placa)|\.)/i) || [,"MOTOCICLETA"])[1].trim().toUpperCase();
+        const partes = [];
+        if ((comparavel.includes("ADENTRARAM") || comparavel.includes("INVADIRAM")) && (comparavel.includes("RESIDENCIA") || comparavel.includes("IMOVEL"))) partes.push("AUTORES INVADIRAM A RESIDÊNCIA" + (comparavel.includes("REPOUSO NOTURNO") || /22H|23H|00H|01H|02H|03H|04H|05H|06H/.test(comparavel) ? " DURANTE A MADRUGADA" : ""));
+        if (comparavel.includes("PORTAO") && (comparavel.includes("QUEBRARAM") || comparavel.includes("DANIFIC"))) partes.push("DANIFICARAM O PORTÃO ELÉTRICO");
+        partes.push("SUBTRAÍRAM UMA MOTOCICLETA " + modelo);
+        let resumo = partes.join(", ").replace(/, ([^,]+)$/," E $1") + ".";
+        if ((comparavel.includes("LOCALIZADOR") || comparavel.includes("RASTREADOR")) && (comparavel.includes("NAO ENCONTRARAM") || comparavel.includes("NADA FOI CONSTATADO") || comparavel.includes("NAO FOI LOCALIZ"))) resumo += " O VEÍCULO POSSUÍA RASTREADOR, PORÉM NÃO FOI LOCALIZADO APÓS BUSCAS NA ÁREA INDICADA.";
+        return "RESUMO: " + resumo.toUpperCase();
+      }
+      const nucleo = limpo.replace(/^[\s\S]{0,500}?(?:relatar os seguintes fatos|relatou que|informou que)\s*:\s*/i,"");
+      const frases = (nucleo.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [nucleo]).filter(frase => !/USO DE ALGEMAS|ESTADO F[ÍI]SICO|INTEGRIDADE F[ÍI]SICA|FERIMENTO|ERA O QUE|IMPRESSO POR|C[ÓO]DIGO VERIFICADOR/i.test(frase));
+      const termosImportantes = ["AUTOR","INFRATOR","INVADI","SUBTRAI","AMEAC","AGRESS","LESAO","DANIFIC","PATRIMON","EVADIU","APREEND","ARMA","DROGA","CONDUZ","PRISAO","LOCALIZ","RECUPER","PROVIDENCIA","ORIENTOU","MEDIDA PROTETIVA","DESCUMPRIMENTO","CAUTELAR","ABORD","DICAP","REEDUCANDO","PATRULHAMENTO"];
+      const escolhidas = new Set();
+      frases.map((frase,indice) => ({indice,pontos:termosImportantes.filter(termo=>textoComparavel(frase).includes(termo)).length}))
+        .sort((a,b)=>b.pontos-a.pontos || a.indice-b.indice)
+        .slice(0,4)
+        .forEach(item=>escolhidas.add(item.indice));
+      const indiceProvidencia = frases.findLastIndex(frase => /ORIENTA|PROVID[ÊE]NCIA|DELEGACIA|CONDUZID|APRESENTAD/i.test(frase));
+      if (indiceProvidencia >= 0) escolhidas.add(indiceProvidencia);
+      let resumo = "";
+      frases.filter((_,indice)=>escolhidas.has(indice)).forEach(frase => {
+        if (!resumo || (resumo + " " + frase).length <= 600) resumo += (resumo ? " " : "") + frase.trim();
+      });
+      return "RESUMO: " + resumo.replace(/\s+/g," ").trim().toUpperCase();
+    }
+    function limparRelatoPdfBruto(valor) {
+      const linhasIgnoradas = [
+        /^Impresso por:/i,
+        /^Data de Impress[ãa]o:/i,
+        /^C[óo]digo Verificador/i,
+        /^GOVERNO DO ESTADO DE RORAIMA$/i,
+        /^POL[ÍI]CIA MILITAR$/i,
+        /^\d+[ªº]\s+COMPANHIA DO \d+[º°]\s+BATALH[ÃA]O/i,
+        /^BOLETIM DE OCORR[ÊE]NCIA/i,
+        /^N[º°]:\s*\d+\/\d+/i,
+        /^PPe\s*-\s*Procedimentos Policiais/i
+      ];
+      return String(valor || "").split(/\r?\n/)
+        .map(linha=>linha.trim())
+        .filter(linha=>linha && !linhasIgnoradas.some(padrao=>padrao.test(linha)))
+        .join(" ")
+        .replace(/\bP[áa]gina\s+\d+\s+de\s+\d+\b/gi, " ")
+        .replace(/\bPP\s*Pg\.\s*\d+\/\d+\b/gi, " ")
+        .replace(/\s+/g," ")
+        .trim();
+    }
+    function resumirMaterialidadePdf(valor) {
+      const bruto = String(valor || "").replace(/\s+/g," ").trim();
+      if (!bruto || /Nenhum Objeto Informado/i.test(bruto)) return "";
+      const objetos = [];
+      bruto.split(/(?=\bGrupo\s+)/i).forEach(bloco => {
+        if (!/^Grupo\s+/i.test(bloco)) return;
+        if (/^Grupo\s+Ve[íi]culo\b/i.test(bloco)) {
+          const modelo = (bloco.match(/\bMarca\/Modelo\s+(.+?)(?=\s+Ve[íi]culo Adulterado|\s+Quantidade|\s+Situa[çc][ãa]o|$)/i) || [,""])[1].trim();
+          const cor = (bloco.match(/\bCor\s+(.+?)(?=\s+UF Ve[íi]culo|\s+Marca\/Modelo|$)/i) || [,""])[1].trim();
+          const placa = (bloco.match(/\bPlaca\s+([A-Z0-9-]+)/i) || [,""])[1].trim();
+          const ano = (bloco.match(/\bAno\/Modelo Fabrica[çc][ãa]o\s+(\d{4}\/\d{4})/i) || [,""])[1].trim();
+          const situacaoBruta = (bloco.match(/\bSitua[çc][ãa]o\s+(.+?)(?=\s+[ÚU]ltima Atualiza[çc][ãa]o|\s+Nome Envolvido|$)/i) || [,""])[1];
+          const situacao = ["FURTADO","ROUBADO","RECUPERADO","APREENDIDO","ENCONTRADO"].find(item=>textoComparavel(situacaoBruta).includes(item)) || "ENVOLVIDO";
+          const detalhes = [modelo,cor && "COR " + cor,placa && "PLACA " + placa,ano && "ANO/MODELO " + ano].filter(Boolean).join(", ");
+          if (detalhes) { objetos.push({chave:textoComparavel(detalhes),texto:`VEÍCULO ${situacao}: ${detalhes.toUpperCase()}`}); return; }
+        }
+        const subgrupo = bloco.match(/\bSubgrupo\s+(.+?)(?=\s+Identificador\s+[ÚU]nico\b|\s+Descri[çc][ãa]o\b|\s+Situa[çc][ãa]o\b)/i);
+        const descricao = bloco.match(/\bDescri[çc][ãa]o\s+(.+?)(?=\s+Situa[çc][ãa]o\b|\s+Nome\s+Envolvido\b|\s+Grupo\s+|\s+Impresso\s+por:|\s+RELATO\/HIST[ÓO]RICO\b|$)/i);
+        let objeto = (descricao && descricao[1] || subgrupo && subgrupo[1] || "")
+          .replace(/\bIdentificador\s+[ÚU]nico\s+\S+/gi, " ")
+          .replace(/\s+/g," ")
+          .trim();
+        if (!objeto) return;
+        const tipo = subgrupo ? subgrupo[1].replace(/\s+/g," ").trim() : "";
+        if (tipo && !textoComparavel(objeto).includes(textoComparavel(tipo))) objeto = tipo + " — " + objeto;
+        objeto = objeto.toUpperCase();
+        const chave = textoComparavel(objeto);
+        if (!objetos.some(item => item.chave === chave)) objetos.push({chave,texto:"01 " + objeto});
+      });
+      if (objetos.length) return objetos.map(item=>item.texto).join("; ") + ".";
+      return bruto
+        .replace(/\bImpresso por:[\s\S]*$/i," ")
+        .replace(/\b(?:Identificador [ÚU]nico|Nome Envolvido|Envolvimentos)\b[^;]*/gi," ")
+        .replace(/\b(?:P[áa]gina|Data de Impress[ãa]o|C[óo]digo Verificador|C[óo]digo CRC|PPe|GOVERNO DO ESTADO)[\s\S]*$/i," ")
+        .replace(/\s+/g," ")
+        .trim()
+        .slice(0,600)
+        .toUpperCase();
+    }
+    function ocultarNomesEmMaiusculas(relato) {
+      const preservados = new Set(["BOA VISTA","MARIA DA PENHA","POLÍCIA MILITAR","POLICIA MILITAR"]);
+      return String(relato || "").replace(/\b[A-ZÁÉÍÓÚÂÊÔÃÕÇ]{2,}(?:\s+[A-ZÁÉÍÓÚÂÊÔÃÕÇ]{2,}){1,4}\b/gu, nome => preservados.has(nome) ? nome : "[PESSOA ENVOLVIDA]");
+    }
+    function melhorItemCatalogo(itens, referencia, tipoPrincipal = false) {
+      const alvo = textoComparavel(referencia);
+      let melhor = null;
+      let maior = 0;
+      itens.forEach(item => {
+        const nome = typeof item === "string" ? item : item.nome;
+        const normalizado = textoComparavel(nome);
+        let pontos = alvo.includes(normalizado) ? 50 : 0;
+        const palavras = normalizado.split(" ").filter(p => p.length > 3);
+        pontos += palavras.filter(p => alvo.includes(p)).length;
+        if (tipoPrincipal && normalizado.includes("MARIA DA PENHA") && alvo.includes("VIOLENCIA DOMESTICA")) pontos = 100;
+        if (pontos > maior) { maior = pontos; melhor = item; }
+      });
+      return maior >= 2 ? melhor : null;
+    }
+    function definirResultadoImportado(checkId, campoId, quantidade) {
+      const check = document.getElementById(checkId);
+      check.checked = Number(quantidade) > 0;
+      check.dispatchEvent(new Event("change"));
+      if (check.checked) document.getElementById(campoId).value = quantidade;
+    }
+    function preencherPessoaPrincipal(prefixo, pessoa) {
+      document.getElementById(prefixo === "vitima" ? "nacVitima" : "nacInfrator").value = pessoa ? pessoa.nacionalidade : "";
+      document.getElementById(prefixo === "vitima" ? "sexoVitima" : "sexoInfrator").value = pessoa ? pessoa.sexo : "";
+      document.getElementById(prefixo === "vitima" ? "idadeVitima" : "idadeInfrator").value = pessoa ? pessoa.idade : "";
+    }
+    function extrairPessoasPdf(texto) {
+      const pessoas = {vitimas:[], infratores:[], envolvidos:[]};
+      const regex = /Nome Civil:\s*(.*?)\s*\(([^)]*)\)([\s\S]*?)(?=Nome Civil:|OBJETO\(S\) ENVOLVIDO\(S\)|RELATO\/HIST[ÓO]RICO|ASSINATURAS)/gi;
+      let resultado;
+      while ((resultado = regex.exec(texto))) {
+        const bloco = resultado[3];
+        const nacionalidade = bloco.match(/Nacionalidade:\s*([^\n]*?)\s+Sexo:/i);
+        const sexo = bloco.match(/Sexo:\s*([^\n]*?)(?:\s+Nasc:|\s+Idade|\n)/i);
+        const idade = bloco.match(/Idade\s*:?[ ]*(\d{1,3})/i);
+        const papel = textoComparavel(resultado[2]);
+        const pessoa = {
+          nome:resultado[1].trim(),
+          nacionalidade:nacionalidadeCodigo(nacionalidade && nacionalidade[1]),
+          sexo:sexoCodigo(sexo && sexo[1]),
+          idade:idade ? idade[1] : "",
+          policialMilitar:/Profiss[ãa]o:\s*Policial Militar/i.test(bloco)
+        };
+        if (papel.includes("VITIMA")) pessoas.vitimas.push(pessoa);
+        else if (papel.includes("AUTOR") || papel.includes("INFRATOR")) pessoas.infratores.push(pessoa);
+        else pessoas.envolvidos.push(pessoa);
+      }
+      return pessoas;
+    }
+    function quantidadeObjetoPdf(descricao, padrao) {
+      const trecho = String(descricao || "");
+      const achado = trecho.match(new RegExp("(\\d{1,4})\\s+(?:" + padrao + ")", "i"));
+      return achado ? Math.max(1, Number(achado[1])) : 1;
+    }
+    function extrairItensOperacionaisPdf(valor) {
+      const dados = {armas:[],municoes:[],entorpecentes:[],recuperados:[],subtraidos:[],armasBrancas:[],balanca:false};
+      String(valor || "").split(/(?=\bGrupo\s+)/i).forEach(bloco => {
+        if (!/^Grupo\s+/i.test(bloco)) return;
+        const grupo = (bloco.match(/^Grupo\s+(.+?)\s+Subgrupo\s+/i) || [,"OUTRO"])[1].trim();
+        const subgrupo = (bloco.match(/\bSubgrupo\s+(.+?)(?=\s+Identificador\s+[ÚU]nico\b|\s+Descri[çc][ãa]o\b|\s+Situa[çc][ãa]o\b)/i) || [,""])[1].trim();
+        const descricao = (bloco.match(/\bDescri[çc][ãa]o\s+(.+?)(?=\s+Situa[çc][ãa]o\b|\s+Nome\s+Envolvido\b|$)/i) || [,subgrupo])[1].replace(/\s+/g," ").trim();
+        const situacao = (bloco.match(/\bSitua[çc][ãa]o\s+(.+?)(?=\s+Nome\s+Envolvido\b|$)/i) || [,""])[1];
+        const chave = textoComparavel([grupo,subgrupo,descricao].join(" "));
+        const calibre = (descricao.match(/(?:CALIBRE|CAL\.?)[\s:]*(\.?\d{1,3}(?:\s*MM)?|12|20|28|32|36)/i) || subgrupo.match(/(?:CALIBRE|CAL\.?)[\s:]*(\.?\d{1,3}(?:\s*MM)?|12|20|28|32|36)/i) || [])[1] || null;
+        const situacaoNormalizada = textoComparavel(situacao);
+        if (/FURTAD|ROUBAD/.test(situacaoNormalizada)) {
+          let categoria = "OUTROS";
+          if (chave.includes("MOTOCICLETA") || chave.includes("MOTONETA")) categoria="MOTOCICLETA";
+          else if (chave.includes("AUTOMOVEL") || chave.includes("VEICULO") || chave.includes("CARRO") || chave.includes("CAMINHONETE")) categoria="AUTOMÓVEL";
+          else if (chave.includes("BICICLETA")) categoria="BICICLETA";
+          else if (chave.includes("CELULAR")) categoria="CELULAR";
+          const marcaModelo = (bloco.match(/\bMarca\/Modelo\s+(.+?)(?=\s+Ve[íi]culo Adulterado|\s+Quantidade|\s+Situa[çc][ãa]o|$)/i)||[,""])[1].trim();
+          const cor = (bloco.match(/\bCor\s+(.+?)(?=\s+UF Ve[íi]culo|\s+Marca\/Modelo|\s+IMEI|$)/i)||[,""])[1].trim();
+          const placa = (bloco.match(/\bPlaca\s+([A-Z0-9-]+)/i)||[,""])[1].trim();
+          const imei = (bloco.match(/\bIMEI\s*:?[ ]*([0-9-]{8,20})/i)||[,""])[1].trim();
+          const chassi = (bloco.match(/\bN[úu]mero do Chassi\s+([A-Z0-9-]+)/i)||[,""])[1].trim();
+          const serie = (bloco.match(/\bN[úu]mero de S[ée]rie\s*:?[ ]*([A-Z0-9-]+)/i)||[,""])[1].trim();
+          const quantidadeCampo = Number(((bloco.match(/\bQuantidade\s+(\d+(?:[.,]\d+)?)/i)||[])[1]||"1").replace(",","."))||1;
+          dados.subtraidos.push({tipoSubtracao:situacaoNormalizada.includes("ROUBAD")?"ROUBO":"FURTO",categoria,quantidade:quantidadeCampo,descricao:descricao||subgrupo,marcaModelo,cor,placa,imei,identificador:chassi||serie,situacao:/RECUPERAD|APREENDID|ENCONTRAD/.test(situacaoNormalizada)?"RECUPERADO":"SUBTRAÍDO"});
+        }
+        if (chave.includes("ARMA DE FOGO")) {
+          if (chave.includes("SIMULACRO") || chave.includes("REPLICA")) dados.armas.push({categoria:"SIMULACRO",quantidade:quantidadeObjetoPdf(descricao,"SIMULACRO|ARMA"),tipo:null,calibre:null,detalhes:descricao});
+          else {
+            const tipos = TIPOS_ARMA_FOGO.filter(t=>t!=="OUTRO");
+            dados.armas.push({categoria:"ARMA DE FOGO",quantidade:quantidadeObjetoPdf(descricao,"PISTOLA|REVOLVER|ESPINGARDA|FUZIL|CARABINA|SUBMETRALHADORA|GARRUCHA|ARMA"),tipo:tipos.find(t=>chave.includes(textoComparavel(t))) || "OUTRO",calibre,detalhes:descricao});
+          }
+          return;
+        }
+        if (chave.includes("MUNICAO") || chave.includes("CARTUCHO")) {
+          dados.municoes.push({quantidade:quantidadeObjetoPdf(descricao,"MUNICOES?|CARTUCHOS?"),calibre,detalhes:descricao}); return;
+        }
+        if (chave.includes("ARMA BRANCA") || /\b(FACA|CANIVETE|FACAO)\b/.test(chave)) {
+          dados.armasBrancas.push({quantidade:quantidadeObjetoPdf(descricao,"FACAS?|CANIVETES?|FACOES?"),descricao}); return;
+        }
+        const tipoDroga = TIPOS_ENTORPECENTES.filter(t=>t!=="OUTRO").find(t=>chave.includes(textoComparavel(t)));
+        if (tipoDroga || chave.includes("ENTORPECENTE") || chave.includes("DROGA")) {
+          const achado = descricao.match(/\b(\d+)\s*(INV[ÓO]LUCROS?|POR[ÇC][ÕO]ES?|TABLETES?|TIJOLOS?|PAPELOTES?|PINOS?|COMPRIMIDOS?|SACOLAS?|UNIDADES?)\b/i);
+          if (achado) {
+            const formaChave = textoComparavel(achado[2]);
+            const forma = formaChave.includes("INVOLUCRO") ? "INVÓLUCRO" : formaChave.includes("PORCAO") ? "PORÇÃO" : formaChave.includes("TABLETE") ? "TABLETE" : formaChave.includes("TIJOLO") ? "TIJOLO" : formaChave.includes("PAPELOTE") ? "PAPELOTE" : formaChave.includes("PINO") ? "PINO" : formaChave.includes("COMPRIMIDO") ? "COMPRIMIDO" : formaChave.includes("SACOLA") ? "SACOLA" : "UNIDADE";
+            dados.entorpecentes.push({tipo:tipoDroga || "OUTRO",quantidade:Number(achado[1]),forma_apresentacao:forma,detalhes:descricao});
+          }
+          return;
+        }
+        if (chave.includes("BALANCA") && chave.includes("PRECISAO")) dados.balanca = true;
+        if (!/RECUPERAD|APREENDID|ENCONTRAD/i.test(situacao)) return;
+        let tipo = "OUTRO";
+        if (chave.includes("BICICLETA ELETRICA")) tipo="BICICLETA ELÉTRICA";
+        else if (chave.includes("BICICLETA MOTORIZADA")) tipo="BICICLETA MOTORIZADA";
+        else if (chave.includes("MOTOCICLETA")) tipo="MOTOCICLETA";
+        else if (chave.includes("MOTONETA")) tipo="MOTONETA";
+        else if (chave.includes("CAMINHONETE")) tipo="CAMINHONETE";
+        else if (chave.includes("CAMINHAO")) tipo="CAMINHÃO";
+        else if (chave.includes("ONIBUS")) tipo="ÔNIBUS/MICRO-ÔNIBUS";
+        else if (chave.includes("BICICLETA")) tipo="BICICLETA";
+        else if (chave.includes("CELULAR")) tipo="CELULAR";
+        else if (chave.includes("TABLET")) tipo="TABLET";
+        else if (chave.includes("NOTEBOOK")) tipo="NOTEBOOK";
+        else if (chave.includes("BALANCA") && chave.includes("PRECISAO")) tipo="BALANÇA DE PRECISÃO";
+        else if (chave.includes("VEICULO")) tipo="CARRO";
+        dados.recuperados.push({tipo,quantidade:quantidadeObjetoPdf(descricao,tipo === "OUTRO" ? ".+" : textoComparavel(tipo).replace(/ /g,"\\s+")),detalhes:descricao});
+      });
+      return dados;
+    }
+    function extrairBemSubtraidoDoRelato(relato, natureza) {
+      const texto = String(relato || "").replace(/\s+/g," ").trim();
+      const chave = textoComparavel(`${natureza || ""} ${texto}`);
+      const tipoSubtracao = chave.includes("ROUBO") || chave.includes("ROUBAD") ? "ROUBO" : chave.includes("FURTO") || chave.includes("FURTAD") || chave.includes("SUBTRAI") ? "FURTO" : "";
+      if (!tipoSubtracao) return null;
+      let categoria = "OUTROS";
+      if (/MOTOCICLETA|MOTONETA|MOTO\b/.test(chave)) categoria = "MOTOCICLETA";
+      else if (/AUTOMOVEL|CARRO|CAMINHONETE|CAMINHAO|VEICULO/.test(chave)) categoria = "AUTOMÓVEL";
+      else if (/BICICLETA/.test(chave)) categoria = "BICICLETA";
+      else if (/CELULAR|APARELHO TELEFONICO|SMARTPHONE/.test(chave)) categoria = "CELULAR";
+      const placa = (texto.match(/\bPLACA\s*:?[ ]*([A-Z]{3}[0-9A-Z][0-9A-Z]{3})\b/i)||[,""])[1];
+      const imei = (texto.match(/\bIMEI\s*:?[ ]*([0-9-]{8,20})\b/i)||[,""])[1];
+      const chassi = (texto.match(/\bCHASSI\s*:?[ ]*([A-Z0-9-]{8,25})\b/i)||[,""])[1];
+      const cor = (texto.match(/\b(?:DE\s+)?COR\s+([A-ZÁÉÍÓÚÂÊÔÃÕÇ]+)(?=,|\.|\s+ANO|\s+PLACA|\s+CHASSI|$)/i)||[,""])[1];
+      let marcaModelo = "";
+      if (categoria === "MOTOCICLETA") marcaModelo = (texto.match(/\b(?:MOTOCICLETA|MOTONETA)\s+([A-Z0-9./ -]{3,60}?)(?=,\s*(?:DE\s+)?COR|,\s*ANO|,\s*PLACA|\.|$)/i)||[,""])[1].trim();
+      else if (categoria === "AUTOMÓVEL") marcaModelo = (texto.match(/\b(?:AUTOMÓVEL|VEÍCULO|CARRO|CAMINHONETE)\s+([A-Z0-9./ -]{3,60}?)(?=,\s*(?:DE\s+)?COR|,\s*ANO|,\s*PLACA|\.|$)/i)||[,""])[1].trim();
+      const descricao = marcaModelo || (categoria === "OUTROS" ? "BEM MENCIONADO NO RELATO" : categoria);
+      return {tipoSubtracao,categoria,quantidade:1,descricao,marcaModelo,cor,placa,imei,identificador:chassi,situacao:/RECUPERAD|LOCALIZAD|ENCONTRAD/.test(chave)?"RECUPERADO":"SUBTRAÍDO"};
+    }
+    function extrairDadosOcorrenciaPdf(texto) {
+      const bo = texto.match(/BOLETIM DE OCORR[ÊE]NCIA[\s\S]{0,30}?0*(\d{4,10})\s*\/\s*(20\d{2})/i)
+        || texto.match(/(?:^|\s)0*(\d{4,10})\s*\/\s*(20\d{2})(?:\s|$)/m);
+      const inicio = texto.match(/Data\/Hora do Fato In[íi]cio:\s*(\d{2}\/\d{2}\/\d{4})\s*(\d{2}:\d{2})/i);
+      const fim = texto.match(/Data\/Hora do Fato Fim:\s*\d{2}\/\d{2}\/\d{4}\s*(\d{2}:\d{2})/i);
+      const vtr = texto.match(/(?:VTR|Viatura)\s*(?:N[º°])?\s*:?\s*(\d{2,5})/i);
+      const comandante = texto.match(/Comandante da Guarni[çc][ãa]o:\s*([^\n]+)/i);
+      const natureza = texto.match(/Natureza\s+Meio\(s\) Empregado\(s\)\s*([\s\S]*?)(?=ENVOLVIDO\(S\))/i);
+      const historico = texto.match(/RELATO\/HIST[ÓO]RICO\s*([\s\S]*?)(?=ASSINATURAS)/i);
+      const objetos = texto.match(/OBJETO\(S\) ENVOLVIDO\(S\)\s*([\s\S]*?)(?=RELATO\/HIST[ÓO]RICO)/i);
+      const local = texto.match(/Local do Fato[\s\S]*?Munic[íi]pio:\s*([^\n]+)[\s\S]*?Bairro:\s*([^\n]+)[\s\S]*?Logradouro:\s*([^\n]*?)(?:\s+N[º°]:\s*([^\n]+))?\n/i);
+      const pessoas = extrairPessoasPdf(texto);
+      const itensOperacionais = extrairItensOperacionaisPdf(objetos ? objetos[1] : "");
+      if (!itensOperacionais.subtraidos.length) {
+        const bemDoRelato = extrairBemSubtraidoDoRelato(historico ? historico[1] : "", natureza ? natureza[1] : "");
+        if (bemDoRelato) itensOperacionais.subtraidos.push(bemDoRelato);
+      }
+      let relato = historico ? limparRelatoPdfBruto(historico[1]) : "";
+      relato = ocultarNomesEmMaiusculas(relato);
+      pessoas.vitimas.forEach(p => { if (p.nome) relato = relato.replace(new RegExp(p.nome.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"gi"),"A VÍTIMA"); });
+      pessoas.infratores.forEach(p => { if (p.nome) relato = relato.replace(new RegExp(p.nome.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"gi"),"O INFRATOR"); });
+      pessoas.envolvidos.forEach(p => { if (p.nome) relato = relato.replace(new RegExp(p.nome.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"gi"),"O ENVOLVIDO"); });
+      relato = resumirRelatoPdf(relato);
+      if (pessoas.vitimas.length || pessoas.infratores.length) pessoas.envolvidos = [];
+      else pessoas.envolvidos = pessoas.envolvidos.filter(pessoa => !pessoa.policialMilitar);
+      return {
+        numeroBo: bo ? String(Number(bo[1])) : "",
+        data: inicio ? dataIso(inicio[1]) : "",
+        horaInicial: inicio ? inicio[2] : "",
+        horaFinal: fim ? fim[1] : "",
+        vtr: vtr ? vtr[1] : "",
+        comandante: comandante ? comandante[1].trim() : "",
+        natureza: natureza ? natureza[1].replace(/N[ãa]o Houve/gi," ").replace(/\s+/g," ").trim() : "",
+        historico: relato,
+        materialidade: objetos ? resumirMaterialidadePdf(objetos[1]) : "",
+        enderecoReferencia: local ? `${local[3].trim()}${local[4] ? ", nº " + local[4].trim() : ""} - ${local[2].trim()}` : "",
+        logradouroPdf: local ? local[3].trim() : "",
+        numeroPdf: local && local[4] ? local[4].trim() : "",
+        bairroPdf: local ? local[2].trim() : "",
+        pessoas,
+        itensOperacionais,
+        indicadores:{
+          disparo:/DISPARO(?:S)?\s+DE\s+ARMA|EFETUOU\s+DISPARO/i.test(texto),
+          autoResistencia:/AUTO\s+DE\s+RESIST[ÊE]NCIA|RESIST[ÊE]NCIA\s+[ÀA]\s+PRIS[ÃA]O/i.test(texto),
+          foragidos:(texto.match(/(\d+)\s+FORAGID[OA]S?\s+(?:CAPTURAD|LOCALIZAD)/i)||[])[1] || ""
+        }
+      };
+    }
+    async function preencherEnderecoPdfAutomatico(dados) {
+      const logradouro = String(dados.logradouroPdf || "").replace(/\s+N[º°:]?\s*\d+.*$/i,"").trim();
+      const bairro = String(dados.bairroPdf || "").replace(/\s+CEP\s*:?.*$/i,"").trim();
+      document.getElementById("enderecoAproximado").value = [logradouro,bairro].filter(Boolean).join(", ");
+      document.getElementById("enderecoGoogle").value = "";
+      document.getElementById("endereco").value = "";
+      document.getElementById("enderecoFormatado").value = "";
+      document.getElementById("latitude").value = "";
+      document.getElementById("longitude").value = "";
+      document.getElementById("bairro").value = "";
+      document.getElementById("numeroEndereco").value = "";
+      document.getElementById("statusEndereco").textContent = logradouro ? "Endereço do PDF preparado. Clique na lupa e selecione o resultado correto." : "Endereço não identificado no PDF. Pesquise manualmente.";
+      return Boolean(logradouro);
+    }
+    async function lerTextoPdfLocal(arquivo) {
+      const pdfjsLib = await import(PDFJS_URL);
+      pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL;
+      const bytes = new Uint8Array(await arquivo.arrayBuffer());
+      const documento = await pdfjsLib.getDocument({data:bytes}).promise;
+      const paginas = [];
+      try {
+        for (let numero = 1; numero <= documento.numPages; numero++) {
+          const pagina = await documento.getPage(numero);
+          const conteudo = await pagina.getTextContent();
+          const linhas = new Map();
+          conteudo.items.forEach(item => {
+            const y = Math.round(item.transform[5]);
+            if (!linhas.has(y)) linhas.set(y, []);
+            linhas.get(y).push({x:item.transform[4], texto:item.str});
+          });
+          paginas.push(Array.from(linhas.entries()).sort((a,b)=>b[0]-a[0]).map(([,itens])=>itens.sort((a,b)=>a.x-b.x).map(i=>i.texto).join(" ")).join("\n"));
+        }
+        return paginas.join("\n");
+      } finally {
+        await documento.destroy();
+        if (bytes.buffer.byteLength) bytes.fill(0);
+      }
+    }
+    async function preencherRascunhoPdf(dados) {
+      if (!catalogos.tipos.length) await carregarCatalogos();
+      document.getElementById("tipoRegistro").value = "BO";
+      document.getElementById("numeroBo").value = dados.numeroBo;
+      document.getElementById("data").value = dados.data;
+      document.getElementById("horaInicial").value = dados.horaInicial;
+      document.getElementById("horaFinal").value = dados.horaFinal;
+      document.getElementById("vtr").value = dados.vtr;
+      document.getElementById("statusAtendimento").value = "ATENDIDA";
+      document.getElementById("municipio").value = "BOA VISTA";
+      const tipo = melhorItemCatalogo(catalogos.tipos, dados.natureza, true);
+      document.getElementById("ocorrencia").value = tipo ? tipo.nome : "";
+      atualizarSubtipos();
+      if (tipo) {
+        const subtipos = catalogos.subtipos.filter(s => Number(s.tipo_id) === Number(tipo.id));
+        const subtipo = melhorItemCatalogo(subtipos, dados.natureza);
+        document.getElementById("crime").value = subtipo ? subtipo.nome : "";
+      }
+      const comandanteNormalizado = normalizarComandante(dados.comandante);
+      const comandante = catalogos.comandantes.find(c => comandanteNormalizado.includes(normalizarComandante(c)) || normalizarComandante(c).includes(comandanteNormalizado));
+      document.getElementById("comandante").value = comandante || "";
+      document.getElementById("mo").value = dados.historico;
+      document.getElementById("materialidade").value = dados.materialidade;
+      preencherPessoaPrincipal("vitima", dados.pessoas.vitimas[0]);
+      preencherPessoaPrincipal("infrator", dados.pessoas.infratores[0]);
+      document.getElementById("vitimasAdicionais").replaceChildren();
+      dados.pessoas.vitimas.slice(1).forEach(p => adicionarPessoa("vitima",p));
+      document.getElementById("infratoresAdicionais").replaceChildren();
+      dados.pessoas.infratores.slice(1).forEach(p => adicionarPessoa("infrator",p));
+      document.getElementById("envolvidosAdicionais").replaceChildren();
+      dados.pessoas.envolvidos.forEach(p => adicionarPessoa("envolvido",p));
+      if (!dados.pessoas.envolvidos.length) adicionarPessoa("envolvido");
+      document.getElementById("armasItens").replaceChildren();
+      document.getElementById("municoesItens").replaceChildren();
+      document.getElementById("entorpecentesItens").replaceChildren();
+      document.getElementById("itensRecuperados").replaceChildren();
+      document.getElementById("bensSubtraidos").replaceChildren();
+      dados.itensOperacionais.armas.forEach(adicionarArmaItem);
+      dados.itensOperacionais.municoes.forEach(adicionarMunicaoItem);
+      dados.itensOperacionais.entorpecentes.forEach(adicionarEntorpecenteItem);
+      dados.itensOperacionais.recuperados.forEach(adicionarItemRecuperado);
+      dados.itensOperacionais.subtraidos.forEach(adicionarBemSubtraido);
+      atualizarListaVazia(document.getElementById("armasItens"),"Nenhuma arma ou simulacro informado.");
+      atualizarListaVazia(document.getElementById("municoesItens"),"Nenhuma munição informada.");
+      atualizarListaVazia(document.getElementById("entorpecentesItens"),"Nenhum entorpecente informado.");
+      atualizarListaVazia(document.getElementById("itensRecuperados"),"Nenhum objeto ou veículo informado.");
+      atualizarListaVazia(document.getElementById("bensSubtraidos"),"Nenhum bem subtraído informado.");
+      document.getElementById("quantArmaBranca").value = dados.itensOperacionais.armasBrancas.reduce((total,item)=>total+item.quantidade,0) || "";
+      document.getElementById("armaBranca").value = dados.itensOperacionais.armasBrancas.map(item=>item.descricao).join("; ");
+      document.getElementById("balanca").value = dados.itensOperacionais.balanca ? "SIM" : "";
+      document.getElementById("disparo").value = dados.indicadores.disparo ? "SIM" : "";
+      document.getElementById("autoResistencia").value = dados.indicadores.autoResistencia ? "SIM" : "";
+      document.getElementById("foragidos").value = dados.indicadores.foragidos;
+      const relato = textoComparavel(dados.historico);
+      definirResultadoImportado("resultadoConducao","numeroConduzidos", relato.includes("CONDUZ") && dados.pessoas.infratores.length ? dados.pessoas.infratores.length : 0);
+      definirResultadoImportado("resultadoOrientacao","orientacoes", relato.includes("ORIENTOU") || relato.includes("ORIENTADA") ? 1 : 0);
+      const enderecoPreparado = await preencherEnderecoPdfAutomatico(dados);
+      data.dispatchEvent(new Event("change"));
+      horaInicial.dispatchEvent(new Event("change"));
+      return enderecoPreparado;
+    }
+    arquivoOcorrenciaPdf.addEventListener("change", async () => {
+      const arquivo = arquivoOcorrenciaPdf.files && arquivoOcorrenciaPdf.files[0];
+      if (!arquivo) return;
+      document.getElementById("nomePdfSelecionado").textContent = arquivo.name;
+      statusImportacaoPdf.hidden = false;
+      statusImportacaoPdf.className = "status-importacao";
+      statusImportacaoPdf.textContent = "Lendo o PDF localmente. Nenhum arquivo está sendo enviado...";
+      try {
+        if (arquivo.type && arquivo.type !== "application/pdf") throw new Error("Selecione um arquivo PDF.");
+        const texto = await lerTextoPdfLocal(arquivo);
+        if (texto.trim().length < 150) throw new Error("Não foi possível encontrar texto suficiente. O PDF pode estar digitalizado como imagem.");
+        const dados = extrairDadosOcorrenciaPdf(texto);
+        if (!dados.numeroBo && !dados.data && !dados.historico) throw new Error("O documento não corresponde ao modelo de ocorrência reconhecido pelo sistema.");
+        const enderecoPreparado = await preencherRascunhoPdf(dados);
+        importacaoPdfPendente = true;
+        const totalPessoas = dados.pessoas.vitimas.length + dados.pessoas.infratores.length + dados.pessoas.envolvidos.length;
+        const totalItens = dados.itensOperacionais.armas.length + dados.itensOperacionais.municoes.length + dados.itensOperacionais.entorpecentes.length + dados.itensOperacionais.recuperados.length + dados.itensOperacionais.subtraidos.length + dados.itensOperacionais.armasBrancas.length;
+        const pendencias = [!document.getElementById("ocorrencia").value && "tipo de ocorrência", !document.getElementById("comandante").value && "comandante", "selecionar o endereço correto pela lupa"].filter(Boolean);
+        statusImportacaoPdf.className = "status-importacao sucesso";
+        statusImportacaoPdf.innerHTML = `<strong>Rascunho preenchido.</strong> ${totalPessoas} pessoa(s) e ${totalItens} item(ns) operacional(is) identificados. Confira todos os campos antes de salvar.<br><strong>Endereço informado no PDF:</strong> ${escaparHtml(dados.enderecoReferencia || "não identificado")}.<br><strong>Pesquisa preparada:</strong> ${enderecoPreparado ? "logradouro e bairro preenchidos sem o número; clique na lupa e selecione o endereço correto" : "endereço não identificado; pesquise manualmente"}.<br><strong>Pendente de conferência:</strong> ${escaparHtml(pendencias.join(", ") || "somente a revisão geral")}. O PDF já foi descartado da memória.`;
+        formulario.scrollIntoView({behavior:"smooth",block:"start"});
+      } catch (erro) {
+        console.error(erro);
+        statusImportacaoPdf.className = "status-importacao erro";
+        statusImportacaoPdf.textContent = erro.message || "Não foi possível ler este PDF.";
+      } finally {
+        arquivoOcorrenciaPdf.value = "";
+      }
+    });
+    statusAtendimento.addEventListener("change", () => {
+      const reprimida = statusAtendimento.value === "DEMANDA REPRIMIDA";
+      campoMotivo.style.display = reprimida ? "flex" : "none";
+      motivoRepressao.required = reprimida;
+      if (!reprimida) motivoRepressao.value = "";
+    });
+
+    const nomesDias = [
+      "DOMINGO", "SEGUNDA-FEIRA", "TERÇA-FEIRA",
+      "QUARTA-FEIRA", "QUINTA-FEIRA", "SEXTA-FEIRA", "SÁBADO"
+    ];
+
+    const nomesMeses = [
+      "JAN", "FEV", "MAR", "ABR", "MAI", "JUN",
+      "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"
+    ];
+
+    data.addEventListener("change", () => {
+      if (!data.value) {
+        semana.value = "";
+        mes.value = "";
+        return;
+      }
+
+      const [ano, numeroMes, dia] = data.value.split("-").map(Number);
+      const dataLocal = new Date(ano, numeroMes - 1, dia);
+
+      semana.value = nomesDias[dataLocal.getDay()];
+      mes.value = nomesMeses[dataLocal.getMonth()];
+    });
+
+    horaInicial.addEventListener("change", () => {
+      if (!horaInicial.value) return;
+
+      const hora = Number(horaInicial.value.split(":")[0]);
+
+      if (hora < 6) turno.value = "MADRUGADA";
+      else if (hora < 12) turno.value = "MANHÃ";
+      else if (hora < 18) turno.value = "TARDE";
+      else turno.value = "NOITE";
+    });
+
+    function tratarNI(valor) {
+      return valor === "NI — Não Informado" ? "NI" : (valor || null);
+    }
+
+    const MARCADOR_PESSOAS = "[[PESSOAS_ENVOLVIDAS]]";
+    function adicionarPessoa(tipo, dados = {}) {
+      const configuracoes = {
+        vitima: {recipiente:"vitimasAdicionais", rotulo:"Vítima", inicio:2, nacionalidade:"nacVitima", sexo:"sexoVitima"},
+        infrator: {recipiente:"infratoresAdicionais", rotulo:"Infrator", inicio:2, nacionalidade:"nacInfrator", sexo:"sexoInfrator"},
+        envolvido: {recipiente:"envolvidosAdicionais", rotulo:"Envolvido", inicio:1, nacionalidade:"nacVitima", sexo:"sexoVitima"}
+      };
+      const configuracao = configuracoes[tipo];
+      const recipiente = document.getElementById(configuracao.recipiente);
+      const numero = recipiente.children.length + configuracao.inicio;
+      const bloco = document.createElement("div");
+      bloco.className = "pessoa-adicional";
+      bloco.dataset.tipo = tipo;
+      bloco.innerHTML = `<div class="campo"><label>${configuracao.rotulo} ${numero} — Nacionalidade</label><select data-pessoa="nacionalidade">${document.getElementById(configuracao.nacionalidade).innerHTML}</select></div><div class="campo"><label>Sexo</label><select data-pessoa="sexo">${document.getElementById(configuracao.sexo).innerHTML}</select></div><div class="campo"><label>Idade</label><input data-pessoa="idade" type="number" min="0" max="130"></div><button class="botao-adicionar remover-pessoa" type="button" title="Remover esta pessoa">×</button>`;
+      bloco.querySelector('[data-pessoa="nacionalidade"]').value = dados.nacionalidade || "";
+      bloco.querySelector('[data-pessoa="sexo"]').value = dados.sexo || "";
+      bloco.querySelector('[data-pessoa="idade"]').value = dados.idade || "";
+      bloco.querySelector(".remover-pessoa").addEventListener("click", () => bloco.remove());
+      recipiente.appendChild(bloco);
+    }
+    function pessoasAdicionais(tipo) {
+      const recipientes = {vitima:"vitimasAdicionais", infrator:"infratoresAdicionais", envolvido:"envolvidosAdicionais"};
+      const recipiente = document.getElementById(recipientes[tipo]);
+      return Array.from(recipiente.querySelectorAll(".pessoa-adicional")).map(bloco => ({
+        nacionalidade: tratarNI(bloco.querySelector('[data-pessoa="nacionalidade"]').value),
+        sexo: tratarNI(bloco.querySelector('[data-pessoa="sexo"]').value),
+        idade: bloco.querySelector('[data-pessoa="idade"]').value || null
+      })).filter(p => p.nacionalidade || p.sexo || p.idade);
+    }
+    function separarPessoas(valor) {
+      const texto = String(valor || "");
+      const posicao = texto.indexOf(MARCADOR_PESSOAS);
+      if (posicao < 0) return {texto, vitimas:[], infratores:[], envolvidos:[]};
+      try {
+        const dados = JSON.parse(texto.slice(posicao + MARCADOR_PESSOAS.length));
+        return {texto:texto.slice(0,posicao).trim(),vitimas:dados.vitimas || [],infratores:dados.infratores || [],envolvidos:dados.envolvidos || []};
+      } catch (_) { return {texto,vitimas:[],infratores:[],envolvidos:[]}; }
+    }
+    function montarObservacaoFinal() {
+      const texto = document.getElementById("observacaoFinal").value.trim();
+      const dados = {vitimas:pessoasAdicionais("vitima"),infratores:pessoasAdicionais("infrator"),envolvidos:pessoasAdicionais("envolvido")};
+      return dados.vitimas.length || dados.infratores.length || dados.envolvidos.length
+        ? (texto ? texto + "\n" : "") + MARCADOR_PESSOAS + JSON.stringify(dados)
+        : (texto || null);
+    }
+    document.getElementById("adicionarVitima").addEventListener("click", () => adicionarPessoa("vitima"));
+    document.getElementById("adicionarInfrator").addEventListener("click", () => adicionarPessoa("infrator"));
+    document.getElementById("adicionarEnvolvido").addEventListener("click", () => adicionarPessoa("envolvido"));
+    adicionarPessoa("envolvido");
+
+    const TIPOS_ARMA_FOGO = ["PISTOLA","REVÓLVER","ESPINGARDA","FUZIL","CARABINA","SUBMETRALHADORA","GARRUCHA","ARMA ARTESANAL","OUTRO"];
+    const TIPOS_ITENS_RECUPERADOS = ["CARRO","MOTOCICLETA","MOTONETA","CAMINHONETE","CAMINHÃO","ÔNIBUS/MICRO-ÔNIBUS","BICICLETA","BICICLETA ELÉTRICA","BICICLETA MOTORIZADA","VEÍCULO ELÉTRICO","CELULAR","TABLET","NOTEBOOK","BALANÇA DE PRECISÃO","OUTRO"];
+    const TIPOS_ENTORPECENTES = ["MACONHA","COCAÍNA","PASTA BASE","CRACK","SKANK","ECSTASY","LSD","OUTRO"];
+    const FORMAS_ENTORPECENTES = ["INVÓLUCRO","PORÇÃO","TABLETE","TIJOLO","PAPELOTE","PINO","COMPRIMIDO","SACOLA","UNIDADE","OUTRO"];
+    const CATEGORIAS_BENS_SUBTRAIDOS = ["AUTOMÓVEL","MOTOCICLETA","BICICLETA","CELULAR","OUTROS"];
+    function opcoesHtml(opcoes, selecionado) {
+      return '<option value="">Selecione</option>' + opcoes.map(opcao => `<option${opcao === selecionado ? " selected" : ""}>${opcao}</option>`).join("");
+    }
+    function atualizarListaVazia(recipiente, texto) {
+      const vazio = recipiente.querySelector(".lista-vazia");
+      const temItens = recipiente.querySelector(".item-estruturado");
+      if (temItens && vazio) vazio.remove();
+      if (!temItens && !vazio) recipiente.insertAdjacentHTML("beforeend", `<p class="lista-vazia">${texto}</p>`);
+    }
+    function adicionarArmaItem(dados = {}) {
+      const recipiente = document.getElementById("armasItens");
+      const categoria = dados.categoria === "SIMULACRO" ? "SIMULACRO" : "ARMA DE FOGO";
+      const bloco = document.createElement("div");
+      bloco.className = "item-estruturado";
+      bloco.innerHTML = `<div class="campo"><label>Categoria</label><select data-item="categoria"><option>ARMA DE FOGO</option><option>SIMULACRO</option></select></div><div class="campo"><label>Quantidade</label><input data-item="quantidade" type="number" min="1" value="${Number(dados.quantidade) || 1}"></div><div class="campo tipo-arma"><label>Tipo da arma</label><select data-item="tipo">${opcoesHtml(TIPOS_ARMA_FOGO,dados.tipo)}</select></div><div class="campo calibre-arma"><label>Calibre</label><input data-item="calibre" value="${escaparHtml(dados.calibre || "")}" placeholder="Ex.: 9 mm ou .38"></div><div class="campo"><label>Detalhes/observações</label><input data-item="detalhes" value="${escaparHtml(dados.detalhes || "")}" placeholder="Informação opcional"></div><button class="remover-item" type="button" title="Remover este item" aria-label="Remover arma ou simulacro">×</button>`;
+      bloco.querySelector('[data-item="categoria"]').value = categoria;
+      const atualizarCategoria = () => {
+        const simulacro = bloco.querySelector('[data-item="categoria"]').value === "SIMULACRO";
+        bloco.querySelector(".tipo-arma").hidden = simulacro;
+        bloco.querySelector(".calibre-arma").hidden = simulacro;
+        bloco.querySelector('[data-item="detalhes"]').placeholder = simulacro ? "Tipo/descrição do simulacro" : "Informação opcional";
+      };
+      bloco.querySelector('[data-item="categoria"]').addEventListener("change", atualizarCategoria);
+      bloco.querySelector(".remover-item").addEventListener("click", () => { bloco.remove(); atualizarListaVazia(recipiente,"Nenhuma arma ou simulacro informado."); });
+      recipiente.appendChild(bloco);
+      atualizarCategoria();
+      atualizarListaVazia(recipiente,"Nenhuma arma ou simulacro informado.");
+    }
+    function adicionarMunicaoItem(dados = {}) {
+      const recipiente = document.getElementById("municoesItens");
+      const bloco = document.createElement("div");
+      bloco.className = "item-estruturado municao";
+      bloco.innerHTML = `<div class="campo"><label>Quantidade</label><input data-item="quantidade" type="number" min="1" value="${Number(dados.quantidade) || 1}"></div><div class="campo"><label>Calibre</label><input data-item="calibre" value="${escaparHtml(dados.calibre || "")}" placeholder="Ex.: 9 mm ou .38"></div><div class="campo"><label>Detalhes/observações</label><input data-item="detalhes" value="${escaparHtml(dados.detalhes || "")}" placeholder="Informação opcional"></div><button class="remover-item" type="button" title="Remover esta munição" aria-label="Remover munição">×</button>`;
+      bloco.querySelector(".remover-item").addEventListener("click", () => { bloco.remove(); atualizarListaVazia(recipiente,"Nenhuma munição informada."); });
+      recipiente.appendChild(bloco);
+      atualizarListaVazia(recipiente,"Nenhuma munição informada.");
+    }
+    function adicionarItemRecuperado(dados = {}) {
+      const recipiente = document.getElementById("itensRecuperados");
+      const bloco = document.createElement("div");
+      bloco.className = "item-estruturado recuperado";
+      bloco.innerHTML = `<div class="campo"><label>Tipo do objeto/veículo</label><select data-item="tipo">${opcoesHtml(TIPOS_ITENS_RECUPERADOS,dados.tipo)}</select></div><div class="campo"><label>Quantidade</label><input data-item="quantidade" type="number" min="1" value="${Number(dados.quantidade) || 1}"></div><div class="campo"><label>Detalhes/observações</label><input data-item="detalhes" value="${escaparHtml(dados.detalhes || "")}" placeholder="Marca, modelo, cor ou situação, se necessário"></div><button class="remover-item" type="button" title="Remover este item" aria-label="Remover objeto ou veículo">×</button>`;
+      bloco.querySelector(".remover-item").addEventListener("click", () => { bloco.remove(); atualizarListaVazia(recipiente,"Nenhum objeto ou veículo informado."); });
+      recipiente.appendChild(bloco);
+      atualizarListaVazia(recipiente,"Nenhum objeto ou veículo informado.");
+    }
+    function adicionarEntorpecenteItem(dados = {}) {
+      const recipiente = document.getElementById("entorpecentesItens");
+      const bloco = document.createElement("div");
+      bloco.className = "item-estruturado entorpecente";
+      let formaOriginal = String(dados.forma_apresentacao || dados.forma || dados.unidade || "").trim();
+      const chaveForma = textoComparavel(formaOriginal);
+      if (chaveForma === "G" || chaveForma === "KG" || chaveForma.includes("GRAMA") || chaveForma.includes("QUILOGRAMA") || chaveForma.includes("MILIGRAMA")) formaOriginal = "";
+      bloco.innerHTML = `<div class="campo"><label>Tipo de entorpecente</label><select data-item="tipo" required>${opcoesHtml(TIPOS_ENTORPECENTES,dados.tipo)}</select></div><div class="campo"><label>Forma de apresentação</label><select data-item="forma_apresentacao" required>${opcoesHtml(FORMAS_ENTORPECENTES,formaOriginal)}</select></div><div class="campo"><label>Quantidade</label><input data-item="quantidade" type="number" min="1" step="1" inputmode="numeric" value="${Number.isInteger(Number(dados.quantidade)) && Number(dados.quantidade)>0 ? Number(dados.quantidade) : ""}" required></div><div class="campo"><label>Detalhes/observações</label><input data-item="detalhes" value="${escaparHtml(dados.detalhes || "")}" placeholder="Informação opcional"></div><button class="remover-item" type="button" title="Remover este entorpecente" aria-label="Remover entorpecente">×</button>`;
+      bloco.querySelector(".remover-item").addEventListener("click", () => { bloco.remove(); atualizarListaVazia(recipiente,"Nenhum entorpecente informado."); });
+      recipiente.appendChild(bloco);
+      atualizarListaVazia(recipiente,"Nenhum entorpecente informado.");
+    }
+    function adicionarBemSubtraido(dados = {}) {
+      const recipiente = document.getElementById("bensSubtraidos");
+      const bloco = document.createElement("div");
+      bloco.className = "item-estruturado subtraido";
+      bloco.innerHTML = `<div class="campo"><label>Tipo</label><select data-item="tipoSubtracao">${opcoesHtml(["ROUBO","FURTO"],dados.tipoSubtracao)}</select></div><div class="campo"><label>Categoria do bem</label><select data-item="categoria">${opcoesHtml(CATEGORIAS_BENS_SUBTRAIDOS,dados.categoria)}</select></div><div class="campo"><label>Quantidade</label><input data-item="quantidade" type="number" min="1" value="${Number(dados.quantidade)||1}"></div><div class="campo"><label>Situação</label><select data-item="situacao">${opcoesHtml(["SUBTRAÍDO","RECUPERADO"],dados.situacao||"SUBTRAÍDO")}</select></div><div class="campo detalhe-largo"><label>Descrição do bem</label><input data-item="descricao" value="${escaparHtml(dados.descricao||"")}" placeholder="Descrição objetiva"></div><div class="campo detalhe-largo"><label>Marca/modelo</label><input data-item="marcaModelo" value="${escaparHtml(dados.marcaModelo||"")}" placeholder="Quando informado"></div><div class="campo"><label>Cor</label><input data-item="cor" value="${escaparHtml(dados.cor||"")}"></div><div class="campo"><label>Placa</label><input data-item="placa" value="${escaparHtml(dados.placa||"")}"></div><div class="campo"><label>IMEI</label><input data-item="imei" value="${escaparHtml(dados.imei||"")}"></div><div class="campo"><label>Outro identificador</label><input data-item="identificador" value="${escaparHtml(dados.identificador||"")}" placeholder="Chassi, série etc."></div><button class="remover-item" type="button" aria-label="Remover bem subtraído" title="Remover este bem">×</button>`;
+      bloco.querySelector(".remover-item").addEventListener("click",()=>{bloco.remove();atualizarListaVazia(recipiente,"Nenhum bem subtraído informado.")});
+      recipiente.appendChild(bloco);atualizarListaVazia(recipiente,"Nenhum bem subtraído informado.");
+    }
+    function coletarItens(recipienteId, campos) {
+      return Array.from(document.querySelectorAll(`#${recipienteId} .item-estruturado`)).map(bloco => Object.fromEntries(campos.map(campo => {
+        const valor = bloco.querySelector(`[data-item="${campo}"]`)?.value.trim() || "";
+        return [campo, campo === "quantidade" ? Number(valor) || 0 : valor || null];
+      }))).filter(item => item.quantidade > 0);
+    }
+    function coletarArmasItens() {
+      return coletarItens("armasItens",["categoria","quantidade","tipo","calibre","detalhes"]).map(item => item.categoria === "SIMULACRO" ? {...item,tipo:null,calibre:null} : item);
+    }
+    function coletarMunicoesItens() { return coletarItens("municoesItens",["quantidade","calibre","detalhes"]); }
+    function coletarItensRecuperados() { return coletarItens("itensRecuperados",["tipo","quantidade","detalhes"]); }
+    function coletarEntorpecentesItens() { return coletarItens("entorpecentesItens",["tipo","forma_apresentacao","quantidade","detalhes"]); }
+    function coletarBensSubtraidos() { return coletarItens("bensSubtraidos",["tipoSubtracao","categoria","quantidade","situacao","descricao","marcaModelo","cor","placa","imei","identificador"]); }
+    function sincronizarCamposLegadosEstruturados() {
+      const armasItens = coletarArmasItens();
+      const municoesItens = coletarMunicoesItens();
+      const recuperados = coletarItensRecuperados();
+      const entorpecentesItens = coletarEntorpecentesItens();
+      const bensSubtraidos = coletarBensSubtraidos();
+      document.getElementById("quantArmas").value = armasItens.reduce((total,item)=>total+item.quantidade,0) || "";
+      document.getElementById("armas").value = armasItens.map(item => [item.quantidade, item.categoria === "SIMULACRO" ? "SIMULACRO" : item.tipo, item.calibre, item.detalhes].filter(Boolean).join(" ")).join("; ");
+      document.getElementById("quantMunicoes").value = municoesItens.reduce((total,item)=>total+item.quantidade,0) || "";
+      document.getElementById("municoes").value = municoesItens.map(item => [item.quantidade + " munição(ões)", item.calibre, item.detalhes].filter(Boolean).join(" ")).join("; ");
+      const tiposVeiculo = new Set(TIPOS_ITENS_RECUPERADOS.slice(0,10));
+      document.getElementById("veiculosRestricao").value = recuperados.filter(item=>tiposVeiculo.has(item.tipo)).reduce((total,item)=>total+item.quantidade,0) || "";
+      document.getElementById("balanca").value = recuperados.some(item=>item.tipo === "BALANÇA DE PRECISÃO") ? "SIM" : "NÃO";
+      document.getElementById("entorpecentes").value = entorpecentesItens.length ? "SIM" : "NÃO";
+      return {armasItens,municoesItens,recuperados,entorpecentesItens,bensSubtraidos};
+    }
+    function carregarItensEstruturados(x) {
+      document.getElementById("armasItens").replaceChildren();
+      document.getElementById("municoesItens").replaceChildren();
+      document.getElementById("itensRecuperados").replaceChildren();
+      document.getElementById("entorpecentesItens").replaceChildren();
+      document.getElementById("bensSubtraidos").replaceChildren();
+      const armasSalvas = Array.isArray(x.armas_itens) && x.armas_itens.length ? x.armas_itens : (Number(x.quantidade_armas) > 0 ? [{categoria:textoComparavel(x.armas).includes("SIMULACRO") ? "SIMULACRO" : "ARMA DE FOGO",quantidade:Number(x.quantidade_armas),tipo:"OUTRO",detalhes:x.armas || null}] : []);
+      const municoesSalvas = Array.isArray(x.municoes_itens) && x.municoes_itens.length ? x.municoes_itens : (Number(x.quantidade_municoes) > 0 ? [{quantidade:Number(x.quantidade_municoes),calibre:null,detalhes:x.municoes || null}] : []);
+      const itensSalvos = Array.isArray(x.itens_recuperados) && x.itens_recuperados.length ? [...x.itens_recuperados] : (Number(x.veiculos_restricao) > 0 ? [{tipo:"OUTRO",quantidade:Number(x.veiculos_restricao),detalhes:"Registro anterior à classificação detalhada"}] : []);
+      if (textoComparavel(x.balanca_precisao) === "SIM" && !itensSalvos.some(item=>item.tipo === "BALANÇA DE PRECISÃO")) itensSalvos.push({tipo:"BALANÇA DE PRECISÃO",quantidade:1,detalhes:"Registro anterior à classificação detalhada"});
+      const entorpecentesSalvosBrutos = Array.isArray(x.entorpecentes_itens) ? x.entorpecentes_itens : [];
+      const ehPesoEntorpecente = item => { const u = textoComparavel(item?.unidade || item?.forma_apresentacao || item?.forma || ""); return u === "G" || u === "KG" || u.includes("GRAMA") || u.includes("QUILOGRAMA") || u.includes("MILIGRAMA"); };
+      const entorpecentesSalvos = entorpecentesSalvosBrutos.filter(item=>!ehPesoEntorpecente(item)).map(item=>item.forma_apresentacao ? item : {...item,forma_apresentacao:item.forma || item.unidade || null});
+      const possuiEntorpecenteLegado = [x.maconha,x.cocaina,x.pasta_base,x.crack,x.skank].some(v=>Number(v)>0) || entorpecentesSalvosBrutos.some(ehPesoEntorpecente);
+      const avisoEntorpecentesLegados = document.getElementById("avisoEntorpecentesLegados");
+      if (avisoEntorpecentesLegados) avisoEntorpecentesLegados.hidden = !possuiEntorpecenteLegado;
+      const bensSubtraidosSalvos = Array.isArray(x.bens_subtraidos) ? x.bens_subtraidos : [];
+      armasSalvas.forEach(adicionarArmaItem);
+      municoesSalvas.forEach(adicionarMunicaoItem);
+      itensSalvos.forEach(adicionarItemRecuperado);
+      entorpecentesSalvos.forEach(adicionarEntorpecenteItem);
+      bensSubtraidosSalvos.forEach(adicionarBemSubtraido);
+      atualizarListaVazia(document.getElementById("armasItens"),"Nenhuma arma ou simulacro informado.");
+      atualizarListaVazia(document.getElementById("municoesItens"),"Nenhuma munição informada.");
+      atualizarListaVazia(document.getElementById("itensRecuperados"),"Nenhum objeto ou veículo informado.");
+      atualizarListaVazia(document.getElementById("entorpecentesItens"),"Nenhum entorpecente informado.");
+      atualizarListaVazia(document.getElementById("bensSubtraidos"),"Nenhum bem subtraído informado.");
+    }
+    document.getElementById("adicionarArmaFogo").addEventListener("click",()=>adicionarArmaItem({categoria:"ARMA DE FOGO"}));
+    document.getElementById("adicionarSimulacro").addEventListener("click",()=>adicionarArmaItem({categoria:"SIMULACRO"}));
+    document.getElementById("adicionarMunicao").addEventListener("click",()=>adicionarMunicaoItem());
+    document.getElementById("adicionarItemRecuperado").addEventListener("click",()=>adicionarItemRecuperado());
+    document.getElementById("adicionarEntorpecente").addEventListener("click",()=>adicionarEntorpecenteItem());
+    document.getElementById("adicionarBemSubtraido").addEventListener("click",()=>adicionarBemSubtraido());
+
+
+    const idEdicao = new URLSearchParams(location.search).get("id");
+    let registroOriginalEdicao = null;
+    function definirCampo(id, valor) {
+      const el = document.getElementById(id);
+      if (!el || valor === null || valor === undefined) return;
+      let v = String(valor);
+      if (el.type === "time") v = v.slice(0,5);
+      if (el.tagName === "SELECT") {
+        const opcao = Array.from(el.options).find(o => o.value === v || o.textContent === v || o.textContent.startsWith(v + " "));
+        if (opcao) el.value = opcao.value;
+      } else el.value = v;
+    }
+    async function carregarParaEdicao() {
+      const resposta = await banco.rpc("obter_ocorrencia_publica", {p_id:idEdicao});
+      if (resposta.error || !resposta.data) { alert("Não foi possível carregar a ocorrência para edição."); return; }
+      const x = resposta.data;
+      registroOriginalEdicao = x;
+      const pessoasSalvas = separarPessoas(x.observacao_final);
+      x.observacao_final = pessoasSalvas.texto;
+      const mapa = {data_ocorrencia:"data",status_atendimento:"statusAtendimento",motivo_repressao:"motivoRepressao",municipio:"municipio",vtr:"vtr",tipo_registro:"tipoRegistro",numero_bo:"numeroBo",hora_inicial:"horaInicial",hora_final:"horaFinal",ocorrencia:"ocorrencia",crime:"crime",numero_conduzidos:"numeroConduzidos",orientacoes:"orientacoes",veiculos_recuperados:"veiculosRecuperados",endereco:"endereco",numero_endereco:"numeroEndereco",bairro:"bairro",local_entrega:"localEntrega",vitima_nacionalidade:"nacVitima",vitima_sexo:"sexoVitima",vitima_idade:"idadeVitima",infrator_nacionalidade:"nacInfrator",infrator_sexo:"sexoInfrator",infrator_idade:"idadeInfrator",comandante:"comandante",historico_resumido:"mo",materialidade:"materialidade",observacao:"observacao1",entorpecentes:"entorpecentes",maconha:"maconha",cocaina:"cocaina",pasta_base:"pastaBase",crack:"crack",skank:"skank",quantidade_armas:"quantArmas",quantidade_arma_branca:"quantArmaBranca",arma_branca:"armaBranca",armas:"armas",quantidade_municoes:"quantMunicoes",municoes:"municoes",veiculos_restricao:"veiculosRestricao",foragidos:"foragidos",disparo:"disparo",auto_resistencia:"autoResistencia",quantidade_autos_infracao:"quantAutoInfracao",auto_infracao:"autoInfracao",balanca_precisao:"balanca",observacao_final:"observacaoFinal",latitude:"latitude",longitude:"longitude",endereco_formatado:"enderecoFormatado"};
+      Object.keys(mapa).forEach(k => definirCampo(mapa[k],x[k]));
+      carregarItensEstruturados(x);
+      definirCampo("localEntrega",padronizarLocalEntrega(x.local_entrega));
+      marcarResultadosExistentes(x);
+      if (document.getElementById("resultadoConducao").checked) document.getElementById("numeroConduzidos").value = Math.max(Number(x.numero_conduzidos)||0,Number(x.numero_prisoes)||0);
+      atualizarSubtipos();
+      definirCampo("crime",x.crime);
+      pessoasSalvas.vitimas.forEach(p => adicionarPessoa("vitima",p));
+      pessoasSalvas.infratores.forEach(p => adicionarPessoa("infrator",p));
+      document.getElementById("envolvidosAdicionais").replaceChildren();
+      pessoasSalvas.envolvidos.forEach(p => adicionarPessoa("envolvido",p));
+      if (!pessoasSalvas.envolvidos.length) adicionarPessoa("envolvido");
+      const enderecoGoogleEdicao = document.getElementById("enderecoGoogle");
+      if (enderecoGoogleEdicao) enderecoGoogleEdicao.value = x.endereco_formatado || x.endereco || "";
+      data.dispatchEvent(new Event("change"));
+      horaInicial.dispatchEvent(new Event("change"));
+      statusAtendimento.dispatchEvent(new Event("change"));
+      document.querySelector("h1").textContent = "Editar ocorrência";
+      document.title = "Editar ocorrência";
+      const botao = formulario.querySelector('button[type="submit"]');
+      botao.textContent = "Salvar alterações";
+      window.scrollTo({top:0});
+    }
+    carregarCatalogos().then(function(){ if (idEdicao) carregarParaEdicao(); });
+
+    function mostrarErroCampo(id, mensagem) {
+      const el = document.getElementById(id);
+      alert(mensagem);
+      if (el) {
+        el.scrollIntoView({behavior:"smooth",block:"center"});
+        setTimeout(()=>el.focus(),250);
+      }
+      return false;
+    }
+
+    function validarFormularioPrincipal() {
+      const obrigatorios = idEdicao ? [
+        ["data","Informe a data da ocorrência."],
+        ["numeroBo","Informe o número do BO/ROP."],
+        ["ocorrencia","Selecione o Tipo de Ocorrência."]
+      ] : [
+        ["data","Informe a data da ocorrência."],
+        ["statusAtendimento","Informe a situação da ocorrência."],
+        ["municipio","Informe o município."],
+        ["tipoRegistro","Selecione o tipo de registro."],
+        ["numeroBo","Informe o número do BO/ROP."],
+        ["horaInicial","Informe a hora inicial."],
+        ["ocorrencia","Selecione o Tipo de Ocorrência."]
+      ];
+      for (const [id,msg] of obrigatorios) {
+        const el=document.getElementById(id);
+        if (!el || !String(el.value||"").trim()) return mostrarErroCampo(id,msg);
+      }
+      if (document.getElementById("resultadoConducao").checked && !Number(document.getElementById("numeroConduzidos").value)) return mostrarErroCampo("numeroConduzidos","Informe a quantidade de conduzidos.");
+      if (document.getElementById("resultadoOrientacao").checked && !Number(document.getElementById("orientacoes").value)) return mostrarErroCampo("orientacoes","Informe a quantidade de orientações.");
+      if (document.getElementById("resultadoVeiculo").checked && !Number(document.getElementById("veiculosRecuperados").value)) return mostrarErroCampo("veiculosRecuperados","Informe a quantidade de veículos recuperados.");
+      if (document.getElementById("resultadoOutro").checked && !document.getElementById("outroResultadoDescricao").value.trim()) return mostrarErroCampo("outroResultadoDescricao","Descreva o outro resultado do atendimento.");
+      return true;
+    }
+
+    formulario.addEventListener("submit", async (evento) => {
+      evento.preventDefault();
+      if (!validarFormularioPrincipal()) return;
+      const botaoSalvar = formulario.querySelector('button[type="submit"]');
+      const textoOriginalBotao = botaoSalvar.textContent;
+      if (document.getElementById("numeroEndereco").value.trim()) {
+        botaoSalvar.disabled = true;
+        botaoSalvar.textContent = "Validando endereço...";
+        await atualizarCoordenadasPeloNumero();
+        botaoSalvar.disabled = false;
+        botaoSalvar.textContent = textoOriginalBotao;
+      }
+      const valorOcorrencia = normalizarCatalogo(document.getElementById("ocorrencia").value);
+      let tipoEscolhido = catalogos.tipos.find(t => normalizarCatalogo(t.nome) === valorOcorrencia);
+      const ocorrenciaOriginal = normalizarCatalogo(registroOriginalEdicao && registroOriginalEdicao.ocorrencia);
+      const ocorrenciaAlterada = !idEdicao || valorOcorrencia !== ocorrenciaOriginal;
+      if (!tipoEscolhido && ocorrenciaAlterada) return mostrarErroCampo("ocorrencia","Selecione um Tipo de Ocorrência válido na lista.");
+      if (tipoEscolhido) document.getElementById("ocorrencia").value = tipoEscolhido.nome;
+      const subtipoDigitado = document.getElementById("crime").value;
+      const subtipoOriginal = normalizarCatalogo(registroOriginalEdicao && registroOriginalEdicao.crime);
+      const subtipoAlterado = !idEdicao || normalizarCatalogo(subtipoDigitado) !== subtipoOriginal;
+      if (subtipoDigitado && subtipoAlterado && (!tipoEscolhido || !catalogos.subtipos.some(s => Number(s.tipo_id) === Number(tipoEscolhido.id) && normalizarCatalogo(s.nome) === normalizarCatalogo(subtipoDigitado)))) return mostrarErroCampo("crime","Selecione um Subtipo válido relacionado à ocorrência.");
+      const comandanteDigitado = normalizarComandante(campoComandante.value);
+      const comandanteOriginal = normalizarComandante(registroOriginalEdicao && registroOriginalEdicao.comandante);
+      const comandanteAlterado = !idEdicao || comandanteDigitado !== comandanteOriginal;
+      if (comandanteDigitado && comandanteAlterado && !catalogos.comandantes.includes(comandanteDigitado)) return mostrarErroCampo("comandante","Selecione um comandante válido na lista ou use o botão + para cadastrá-lo.");
+      campoComandante.value = comandanteDigitado;
+      const localEntregaDigitado = padronizarLocalEntrega(document.getElementById("localEntrega").value);
+      const localEntregaOriginal = padronizarLocalEntrega(registroOriginalEdicao && registroOriginalEdicao.local_entrega);
+      const localEntregaAlterado = !idEdicao || localEntregaDigitado !== localEntregaOriginal;
+      if (localEntregaDigitado && localEntregaAlterado && !catalogos.locais.includes(localEntregaDigitado)) return mostrarErroCampo("localEntrega","Selecione um Local de entrega válido na lista padronizada.");
+      document.getElementById("localEntrega").value = localEntregaDigitado;
+      const bairroDigitado = normalizarCatalogo(document.getElementById("bairro").value);
+      const bairroOriginal = normalizarCatalogo(registroOriginalEdicao && registroOriginalEdicao.bairro);
+      const bairroAlterado = !idEdicao || bairroDigitado !== bairroOriginal;
+      if (!bairroDigitado && bairroAlterado) return mostrarErroCampo("bairro","Informe o bairro da ocorrência. Se o Google Maps não identificar corretamente, preencha o campo manualmente.");
+      document.getElementById("bairro").value = bairroDigitado;
+      const enderecoAtual = document.getElementById("endereco").value;
+      const numeroAtual = document.getElementById("numeroEndereco").value;
+      const enderecoFoiAlterado = !idEdicao || !registroOriginalEdicao || normalizarCatalogo(enderecoAtual) !== normalizarCatalogo(registroOriginalEdicao.endereco) || String(numeroAtual||"").trim() !== String(registroOriginalEdicao.numero_endereco||"").trim();
+      if ((!enderecoAtual || !document.getElementById("latitude").value || !document.getElementById("longitude").value) && enderecoFoiAlterado) return mostrarErroCampo("enderecoGoogle","O endereço foi alterado. Pesquise e selecione uma sugestão do Google Maps antes de salvar.");
+      if (importacaoPdfPendente && !confirm("Você conferiu os dados preenchidos pelo PDF, corrigiu o que for necessário e confirma que deseja salvar esta ocorrência?")) return;
+
+      botaoSalvar.disabled = true;
+      botaoSalvar.textContent = "Salvando...";
+
+      try {
+        const providenciasSelecionadas = providenciasDosResultados();
+        const itensEstruturados = sincronizarCamposLegadosEstruturados();
+        const registro = {
+          data_ocorrencia: document.getElementById("data").value,
+          status_atendimento: statusAtendimento.value,
+          motivo_repressao: motivoRepressao.value || null,
+          municipio: document.getElementById("municipio").value.trim(),
+          vtr: document.getElementById("vtr").value || null,
+          tipo_registro: tratarNI(document.getElementById("tipoRegistro").value),
+          numero_bo: document.getElementById("numeroBo").value.trim(),
+          hora_inicial: document.getElementById("horaInicial").value,
+          hora_final: document.getElementById("horaFinal").value || null,
+
+          ocorrencia: document.getElementById("ocorrencia").value.trim(),
+          crime: document.getElementById("crime").value || null,
+          detalhes: document.getElementById("resultadoOutro").checked ? document.getElementById("outroResultadoDescricao").value.trim() || null : null,
+          providencia_1: providenciasSelecionadas[0] || null,
+          numero_conduzidos: document.getElementById("resultadoConducao").checked ? document.getElementById("numeroConduzidos").value : null,
+          orientacoes: document.getElementById("resultadoOrientacao").checked ? document.getElementById("orientacoes").value : 0,
+          veiculos_recuperados: document.getElementById("resultadoVeiculo").checked ? document.getElementById("veiculosRecuperados").value : 0,
+          providencia_2: providenciasSelecionadas[1] || null,
+          endereco: document.getElementById("endereco").value || null,
+          numero_endereco: document.getElementById("numeroEndereco").value || null,
+          bairro: document.getElementById("bairro").value || null,
+          latitude: document.getElementById("latitude").value || null,
+          longitude: document.getElementById("longitude").value || null,
+          endereco_formatado: document.getElementById("enderecoFormatado").value || null,
+          local_entrega: localEntregaDigitado || null,
+
+          vitima_nacionalidade: tratarNI(document.getElementById("nacVitima").value),
+          vitima_sexo: tratarNI(document.getElementById("sexoVitima").value),
+          vitima_idade: document.getElementById("idadeVitima").value || null,
+
+          infrator_nacionalidade: tratarNI(document.getElementById("nacInfrator").value),
+          infrator_sexo: tratarNI(document.getElementById("sexoInfrator").value),
+          infrator_idade: document.getElementById("idadeInfrator").value || null,
+
+          comandante: comandanteDigitado || null,
+
+          historico_resumido: document.getElementById("mo").value || null,
+          materialidade: document.getElementById("materialidade").value || null,
+          observacao: document.getElementById("observacao1").value || null,
+          bens_subtraidos: itensEstruturados.bensSubtraidos,
+
+          entorpecentes: tratarNI(document.getElementById("entorpecentes").value),
+          entorpecentes_itens: itensEstruturados.entorpecentesItens,
+          maconha: document.getElementById("maconha").value || null,
+          cocaina: document.getElementById("cocaina").value || null,
+          pasta_base: document.getElementById("pastaBase").value || null,
+          crack: document.getElementById("crack").value || null,
+          skank: document.getElementById("skank").value || null,
+
+          quantidade_armas: document.getElementById("quantArmas").value || null,
+          armas_itens: itensEstruturados.armasItens,
+          quantidade_arma_branca: document.getElementById("quantArmaBranca").value || 0,
+          arma_branca: document.getElementById("armaBranca").value || null,
+          armas: document.getElementById("armas").value || null,
+          quantidade_municoes: document.getElementById("quantMunicoes").value || null,
+          municoes_itens: itensEstruturados.municoesItens,
+          municoes: document.getElementById("municoes").value || null,
+
+          veiculos_restricao: document.getElementById("veiculosRestricao").value || null,
+          itens_recuperados: itensEstruturados.recuperados,
+          foragidos: document.getElementById("foragidos").value || null,
+          disparo: tratarNI(document.getElementById("disparo").value),
+          auto_resistencia: tratarNI(document.getElementById("autoResistencia").value),
+
+          quantidade_autos_infracao: document.getElementById("quantAutoInfracao").value || null,
+          auto_infracao: document.getElementById("autoInfracao").value || null,
+          balanca_precisao: tratarNI(document.getElementById("balanca").value),
+          tatico_setorial: document.getElementById("tipoRegistro").value === "TS",
+          observacao_final: montarObservacaoFinal()
+        };
+
+        let error = null;
+        if (idEdicao) {
+          const resposta = await banco.rpc("atualizar_ocorrencia_publica", {p_id:idEdicao,p_dados:registro});
+          error = resposta.error;
+          if (!error && resposta.data !== true) error = {message:"Registro não encontrado."};
+        } else {
+          const resposta = await banco.from("ocorrencias").insert([registro]);
+          error = resposta.error;
+        }
+
+        if (error) {
+          console.error(error);
+          const duplicada = error.code === "23505" || String(error.message || "").includes("ocorrencia_numero_unico");
+          if (duplicada) {
+            const numeroExistente = registro.numero_bo;
+            const anoExistente = String(registro.data_ocorrencia || "").slice(0,4);
+            if (confirm(`A ocorrência ${registro.tipo_registro || ""} ${numeroExistente} do ano ${anoExistente} já está cadastrada e não pode ser duplicada. Deseja abrir o registro existente para consultar ou editar?`)) {
+              location.href = "consulta.html?q=" + encodeURIComponent(numeroExistente);
+            }
+            return;
+          }
+          alert("Erro ao salvar a ocorrência: " + error.message);
+          return;
+        }
+
+        if (idEdicao) {
+          importacaoPdfPendente = false;
+          alert("Alterações salvas com sucesso!");
+          location.href = "consulta.html?q=" + encodeURIComponent(registro.numero_bo);
+          return;
+        }
+        importacaoPdfPendente = false;
+        alert("Ocorrência salva com sucesso!");
+        formulario.reset();
+        document.getElementById("vitimasAdicionais").replaceChildren();
+        document.getElementById("infratoresAdicionais").replaceChildren();
+        document.getElementById("envolvidosAdicionais").replaceChildren();
+        adicionarPessoa("envolvido");
+        statusImportacaoPdf.hidden = true;
+        document.getElementById("nomePdfSelecionado").textContent = "Nenhum arquivo selecionado";
+        semana.value = "";
+        mes.value = "";
+        turno.value = "";
+        window.scrollTo({ top: 0, behavior: "smooth" });
+
+      } catch (erro) {
+        console.error(erro);
+        alert("Ocorreu um erro inesperado ao salvar.");
+      } finally {
+        botaoSalvar.disabled = false;
+        botaoSalvar.textContent = textoOriginalBotao;
+      }
+    });
+  </script>
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB-IcfbT-uuHlYSNcvmhbSqkPGqh2wl4Rc&libraries=places&v=weekly&loading=async&callback=iniciarAutocompleteGoogle"></script>
+</body>
+</html>
