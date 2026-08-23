@@ -36,7 +36,7 @@ function auditarRegistro(o){
  if(vazio(o.endereco))add(o,'media','Endereço','Logradouro não informado.');
  if(vazio(o.comandante))add(o,'media','Comandante','Comandante da viatura não informado.');
  if(vazio(o.hora_inicial))add(o,'media','Horário','Hora inicial não informada; prejudica a análise por horário.');
- if(vazio(o.turno))add(o,'baixa','Turno','Turno não informado.');
+ if(vazio(o.turno)&&vazio(o.hora_inicial))add(o,'baixa','Turno','Turno e hora inicial não informados.');
  if(vazio(o.status_atendimento))add(o,'baixa','Situação','Situação do atendimento não informada.');
  if(chave(o.status_atendimento)==='DEMANDA REPRIMIDA'&&vazio(o.motivo_repressao))add(o,'media','Demanda reprimida','Demanda reprimida sem motivo registrado.');
  if(o.__geo_parcial)add(o,'media','Georreferenciamento','Registro possui apenas uma das coordenadas geográficas.');
@@ -72,13 +72,13 @@ function coordenadaValida(x){if(x.latitude==null||x.longitude==null||String(x.la
 async function carregar(){
  $('loading').style.display='grid';$('loading').textContent='Auditando a base de dados...';let args={data_inicio:$('ini').value||null,data_fim:$('fim').value||null};let rr=await Promise.all([db.rpc('obter_dados_dashboard',args),db.rpc('obter_ocorrencias_mapa',{...args,tipo_filtro:null})]);if(rr[0].error){$('loading').textContent='Não foi possível executar a auditoria: '+rr[0].error.message;return}
  let mapa=rr[1].error?[]:(rr[1].data||[]),porId=new Map(),porBo=new Map();mapa.forEach(x=>{if(coordenadaValida(x)){if(x.id!=null)porId.set(String(x.id),x);if(x.numero_bo)porBo.set(chave(x.numero_bo)+'|'+String(x.data_ocorrencia||''),x)}});
- dados=(rr[0].data||[]).map(o=>{let g=porId.get(String(o.id))||porBo.get(chave(o.numero_bo)+'|'+String(o.data_ocorrencia||'')),latV=!vazio(o.latitude),lngV=!vazio(o.longitude);return {...o,__geo_ok:Boolean(g)||coordenadaValida(o),__geo_parcial:!g&&(latV!==lngV)}});
+ dados=(rr[0].data||[]).map(o=>{let g=porId.get(String(o.id))||porBo.get(chave(o.numero_bo)+'|'+String(o.data_ocorrencia||'')),latV=!vazio(o.latitude),lngV=!vazio(o.longitude);return {...o,__geo_ok:Boolean(g)||(latV&&lngV),__geo_parcial:latV!==lngV}});
  let qsCorrecao=new URLSearchParams(location.search),corrigidoId=qsCorrecao.get('corrigido_id'),corrigidoBo=qsCorrecao.get('corrigido');
  if(!corrigidoId&&corrigidoBo){const alvo=dados.find(o=>chave(o.numero_bo)===chave(corrigidoBo));if(alvo&&alvo.id!=null)corrigidoId=String(alvo.id)}
  if(corrigidoId){
    const direto=await db.rpc('obter_ocorrencia_publica',{p_id:corrigidoId});
    if(!direto.error&&direto.data){
-     const x=direto.data,latV=!vazio(x.latitude),lngV=!vazio(x.longitude),atual={...x,__geo_ok:coordenadaValida(x),__geo_parcial:latV!==lngV};
+     const x=direto.data,latV=!vazio(x.latitude),lngV=!vazio(x.longitude),atual={...x,__geo_ok:latV&&lngV,__geo_parcial:latV!==lngV};
      const idx=dados.findIndex(o=>String(o.id)===String(corrigidoId));
      if(idx>=0) dados[idx]={...dados[idx],...atual};
      else dados.push(atual);
