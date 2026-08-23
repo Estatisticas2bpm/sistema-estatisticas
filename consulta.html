@@ -44,7 +44,7 @@
       <button id="btnPesquisar" type="button">Pesquisar</button>
     </div>
     <p id="status" class="status">Carregando ocorrências...</p>
-    <div class="tabela-wrap"><table><thead><tr><th>Data</th><th>Tipo</th><th>Nº BO/ROP</th><th>TCO vinculado</th><th>Ocorrência</th><th>Bairro</th><th>Ações</th></tr></thead><tbody id="resultado"></tbody></table></div>
+    <div class="tabela-wrap"><table><thead><tr><th>Data</th><th>Tipo</th><th>Nº BO</th><th>TCO vinculado</th><th>Ocorrência</th><th>Bairro</th><th>Ações</th></tr></thead><tbody id="resultado"></tbody></table></div>
   </section></main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
@@ -96,7 +96,7 @@
           : '';
         return "<tr><td>" + formatarData(item.data_ocorrencia) + "</td><td>" +
           escapar(item.tipo_registro || "—") + "</td><td>" + escapar(item.numero_bo) +
-          "</td><td>" + renderTcos(item) + "</td><td>" + escapar(item.ocorrencia) + "</td><td>" + escapar(item.bairro || "—") + "</td><td class=\"acoes-linha\">"+botaoTco+"<a class=\"btnEditar\" href=\"cadastro.html?id="+encodeURIComponent(item.id)+"\">Editar</a><button class=\"btnExcluir\" data-id=\""+escapar(item.id)+"\" data-bo=\""+escapar(item.numero_bo)+"\">Excluir</button></td></tr>";
+          "</td><td>" + renderTcos(item) + "</td><td>" + escapar(item.ocorrencia) + "</td><td>" + escapar(item.bairro || "—") + "</td><td class=\"acoes-linha\">"+botaoTco+"<a class=\"btnEditar\" href=\"cadastro-base.html?id="+encodeURIComponent(item.id)+"\">Editar</a><button class=\"btnExcluir\" data-id=\""+escapar(item.id)+"\" data-bo=\""+escapar(item.numero_bo)+"\">Excluir</button></td></tr>";
       }).join("");
     }
     resultado.addEventListener("click", async function(e) {
