@@ -579,10 +579,10 @@
         <div class="grade">
           <div class="grupo-estruturado">
             <div class="grupo-estruturado-cabecalho">
-              <div><h3>Substâncias apreendidas</h3><small>Cadastre somente quando houver apreensão.</small></div>
+              <div><h3>Substâncias apreendidas</h3><small>Registre somente o que foi visualmente constatado: tipo, forma de apresentação e quantidade de unidades. Não informe peso (g, kg ou mg).</small></div>
               <button class="botao-item" id="adicionarEntorpecente" type="button">+ Adicionar entorpecente</button>
             </div>
-            <div class="lista-itens" id="entorpecentesItens"><p class="lista-vazia">Nenhum entorpecente informado.</p></div>
+            <div id="avisoEntorpecentesLegados" hidden style="margin-bottom:12px;padding:12px;border:1px solid #f59e0b;border-radius:9px;background:#fffbeb;color:#92400e"><strong>Registro legado:</strong> esta ocorrência possui dados antigos de entorpecentes registrados em peso. O dado foi preservado, mas não será convertido nem somado como unidade visual.</div><div class="lista-itens" id="entorpecentesItens"><p class="lista-vazia">Nenhum entorpecente informado.</p></div>
           </div>
           <input id="entorpecentes" name="entorpecentes" type="hidden">
           <input id="maconha" name="maconha" type="hidden"><input id="cocaina" name="cocaina" type="hidden">
@@ -1278,10 +1278,13 @@
         }
         const tipoDroga = TIPOS_ENTORPECENTES.filter(t=>t!=="OUTRO").find(t=>chave.includes(textoComparavel(t)));
         if (tipoDroga || chave.includes("ENTORPECENTE") || chave.includes("DROGA")) {
-          const quantidade = Number((descricao.match(/(\d+(?:[.,]\d+)?)\s*(KG|QUILOGRAMA|G|GRAMA|UNIDADE|PORCAO|INVOLUCRO)/i)||[])[1]?.replace(",",".")) || quantidadeObjetoPdf(descricao,"PORCOES?|UNIDADES?|INVOLUCROS?");
-          const unidadeTexto = textoComparavel((descricao.match(/\d+(?:[.,]\d+)?\s*(KG|QUILOGRAMA|G|GRAMA|UNIDADE|PORCAO|INVOLUCRO)/i)||[])[1]);
-          const unidade = unidadeTexto.includes("KG") || unidadeTexto.includes("QUILOGRAMA") ? "QUILOGRAMA (kg)" : unidadeTexto === "G" || unidadeTexto.includes("GRAMA") ? "GRAMA (g)" : unidadeTexto.includes("INVOLUCRO") ? "INVÓLUCRO" : unidadeTexto.includes("PORCAO") ? "PORÇÃO" : "UNIDADE";
-          dados.entorpecentes.push({tipo:tipoDroga || "OUTRO",quantidade,unidade,detalhes:descricao}); return;
+          const achado = descricao.match(/\b(\d+)\s*(INV[ÓO]LUCROS?|POR[ÇC][ÕO]ES?|TABLETES?|TIJOLOS?|PAPELOTES?|PINOS?|COMPRIMIDOS?|SACOLAS?|UNIDADES?)\b/i);
+          if (achado) {
+            const formaChave = textoComparavel(achado[2]);
+            const forma = formaChave.includes("INVOLUCRO") ? "INVÓLUCRO" : formaChave.includes("PORCAO") ? "PORÇÃO" : formaChave.includes("TABLETE") ? "TABLETE" : formaChave.includes("TIJOLO") ? "TIJOLO" : formaChave.includes("PAPELOTE") ? "PAPELOTE" : formaChave.includes("PINO") ? "PINO" : formaChave.includes("COMPRIMIDO") ? "COMPRIMIDO" : formaChave.includes("SACOLA") ? "SACOLA" : "UNIDADE";
+            dados.entorpecentes.push({tipo:tipoDroga || "OUTRO",quantidade:Number(achado[1]),forma_apresentacao:forma,detalhes:descricao});
+          }
+          return;
         }
         if (chave.includes("BALANCA") && chave.includes("PRECISAO")) dados.balanca = true;
         if (!/RECUPERAD|APREENDID|ENCONTRAD/i.test(situacao)) return;
@@ -1598,7 +1601,7 @@
     const TIPOS_ARMA_FOGO = ["PISTOLA","REVÓLVER","ESPINGARDA","FUZIL","CARABINA","SUBMETRALHADORA","GARRUCHA","ARMA ARTESANAL","OUTRO"];
     const TIPOS_ITENS_RECUPERADOS = ["CARRO","MOTOCICLETA","MOTONETA","CAMINHONETE","CAMINHÃO","ÔNIBUS/MICRO-ÔNIBUS","BICICLETA","BICICLETA ELÉTRICA","BICICLETA MOTORIZADA","VEÍCULO ELÉTRICO","CELULAR","TABLET","NOTEBOOK","BALANÇA DE PRECISÃO","OUTRO"];
     const TIPOS_ENTORPECENTES = ["MACONHA","COCAÍNA","PASTA BASE","CRACK","SKANK","ECSTASY","LSD","OUTRO"];
-    const UNIDADES_ENTORPECENTES = ["GRAMA (g)","QUILOGRAMA (kg)","UNIDADE","PORÇÃO","INVÓLUCRO","OUTRO"];
+    const FORMAS_ENTORPECENTES = ["INVÓLUCRO","PORÇÃO","TABLETE","TIJOLO","PAPELOTE","PINO","COMPRIMIDO","SACOLA","UNIDADE","OUTRO"];
     const CATEGORIAS_BENS_SUBTRAIDOS = ["AUTOMÓVEL","MOTOCICLETA","BICICLETA","CELULAR","OUTROS"];
     function opcoesHtml(opcoes, selecionado) {
       return '<option value="">Selecione</option>' + opcoes.map(opcao => `<option${opcao === selecionado ? " selected" : ""}>${opcao}</option>`).join("");
@@ -1650,7 +1653,10 @@
       const recipiente = document.getElementById("entorpecentesItens");
       const bloco = document.createElement("div");
       bloco.className = "item-estruturado entorpecente";
-      bloco.innerHTML = `<div class="campo"><label>Substância</label><select data-item="tipo">${opcoesHtml(TIPOS_ENTORPECENTES,dados.tipo)}</select></div><div class="campo"><label>Quantidade</label><input data-item="quantidade" type="number" min="0" step="any" value="${Number(dados.quantidade) || ""}"></div><div class="campo"><label>Unidade</label><select data-item="unidade">${opcoesHtml(UNIDADES_ENTORPECENTES,dados.unidade)}</select></div><div class="campo"><label>Detalhes/observações</label><input data-item="detalhes" value="${escaparHtml(dados.detalhes || "")}" placeholder="Informação opcional"></div><button class="remover-item" type="button" title="Remover este entorpecente" aria-label="Remover entorpecente">×</button>`;
+      let formaOriginal = String(dados.forma_apresentacao || dados.forma || dados.unidade || "").trim();
+      const chaveForma = textoComparavel(formaOriginal);
+      if (chaveForma === "G" || chaveForma === "KG" || chaveForma.includes("GRAMA") || chaveForma.includes("QUILOGRAMA") || chaveForma.includes("MILIGRAMA")) formaOriginal = "";
+      bloco.innerHTML = `<div class="campo"><label>Tipo de entorpecente</label><select data-item="tipo" required>${opcoesHtml(TIPOS_ENTORPECENTES,dados.tipo)}</select></div><div class="campo"><label>Forma de apresentação</label><select data-item="forma_apresentacao" required>${opcoesHtml(FORMAS_ENTORPECENTES,formaOriginal)}</select></div><div class="campo"><label>Quantidade</label><input data-item="quantidade" type="number" min="1" step="1" inputmode="numeric" value="${Number.isInteger(Number(dados.quantidade)) && Number(dados.quantidade)>0 ? Number(dados.quantidade) : ""}" required></div><div class="campo"><label>Detalhes/observações</label><input data-item="detalhes" value="${escaparHtml(dados.detalhes || "")}" placeholder="Informação opcional"></div><button class="remover-item" type="button" title="Remover este entorpecente" aria-label="Remover entorpecente">×</button>`;
       bloco.querySelector(".remover-item").addEventListener("click", () => { bloco.remove(); atualizarListaVazia(recipiente,"Nenhum entorpecente informado."); });
       recipiente.appendChild(bloco);
       atualizarListaVazia(recipiente,"Nenhum entorpecente informado.");
@@ -1674,7 +1680,7 @@
     }
     function coletarMunicoesItens() { return coletarItens("municoesItens",["quantidade","calibre","detalhes"]); }
     function coletarItensRecuperados() { return coletarItens("itensRecuperados",["tipo","quantidade","detalhes"]); }
-    function coletarEntorpecentesItens() { return coletarItens("entorpecentesItens",["tipo","quantidade","unidade","detalhes"]); }
+    function coletarEntorpecentesItens() { return coletarItens("entorpecentesItens",["tipo","forma_apresentacao","quantidade","detalhes"]); }
     function coletarBensSubtraidos() { return coletarItens("bensSubtraidos",["tipoSubtracao","categoria","quantidade","situacao","descricao","marcaModelo","cor","placa","imei","identificador"]); }
     function sincronizarCamposLegadosEstruturados() {
       const armasItens = coletarArmasItens();
@@ -1690,9 +1696,6 @@
       document.getElementById("veiculosRestricao").value = recuperados.filter(item=>tiposVeiculo.has(item.tipo)).reduce((total,item)=>total+item.quantidade,0) || "";
       document.getElementById("balanca").value = recuperados.some(item=>item.tipo === "BALANÇA DE PRECISÃO") ? "SIM" : "NÃO";
       document.getElementById("entorpecentes").value = entorpecentesItens.length ? "SIM" : "NÃO";
-      const camposDrogas = {"MACONHA":"maconha","COCAÍNA":"cocaina","PASTA BASE":"pastaBase","CRACK":"crack","SKANK":"skank"};
-      Object.values(camposDrogas).forEach(id => document.getElementById(id).value = "");
-      entorpecentesItens.forEach(item => { const id = camposDrogas[item.tipo]; if (id) document.getElementById(id).value = (Number(document.getElementById(id).value)||0) + item.quantidade; });
       return {armasItens,municoesItens,recuperados,entorpecentesItens,bensSubtraidos};
     }
     function carregarItensEstruturados(x) {
@@ -1705,7 +1708,12 @@
       const municoesSalvas = Array.isArray(x.municoes_itens) && x.municoes_itens.length ? x.municoes_itens : (Number(x.quantidade_municoes) > 0 ? [{quantidade:Number(x.quantidade_municoes),calibre:null,detalhes:x.municoes || null}] : []);
       const itensSalvos = Array.isArray(x.itens_recuperados) && x.itens_recuperados.length ? [...x.itens_recuperados] : (Number(x.veiculos_restricao) > 0 ? [{tipo:"OUTRO",quantidade:Number(x.veiculos_restricao),detalhes:"Registro anterior à classificação detalhada"}] : []);
       if (textoComparavel(x.balanca_precisao) === "SIM" && !itensSalvos.some(item=>item.tipo === "BALANÇA DE PRECISÃO")) itensSalvos.push({tipo:"BALANÇA DE PRECISÃO",quantidade:1,detalhes:"Registro anterior à classificação detalhada"});
-      const entorpecentesSalvos = Array.isArray(x.entorpecentes_itens) && x.entorpecentes_itens.length ? x.entorpecentes_itens : [["MACONHA",x.maconha],["COCAÍNA",x.cocaina],["PASTA BASE",x.pasta_base],["CRACK",x.crack],["SKANK",x.skank]].filter(([,quantidade])=>Number(quantidade)>0).map(([tipo,quantidade])=>({tipo,quantidade:Number(quantidade),unidade:"GRAMA (g)",detalhes:"Registro anterior à classificação detalhada"}));
+      const entorpecentesSalvosBrutos = Array.isArray(x.entorpecentes_itens) ? x.entorpecentes_itens : [];
+      const ehPesoEntorpecente = item => { const u = textoComparavel(item?.unidade || item?.forma_apresentacao || item?.forma || ""); return u === "G" || u === "KG" || u.includes("GRAMA") || u.includes("QUILOGRAMA") || u.includes("MILIGRAMA"); };
+      const entorpecentesSalvos = entorpecentesSalvosBrutos.filter(item=>!ehPesoEntorpecente(item)).map(item=>item.forma_apresentacao ? item : {...item,forma_apresentacao:item.forma || item.unidade || null});
+      const possuiEntorpecenteLegado = [x.maconha,x.cocaina,x.pasta_base,x.crack,x.skank].some(v=>Number(v)>0) || entorpecentesSalvosBrutos.some(ehPesoEntorpecente);
+      const avisoEntorpecentesLegados = document.getElementById("avisoEntorpecentesLegados");
+      if (avisoEntorpecentesLegados) avisoEntorpecentesLegados.hidden = !possuiEntorpecenteLegado;
       const bensSubtraidosSalvos = Array.isArray(x.bens_subtraidos) ? x.bens_subtraidos : [];
       armasSalvas.forEach(adicionarArmaItem);
       municoesSalvas.forEach(adicionarMunicaoItem);
