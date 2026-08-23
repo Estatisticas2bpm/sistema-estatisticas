@@ -37,12 +37,11 @@
       'tatico_setorial: (document.getElementById("tipoRegistro").value || (idEdicao && registroOriginalEdicao ? registroOriginalEdicao.tipo_registro : "")) === "TS",'
     );
 
-    // Quando a edição foi aberta pela Auditoria, retorna para a Auditoria
-    // após salvar, preservando período e filtro. Outros fluxos continuam
-    // retornando normalmente para a consulta do BO.
+    // Se a edição veio da Auditoria, volta para ela após a confirmação de sucesso.
+    // Período e filtro seguem no parâmetro "retorno".
     html=html.replace(
-      'location.href = "consulta.html?q=" + encodeURIComponent(registro.numero_bo);\n          return;',
-      'const retornoSolicitado = new URLSearchParams(location.search).get("retorno");\n          if (retornoSolicitado && /^auditoria\\.html(?:\\?|$)/.test(retornoSolicitado)) location.href = retornoSolicitado;\n          else location.href = "consulta.html?q=" + encodeURIComponent(registro.numero_bo);\n          return;'
+      'alert("Alterações salvas com sucesso!");\n          location.href = "consulta.html?q=" + encodeURIComponent(registro.numero_bo);\n          return;',
+      'alert("Alterações salvas com sucesso!");\n          const retornoSolicitado = new URLSearchParams(location.search).get("retorno");\n          if (retornoSolicitado && /^auditoria\\.html(?:\\?|$)/.test(retornoSolicitado)) location.href = retornoSolicitado;\n          else location.href = "consulta.html?q=" + encodeURIComponent(registro.numero_bo);\n          return;'
     );
 
     document.open();
