@@ -67,12 +67,23 @@ async function localizarOcorrenciaParaEdicao(o){
  if(!exato){r=await db.rpc('consultar_ocorrencias_publicas_v2',{termo_busca:numeroBo,data_busca:null});if(r.error)throw r.error;lista=Array.isArray(r.data)?r.data:[];exato=lista.find(x=>String(x.numero_bo||'').trim()===numeroBo&&(!dataOcorrencia||x.data_ocorrencia===dataOcorrencia))||lista.find(x=>String(x.numero_bo||'').trim()===numeroBo)}
  if(!exato||!exato.id)throw new Error('Não foi possível localizar o registro original deste BO.');return exato.id;
 }
-$('tabela').addEventListener('click',async e=>{let b=e.target.closest('.edit');if(!b)return;let o=b._registro;if(!o)return;let txt=b.textContent;b.disabled=true;b.textContent='Localizando...';try{let id=await localizarOcorrenciaParaEdicao(o),ret='auditoria.html?ini='+encodeURIComponent($('ini').value)+'&fim='+encodeURIComponent($('fim').value)+'&filtro='+encodeURIComponent($('filtro').value)+'&corrigido='+encodeURIComponent(o.numero_bo||'');location.href='cadastro.html?id='+encodeURIComponent(id)+'&retorno='+encodeURIComponent(ret)}catch(err){console.error(err);alert(err.message||'Não foi possível localizar esta ocorrência para edição.');b.disabled=false;b.textContent=txt}});
+$('tabela').addEventListener('click',async e=>{let b=e.target.closest('.edit');if(!b)return;let o=b._registro;if(!o)return;let txt=b.textContent;b.disabled=true;b.textContent='Localizando...';try{let id=await localizarOcorrenciaParaEdicao(o),ret='auditoria.html?ini='+encodeURIComponent($('ini').value)+'&fim='+encodeURIComponent($('fim').value)+'&filtro='+encodeURIComponent($('filtro').value)+'&corrigido='+encodeURIComponent(o.numero_bo||'')+'&corrigido_id='+encodeURIComponent(id);location.href='cadastro.html?id='+encodeURIComponent(id)+'&retorno='+encodeURIComponent(ret)}catch(err){console.error(err);alert(err.message||'Não foi possível localizar esta ocorrência para edição.');b.disabled=false;b.textContent=txt}});
 function coordenadaValida(x){if(x.latitude==null||x.longitude==null||String(x.latitude).trim()===''||String(x.longitude).trim()==='')return false;let a=Number(x.latitude),b=Number(x.longitude);return Number.isFinite(a)&&Number.isFinite(b)&&a>2&&a<4&&b>-62&&b<-59}
 async function carregar(){
  $('loading').style.display='grid';$('loading').textContent='Auditando a base de dados...';let args={data_inicio:$('ini').value||null,data_fim:$('fim').value||null};let rr=await Promise.all([db.rpc('obter_dados_dashboard',args),db.rpc('obter_ocorrencias_mapa',{...args,tipo_filtro:null})]);if(rr[0].error){$('loading').textContent='Não foi possível executar a auditoria: '+rr[0].error.message;return}
  let mapa=rr[1].error?[]:(rr[1].data||[]),porId=new Map(),porBo=new Map();mapa.forEach(x=>{if(coordenadaValida(x)){if(x.id!=null)porId.set(String(x.id),x);if(x.numero_bo)porBo.set(chave(x.numero_bo)+'|'+String(x.data_ocorrencia||''),x)}});
- dados=(rr[0].data||[]).map(o=>{let g=porId.get(String(o.id))||porBo.get(chave(o.numero_bo)+'|'+String(o.data_ocorrencia||'')),latV=!vazio(o.latitude),lngV=!vazio(o.longitude);return {...o,__geo_ok:Boolean(g)||(!rr[1].error&&coordenadaValida(o)),__geo_parcial:!g&&(latV!==lngV)}});render();
+ dados=(rr[0].data||[]).map(o=>{let g=porId.get(String(o.id))||porBo.get(chave(o.numero_bo)+'|'+String(o.data_ocorrencia||'')),latV=!vazio(o.latitude),lngV=!vazio(o.longitude);return {...o,__geo_ok:Boolean(g)||coordenadaValida(o),__geo_parcial:!g&&(latV!==lngV)}});
+ const corrigidoId=new URLSearchParams(location.search).get('corrigido_id');
+ if(corrigidoId){
+   const direto=await db.rpc('obter_ocorrencia_publica',{p_id:corrigidoId});
+   if(!direto.error&&direto.data){
+     const x=direto.data,latV=!vazio(x.latitude),lngV=!vazio(x.longitude),atual={...x,__geo_ok:coordenadaValida(x),__geo_parcial:latV!==lngV};
+     const idx=dados.findIndex(o=>String(o.id)===String(corrigidoId));
+     if(idx>=0) dados[idx]={...dados[idx],...atual};
+     else dados.push(atual);
+   }
+ }
+ render();
 }
 $('atualizar').onclick=()=>{let u=new URL(location.href);u.searchParams.set('ini',$('ini').value);u.searchParams.set('fim',$('fim').value);u.searchParams.set('filtro',$('filtro').value);u.searchParams.delete('corrigido');history.replaceState(null,'',u);carregar()};$('filtro').onchange=render;
 let qs=new URLSearchParams(location.search),h=new Date();$('ini').value=qs.get('ini')||iso(new Date(h.getFullYear(),0,1));$('fim').value=qs.get('fim')||iso(h);$('filtro').value=qs.get('filtro')||'';carregar();
