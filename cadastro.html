@@ -300,7 +300,7 @@
       <div class="status-importacao" id="statusImportacaoPdf" hidden></div>
     </section>
 
-    <form id="formOcorrencia">
+    <form id="formOcorrencia" novalidate>
       <section>
         <h2>1. Identificação do registro</h2>
 
@@ -1779,8 +1779,44 @@
     }
     carregarCatalogos().then(function(){ if (idEdicao) carregarParaEdicao(); });
 
+    function mostrarErroCampo(id, mensagem) {
+      const el = document.getElementById(id);
+      alert(mensagem);
+      if (el) {
+        el.scrollIntoView({behavior:"smooth",block:"center"});
+        setTimeout(()=>el.focus(),250);
+      }
+      return false;
+    }
+
+    function validarFormularioPrincipal() {
+      const obrigatorios = idEdicao ? [
+        ["data","Informe a data da ocorrência."],
+        ["numeroBo","Informe o número do BO/ROP."],
+        ["ocorrencia","Selecione o Tipo de Ocorrência."]
+      ] : [
+        ["data","Informe a data da ocorrência."],
+        ["statusAtendimento","Informe a situação da ocorrência."],
+        ["municipio","Informe o município."],
+        ["tipoRegistro","Selecione o tipo de registro."],
+        ["numeroBo","Informe o número do BO/ROP."],
+        ["horaInicial","Informe a hora inicial."],
+        ["ocorrencia","Selecione o Tipo de Ocorrência."]
+      ];
+      for (const [id,msg] of obrigatorios) {
+        const el=document.getElementById(id);
+        if (!el || !String(el.value||"").trim()) return mostrarErroCampo(id,msg);
+      }
+      if (document.getElementById("resultadoConducao").checked && !Number(document.getElementById("numeroConduzidos").value)) return mostrarErroCampo("numeroConduzidos","Informe a quantidade de conduzidos.");
+      if (document.getElementById("resultadoOrientacao").checked && !Number(document.getElementById("orientacoes").value)) return mostrarErroCampo("orientacoes","Informe a quantidade de orientações.");
+      if (document.getElementById("resultadoVeiculo").checked && !Number(document.getElementById("veiculosRecuperados").value)) return mostrarErroCampo("veiculosRecuperados","Informe a quantidade de veículos recuperados.");
+      if (document.getElementById("resultadoOutro").checked && !document.getElementById("outroResultadoDescricao").value.trim()) return mostrarErroCampo("outroResultadoDescricao","Descreva o outro resultado do atendimento.");
+      return true;
+    }
+
     formulario.addEventListener("submit", async (evento) => {
       evento.preventDefault();
+      if (!validarFormularioPrincipal()) return;
       const botaoSalvar = formulario.querySelector('button[type="submit"]');
       const textoOriginalBotao = botaoSalvar.textContent;
       if (document.getElementById("numeroEndereco").value.trim()) {
@@ -1790,23 +1826,35 @@
         botaoSalvar.disabled = false;
         botaoSalvar.textContent = textoOriginalBotao;
       }
-      const tipoEscolhido = catalogos.tipos.find(t => t.nome === document.getElementById("ocorrencia").value);
-      if (!tipoEscolhido) { alert("Selecione um Tipo de Ocorrência válido na lista."); return; }
+      const valorOcorrencia = normalizarCatalogo(document.getElementById("ocorrencia").value);
+      let tipoEscolhido = catalogos.tipos.find(t => normalizarCatalogo(t.nome) === valorOcorrencia);
+      const ocorrenciaOriginal = normalizarCatalogo(registroOriginalEdicao && registroOriginalEdicao.ocorrencia);
+      const ocorrenciaAlterada = !idEdicao || valorOcorrencia !== ocorrenciaOriginal;
+      if (!tipoEscolhido && ocorrenciaAlterada) return mostrarErroCampo("ocorrencia","Selecione um Tipo de Ocorrência válido na lista.");
+      if (tipoEscolhido) document.getElementById("ocorrencia").value = tipoEscolhido.nome;
       const subtipoDigitado = document.getElementById("crime").value;
-      if (subtipoDigitado && !catalogos.subtipos.some(s => Number(s.tipo_id) === Number(tipoEscolhido.id) && s.nome === subtipoDigitado)) { alert("Selecione um Subtipo válido relacionado à ocorrência."); return; }
+      const subtipoOriginal = normalizarCatalogo(registroOriginalEdicao && registroOriginalEdicao.crime);
+      const subtipoAlterado = !idEdicao || normalizarCatalogo(subtipoDigitado) !== subtipoOriginal;
+      if (subtipoDigitado && subtipoAlterado && (!tipoEscolhido || !catalogos.subtipos.some(s => Number(s.tipo_id) === Number(tipoEscolhido.id) && normalizarCatalogo(s.nome) === normalizarCatalogo(subtipoDigitado)))) return mostrarErroCampo("crime","Selecione um Subtipo válido relacionado à ocorrência.");
       const comandanteDigitado = normalizarComandante(campoComandante.value);
-      if (comandanteDigitado && !catalogos.comandantes.includes(comandanteDigitado)) { alert("Selecione um comandante válido na lista ou use o botão + para cadastrá-lo."); return; }
+      const comandanteOriginal = normalizarComandante(registroOriginalEdicao && registroOriginalEdicao.comandante);
+      const comandanteAlterado = !idEdicao || comandanteDigitado !== comandanteOriginal;
+      if (comandanteDigitado && comandanteAlterado && !catalogos.comandantes.includes(comandanteDigitado)) return mostrarErroCampo("comandante","Selecione um comandante válido na lista ou use o botão + para cadastrá-lo.");
       campoComandante.value = comandanteDigitado;
       const localEntregaDigitado = padronizarLocalEntrega(document.getElementById("localEntrega").value);
-      if (localEntregaDigitado && !catalogos.locais.includes(localEntregaDigitado)) { alert("Selecione um Local de entrega válido na lista padronizada."); return; }
+      const localEntregaOriginal = padronizarLocalEntrega(registroOriginalEdicao && registroOriginalEdicao.local_entrega);
+      const localEntregaAlterado = !idEdicao || localEntregaDigitado !== localEntregaOriginal;
+      if (localEntregaDigitado && localEntregaAlterado && !catalogos.locais.includes(localEntregaDigitado)) return mostrarErroCampo("localEntrega","Selecione um Local de entrega válido na lista padronizada.");
       document.getElementById("localEntrega").value = localEntregaDigitado;
       const bairroDigitado = normalizarCatalogo(document.getElementById("bairro").value);
-      if (!bairroDigitado) { alert("Informe o bairro da ocorrência. Se o Google Maps não identificar corretamente, preencha o campo manualmente."); return; }
+      const bairroOriginal = normalizarCatalogo(registroOriginalEdicao && registroOriginalEdicao.bairro);
+      const bairroAlterado = !idEdicao || bairroDigitado !== bairroOriginal;
+      if (!bairroDigitado && bairroAlterado) return mostrarErroCampo("bairro","Informe o bairro da ocorrência. Se o Google Maps não identificar corretamente, preencha o campo manualmente.");
       document.getElementById("bairro").value = bairroDigitado;
       const enderecoAtual = document.getElementById("endereco").value;
       const numeroAtual = document.getElementById("numeroEndereco").value;
       const enderecoFoiAlterado = !idEdicao || !registroOriginalEdicao || normalizarCatalogo(enderecoAtual) !== normalizarCatalogo(registroOriginalEdicao.endereco) || String(numeroAtual||"").trim() !== String(registroOriginalEdicao.numero_endereco||"").trim();
-      if ((!enderecoAtual || !document.getElementById("latitude").value || !document.getElementById("longitude").value) && enderecoFoiAlterado) { alert("O endereço foi alterado. Pesquise e selecione uma sugestão do Google Maps antes de salvar."); return; }
+      if ((!enderecoAtual || !document.getElementById("latitude").value || !document.getElementById("longitude").value) && enderecoFoiAlterado) return mostrarErroCampo("enderecoGoogle","O endereço foi alterado. Pesquise e selecione uma sugestão do Google Maps antes de salvar.");
       if (importacaoPdfPendente && !confirm("Você conferiu os dados preenchidos pelo PDF, corrigiu o que for necessário e confirma que deseja salvar esta ocorrência?")) return;
 
       botaoSalvar.disabled = true;
@@ -1937,7 +1985,7 @@
         alert("Ocorreu um erro inesperado ao salvar.");
       } finally {
         botaoSalvar.disabled = false;
-        botaoSalvar.textContent = "Salvar ocorrência";
+        botaoSalvar.textContent = textoOriginalBotao;
       }
     });
   </script>
