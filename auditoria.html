@@ -73,7 +73,8 @@ async function carregar(){
  $('loading').style.display='grid';$('loading').textContent='Auditando a base de dados...';let args={data_inicio:$('ini').value||null,data_fim:$('fim').value||null};let rr=await Promise.all([db.rpc('obter_dados_dashboard',args),db.rpc('obter_ocorrencias_mapa',{...args,tipo_filtro:null})]);if(rr[0].error){$('loading').textContent='Não foi possível executar a auditoria: '+rr[0].error.message;return}
  let mapa=rr[1].error?[]:(rr[1].data||[]),porId=new Map(),porBo=new Map();mapa.forEach(x=>{if(coordenadaValida(x)){if(x.id!=null)porId.set(String(x.id),x);if(x.numero_bo)porBo.set(chave(x.numero_bo)+'|'+String(x.data_ocorrencia||''),x)}});
  dados=(rr[0].data||[]).map(o=>{let g=porId.get(String(o.id))||porBo.get(chave(o.numero_bo)+'|'+String(o.data_ocorrencia||'')),latV=!vazio(o.latitude),lngV=!vazio(o.longitude);return {...o,__geo_ok:Boolean(g)||coordenadaValida(o),__geo_parcial:!g&&(latV!==lngV)}});
- const corrigidoId=new URLSearchParams(location.search).get('corrigido_id');
+ let qsCorrecao=new URLSearchParams(location.search),corrigidoId=qsCorrecao.get('corrigido_id'),corrigidoBo=qsCorrecao.get('corrigido');
+ if(!corrigidoId&&corrigidoBo){const alvo=dados.find(o=>chave(o.numero_bo)===chave(corrigidoBo));if(alvo&&alvo.id!=null)corrigidoId=String(alvo.id)}
  if(corrigidoId){
    const direto=await db.rpc('obter_ocorrencia_publica',{p_id:corrigidoId});
    if(!direto.error&&direto.data){
