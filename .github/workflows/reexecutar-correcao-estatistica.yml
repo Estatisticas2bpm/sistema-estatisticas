@@ -1,0 +1,64 @@
+name: Reexecutar correção estatística consolidada
+
+on:
+  push:
+    paths:
+      - '.github/workflows/reexecutar-correcao-estatistica.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Executar patch consolidado de entorpecentes
+        shell: python
+        run: |
+          from pathlib import Path
+
+          origem = Path('.github/workflows/corrigir-logica-entorpecentes-v2.yml')
+          texto = origem.read_text(encoding='utf-8')
+          marcador = "      - name: Corrigir arquivos\n        shell: python\n        run: |\n"
+          if marcador not in texto:
+              raise SystemExit('Bloco de correção v2 não encontrado')
+          bloco = texto.split(marcador, 1)[1]
+          bloco = bloco.split("\n      - name: Validar", 1)[0]
+          linhas = bloco.splitlines()
+          codigo = []
+          for linha in linhas:
+              if not linha.strip():
+                  codigo.append('')
+              elif linha.startswith('          '):
+                  codigo.append(linha[10:])
+              else:
+                  raise SystemExit('Indentação inesperada no patch: ' + linha[:80])
+          exec(compile('\n'.join(codigo), str(origem), 'exec'), {})
+
+      - name: Validar correções
+        run: |
+          grep -q 'FORMAS_ENTORPECENTES' cadastro.html
+          ! grep -q 'UNIDADES_ENTORPECENTES' cadastro.html
+          ! grep -q 'GRAMA (g).*QUILOGRAMA' cadastro.html
+          grep -q 'forma_apresentacao' cadastro.html
+          grep -q 'Análise de Entorpecentes' dashboard.html
+          grep -q 'incidenciaEntorpecentes' dashboard.html
+          grep -q 'ENTORPECENTES — INCIDÊNCIA POR OCORRÊNCIA' relatorio.html
+          grep -q 'não são utilizados pesos ou medidas' relatorio.html
+          git diff --check
+
+      - name: Commit das correções
+        run: |
+          if git diff --quiet; then
+            echo 'Nenhuma alteração necessária.'
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cadastro.html dashboard.html relatorio.html
+          git commit -m "Corrige consistência estatística de entorpecentes"
+          git push
