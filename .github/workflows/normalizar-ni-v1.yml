@@ -1,8 +1,10 @@
 name: Normalizar NI e perfis estatisticos
 
 on:
-  pull_request_target:
-    types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/normalizar-ni-v1.yml'
 
 permissions:
   contents: write
