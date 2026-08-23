@@ -10,7 +10,7 @@
 <script>
 (async function(){
   try {
-    const resposta=await fetch('cadastro-base.html?v=20260823-2',{cache:'no-store'});
+    const resposta=await fetch('cadastro-base.html?v=20260823-3',{cache:'no-store'});
     if(!resposta.ok) throw new Error('Falha ao carregar a base do cadastro.');
     let html=await resposta.text();
 
@@ -25,6 +25,17 @@
     // A rotina atual trabalha com número de BO.
     html=html.replaceAll('Nº BO/ROP *','Nº BO *');
     html=html.replaceAll('Informe o número do BO/ROP.','Informe o número do BO.');
+
+    // Comandante é obrigatório em NOVOS cadastros.
+    // Registros antigos em edição continuam podendo ser preservados sem cobrança retroativa.
+    html=html.replace(
+      '<label for="comandante">Comandante da viatura</label>',
+      '<label for="comandante">Comandante da viatura *</label>'
+    );
+    html=html.replace(
+      '["horaInicial","Informe a hora inicial."],\n        ["ocorrencia","Selecione o Tipo de Ocorrência."]',
+      '["horaInicial","Informe a hora inicial."],\n        ["comandante","Informe o comandante da viatura."],\n        ["ocorrencia","Selecione o Tipo de Ocorrência."]'
+    );
 
     // Preserva o tipo original ao editar um registro histórico ROP/TCO/NI,
     // mesmo que ele já não seja oferecido para novos cadastros.
