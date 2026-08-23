@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - '.github/workflows/normalizar-ni-v1.yml'
+      - 'trigger-ni-run.txt'
 
 permissions:
   contents: write
