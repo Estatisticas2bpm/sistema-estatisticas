@@ -84,7 +84,7 @@ async function carregar(){
   const [fonte,mapaResp]=await Promise.all([lerFonte(args),db.rpc('obter_ocorrencias_mapa',{...args,tipo_filtro:null})]);fonteAtual=fonte.fonte;
   const mapa=mapaResp.error?[]:(mapaResp.data||[]),idsGeo=new Set(),bosGeo=new Set();mapa.forEach(x=>{if(geoPreenchido(x)){if(x.id!=null)idsGeo.add(String(x.id));if(x.numero_bo)bosGeo.add(chave(x.numero_bo)+'|'+String(x.data_ocorrencia||''))}});
   dados=(fonte.dados||[]).map(o=>({...o,__geo_mapa:idsGeo.has(String(o.id))||bosGeo.has(chave(o.numero_bo)+'|'+String(o.data_ocorrencia||''))}));
-  const qs=new URLSearchParams(location.search),corrigidoId=qs.get('corrigido_id');if(corrigidoId){try{const x=await lerRegistro(corrigidoId);if(x){x.__geo_mapa=idsGeo.has(String(x.id))||bosGeo.has(chave(x.numero_bo)+'|'+String(x.data_ocorrencia||''));const idx=dados.findIndex(o=>String(o.id)===String(corrigidoId));if(idx>=0)dados[idx]=x;else dados.push(x)}}catch(err){console.error('Falha ao reler registro corrigido',err)}}
+  const qs=new URLSearchParams(location.search),corrigidoId=qs.get('corrigido_id');if(corrigidoId){try{const x=await lerRegistro(corrigidoId);if(x){x.__geo_mapa=idsGeo.has(String(x.id))||bosGeo.has(chave(x.numero_bo)+'|'+String(x.data_ocorrencia||''));const mesmaOcorrencia=o=>String(o.id||'')===String(corrigidoId)||(chave(o.numero_bo)===chave(x.numero_bo)&&String(o.data_ocorrencia||'')===String(x.data_ocorrencia||''));dados=dados.filter(o=>!mesmaOcorrencia(o));dados.push(x)}}catch(err){console.error('Falha ao reler registro corrigido',err)}}
   render();
  }catch(err){console.error(err);$('loading').textContent='Não foi possível executar a auditoria: '+(err.message||err)}
 }
