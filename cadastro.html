@@ -10,7 +10,7 @@
 <script>
 (async function(){
   try {
-    const resposta=await fetch('cadastro-base.html?v=20260823-1',{cache:'no-store'});
+    const resposta=await fetch('cadastro-base.html?v=20260823-2',{cache:'no-store'});
     if(!resposta.ok) throw new Error('Falha ao carregar a base do cadastro.');
     let html=await resposta.text();
 
@@ -35,6 +35,14 @@
     html=html.replace(
       'tatico_setorial: document.getElementById("tipoRegistro").value === "TS",',
       'tatico_setorial: (document.getElementById("tipoRegistro").value || (idEdicao && registroOriginalEdicao ? registroOriginalEdicao.tipo_registro : "")) === "TS",'
+    );
+
+    // Quando a edição foi aberta pela Auditoria, retorna para a Auditoria
+    // após salvar, preservando período e filtro. Outros fluxos continuam
+    // retornando normalmente para a consulta do BO.
+    html=html.replace(
+      'location.href = "consulta.html?q=" + encodeURIComponent(registro.numero_bo);\n          return;',
+      'const retornoSolicitado = new URLSearchParams(location.search).get("retorno");\n          if (retornoSolicitado && /^auditoria\\.html(?:\\?|$)/.test(retornoSolicitado)) location.href = retornoSolicitado;\n          else location.href = "consulta.html?q=" + encodeURIComponent(registro.numero_bo);\n          return;'
     );
 
     document.open();
