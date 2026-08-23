@@ -1,0 +1,89 @@
+name: Corrigir fonte real da Auditoria
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-auditoria-fonte-real.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Usar tabela real como fonte primária
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('auditoria.html')
+          s=p.read_text(encoding='utf-8')
+
+          marcador="async function carregar(){"
+          helper='''async function lerFonteAuditoria(args){
+ let q=db.from('ocorrencias').select('*');
+ if(args.data_inicio)q=q.gte('data_ocorrencia',args.data_inicio);
+ if(args.data_fim)q=q.lte('data_ocorrencia',args.data_fim);
+ const direto=await q.order('data_ocorrencia',{ascending:false});
+ if(!direto.error&&Array.isArray(direto.data))return {dados:direto.data,fonte:'tabela real'};
+ const rpc=await db.rpc('obter_dados_dashboard',args);
+ if(rpc.error)throw rpc.error;
+ return {dados:rpc.data||[],fonte:'RPC de compatibilidade'};
+}
+async function lerOcorrenciaDireta(id){
+ const direto=await db.from('ocorrencias').select('*').eq('id',id).maybeSingle();
+ if(!direto.error&&direto.data)return direto.data;
+ const rpc=await db.rpc('obter_ocorrencia_publica',{p_id:id});
+ if(rpc.error)throw rpc.error;
+ return rpc.data||null;
+}
+'''
+          if 'async function lerFonteAuditoria(args)' not in s:
+              if marcador not in s: raise SystemExit('carregar não encontrado')
+              s=s.replace(marcador,helper+marcador,1)
+
+          old=" $('loading').style.display='grid';$('loading').textContent='Auditando a base de dados...';let args={data_inicio:$('ini').value||null,data_fim:$('fim').value||null};let rr=await Promise.all([db.rpc('obter_dados_dashboard',args),db.rpc('obter_ocorrencias_mapa',{...args,tipo_filtro:null})]);if(rr[0].error){$('loading').textContent='Não foi possível executar a auditoria: '+rr[0].error.message;return}"
+          new=" $('loading').style.display='grid';$('loading').textContent='Auditando a base de dados...';let args={data_inicio:$('ini').value||null,data_fim:$('fim').value||null};let fonteReal,mapaResp;try{[fonteReal,mapaResp]=await Promise.all([lerFonteAuditoria(args),db.rpc('obter_ocorrencias_mapa',{...args,tipo_filtro:null})])}catch(err){$('loading').textContent='Não foi possível executar a auditoria: '+(err.message||err);return}"
+          if old not in s: raise SystemExit('bloco inicial de carregar não encontrado')
+          s=s.replace(old,new,1)
+
+          old=" let mapa=rr[1].error?[]:(rr[1].data||[]),porId=new Map(),porBo=new Map();"
+          new=" let mapa=mapaResp.error?[]:(mapaResp.data||[]),porId=new Map(),porBo=new Map();"
+          if old not in s: raise SystemExit('bloco mapa não encontrado')
+          s=s.replace(old,new,1)
+
+          old=" dados=(rr[0].data||[]).map(o=>{"
+          new=" dados=(fonteReal.dados||[]).map(o=>{"
+          if old not in s: raise SystemExit('fonte dados não encontrada')
+          s=s.replace(old,new,1)
+
+          old="   const direto=await db.rpc('obter_ocorrencia_publica',{p_id:corrigidoId});\n   if(!direto.error&&direto.data){\n     const x=direto.data,latV=!vazio(x.latitude),lngV=!vazio(x.longitude),atual={...x,__geo_ok:latV&&lngV,__geo_parcial:latV!==lngV};"
+          new="   let x=null;try{x=await lerOcorrenciaDireta(corrigidoId)}catch(err){console.error('Falha ao reler ocorrência corrigida',err)}\n   if(x){\n     const latV=!vazio(x.latitude),lngV=!vazio(x.longitude),atual={...x,__geo_ok:latV&&lngV,__geo_parcial:latV!==lngV};"
+          if old not in s: raise SystemExit('releitura corrigida não encontrada')
+          s=s.replace(old,new,1)
+
+          old=" render();\n}"
+          new=" render();\n const base=$('status').textContent;$('status').textContent=base+' Fonte: '+fonteReal.fonte+'.';\n}"
+          if old not in s: raise SystemExit('final carregar não encontrado')
+          s=s.replace(old,new,1)
+
+          p.write_text(s,encoding='utf-8')
+
+      - name: Validar
+        run: |
+          grep -q "lerFonteAuditoria" auditoria.html
+          grep -q "fonte:'tabela real'" auditoria.html
+          grep -q "lerOcorrenciaDireta" auditoria.html
+          grep -q "Fonte: " auditoria.html
+
+      - name: Publicar
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add auditoria.html
+          git commit -m "Audita pela tabela real e relê registro corrigido" || exit 0
+          git push
