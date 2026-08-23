@@ -16,7 +16,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Completar releitura direta
+      - name: Corrigir falsos positivos da Auditoria
         shell: python
         run: |
           from pathlib import Path
@@ -24,24 +24,42 @@ jobs:
           p = Path('auditoria.html')
           s = p.read_text(encoding='utf-8')
 
-          old = "const corrigidoId=new URLSearchParams(location.search).get('corrigido_id');\n if(corrigidoId){"
-          new = "let qsCorrecao=new URLSearchParams(location.search),corrigidoId=qsCorrecao.get('corrigido_id'),corrigidoBo=qsCorrecao.get('corrigido');\n if(!corrigidoId&&corrigidoBo){const alvo=dados.find(o=>chave(o.numero_bo)===chave(corrigidoBo));if(alvo&&alvo.id!=null)corrigidoId=String(alvo.id)}\n if(corrigidoId){"
-          if old not in s:
-              raise SystemExit('Trecho de releitura direta não encontrado')
-          s = s.replace(old, new, 1)
+          # Turno é derivável da hora inicial; não exigir os dois campos gravados.
+          s = s.replace(
+            " if(vazio(o.turno))add(o,'baixa','Turno','Turno não informado.');",
+            " if(vazio(o.turno)&&vazio(o.hora_inicial))add(o,'baixa','Turno','Turno e hora inicial não informados.');",
+            1
+          )
+
+          # Para auditoria de completude, basta existirem latitude e longitude.
+          # A validação geográfica mais rígida pertence ao mapa, não à auditoria.
+          s = s.replace(
+            "return {...o,__geo_ok:Boolean(g)||coordenadaValida(o),__geo_parcial:!g&&(latV!==lngV)}});",
+            "return {...o,__geo_ok:Boolean(g)||(latV&&lngV),__geo_parcial:latV!==lngV}});",
+            1
+          )
+          s = s.replace(
+            "const x=direto.data,latV=!vazio(x.latitude),lngV=!vazio(x.longitude),atual={...x,__geo_ok:coordenadaValida(x),__geo_parcial:latV!==lngV};",
+            "const x=direto.data,latV=!vazio(x.latitude),lngV=!vazio(x.longitude),atual={...x,__geo_ok:latV&&lngV,__geo_parcial:latV!==lngV};",
+            1
+          )
 
           p.write_text(s, encoding='utf-8')
 
       - name: Validar
         run: |
-          grep -q "corrigidoBo" auditoria.html
-          grep -q "obter_ocorrencia_publica" auditoria.html
-          grep -q "corrigido_id" auditoria.html
+          grep -q "Turno e hora inicial não informados" auditoria.html
+          grep -q "__geo_ok:Boolean(g)||(latV&&lngV)" auditoria.html
+          grep -q "__geo_ok:latV&&lngV" auditoria.html
 
       - name: Publicar
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add auditoria.html
-          git commit -m "Relê BO corrigido diretamente na Auditoria"
+          if git diff --cached --quiet; then
+            echo "Nenhuma alteração necessária"
+            exit 0
+          fi
+          git commit -m "Corrige falsos positivos de GEO e turno na Auditoria"
           git push
