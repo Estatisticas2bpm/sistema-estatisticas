@@ -1,0 +1,94 @@
+name: Separar armas e simulacros v1
+
+on:
+  push:
+    paths:
+      - '.github/workflows/separar-armas-simulacros-v1.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Corrigir dashboard e relatório
+        shell: python
+        run: |
+          from pathlib import Path
+
+          def trocar(s, antigo, novo, nome):
+              if novo in s:
+                  return s
+              if antigo not in s:
+                  raise SystemExit(f'Trecho não encontrado em {nome}: {antigo[:180]}')
+              return s.replace(antigo, novo, 1)
+
+          # DASHBOARD
+          p=Path('dashboard.html'); s=p.read_text(encoding='utf-8')
+          helper="""function totaisCategoriasArmas(registros){let r={fogo:0,simulacro:0,legado:0};registros.forEach(o=>{let itens=Array.isArray(o.armas_itens)?o.armas_itens:[];if(itens.length){itens.forEach(i=>{let q=num(i.quantidade);if(!q)return;if(chaveOcorrencia(i.categoria)==='SIMULACRO')r.simulacro+=q;else r.fogo+=q})}else{let q=num(o.quantidade_armas);if(!q)return;let k=chaveOcorrencia(o.armas),sim=k.includes('SIMULACRO'),arma=['PISTOLA','REVOLVER','ESPINGARDA','FUZIL','CARABINA','SUBMETRALHADORA','GARRUCHA','ARTESANAL'].some(t=>k.includes(t));if(sim&&!arma)r.simulacro+=q;else if(arma&&!sim)r.fogo+=q;else r.legado+=q}});return r}\n"""
+          if 'function totaisCategoriasArmas(registros)' not in s:
+              marcador='function detalhesArmas(registros)'
+              if marcador not in s: raise SystemExit('Função detalhesArmas não encontrada')
+              s=s.replace(marcador,helper+marcador,1)
+
+          s=trocar(s,
+            '<th>Ocorrências</th><th>Armas</th><th>Veículos</th><th>Foragidos/cautelares</th><th>Ocorr. c/ drogas</th>',
+            '<th>Ocorrências</th><th>Armas de fogo</th><th>Simulacros</th><th>Não classificadas (legado)</th><th>Veículos</th><th>Foragidos/cautelares</th><th>Ocorr. c/ drogas</th>',
+            'dashboard/cabecalho-comandantes')
+
+          antigo="let pro=[['Conduções','conducoes_operacionais','steel'],['Orientações','orientacoes','teal'],['Foragidos','foragidos','amber'],['Veículos recuperados','veiculos_recuperados','green'],['Veículos com restrição','veiculos_restricao','amber'],['Armas','quantidade_armas','blue'],['Munições','quantidade_municoes','steel'],['Autos de infração','quantidade_autos_infracao','teal']];produtividade.innerHTML=pro.map(x=>`<div class=\"card ${x[2]||''}\"><small>${x[0]}</small><strong>${soma(a,x[1])}</strong></div>`).join('')+`<div class=\"card teal\"><small>TCOs produzidos</small><strong>${ta.length}</strong></div>`;"
+          novo="let pro=[['Conduções','conducoes_operacionais','steel'],['Orientações','orientacoes','teal'],['Foragidos','foragidos','amber'],['Veículos recuperados','veiculos_recuperados','green'],['Veículos com restrição','veiculos_restricao','amber'],['Munições','quantidade_municoes','steel'],['Autos de infração','quantidade_autos_infracao','teal']],armasResumo=totaisCategoriasArmas(a);produtividade.innerHTML=pro.map(x=>`<div class=\"card ${x[2]||''}\"><small>${x[0]}</small><strong>${soma(a,x[1])}</strong></div>`).join('')+`<div class=\"card\"><small>Armas de fogo</small><strong>${armasResumo.fogo}</strong></div><div class=\"card steel\"><small>Simulacros</small><strong>${armasResumo.simulacro}</strong></div>${armasResumo.legado?`<div class=\"card amber\"><small>Armas/simulacros sem classificação (legado)</small><strong>${armasResumo.legado}</strong></div>`:''}<div class=\"card teal\"><small>TCOs produzidos</small><strong>${ta.length}</strong></div>`;"
+          s=trocar(s,antigo,novo,'dashboard/produtividade')
+
+          antigo="let cs=gruposComandantes(a);rows('tabComandantes',cs.map((x,i)=>{let g=x.registros;return `<tr><td class=\"rank\">${i+1}º</td><td>${esc(x.nome)}</td><td>${g.length}</td><td>${soma(g,'quantidade_armas')}</td><td>${soma(g,'veiculos_recuperados')+soma(g,'veiculos_restricao')}</td><td>${soma(g,'foragidos')}</td><td>${g.filter(temEntorpecente).length}</td></tr>`}).join(''));"
+          novo="let cs=gruposComandantes(a);rows('tabComandantes',cs.map((x,i)=>{let g=x.registros,ar=totaisCategoriasArmas(g);return `<tr><td class=\"rank\">${i+1}º</td><td>${esc(x.nome)}</td><td>${g.length}</td><td>${ar.fogo}</td><td>${ar.simulacro}</td><td>${ar.legado}</td><td>${soma(g,'veiculos_recuperados')+soma(g,'veiculos_restricao')}</td><td>${soma(g,'foragidos')}</td><td>${g.filter(temEntorpecente).length}</td></tr>`}).join(''));"
+          s=trocar(s,antigo,novo,'dashboard/comandantes')
+
+          antigo="...pro.map(x=>indicador(x[0],soma(a,x[1]),soma(p,x[1]))),indicador('Ocorrências com entorpecentes'"
+          novo="...pro.map(x=>indicador(x[0],soma(a,x[1]),soma(p,x[1]))),indicador('Armas de fogo',totaisCategoriasArmas(a).fogo,totaisCategoriasArmas(p).fogo),indicador('Simulacros',totaisCategoriasArmas(a).simulacro,totaisCategoriasArmas(p).simulacro),indicador('Armas/simulacros sem classificação (legado)',totaisCategoriasArmas(a).legado,totaisCategoriasArmas(p).legado),indicador('Ocorrências com entorpecentes'"
+          s=trocar(s,antigo,novo,'dashboard/comparativo')
+          p.write_text(s,encoding='utf-8')
+
+          # RELATÓRIO
+          p=Path('relatorio.html'); s=p.read_text(encoding='utf-8')
+          helper="""function totaisCategoriasArmasRel(registros){let r={fogo:0,simulacro:0,legado:0};registros.forEach(o=>{let itens=Array.isArray(o.armas_itens)?o.armas_itens:[];if(itens.length){itens.forEach(i=>{let q=N(i.quantidade);if(!q)return;if(S(i.categoria).normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toUpperCase()==='SIMULACRO')r.simulacro+=q;else r.fogo+=q})}else{let q=N(o.quantidade_armas);if(!q)return;let k=S(o.armas).normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toUpperCase(),sim=k.includes('SIMULACRO'),arma=['PISTOLA','REVOLVER','ESPINGARDA','FUZIL','CARABINA','SUBMETRALHADORA','GARRUCHA','ARTESANAL'].some(t=>k.includes(t));if(sim&&!arma)r.simulacro+=q;else if(arma&&!sim)r.fogo+=q;else r.legado+=q}});return r}\n"""
+          if 'function totaisCategoriasArmasRel(registros)' not in s:
+              marcador='function detalhesArmasRel(registros)'
+              if marcador not in s: raise SystemExit('Função detalhesArmasRel não encontrada')
+              s=s.replace(marcador,helper+marcador,1)
+
+          antigo="let cmdRows=cmds.map((x,i)=>{let g=d.filter(y=>S(y.comandante)===x[0]);return`<tr><td>${i+1}</td><td>${E(x[0])}</td><td>${x[1]}</td><td>${totalEstruturadoOuLegado(g,'armas_itens','quantidade_armas')+totalEstruturadoOuLegado(g,'municoes_itens','quantidade_municoes')}</td><td>${sum(g,'veiculos_recuperados')}</td><td>${sum(g,'foragidos')+g.filter(y=>S(y.ocorrencia).includes('DESCUMPRIMENTO')).length}</td><td>${g.filter(temEntorpecente).length}</td></tr>`}),cmdChunks=[];"
+          novo="let cmdRows=cmds.map((x,i)=>{let g=d.filter(y=>S(y.comandante)===x[0]),ar=totaisCategoriasArmasRel(g);return`<tr><td>${i+1}</td><td>${E(x[0])}</td><td>${x[1]}</td><td>${ar.fogo}</td><td>${ar.simulacro}</td><td>${ar.legado}</td><td>${totalEstruturadoOuLegado(g,'municoes_itens','quantidade_municoes')}</td><td>${sum(g,'veiculos_recuperados')}</td><td>${sum(g,'foragidos')+g.filter(y=>S(y.ocorrencia).includes('DESCUMPRIMENTO')).length}</td><td>${g.filter(temEntorpecente).length}</td></tr>`}),cmdChunks=[];"
+          s=trocar(s,antigo,novo,'relatorio/linhas-comandantes')
+
+          antigo="table(['ITEM','CMT. DE VTR.','OCORRÊNCIAS','ARMAS/MUNIÇÃO','VEÍCULOS','FORAGIDOS/DESCUMPRIMENTO','ENTORPECENTES'],chunk,i===cmdChunks.length-1?`<tr class=\"total\"><td colspan=\"2\">TOTAL</td><td>${d.length}</td><td>${totalEstruturadoOuLegado(d,'armas_itens','quantidade_armas')+totalEstruturadoOuLegado(d,'municoes_itens','quantidade_municoes')}</td><td>${sum(d,'veiculos_recuperados')}</td><td>${sum(d,'foragidos')}</td><td>${d.filter(temEntorpecente).length}</td></tr>`:'')"
+          novo="table(['ITEM','CMT. DE VTR.','OCORRÊNCIAS','ARMAS DE FOGO','SIMULACROS','NÃO CLASSIF. (LEGADO)','MUNIÇÕES','VEÍCULOS','FORAGIDOS/DESCUMPRIMENTO','ENTORPECENTES'],chunk,i===cmdChunks.length-1?(()=>{let ar=totaisCategoriasArmasRel(d);return`<tr class=\"total\"><td colspan=\"2\">TOTAL</td><td>${d.length}</td><td>${ar.fogo}</td><td>${ar.simulacro}</td><td>${ar.legado}</td><td>${totalEstruturadoOuLegado(d,'municoes_itens','quantidade_municoes')}</td><td>${sum(d,'veiculos_recuperados')}</td><td>${sum(d,'foragidos')}</td><td>${d.filter(temEntorpecente).length}</td></tr>`})():'')"
+          s=trocar(s,antigo,novo,'relatorio/tabela-comandantes')
+
+          antigo="['ARMA DE FOGO APREENDIDA',totalEstruturadoOuLegado(d,'armas_itens','quantidade_armas'),totalEstruturadoOuLegado(old,'armas_itens','quantidade_armas')],['ARMA BRANCA'"
+          novo="['ARMAS DE FOGO APREENDIDAS',totaisCategoriasArmasRel(d).fogo,totaisCategoriasArmasRel(old).fogo],['SIMULACROS APREENDIDOS',totaisCategoriasArmasRel(d).simulacro,totaisCategoriasArmasRel(old).simulacro],['ARMAS/SIMULACROS SEM CLASSIFICAÇÃO (LEGADO)',totaisCategoriasArmasRel(d).legado,totaisCategoriasArmasRel(old).legado],['ARMA BRANCA'"
+          s=trocar(s,antigo,novo,'relatorio/comparativo-armas')
+          p.write_text(s,encoding='utf-8')
+
+      - name: Validar
+        run: |
+          grep -q 'function totaisCategoriasArmas(registros)' dashboard.html
+          grep -q 'Armas de fogo</small>' dashboard.html
+          grep -q '<th>Simulacros</th>' dashboard.html
+          grep -q 'function totaisCategoriasArmasRel(registros)' relatorio.html
+          grep -q 'SIMULACROS APREENDIDOS' relatorio.html
+          ! grep -q "'ARMAS/MUNIÇÃO'" relatorio.html
+          git diff --check
+
+      - name: Publicar
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dashboard.html relatorio.html
+          git commit -m "Separa armas de fogo simulacros e munições nas estatísticas"
+          git push
