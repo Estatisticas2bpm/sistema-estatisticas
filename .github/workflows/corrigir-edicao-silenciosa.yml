@@ -16,7 +16,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Ajustar validação e salvamento
+      - name: Ajustar validação e edição legada
         shell: python
         run: |
           from pathlib import Path
@@ -24,14 +24,17 @@ jobs:
           p=Path('cadastro.html')
           s=p.read_text(encoding='utf-8')
 
+          # Desliga a validação nativa do navegador no formulário principal.
+          # Ela bloqueava o submit antes do JavaScript e fazia o botão parecer inerte.
           if '<form id="formOcorrencia">' in s:
-            s=s.replace('<form id="formOcorrencia">','<form id="formOcorrencia" novalidate>',1)
+              s=s.replace('<form id="formOcorrencia">','<form id="formOcorrencia" novalidate>',1)
 
-          marcador='''    formulario.addEventListener("submit", async (evento) => {
+          # Validação explícita: sempre mostra qual campo precisa de atenção.
+          if 'function validarFormularioPrincipal()' not in s:
+              marcador='''    formulario.addEventListener("submit", async (evento) => {
       evento.preventDefault();
       const botaoSalvar = formulario.querySelector('button[type="submit"]');'''
-
-          novo='''    function mostrarErroCampo(id, mensagem) {
+              novo='''    function mostrarErroCampo(id, mensagem) {
       const el = document.getElementById(id);
       alert(mensagem);
       if (el) {
@@ -41,7 +44,14 @@ jobs:
       return false;
     }
     function validarFormularioPrincipal() {
-      const obrigatorios = [
+      // Em cadastro novo, todos os campos operacionais obrigatórios são exigidos.
+      // Na edição de registro antigo, não obrigamos retroativamente campos que
+      // podem não existir no histórico; exigimos somente o núcleo identificador.
+      const obrigatorios = idEdicao ? [
+        ["data","Informe a data da ocorrência."],
+        ["numeroBo","Informe o número do BO/ROP."],
+        ["ocorrencia","Selecione o Tipo de Ocorrência."]
+      ] : [
         ["data","Informe a data da ocorrência."],
         ["statusAtendimento","Informe a situação da ocorrência."],
         ["municipio","Informe o município."],
@@ -65,37 +75,71 @@ jobs:
       evento.preventDefault();
       if (!validarFormularioPrincipal()) return;
       const botaoSalvar = formulario.querySelector('button[type="submit"]');'''
+              if marcador not in s:
+                  raise SystemExit('Bloco submit não encontrado')
+              s=s.replace(marcador,novo,1)
 
-          if marcador not in s:
-            raise SystemExit('Bloco submit não encontrado')
-          s=s.replace(marcador,novo,1)
-
+          # Tipo de ocorrência: aceita valor legado se estiver inalterado; se o
+          # usuário mudar, o novo valor deve existir no catálogo atual.
           antigo='''      const tipoEscolhido = catalogos.tipos.find(t => t.nome === document.getElementById("ocorrencia").value);
-      if (!tipoEscolhido) { alert("Selecione um Tipo de Ocorrência válido na lista."); return; }'''
-          novo2='''      const valorOcorrencia = normalizarCatalogo(document.getElementById("ocorrencia").value);
-      const tipoEscolhido = catalogos.tipos.find(t => normalizarCatalogo(t.nome) === valorOcorrencia);
-      if (!tipoEscolhido) { return mostrarErroCampo("ocorrencia","Selecione um Tipo de Ocorrência válido na lista."); }
-      document.getElementById("ocorrencia").value = tipoEscolhido.nome;'''
-          if antigo not in s:
-            raise SystemExit('Validação do tipo de ocorrência não encontrada')
-          s=s.replace(antigo,novo2,1)
+      if (!tipoEscolhido) { alert("Selecione um Tipo de Ocorrência válido na lista."); return; }
+      const subtipoDigitado = document.getElementById("crime").value;
+      if (subtipoDigitado && !catalogos.subtipos.some(s => Number(s.tipo_id) === Number(tipoEscolhido.id) && s.nome === subtipoDigitado)) { alert("Selecione um Subtipo válido relacionado à ocorrência."); return; }'''
+          novo='''      const valorOcorrencia = normalizarCatalogo(document.getElementById("ocorrencia").value);
+      let tipoEscolhido = catalogos.tipos.find(t => normalizarCatalogo(t.nome) === valorOcorrencia);
+      const ocorrenciaOriginal = normalizarCatalogo(registroOriginalEdicao && registroOriginalEdicao.ocorrencia);
+      const ocorrenciaAlterada = !idEdicao || valorOcorrencia !== ocorrenciaOriginal;
+      if (!tipoEscolhido && ocorrenciaAlterada) return mostrarErroCampo("ocorrencia","Selecione um Tipo de Ocorrência válido na lista.");
+      if (tipoEscolhido) document.getElementById("ocorrencia").value = tipoEscolhido.nome;
+      const subtipoDigitado = document.getElementById("crime").value;
+      const subtipoOriginal = normalizarCatalogo(registroOriginalEdicao && registroOriginalEdicao.crime);
+      const subtipoAlterado = !idEdicao || normalizarCatalogo(subtipoDigitado) !== subtipoOriginal;
+      if (subtipoDigitado && subtipoAlterado) {
+        if (!tipoEscolhido || !catalogos.subtipos.some(s => Number(s.tipo_id) === Number(tipoEscolhido.id) && normalizarCatalogo(s.nome) === normalizarCatalogo(subtipoDigitado))) {
+          return mostrarErroCampo("crime","Selecione um Subtipo válido relacionado à ocorrência.");
+        }
+      }'''
+          if antigo in s:
+              s=s.replace(antigo,novo,1)
+          elif 'const valorOcorrencia = normalizarCatalogo(document.getElementById("ocorrencia").value);' not in s:
+              raise SystemExit('Validação do tipo/subtipo não encontrada')
 
-          antigo3='''      if (subtipoDigitado && !catalogos.subtipos.some(s => Number(s.tipo_id) === Number(tipoEscolhido.id) && s.nome === subtipoDigitado)) { alert("Selecione um Subtipo válido relacionado à ocorrência."); return; }'''
-          novo3='''      if (subtipoDigitado && !catalogos.subtipos.some(s => Number(s.tipo_id) === Number(tipoEscolhido.id) && normalizarCatalogo(s.nome) === normalizarCatalogo(subtipoDigitado))) { return mostrarErroCampo("crime","Selecione um Subtipo válido relacionado à ocorrência."); }'''
-          if antigo3 in s:
-            s=s.replace(antigo3,novo3,1)
+          # Comandante legado: só exigir catálogo se o valor for alterado.
+          antigo='''      const comandanteDigitado = normalizarComandante(campoComandante.value);
+      if (comandanteDigitado && !catalogos.comandantes.includes(comandanteDigitado)) { alert("Selecione um comandante válido na lista ou use o botão + para cadastrá-lo."); return; }
+      campoComandante.value = comandanteDigitado;'''
+          novo='''      const comandanteDigitado = normalizarComandante(campoComandante.value);
+      const comandanteOriginal = normalizarComandante(registroOriginalEdicao && registroOriginalEdicao.comandante);
+      const comandanteAlterado = !idEdicao || comandanteDigitado !== comandanteOriginal;
+      if (comandanteDigitado && comandanteAlterado && !catalogos.comandantes.includes(comandanteDigitado)) return mostrarErroCampo("comandante","Selecione um comandante válido na lista ou use o botão + para cadastrá-lo.");
+      campoComandante.value = comandanteDigitado;'''
+          if antigo in s:
+              s=s.replace(antigo,novo,1)
 
-          antigo4='''      } finally {
+          # Local de entrega legado: mesma regra de preservação.
+          antigo='''      const localEntregaDigitado = padronizarLocalEntrega(document.getElementById("localEntrega").value);
+      if (localEntregaDigitado && !catalogos.locais.includes(localEntregaDigitado)) { alert("Selecione um Local de entrega válido na lista padronizada."); return; }
+      document.getElementById("localEntrega").value = localEntregaDigitado;'''
+          novo='''      const localEntregaDigitado = padronizarLocalEntrega(document.getElementById("localEntrega").value);
+      const localEntregaOriginal = padronizarLocalEntrega(registroOriginalEdicao && registroOriginalEdicao.local_entrega);
+      const localEntregaAlterado = !idEdicao || localEntregaDigitado !== localEntregaOriginal;
+      if (localEntregaDigitado && localEntregaAlterado && !catalogos.locais.includes(localEntregaDigitado)) return mostrarErroCampo("localEntrega","Selecione um Local de entrega válido na lista padronizada.");
+      document.getElementById("localEntrega").value = localEntregaDigitado;'''
+          if antigo in s:
+              s=s.replace(antigo,novo,1)
+
+          # Bairro vazio precisa de mensagem visível e foco no campo.
+          s=s.replace('''      if (!bairroDigitado) { alert("Informe o bairro da ocorrência. Se o Google Maps não identificar corretamente, preencha o campo manualmente."); return; }''',
+                      '''      if (!bairroDigitado) return mostrarErroCampo("bairro","Informe o bairro da ocorrência. Se o Google Maps não identificar corretamente, preencha o campo manualmente.");''',1)
+
+          # Preserva o texto correto do botão ("Salvar alterações" na edição).
+          s=s.replace('''      } finally {
         botaoSalvar.disabled = false;
         botaoSalvar.textContent = "Salvar ocorrência";
-      }'''
-          novo4='''      } finally {
+      }''','''      } finally {
         botaoSalvar.disabled = false;
         botaoSalvar.textContent = textoOriginalBotao;
-      }'''
-          if antigo4 not in s:
-            raise SystemExit('finally do botão não encontrado')
-          s=s.replace(antigo4,novo4,1)
+      }''',1)
 
           p.write_text(s,encoding='utf-8')
 
@@ -104,6 +148,9 @@ jobs:
           grep -q 'formOcorrencia" novalidate' cadastro.html
           grep -q 'validarFormularioPrincipal' cadastro.html
           grep -q 'mostrarErroCampo' cadastro.html
+          grep -q 'ocorrenciaAlterada' cadastro.html
+          grep -q 'comandanteAlterado' cadastro.html
+          grep -q 'localEntregaAlterado' cadastro.html
           grep -q 'botaoSalvar.textContent = textoOriginalBotao' cadastro.html
 
       - name: Publicar
@@ -111,7 +158,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add cadastro.html
-          git commit -m "Corrige salvamento silencioso na edição de ocorrências"
+          if git diff --cached --quiet; then
+            echo "Nenhuma alteração necessária"
+            exit 0
+          fi
+          git commit -m "Corrige edição de ocorrências antigas sem bloqueio silencioso"
           git push
-
-# reexecução 2026-08-22
