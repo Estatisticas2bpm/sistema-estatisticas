@@ -1,0 +1,140 @@
+name: Corrigir edição legada v3
+
+on:
+  push:
+    paths:
+      - '.github/workflows/corrigir-edicao-legada-v3.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Corrigir cadastro
+        shell: python
+        run: |
+          from pathlib import Path
+
+          p=Path('cadastro.html')
+          s=p.read_text(encoding='utf-8')
+
+          if '<form id="formOcorrencia">' in s:
+              s=s.replace('<form id="formOcorrencia">','<form id="formOcorrencia" novalidate>',1)
+
+          marcador='''    formulario.addEventListener("submit", async (evento) => {
+      evento.preventDefault();
+      const botaoSalvar = formulario.querySelector('button[type="submit"]');'''
+          if 'function validarFormularioPrincipal()' not in s:
+              novo='''    function mostrarErroCampo(id, mensagem) {
+      const el = document.getElementById(id);
+      alert(mensagem);
+      if (el) {
+        el.scrollIntoView({behavior:"smooth",block:"center"});
+        setTimeout(()=>el.focus(),250);
+      }
+      return false;
+    }
+    function validarFormularioPrincipal() {
+      const obrigatorios = idEdicao ? [
+        ["data","Informe a data da ocorrência."],
+        ["numeroBo","Informe o número do BO/ROP."],
+        ["ocorrencia","Selecione o Tipo de Ocorrência."]
+      ] : [
+        ["data","Informe a data da ocorrência."],
+        ["statusAtendimento","Informe a situação da ocorrência."],
+        ["municipio","Informe o município."],
+        ["tipoRegistro","Selecione o tipo de registro."],
+        ["numeroBo","Informe o número do BO/ROP."],
+        ["horaInicial","Informe a hora inicial."],
+        ["ocorrencia","Selecione o Tipo de Ocorrência."]
+      ];
+      for (const [id,msg] of obrigatorios) {
+        const el=document.getElementById(id);
+        if (!el || !String(el.value||"").trim()) return mostrarErroCampo(id,msg);
+      }
+      if (document.getElementById("resultadoConducao").checked && !Number(document.getElementById("numeroConduzidos").value)) return mostrarErroCampo("numeroConduzidos","Informe a quantidade de conduzidos.");
+      if (document.getElementById("resultadoOrientacao").checked && !Number(document.getElementById("orientacoes").value)) return mostrarErroCampo("orientacoes","Informe a quantidade de orientações.");
+      if (document.getElementById("resultadoVeiculo").checked && !Number(document.getElementById("veiculosRecuperados").value)) return mostrarErroCampo("veiculosRecuperados","Informe a quantidade de veículos recuperados.");
+      if (document.getElementById("resultadoOutro").checked && !document.getElementById("outroResultadoDescricao").value.trim()) return mostrarErroCampo("outroResultadoDescricao","Descreva o outro resultado do atendimento.");
+      return true;
+    }
+
+    formulario.addEventListener("submit", async (evento) => {
+      evento.preventDefault();
+      if (!validarFormularioPrincipal()) return;
+      const botaoSalvar = formulario.querySelector('button[type="submit"]');'''
+              if marcador not in s: raise SystemExit('submit não encontrado')
+              s=s.replace(marcador,novo,1)
+
+          antigo='''      const tipoEscolhido = catalogos.tipos.find(t => t.nome === document.getElementById("ocorrencia").value);
+      if (!tipoEscolhido) { alert("Selecione um Tipo de Ocorrência válido na lista."); return; }
+      const subtipoDigitado = document.getElementById("crime").value;
+      if (subtipoDigitado && !catalogos.subtipos.some(s => Number(s.tipo_id) === Number(tipoEscolhido.id) && s.nome === subtipoDigitado)) { alert("Selecione um Subtipo válido relacionado à ocorrência."); return; }'''
+          novo='''      const valorOcorrencia = normalizarCatalogo(document.getElementById("ocorrencia").value);
+      let tipoEscolhido = catalogos.tipos.find(t => normalizarCatalogo(t.nome) === valorOcorrencia);
+      const ocorrenciaOriginal = normalizarCatalogo(registroOriginalEdicao && registroOriginalEdicao.ocorrencia);
+      const ocorrenciaAlterada = !idEdicao || valorOcorrencia !== ocorrenciaOriginal;
+      if (!tipoEscolhido && ocorrenciaAlterada) return mostrarErroCampo("ocorrencia","Selecione um Tipo de Ocorrência válido na lista.");
+      if (tipoEscolhido) document.getElementById("ocorrencia").value = tipoEscolhido.nome;
+      const subtipoDigitado = document.getElementById("crime").value;
+      const subtipoOriginal = normalizarCatalogo(registroOriginalEdicao && registroOriginalEdicao.crime);
+      const subtipoAlterado = !idEdicao || normalizarCatalogo(subtipoDigitado) !== subtipoOriginal;
+      if (subtipoDigitado && subtipoAlterado && (!tipoEscolhido || !catalogos.subtipos.some(s => Number(s.tipo_id) === Number(tipoEscolhido.id) && normalizarCatalogo(s.nome) === normalizarCatalogo(subtipoDigitado)))) return mostrarErroCampo("crime","Selecione um Subtipo válido relacionado à ocorrência.");'''
+          if antigo in s:
+              s=s.replace(antigo,novo,1)
+
+          antigo='''      const comandanteDigitado = normalizarComandante(campoComandante.value);
+      if (comandanteDigitado && !catalogos.comandantes.includes(comandanteDigitado)) { alert("Selecione um comandante válido na lista ou use o botão + para cadastrá-lo."); return; }
+      campoComandante.value = comandanteDigitado;'''
+          novo='''      const comandanteDigitado = normalizarComandante(campoComandante.value);
+      const comandanteOriginal = normalizarComandante(registroOriginalEdicao && registroOriginalEdicao.comandante);
+      const comandanteAlterado = !idEdicao || comandanteDigitado !== comandanteOriginal;
+      if (comandanteDigitado && comandanteAlterado && !catalogos.comandantes.includes(comandanteDigitado)) return mostrarErroCampo("comandante","Selecione um comandante válido na lista ou use o botão + para cadastrá-lo.");
+      campoComandante.value = comandanteDigitado;'''
+          if antigo in s:
+              s=s.replace(antigo,novo,1)
+
+          antigo='''      const localEntregaDigitado = padronizarLocalEntrega(document.getElementById("localEntrega").value);
+      if (localEntregaDigitado && !catalogos.locais.includes(localEntregaDigitado)) { alert("Selecione um Local de entrega válido na lista padronizada."); return; }
+      document.getElementById("localEntrega").value = localEntregaDigitado;'''
+          novo='''      const localEntregaDigitado = padronizarLocalEntrega(document.getElementById("localEntrega").value);
+      const localEntregaOriginal = padronizarLocalEntrega(registroOriginalEdicao && registroOriginalEdicao.local_entrega);
+      const localEntregaAlterado = !idEdicao || localEntregaDigitado !== localEntregaOriginal;
+      if (localEntregaDigitado && localEntregaAlterado && !catalogos.locais.includes(localEntregaDigitado)) return mostrarErroCampo("localEntrega","Selecione um Local de entrega válido na lista padronizada.");
+      document.getElementById("localEntrega").value = localEntregaDigitado;'''
+          if antigo in s:
+              s=s.replace(antigo,novo,1)
+
+          s=s.replace('''      if (!bairroDigitado) { alert("Informe o bairro da ocorrência. Se o Google Maps não identificar corretamente, preencha o campo manualmente."); return; }''','''      if (!bairroDigitado) return mostrarErroCampo("bairro","Informe o bairro da ocorrência. Se o Google Maps não identificar corretamente, preencha o campo manualmente.");''',1)
+
+          s=s.replace('''      } finally {
+        botaoSalvar.disabled = false;
+        botaoSalvar.textContent = "Salvar ocorrência";
+      }''','''      } finally {
+        botaoSalvar.disabled = false;
+        botaoSalvar.textContent = textoOriginalBotao;
+      }''',1)
+
+          p.write_text(s,encoding='utf-8')
+
+      - name: Validar
+        run: |
+          grep -q 'formOcorrencia" novalidate' cadastro.html
+          grep -q 'validarFormularioPrincipal' cadastro.html
+          grep -q 'ocorrenciaAlterada' cadastro.html
+          grep -q 'comandanteAlterado' cadastro.html
+          grep -q 'localEntregaAlterado' cadastro.html
+
+      - name: Publicar
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cadastro.html
+          git commit -m "Corrige edição legada e elimina bloqueio silencioso"
+          git push
