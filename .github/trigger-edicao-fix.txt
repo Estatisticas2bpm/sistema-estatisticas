@@ -1,0 +1,1 @@
+Dispara a correção da edição de ocorrências antigas.
