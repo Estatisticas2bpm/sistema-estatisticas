@@ -1,0 +1,58 @@
+name: Exigir comandante em novos cadastros
+
+on:
+  push:
+    paths:
+      - '.github/workflows/exigir-comandante-novo-cadastro.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Exigir comandante somente em novo cadastro
+        shell: python
+        run: |
+          from pathlib import Path
+
+          p = Path('cadastro-base.html')
+          s = p.read_text(encoding='utf-8')
+
+          alvo = '''        ["horaInicial","Informe a hora inicial."],
+        ["ocorrencia","Selecione o Tipo de Ocorrência."]
+      ];'''
+          novo = '''        ["horaInicial","Informe a hora inicial."],
+        ["comandante","Informe o comandante da viatura."],
+        ["ocorrencia","Selecione o Tipo de Ocorrência."]
+      ];'''
+
+          if '["comandante","Informe o comandante da viatura."]' not in s:
+              if alvo not in s:
+                  raise SystemExit('Trecho da validação de novo cadastro não encontrado')
+              s = s.replace(alvo, novo, 1)
+
+          p.write_text(s, encoding='utf-8')
+
+      - name: Validar alteração
+        shell: bash
+        run: |
+          grep -q '\["comandante","Informe o comandante da viatura\."\]' cadastro-base.html
+
+      - name: Publicar
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cadastro-base.html
+          if git diff --cached --quiet; then
+            echo "Nenhuma alteração necessária"
+            exit 0
+          fi
+          git commit -m "Exige comandante em novos cadastros"
+          git push
