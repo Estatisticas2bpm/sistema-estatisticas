@@ -10,11 +10,11 @@
 <script>
 (async function(){
   try {
-    const resposta=await fetch('cadastro-base.html?v=20260823-3',{cache:'no-store'});
+    const resposta=await fetch('cadastro-base.html?v=20260824-1',{cache:'no-store'});
     if(!resposta.ok) throw new Error('Falha ao carregar a base do cadastro.');
     let html=await resposta.text();
 
-    // Novos cadastros: somente BO, Tático Setorial e AME.
+    // Novos cadastros: o documento é sempre BO. ROP/TCO ficam somente para compatibilidade histórica.
     html=html.replaceAll('<option>ROP</option>','');
     html=html.replaceAll('<option>TCO</option>','');
 
@@ -26,6 +26,18 @@
     html=html.replaceAll('Nº BO/ROP *','Nº BO *');
     html=html.replaceAll('Informe o número do BO/ROP.','Informe o número do BO.');
 
+    // Tipo de documento visível = BO. Tático Setorial e AME passam a ser grupamentos.
+    html=html.replace(
+      /<div class="campo">\s*<label for="tipoRegistro">Tipo \*<\/label>\s*<select id="tipoRegistro" name="tipoRegistro" required>[\s\S]*?<\/select>\s*<\/div>/,
+      '<div class="campo"><label>Tipo de documento</label><input id="tipoDocumentoExibicao" type="text" value="BO" readonly aria-label="Tipo de documento BO"><select id="tipoRegistro" name="tipoRegistro" required hidden><option value="BO" selected>BO</option><option value="TS">TÁTICO SETORIAL</option><option value="AME">AME</option></select><span class="nota">Toda ocorrência operacional é registrada por Boletim de Ocorrência (BO).</span></div><div class="campo duplo"><label>Guarnição especializada</label><div class="selecao-grupamento" style="display:flex;gap:10px;flex-wrap:wrap"><label class="resultado-opcao" style="min-width:190px"><input id="grupamentoTatico" type="checkbox"> TÁTICO SETORIAL</label><label class="resultado-opcao" style="min-width:190px"><input id="grupamentoAme" type="checkbox"> AME</label></div><span class="nota">Marque somente quando o BO tiver sido atendido por um desses grupamentos. As opções são exclusivas.</span></div>'
+    );
+
+    // Atalhos para os três locais de entrega mais usados na planilha oficial de 2026.
+    html=html.replace(
+      '<div class="campo duplo">\n            <label for="localEntrega">Local de entrega do relatório</label>\n            <div class="campo-com-acao"><input id="localEntrega" name="localEntrega" type="text" list="listaLocais" autocomplete="off" placeholder="Digite para pesquisar e selecione"><button class="botao-adicionar" id="abrirNovoLocalEntrega" type="button" title="Cadastrar novo local de entrega" aria-label="Cadastrar novo local de entrega">+</button></div><datalist id="listaLocais"></datalist>\n          </div>',
+      '<div class="campo duplo">\n            <label for="localEntrega">Local de entrega do relatório</label>\n            <div class="campo-com-acao"><input id="localEntrega" name="localEntrega" type="text" list="listaLocais" autocomplete="off" placeholder="Digite para pesquisar e selecione"><button class="botao-adicionar" id="abrirNovoLocalEntrega" type="button" title="Cadastrar novo local de entrega" aria-label="Cadastrar novo local de entrega">+</button></div><datalist id="listaLocais"></datalist>\n            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button type="button" data-local-rapido="PC II" style="background:#eef5ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:8px 12px;font-size:13px;font-weight:800">PC II</button><button type="button" data-local-rapido="4 DP" style="background:#eef5ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:8px 12px;font-size:13px;font-weight:800">4º DP</button><button type="button" data-local-rapido="PC I" style="background:#eef5ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:8px 12px;font-size:13px;font-weight:800">PC I</button></div>\n            <span class="nota">Atalhos dos locais de entrega mais utilizados em 2026.</span>\n          </div>'
+    );
+
     // Comandante é obrigatório em NOVOS cadastros.
     // Registros antigos em edição continuam podendo ser preservados sem cobrança retroativa.
     html=html.replace(
@@ -35,6 +47,17 @@
     html=html.replace(
       '["horaInicial","Informe a hora inicial."],\n        ["ocorrencia","Selecione o Tipo de Ocorrência."]',
       '["horaInicial","Informe a hora inicial."],\n        ["comandante","Informe o comandante da viatura."],\n        ["ocorrencia","Selecione o Tipo de Ocorrência."]'
+    );
+
+    // Compatibilidade: o banco atual ainda reconhece TS/AME em tipo_registro.
+    // A interface trata esses valores como grupamentos e as telas estatísticas os normalizam como BO.
+    html=html.replace(
+      '    const idEdicao = new URLSearchParams(location.search).get("id");\n    let registroOriginalEdicao = null;',
+      '    const idEdicao = new URLSearchParams(location.search).get("id");\n    let registroOriginalEdicao = null;\n    const grupamentoTatico = document.getElementById("grupamentoTatico");\n    const grupamentoAme = document.getElementById("grupamentoAme");\n    function sincronizarGrupamentoComTipo(origem=null){\n      const tipo=document.getElementById("tipoRegistro");\n      if(origem){\n        const bruto=String(origem.tipo_registro||"").trim().normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toUpperCase();\n        grupamentoTatico.checked=Boolean(origem.tatico_setorial)||bruto==="TS"||bruto==="TATICO SETORIAL";\n        grupamentoAme.checked=bruto==="AME";\n        if(grupamentoTatico.checked)grupamentoAme.checked=false;\n      }\n      if(grupamentoTatico.checked)tipo.value="TS";\n      else if(grupamentoAme.checked)tipo.value="AME";\n      else tipo.value="BO";\n    }\n    grupamentoTatico.addEventListener("change",()=>{if(grupamentoTatico.checked)grupamentoAme.checked=false;sincronizarGrupamentoComTipo();});\n    grupamentoAme.addEventListener("change",()=>{if(grupamentoAme.checked)grupamentoTatico.checked=false;sincronizarGrupamentoComTipo();});\n    document.querySelectorAll("[data-local-rapido]").forEach(btn=>btn.addEventListener("click",()=>{document.getElementById("localEntrega").value=btn.dataset.localRapido||"";}));\n    sincronizarGrupamentoComTipo();'
+    );
+    html=html.replace(
+      '      Object.keys(mapa).forEach(k => definirCampo(mapa[k],x[k]));\n      carregarItensEstruturados(x);',
+      '      Object.keys(mapa).forEach(k => definirCampo(mapa[k],x[k]));\n      sincronizarGrupamentoComTipo(x);\n      carregarItensEstruturados(x);'
     );
 
     // Preserva o tipo original ao editar um registro histórico ROP/TCO/NI,
