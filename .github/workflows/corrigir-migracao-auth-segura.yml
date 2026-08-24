@@ -1,0 +1,90 @@
+name: Corrigir migração auth segura
+
+on:
+  push:
+    paths:
+      - '.github/workflows/corrigir-migracao-auth-segura.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Corrigir migração
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+          p=Path('migrations/20260824_autenticacao_perfis_acesso.sql')
+          s=p.read_text(encoding='utf-8')
+
+          # SECURITY DEFINER não pode transformar uma chamada autenticada em manutenção postgres.
+          s=s.replace("if current_user in ('postgres','service_role') or v_role = 'service_role' then", "if v_role='service_role' or (v_role='' and current_user='postgres') then")
+          s=s.replace("if current_user in ('postgres','service_role') or v_role='service_role' then", "if v_role='service_role' or (v_role='' and current_user='postgres') then")
+
+          # Operador pode incluir novos valores de catálogo, mas somente Admin/Estatística alteram/excluem existentes.
+          velho="""  if private.perfil_atual() not in ('ADMIN','ESTATISTICA') then
+    raise exception 'Seu perfil não possui permissão para alterar catálogos.' using errcode='42501';
+  end if;
+  if tg_op='DELETE' then return old; else return new; end if;"""
+          novo="""  if tg_op='INSERT' then
+    if private.perfil_atual() not in ('ADMIN','ESTATISTICA','OPERADOR') then
+      raise exception 'Seu perfil não possui permissão para cadastrar itens de catálogo.' using errcode='42501';
+    end if;
+    return new;
+  end if;
+  if private.perfil_atual() not in ('ADMIN','ESTATISTICA') then
+    raise exception 'Seu perfil não possui permissão para editar ou excluir catálogos.' using errcode='42501';
+  end if;
+  if tg_op='DELETE' then return old; else return new; end if;"""
+          if velho not in s: raise SystemExit('Trecho controle_catalogos não encontrado')
+          s=s.replace(velho,novo,1)
+
+          # Políticas de catálogo: leitura ativa, INSERT também para operador, UPDATE/DELETE Admin/Estatística.
+          velho="""    execute format('create policy %I on public.%I for select to authenticated using (private.usuario_ativo())','auth_'||t||'_select',t);
+    execute format('create policy %I on public.%I for all to authenticated using (private.pode_administrar_dados()) with check (private.pode_administrar_dados())','auth_'||t||'_admin',t);"""
+          novo="""    execute format('create policy %I on public.%I for select to authenticated using (private.usuario_ativo())','auth_'||t||'_select',t);
+    execute format('create policy %I on public.%I for insert to authenticated with check (private.pode_escrever_operacional())','auth_'||t||'_insert',t);
+    execute format('create policy %I on public.%I for update to authenticated using (private.pode_administrar_dados()) with check (private.pode_administrar_dados())','auth_'||t||'_update',t);
+    execute format('create policy %I on public.%I for delete to authenticated using (private.pode_administrar_dados())','auth_'||t||'_delete',t);"""
+          if velho not in s: raise SystemExit('Políticas de catálogo não encontradas')
+          s=s.replace(velho,novo,1)
+
+          # Troca remoção de políticas por loop seguro, inclusive quando a tabela não tem políticas antigas.
+          bloco=re.compile(r"""    -- Remove todas as políticas antigas, inclusive as temporárias públicas\.\n    execute \(\n      select coalesce\(string_agg\(format\('drop policy if exists %I on public\.%I;',policyname,t\),' '\),'\'\'\)\n      from pg_policies where schemaname='public' and tablename=t\n    \);""")
+          repl="""    -- Remove todas as políticas antigas, inclusive as temporárias públicas.
+    for pol in select policyname from pg_policies where schemaname='public' and tablename=t loop
+      execute format('drop policy if exists %I on public.%I',pol.policyname,t);
+    end loop;"""
+          s,n=bloco.subn(repl,s,count=1)
+          if n!=1: raise SystemExit('Bloco de políticas operacionais não localizado')
+
+          bloco2=re.compile(r"""    execute \(\n      select coalesce\(string_agg\(format\('drop policy if exists %I on public\.%I;',policyname,t\),' '\),'\'\'\)\n      from pg_policies where schemaname='public' and tablename=t\n    \);""")
+          s,n=bloco2.subn("""    for pol in select policyname from pg_policies where schemaname='public' and tablename=t loop
+      execute format('drop policy if exists %I on public.%I',pol.policyname,t);
+    end loop;""",s,count=1)
+          if n!=1: raise SystemExit('Bloco de políticas de catálogo não localizado')
+
+          # Os dois DO blocks agora usam pol.
+          s=s.replace("do $$\ndeclare\n  t text;\nbegin\n  foreach t in array array['ocorrencias','tcos','acoes_preventivas']", "do $$\ndeclare\n  t text;\n  pol record;\nbegin\n  foreach t in array array['ocorrencias','tcos','acoes_preventivas']",1)
+          s=s.replace("do $$\ndeclare\n  t text;\nbegin\n  foreach t in array array['bairros','comandantes','enderecos_padronizados','locais_apresentacao','subtipos_ocorrencia','tipos_ocorrencia']", "do $$\ndeclare\n  t text;\n  pol record;\nbegin\n  foreach t in array array['bairros','comandantes','enderecos_padronizados','locais_apresentacao','subtipos_ocorrencia','tipos_ocorrencia']",1)
+
+          p.write_text(s,encoding='utf-8')
+      - name: Validar
+        run: |
+          grep -q "v_role='service_role' or (v_role='' and current_user='postgres')" migrations/20260824_autenticacao_perfis_acesso.sql
+          grep -q "pol record" migrations/20260824_autenticacao_perfis_acesso.sql
+          grep -q "auth_'||t||'_insert" migrations/20260824_autenticacao_perfis_acesso.sql
+      - name: Publicar
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add migrations/20260824_autenticacao_perfis_acesso.sql
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Corrige segurança final da migração de acesso"
+          git push
