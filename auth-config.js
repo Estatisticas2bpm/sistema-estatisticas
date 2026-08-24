@@ -1,5 +1,5 @@
 window.SISTEMA_AUTH_CONFIG = Object.freeze({
-  enabled: false,
+  enabled: true,
   supabaseUrl: "https://jppmhhukujigxupgskdk.supabase.co",
   publishableKey: "sb_publishable_ZVnU35i2x9zwppQqYg7UYw_mzaT43aG",
   profileTable: "perfis_usuarios",
