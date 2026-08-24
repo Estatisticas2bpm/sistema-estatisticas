@@ -1,0 +1,67 @@
+name: Preparar autenticação do site
+
+on:
+  push:
+    paths:
+      - '.github/workflows/preparar-autenticacao-site.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Inserir guard de autenticação nas páginas
+        shell: python
+        run: |
+          from pathlib import Path
+
+          bloco='<script src="auth-config.js"></script><script src="auth-guard.js"></script>'
+          alterados=[]
+          for p in Path('.').glob('*.html'):
+              s=p.read_text(encoding='utf-8')
+              if p.name != 'login.html' and 'auth-guard.js' not in s:
+                  if '</head>' not in s.lower():
+                      raise SystemExit(f'Página sem </head>: {p}')
+                  pos=s.lower().find('</head>')
+                  s=s[:pos]+bloco+s[pos:]
+                  alterados.append(p.name)
+
+              if p.name=='index.html' and 'href="usuarios.html"' not in s:
+                  card='<a class="action" href="usuarios.html" data-permission="usuarios" data-auth-only hidden><span>👥</span>Gerenciar usuários</a>'
+                  alvo='</nav>'
+                  if alvo not in s:
+                      raise SystemExit('Menu principal de index.html não encontrado')
+                  s=s.replace(alvo,card+alvo,1)
+                  alterados.append(p.name)
+
+              p.write_text(s,encoding='utf-8')
+          print('Arquivos ajustados:', sorted(set(alterados)))
+
+      - name: Validar estrutura
+        shell: bash
+        run: |
+          grep -q 'auth-guard.js' index.html
+          grep -q 'href="usuarios.html"' index.html
+          grep -q 'auth-guard.js' cadastro-base.html
+          grep -q 'auth-guard.js' dashboard.html
+          grep -q 'auth-guard.js' auditoria.html
+          grep -q 'auth-guard.js' relatorio.html
+
+      - name: Publicar
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add '*.html'
+          if git diff --cached --quiet; then
+            echo "Nenhuma alteração necessária"
+            exit 0
+          fi
+          git commit -m "Integra páginas ao módulo de autenticação"
+          git push
