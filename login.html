@@ -2,12 +2,35 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="refresh" content="0; url=index.html">
-  <title>Abrindo o sistema</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Acesso ao Sistema - 2º BPM</title>
+  <style>
+    *{box-sizing:border-box}:root{--navy:#071b33;--blue:#0e4f8a;--bg:#eef3f8;--line:#d7e0ea;--text:#172033;--muted:#66758a;--red:#b42318;--green:#13795b}
+    body{margin:0;min-height:100vh;background:linear-gradient(150deg,#071b33 0,#0a355f 38%,#eef3f8 38%);font-family:Inter,Segoe UI,Arial,sans-serif;color:var(--text);display:flex;flex-direction:column}
+    header{padding:28px 20px;color:#fff}.head{width:min(900px,94%);margin:auto;display:flex;align-items:center;justify-content:center;gap:18px;text-align:center}.logos{display:flex;gap:9px}.logos img{width:68px;height:68px;object-fit:contain;filter:drop-shadow(0 3px 7px #0005)}h1{font-size:24px;margin:0 0 5px}.head p{margin:0;color:#c9d8e6}
+    main{width:min(430px,92%);margin:32px auto 55px;flex:1}.card{background:#fff;border-radius:18px;padding:28px;box-shadow:0 18px 55px #071b3330;border:1px solid #fff}.card h2{text-align:center;color:var(--navy);margin:0 0 7px}.desc{text-align:center;color:var(--muted);margin:0 0 23px;line-height:1.5}.campo{margin-bottom:16px}.campo label{display:block;font-size:13px;font-weight:800;color:#354b61;margin-bottom:6px}.campo input{width:100%;padding:13px;border:1px solid var(--line);border-radius:10px;font:inherit}.campo input:focus{outline:2px solid #0e4f8a22;border-color:var(--blue)}.senha{position:relative}.senha input{padding-right:80px}.mostrar{position:absolute;right:7px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:var(--blue);font-weight:800;cursor:pointer}.entrar{width:100%;border:0;border-radius:10px;padding:14px;background:var(--blue);color:#fff;font-weight:900;font-size:15px;cursor:pointer}.entrar:disabled{opacity:.6;cursor:wait}.msg{display:none;margin-top:15px;padding:11px 12px;border-radius:9px;font-size:13px;line-height:1.45}.msg.erro{display:block;background:#fef3f2;color:var(--red);border:1px solid #fecdca}.msg.info{display:block;background:#eff8ff;color:#175cd3;border:1px solid #b2ddff}.rodape{text-align:center;color:#64748b;font-size:12px;padding:18px}.status-modulo{margin-bottom:15px;padding:10px 12px;border-radius:9px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:12px;display:none}
+    @media(max-width:560px){body{background:linear-gradient(165deg,#071b33 0,#0a355f 30%,#eef3f8 30%)}.head{flex-direction:column}.logos img{width:58px;height:58px}h1{font-size:20px}}
+  </style>
+  <script src="auth-config.js"></script>
 </head>
 <body>
-  <p>Abrindo o sistema...</p>
-  <script>window.location.replace("index.html");</script>
+<header><div class="head"><div class="logos"><img src="brasao-pmrr.png" alt="PMRR"><img src="logo-2bpm-novo.png" alt="2º BPM"></div><div><h1>Sistema de Estatísticas Operacionais</h1><p>2º Batalhão da Polícia Militar</p></div></div></header>
+<main><section class="card"><h2>Acesso ao sistema</h2><p class="desc">Entre com o usuário criado pelo administrador do sistema.</p><div id="statusModulo" class="status-modulo"></div><form id="formLogin"><div class="campo"><label for="email">E-mail</label><input id="email" type="email" autocomplete="username" required></div><div class="campo"><label for="senha">Senha</label><div class="senha"><input id="senha" type="password" autocomplete="current-password" required><button id="mostrarSenha" class="mostrar" type="button">Mostrar</button></div></div><button id="entrar" class="entrar" type="submit">Entrar</button><div id="mensagem" class="msg"></div></form></section></main>
+<div class="rodape">2º Batalhão da Polícia Militar — Sistema de Estatísticas Operacionais</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const cfg=window.SISTEMA_AUTH_CONFIG;
+const mensagem=document.getElementById('mensagem'),form=document.getElementById('formLogin'),btn=document.getElementById('entrar'),email=document.getElementById('email'),senha=document.getElementById('senha');
+function msg(texto,tipo='erro'){mensagem.textContent=texto;mensagem.className='msg '+tipo;}
+function erroQuery(){const e=new URLSearchParams(location.search).get('erro');return ({'nao-autorizado':'Este usuário não possui autorização para acessar o sistema.','bloqueado':'Este usuário está bloqueado. Procure o administrador.','falha-validacao':'Não foi possível validar seu perfil de acesso. Tente novamente.','sem-permissao':'Seu perfil não possui permissão para acessar a página solicitada.'})[e]||'';}
+if(!cfg){msg('Configuração de autenticação não encontrada.');form.querySelectorAll('input,button').forEach(x=>x.disabled=true);}else{
+  const db=supabase.createClient(cfg.supabaseUrl,cfg.publishableKey);
+  if(!cfg.enabled){const s=document.getElementById('statusModulo');s.style.display='block';s.textContent='O módulo de autenticação está preparado, mas ainda não foi ativado no backend institucional.';}
+  const eq=erroQuery();if(eq)msg(eq);
+  document.getElementById('mostrarSenha').addEventListener('click',()=>{const vis=senha.type==='text';senha.type=vis?'password':'text';document.getElementById('mostrarSenha').textContent=vis?'Mostrar':'Ocultar';});
+  (async()=>{if(cfg.enabled){const {data:{session}}=await db.auth.getSession();if(session){const ret=new URLSearchParams(location.search).get('retorno');location.replace(ret||cfg.homePage);}}})();
+  form.addEventListener('submit',async e=>{e.preventDefault();mensagem.className='msg';btn.disabled=true;btn.textContent='Entrando...';try{const r=await db.auth.signInWithPassword({email:email.value.trim(),password:senha.value});if(r.error){msg('E-mail ou senha incorretos. Confira os dados e tente novamente.');return;}const ret=new URLSearchParams(location.search).get('retorno');location.replace(ret||cfg.homePage);}catch(err){console.error(err);msg('Não foi possível conectar ao sistema. Tente novamente.');}finally{btn.disabled=false;btn.textContent='Entrar';}});
+}
+</script>
 </body>
 </html>
