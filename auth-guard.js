@@ -92,21 +92,14 @@
   function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
   async function carregarPerfil(client,user){
-    let r=await client.from(cfg.profileTable)
-      .select('user_id,nome,nome_guerra,matricula,email,perfil,ativo,senha_temporaria,unidade_id,unidades(sigla,nome)')
-      .eq('user_id',user.id).maybeSingle();
-    if(r.error)throw r.error;
-    if(r.data)return r.data;
+    const me=await client.functions.invoke(cfg.adminFunction,{body:{action:'me'}});
+    if(me.error)throw me.error;
+    if(me.data?.profile)return me.data.profile;
 
     const boot=await client.functions.invoke(cfg.adminFunction,{body:{action:'bootstrap'}});
     if(boot.error)throw boot.error;
-    if(!boot.data?.profile)return null;
-
-    r=await client.from(cfg.profileTable)
-      .select('user_id,nome,nome_guerra,matricula,email,perfil,ativo,senha_temporaria,unidade_id,unidades(sigla,nome)')
-      .eq('user_id',user.id).maybeSingle();
-    if(r.error)throw r.error;
-    return r.data||null;
+    if(boot.data?.error)throw new Error(boot.data.error);
+    return boot.data?.profile||null;
   }
 
   const ready=(async()=>{

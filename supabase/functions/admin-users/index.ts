@@ -46,7 +46,7 @@ async function usuarioDaRequisicao(req: Request) {
 
 async function perfilDoUsuario(userId: string) {
   const { data, error } = await admin.from("perfis_usuarios")
-    .select("user_id,nome,nome_guerra,email,perfil,ativo,senha_temporaria,unidade_id")
+    .select("user_id,nome,nome_guerra,matricula,email,perfil,ativo,senha_temporaria,unidade_id,unidades(id,sigla,nome)")
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw error;
@@ -87,6 +87,11 @@ Deno.serve(async (req: Request) => {
 
     const body = await req.json().catch(() => ({}));
     const action = limpar(body.action);
+
+    if (action === "me") {
+      const perfil = await perfilDoUsuario(caller.id);
+      return resposta({ profile: perfil || null });
+    }
 
     if (action === "bootstrap") {
       const { count, error: countError } = await admin.from("perfis_usuarios")
