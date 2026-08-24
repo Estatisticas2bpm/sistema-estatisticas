@@ -8,14 +8,7 @@
 
   if(!cfg||!cfg.enabled){
     document.addEventListener('DOMContentLoaded',esconderAdministracaoDesativada,{once:true});
-    window.SistemaAuth={
-      enabled:false,
-      ready:Promise.resolve({enabled:false}),
-      pode:()=>true,
-      perfil:null,
-      user:null,
-      sair:async()=>{location.href='index.html';}
-    };
+    window.SistemaAuth={enabled:false,ready:Promise.resolve({enabled:false}),pode:()=>true,perfil:null,user:null,sair:async()=>{location.href='index.html';}};
     return;
   }
 
@@ -32,9 +25,7 @@
     });
   }
 
-  function permissaoDaPagina(){
-    return cfg.pagePermissions[pathname]||null;
-  }
+  function permissaoDaPagina(){return cfg.pagePermissions[pathname]||null;}
 
   function urlLogin(erro){
     const retorno=pathname&&pathname!==cfg.loginPage?pathname+location.search:'';
@@ -64,10 +55,7 @@
   }
 
   function aplicarPermissoes(perfil){
-    document.querySelectorAll('[data-permission]').forEach(el=>{
-      const p=el.getAttribute('data-permission');
-      el.hidden=!pode(perfil,p);
-    });
+    document.querySelectorAll('[data-permission]').forEach(el=>{el.hidden=!pode(perfil,el.getAttribute('data-permission'));});
     document.querySelectorAll('a[href]').forEach(el=>{
       const p=permissaoPorHref(el.getAttribute('href'));
       if(p&&!pode(perfil,p))el.hidden=true;
@@ -92,14 +80,18 @@
   function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
   async function carregarPerfil(client,user){
-    const me=await client.functions.invoke(cfg.adminFunction,{body:{action:'me'}});
-    if(me.error)throw me.error;
-    if(me.data?.profile)return me.data.profile;
-
-    const boot=await client.functions.invoke(cfg.adminFunction,{body:{action:'bootstrap'}});
-    if(boot.error)throw boot.error;
-    if(boot.data?.error)throw new Error(boot.data.error);
-    return boot.data?.profile||null;
+    const r=await client.from(cfg.profileTable)
+      .select('user_id,nome,nome_guerra,matricula,email,perfil,ativo,senha_temporaria,unidade_id')
+      .eq('user_id',user.id)
+      .maybeSingle();
+    if(r.error)throw r.error;
+    if(!r.data)return null;
+    let unidade=null;
+    if(r.data.unidade_id){
+      const u=await client.from('unidades').select('id,sigla,nome').eq('id',r.data.unidade_id).maybeSingle();
+      if(!u.error)unidade=u.data||null;
+    }
+    return {...r.data,unidades:unidade};
   }
 
   const ready=(async()=>{
@@ -137,17 +129,18 @@
 
       window.SistemaAuth={enabled:true,client,user,perfil,pode:(p)=>pode(perfil.perfil,p),ready:null,sair:async()=>{await client.auth.signOut({scope:'local'});location.replace(cfg.loginPage);}};
 
-      document.addEventListener('DOMContentLoaded',()=>{
-        aplicarPermissoes(perfil.perfil);
-        instalarIdentificacao(perfil,client);
-      },{once:true});
-      if(document.readyState!=='loading'){
-        aplicarPermissoes(perfil.perfil);
-        instalarIdentificacao(perfil,client);
-      }
+      const aplicar=()=>{aplicarPermissoes(perfil.perfil);instalarIdentificacao(perfil,client);};
+      if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',aplicar,{once:true});
+      else aplicar();
+
       return window.SistemaAuth;
     }catch(e){
       console.error('Falha ao validar acesso ao sistema:',e);
+      try{
+        await carregarSupabase();
+        const c=window.supabase.createClient(cfg.supabaseUrl,cfg.publishableKey);
+        await c.auth.signOut({scope:'local'});
+      }catch(_){}
       location.replace(urlLogin('falha-validacao'));
       return null;
     }finally{
