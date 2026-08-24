@@ -10,7 +10,7 @@
 <script>
 (async function(){
   try {
-    const resposta=await fetch('cadastro-base.html?v=20260824-1',{cache:'no-store'});
+    const resposta=await fetch('cadastro-base.html?v=20260824-2',{cache:'no-store'});
     if(!resposta.ok) throw new Error('Falha ao carregar a base do cadastro.');
     let html=await resposta.text();
 
@@ -27,9 +27,10 @@
     html=html.replaceAll('Informe o número do BO/ROP.','Informe o número do BO.');
 
     // Tipo de documento visível = BO. Tático Setorial e AME passam a ser grupamentos.
+    // As opções históricas permanecem apenas no select oculto para não serem sobrescritas em edição.
     html=html.replace(
       /<div class="campo">\s*<label for="tipoRegistro">Tipo \*<\/label>\s*<select id="tipoRegistro" name="tipoRegistro" required>[\s\S]*?<\/select>\s*<\/div>/,
-      '<div class="campo"><label>Tipo de documento</label><input id="tipoDocumentoExibicao" type="text" value="BO" readonly aria-label="Tipo de documento BO"><select id="tipoRegistro" name="tipoRegistro" required hidden><option value="BO" selected>BO</option><option value="TS">TÁTICO SETORIAL</option><option value="AME">AME</option></select><span class="nota">Toda ocorrência operacional é registrada por Boletim de Ocorrência (BO).</span></div><div class="campo duplo"><label>Guarnição especializada</label><div class="selecao-grupamento" style="display:flex;gap:10px;flex-wrap:wrap"><label class="resultado-opcao" style="min-width:190px"><input id="grupamentoTatico" type="checkbox"> TÁTICO SETORIAL</label><label class="resultado-opcao" style="min-width:190px"><input id="grupamentoAme" type="checkbox"> AME</label></div><span class="nota">Marque somente quando o BO tiver sido atendido por um desses grupamentos. As opções são exclusivas.</span></div>'
+      '<div class="campo"><label>Tipo de documento</label><input id="tipoDocumentoExibicao" type="text" value="BO" readonly aria-label="Tipo de documento"><select id="tipoRegistro" name="tipoRegistro" required hidden><option value="BO" selected>BO</option><option value="TS">TÁTICO SETORIAL</option><option value="AME">AME</option><option value="ROP">ROP</option><option value="TCO">TCO</option><option value="NI">NI</option></select><span class="nota">Nos novos registros, toda ocorrência operacional é registrada por Boletim de Ocorrência (BO).</span></div><div class="campo duplo"><label>Guarnição especializada</label><div class="selecao-grupamento" style="display:flex;gap:10px;flex-wrap:wrap"><label class="resultado-opcao" style="min-width:190px"><input id="grupamentoTatico" type="checkbox"> TÁTICO SETORIAL</label><label class="resultado-opcao" style="min-width:190px"><input id="grupamentoAme" type="checkbox"> AME</label></div><span class="nota">Marque somente quando o BO tiver sido atendido por um desses grupamentos. As opções são exclusivas.</span></div>'
     );
 
     // Atalhos para os três locais de entrega mais usados na planilha oficial de 2026.
@@ -49,30 +50,28 @@
       '["horaInicial","Informe a hora inicial."],\n        ["comandante","Informe o comandante da viatura."],\n        ["ocorrencia","Selecione o Tipo de Ocorrência."]'
     );
 
-    // Compatibilidade: o banco atual ainda reconhece TS/AME em tipo_registro.
-    // A interface trata esses valores como grupamentos e as telas estatísticas os normalizam como BO.
+    // Compatibilidade: até existir a coluna própria de grupamento no banco,
+    // TS/AME continuam codificados internamente em tipo_registro, mas são tratados como BO nas estatísticas.
+    // ROP/TCO/NI históricos são preservados quando o registro é apenas editado.
     html=html.replace(
       '    const idEdicao = new URLSearchParams(location.search).get("id");\n    let registroOriginalEdicao = null;',
-      '    const idEdicao = new URLSearchParams(location.search).get("id");\n    let registroOriginalEdicao = null;\n    const grupamentoTatico = document.getElementById("grupamentoTatico");\n    const grupamentoAme = document.getElementById("grupamentoAme");\n    function sincronizarGrupamentoComTipo(origem=null){\n      const tipo=document.getElementById("tipoRegistro");\n      if(origem){\n        const bruto=String(origem.tipo_registro||"").trim().normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toUpperCase();\n        grupamentoTatico.checked=Boolean(origem.tatico_setorial)||bruto==="TS"||bruto==="TATICO SETORIAL";\n        grupamentoAme.checked=bruto==="AME";\n        if(grupamentoTatico.checked)grupamentoAme.checked=false;\n      }\n      if(grupamentoTatico.checked)tipo.value="TS";\n      else if(grupamentoAme.checked)tipo.value="AME";\n      else tipo.value="BO";\n    }\n    grupamentoTatico.addEventListener("change",()=>{if(grupamentoTatico.checked)grupamentoAme.checked=false;sincronizarGrupamentoComTipo();});\n    grupamentoAme.addEventListener("change",()=>{if(grupamentoAme.checked)grupamentoTatico.checked=false;sincronizarGrupamentoComTipo();});\n    document.querySelectorAll("[data-local-rapido]").forEach(btn=>btn.addEventListener("click",()=>{document.getElementById("localEntrega").value=btn.dataset.localRapido||"";}));\n    sincronizarGrupamentoComTipo();'
+      '    const idEdicao = new URLSearchParams(location.search).get("id");\n    let registroOriginalEdicao = null;\n    const grupamentoTatico = document.getElementById("grupamentoTatico");\n    const grupamentoAme = document.getElementById("grupamentoAme");\n    const tipoDocumentoExibicao = document.getElementById("tipoDocumentoExibicao");\n    function chaveTipoRegistro(v){return String(v||"").trim().normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toUpperCase();}\n    function sincronizarGrupamentoComTipo(origem=null){\n      const tipo=document.getElementById("tipoRegistro");\n      let bruto=origem?chaveTipoRegistro(origem.tipo_registro):"";\n      if(origem){\n        grupamentoTatico.checked=Boolean(origem.tatico_setorial)||bruto==="TS"||bruto==="TATICO SETORIAL";\n        grupamentoAme.checked=bruto==="AME";\n        if(grupamentoTatico.checked)grupamentoAme.checked=false;\n        if(["ROP","TCO","NI"].includes(bruto)){\n          grupamentoTatico.checked=false;grupamentoAme.checked=false;tipo.value=bruto;tipoDocumentoExibicao.value=bruto;return;\n        }\n      }\n      tipoDocumentoExibicao.value="BO";\n      if(grupamentoTatico.checked)tipo.value="TS";\n      else if(grupamentoAme.checked)tipo.value="AME";\n      else if(idEdicao&&registroOriginalEdicao&&["ROP","TCO","NI"].includes(chaveTipoRegistro(registroOriginalEdicao.tipo_registro))){tipo.value=chaveTipoRegistro(registroOriginalEdicao.tipo_registro);tipoDocumentoExibicao.value=tipo.value;}\n      else tipo.value="BO";\n    }\n    grupamentoTatico.addEventListener("change",()=>{if(grupamentoTatico.checked)grupamentoAme.checked=false;sincronizarGrupamentoComTipo();});\n    grupamentoAme.addEventListener("change",()=>{if(grupamentoAme.checked)grupamentoTatico.checked=false;sincronizarGrupamentoComTipo();});\n    document.querySelectorAll("[data-local-rapido]").forEach(btn=>btn.addEventListener("click",()=>{document.getElementById("localEntrega").value=btn.dataset.localRapido||"";}));\n    sincronizarGrupamentoComTipo();'
     );
     html=html.replace(
       '      Object.keys(mapa).forEach(k => definirCampo(mapa[k],x[k]));\n      carregarItensEstruturados(x);',
       '      Object.keys(mapa).forEach(k => definirCampo(mapa[k],x[k]));\n      sincronizarGrupamentoComTipo(x);\n      carregarItensEstruturados(x);'
     );
 
-    // Preserva o tipo original ao editar um registro histórico ROP/TCO/NI,
-    // mesmo que ele já não seja oferecido para novos cadastros.
     html=html.replace(
       'tipo_registro: tratarNI(document.getElementById("tipoRegistro").value),',
-      'tipo_registro: document.getElementById("tipoRegistro").value || (idEdicao && registroOriginalEdicao ? registroOriginalEdicao.tipo_registro : null),'
+      'tipo_registro: document.getElementById("tipoRegistro").value || (idEdicao && registroOriginalEdicao ? registroOriginalEdicao.tipo_registro : "BO"),'
     );
     html=html.replace(
       'tatico_setorial: document.getElementById("tipoRegistro").value === "TS",',
-      'tatico_setorial: (document.getElementById("tipoRegistro").value || (idEdicao && registroOriginalEdicao ? registroOriginalEdicao.tipo_registro : "")) === "TS",'
+      'tatico_setorial: document.getElementById("tipoRegistro").value === "TS",'
     );
 
     // Se a edição veio da Auditoria, volta para ela após a confirmação de sucesso.
-    // Período e filtro seguem no parâmetro "retorno".
     html=html.replace(
       'alert("Alterações salvas com sucesso!");\n          location.href = "consulta.html?q=" + encodeURIComponent(registro.numero_bo);\n          return;',
       'alert("Alterações salvas com sucesso!");\n          const retornoSolicitado = new URLSearchParams(location.search).get("retorno");\n          if (retornoSolicitado && /^auditoria\\.html(?:\\?|$)/.test(retornoSolicitado)) location.href = retornoSolicitado;\n          else location.href = "consulta.html?q=" + encodeURIComponent(registro.numero_bo);\n          return;'
