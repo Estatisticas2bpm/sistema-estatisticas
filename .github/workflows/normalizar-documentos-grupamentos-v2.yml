@@ -1,0 +1,94 @@
+name: Normalizar documentos e grupamentos v2
+
+on:
+  push:
+    paths:
+      - '.github/workflows/normalizar-documentos-grupamentos-v2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Aplicar normalização nas telas
+        shell: python
+        run: |
+          from pathlib import Path
+
+          # DASHBOARD
+          p=Path('dashboard.html'); s=p.read_text(encoding='utf-8')
+          antigo='<label>Tipo de documento/equipe<select id="documento"><option value="">Todos</option><option>BO</option><option>TCO</option><option>ROP</option><option value="TS">TÁTICO SETORIAL</option><option value="AME">AME</option></select></label>'
+          novo='<label>Tipo de documento<select id="documento"><option value="">Todos</option><option>BO</option><option>TCO</option><option>ROP</option></select></label><label>Grupamento<select id="grupamento"><option value="">Todos</option><option value="TÁTICO SETORIAL">TÁTICO SETORIAL</option><option value="AME">AME</option></select></label>'
+          if antigo in s: s=s.replace(antigo,novo,1)
+          if 'function tipoDocumentoRegistro(' not in s:
+              marker='function classeVariacao(nome,a,b)'
+              helper="function tipoDocumentoRegistro(x){let k=chaveOcorrencia(x?.tipo_registro);return (k==='TS'||k==='AME'||k==='TATICO SETORIAL'||k==='TÁTICO SETORIAL')?'BO':norm(x?.tipo_registro)}function grupamentoRegistro(x){let g=chaveOcorrencia(x?.grupamento_atendimento);if(g==='AME')return 'AME';if(g==='TATICO SETORIAL'||g==='TÁTICO SETORIAL')return 'TÁTICO SETORIAL';let k=chaveOcorrencia(x?.tipo_registro);if(k==='AME')return 'AME';if(k==='TS'||k==='TATICO SETORIAL'||k==='TÁTICO SETORIAL'||x?.tatico_setorial===true)return 'TÁTICO SETORIAL';return ''}"
+              if marker not in s: raise SystemExit('dashboard: marcador helper ausente')
+              s=s.replace(marker,helper+marker,1)
+          s=s.replace('if(documento.value&&x.tipo_registro!==documento.value)return false;','if(documento.value&&tipoDocumentoRegistro(x)!==documento.value)return false;if(grupamento.value&&grupamentoRegistro(x)!==grupamento.value)return false;',1)
+          s=s.replace("if(documento.value&&documento.value!=='TCO')return false;","if(documento.value&&documento.value!=='TCO')return false;if(grupamento.value)return false;",1)
+          olddocs="function docsComTco(registros,tcos){let m=Object.fromEntries(rank(registros,'tipo_registro'));m.TCO=(m.TCO||0)+tcos.length;return Object.entries(m).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]))}"
+          newdocs="function docsComTco(registros,tcos){let m=Object.fromEntries(rank(registros,x=>tipoDocumentoRegistro(x)));m.TCO=(m.TCO||0)+tcos.length;return Object.entries(m).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]))}"
+          s=s.replace(olddocs,newdocs,1)
+          s=s.replace('BO, TCO, ROP e demais documentos do período','BO, TCO e documentos legados do período')
+          p.write_text(s,encoding='utf-8')
+
+          # RELATÓRIO
+          p=Path('relatorio.html'); s=p.read_text(encoding='utf-8')
+          if 'function tipoDocumentoRel(' not in s:
+              marker='function iso(d)'
+              helper="function tipoDocumentoRel(x){let k=S(x?.tipo_registro).normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toUpperCase();return (k==='TS'||k==='AME'||k==='TATICO SETORIAL')?'BO':S(x?.tipo_registro)||'NÃO INFORMADO'}\n"
+              if marker not in s: raise SystemExit('relatorio: marcador helper ausente')
+              s=s.replace(marker,helper+marker,1)
+          olddocs="function docsComTco(registros,tcos){let m=Object.fromEntries(rank(registros,'tipo_registro'));m.TCO=(m.TCO||0)+tcos.length;return Object.entries(m).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]))}"
+          newdocs="function docsComTco(registros,tcos){let m=Object.fromEntries(rank(registros,x=>tipoDocumentoRel(x)));m.TCO=(m.TCO||0)+tcos.length;return Object.entries(m).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]))}"
+          s=s.replace(olddocs,newdocs,1)
+          p.write_text(s,encoding='utf-8')
+
+          # CONSULTA
+          p=Path('consulta.html'); s=p.read_text(encoding='utf-8')
+          s=s.replace('<th>Data</th><th>Tipo</th><th>Nº BO</th>','<th>Data</th><th>Documento</th><th>Grupamento</th><th>Nº BO</th>',1)
+          s=s.replace('colspan="7"','colspan="8"')
+          if 'function tipoDocumentoConsulta(' not in s:
+              marker='    function renderTcos(item) {'
+              helper='''    function tipoDocumentoConsulta(item) {
+      const k=String(item?.tipo_registro||'').trim().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toUpperCase();
+      return ['TS','AME','TATICO SETORIAL'].includes(k) ? 'BO' : (item?.tipo_registro || '—');
+    }
+    function grupamentoConsulta(item) {
+      const g=String(item?.grupamento_atendimento||'').trim(); if (g) return g;
+      const k=String(item?.tipo_registro||'').trim().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toUpperCase();
+      if (k==='AME') return 'AME';
+      if (k==='TS'||k==='TATICO SETORIAL'||item?.tatico_setorial===true) return 'TÁTICO SETORIAL';
+      return '—';
+    }
+'''
+              if marker not in s: raise SystemExit('consulta: marcador helper ausente')
+              s=s.replace(marker,helper+marker,1)
+          s=s.replace('const botaoTco = item.tipo_registro === "BO"','const botaoTco = tipoDocumentoConsulta(item) === "BO"',1)
+          s=s.replace('escapar(item.tipo_registro || "—") + "</td><td>" + escapar(item.numero_bo)', 'escapar(tipoDocumentoConsulta(item)) + "</td><td>" + escapar(grupamentoConsulta(item)) + "</td><td>" + escapar(item.numero_bo)',1)
+          s=s.replace('href=\\"cadastro-base.html?id=', 'href=\\"cadastro.html?id=',1)
+          p.write_text(s,encoding='utf-8')
+
+      - name: Validar e publicar
+        shell: bash
+        run: |
+          set -e
+          grep -q 'id="grupamento"' dashboard.html
+          grep -q 'tipoDocumentoRegistro' dashboard.html
+          grep -q 'tipoDocumentoRel' relatorio.html
+          grep -q 'grupamentoConsulta' consulta.html
+          grep -q 'cadastro.html?id=' consulta.html
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dashboard.html relatorio.html consulta.html
+          if ! git diff --cached --quiet; then
+            git commit -m "Normaliza BO e grupamentos nas telas estatísticas"
+            git push
+          fi
