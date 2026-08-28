@@ -5,35 +5,28 @@
   const norm = (v) => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/\s+/g,' ').trim();
   const textoLimpo = (v) => String(v || '').replace(/\s+/g,' ').trim();
 
-  function primeiraIdade(texto){
-    const m = texto.match(/\b(?:aluno|adolescente|menor|jovem)[^,.]{0,80}?\bde\s+(\d{1,2})\s+anos\b/i);
-    return m ? Number(m[1]) : null;
-  }
-
-  function idadesDistintas(texto){
-    const encontrados = [...texto.matchAll(/\b(?:aluno|adolescente|menor|jovem)[^,.]{0,80}?\bde\s+(\d{1,2})\s+anos\b/gi)]
-      .map(m=>Number(m[1])).filter(n=>n>0 && n<100);
-    return [...new Set(encontrados)];
+  function idadesAdolescentes(texto){
+    return [...String(texto || '').matchAll(/\b(?:tamb[eé]m\s+)?de\s+(\d{1,2})\s+anos\b/gi)]
+      .map(m=>Number(m[1]))
+      .filter(n=>n>=10 && n<=17);
   }
 
   function destinoSaude(texto){
-    if(/PRONTO[- ]SOCORRO|HOSPITAL|UPA|UNIDADE DE SA[ÚU]DE/i.test(texto)) return true;
-    return false;
+    return /PRONTO[- ]SOCORRO|HOSPITAL|UPA|UNIDADE DE SA[ÚU]DE/i.test(texto);
   }
 
   function resumoAgressaoEscolar(relato){
     const n = norm(relato);
     if(!/(COLEGIO|ESCOLA|SALA DE AULA|UNIDADE ESCOLAR)/.test(n)) return null;
-    if(!/(BRIGA|AGRESS|LES[AÃ]O|ARREMESS|CADEIRA|SOCO|CHUTE|EMPURR)/.test(n)) return null;
+    if(!/(BRIGA|AGRESS|LESAO|ARREMESS|CADEIRA|SOCO|CHUTE|EMPURR)/.test(n)) return null;
 
-    const idades = idadesDistintas(relato);
-    const idadeAutor = idades[0] || primeiraIdade(relato);
+    const idades = idadesAdolescentes(relato);
+    const idadeAutor = idades[0] || null;
     const idadeVitima = idades[1] || idadeAutor;
     const mesmaIdade = idadeAutor && idadeVitima && idadeAutor === idadeVitima;
 
     let contexto = 'Após desentendimento em ambiente escolar';
-    if(/SALA DE AULA/i.test(relato)) contexto = 'Após desentendimento em sala de aula';
-    else if(/INTERIOR DA SALA/i.test(relato)) contexto = 'Após desentendimento em sala de aula';
+    if(/SALA DE AULA|INTERIOR DA SALA/i.test(relato)) contexto = 'Após desentendimento em sala de aula';
 
     let autor = 'um aluno';
     if(idadeAutor) autor = `um adolescente de ${idadeAutor} anos`;
@@ -53,13 +46,13 @@
       acao = `${autor} entrou em confronto físico com ${vitima}`;
     }
 
-    const consequencias = [];
-    if(/REGI[AÃ]O DA CABE[CÇ]A|ATINGINDO-O NA CABE[CÇ]A|ATINGIU[^.!?]{0,60}?CABE[CÇ]A/i.test(relato)) consequencias.push('atingindo-o na cabeça');
-    else if(/LES[AÃ]O[^.!?]{0,80}?CABE[CÇ]A/i.test(relato)) consequencias.push('causando lesão na cabeça');
-    else if(/LES[AÃ]O|FERIMENTO/i.test(relato)) consequencias.push('causando lesão');
+    let consequencia = '';
+    if(/REGI[AÃ]O DA CABE[CÇ]A|ATINGINDO-O NA CABE[CÇ]A|ATINGIU[^.!?]{0,60}?CABE[CÇ]A/i.test(relato)) consequencia = 'atingindo-o na cabeça';
+    else if(/LES[AÃ]O[^.!?]{0,80}?CABE[CÇ]A/i.test(relato)) consequencia = 'causando lesão na cabeça';
+    else if(/LES[AÃ]O|FERIMENTO/i.test(relato)) consequencia = 'causando lesão';
 
     let primeira = `${contexto}, ${acao}`;
-    if(consequencias.length) primeira += `, ${consequencias[0]}`;
+    if(consequencia) primeira += `, ${consequencia}`;
     primeira += '.';
 
     const desfechos = [];
@@ -70,9 +63,9 @@
     }
 
     const foiDdij = /DELEGACIA DA INF[AÂ]NCIA E JUVENTUDE|\bDDIJ\b/i.test(relato);
-    const autorConduzido = /(?:MENOR|ALUNO|ADOLESCENTE)[^.!?]{0,180}?CONDUZID[OA]S?[^.!?]{0,120}?(?:DELEGACIA DA INF[AÂ]NCIA E JUVENTUDE|DDIJ)/i.test(relato)
-      || /CONDUZID[OA]S?[^.!?]{0,180}?(?:DELEGACIA DA INF[AÂ]NCIA E JUVENTUDE|DDIJ)/i.test(relato);
-    const responsavelJunto = /ACOMPANHAD[OA] DE (?:SUA|SEU) (?:M[AÃ]E|PAI|RESPONS[AÁ]VEL)|ACOMPANHADO DE SUA RESPONS[AÁ]VEL|RESPONS[AÁ]VEL LEGAL/i.test(relato);
+    const autorConduzido = /(?:MENOR|ALUNO|ADOLESCENTE)[^.!?]{0,220}?CONDUZID[OA]S?[^.!?]{0,160}?(?:DELEGACIA DA INF[AÂ]NCIA E JUVENTUDE|DDIJ)/i.test(relato)
+      || /CONDUZID[OA]S?[^.!?]{0,200}?(?:DELEGACIA DA INF[AÂ]NCIA E JUVENTUDE|DDIJ)/i.test(relato);
+    const responsavelJunto = /ACOMPANHAD[OA] DE (?:SUA|SEU) (?:M[AÃ]E|PAI|RESPONS[AÁ]VEL)|ACOMPANHAD[OA] DE SUA RESPONS[AÁ]VEL|RESPONS[AÁ]VEL LEGAL/i.test(relato);
 
     if(autorConduzido && foiDdij) {
       if(responsavelJunto) desfechos.push('o autor e sua responsável foram conduzidos à DDIJ');
@@ -99,7 +92,7 @@
     else if(/AGRED/.test(n)) fatos.push('A vítima relatou ter sido agredida');
     else if(/AMEAC/.test(n)) fatos.push('A vítima relatou ter sido ameaçada');
 
-    if(/AMEA[CÇ][A-Z]* DE (?:A )?MAT|AMEA[CÇ][A-Z]* MAT[AÁ]-L|PROFERI[^.!?]{0,60}?AMEA[CÇ][A-Z]* DE MORTE/.test(n)) {
+    if(/AMEAC.*(?:MATAR|MORTE)|PROFERI.*AMEAC.*MORTE/.test(n)) {
       fatos[0] = fatos[0]?.replace('ameaçada','ameaçada de morte') || 'A vítima relatou ter sido ameaçada de morte';
     }
 
