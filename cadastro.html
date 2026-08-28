@@ -80,8 +80,8 @@
       'alert("Alterações salvas com sucesso!");\n          const retornoSolicitado = new URLSearchParams(location.search).get("retorno");\n          if (retornoSolicitado && /^auditoria\\.html(?:\\?|$)/.test(retornoSolicitado)) location.href = retornoSolicitado;\n          else location.href = "consulta.html?q=" + encodeURIComponent(registro.numero_bo);\n          return;'
     );
 
-    // Melhorias modulares: veículos e resumo histórico sem cortes de fatos essenciais.
-    html=html.replace('</body>','<script src="cadastro-enhancements.js?v=20260828-1"><\/script><script src="cadastro-summary-v2.js?v=20260828-1"><\/script></body>');
+    // Melhorias modulares: veículos e resumo histórico por fatos essenciais.
+    html=html.replace('</body>','<script src="cadastro-enhancements.js?v=20260828-1"><\/script><script src="cadastro-summary-v2.js?v=20260828-1"><\/script><script src="cadastro-summary-v3.js?v=20260828-1"><\/script></body>');
 
     document.open();
     document.write(html);
