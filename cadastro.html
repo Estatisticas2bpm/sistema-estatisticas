@@ -80,6 +80,9 @@
       'alert("Alterações salvas com sucesso!");\n          const retornoSolicitado = new URLSearchParams(location.search).get("retorno");\n          if (retornoSolicitado && /^auditoria\\.html(?:\\?|$)/.test(retornoSolicitado)) location.href = retornoSolicitado;\n          else location.href = "consulta.html?q=" + encodeURIComponent(registro.numero_bo);\n          return;'
     );
 
+    // Melhorias modulares: resumo do relato e separação RECUPERADO/APREENDIDO.
+    html=html.replace('</body>','<script src="cadastro-enhancements.js?v=20260828-1"><\/script></body>');
+
     document.open();
     document.write(html);
     document.close();
