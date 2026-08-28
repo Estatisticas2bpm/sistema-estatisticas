@@ -142,4 +142,14 @@
   } catch (e) {
     console.warn('Não foi possível ativar o resumo histórico v3:', e);
   }
+
+  // A versão v4 generaliza a mesma lógica para qualquer relato, independentemente da natureza.
+  try {
+    const script = document.createElement('script');
+    script.src = 'cadastro-summary-v4.js?v=20260828-1';
+    script.defer = false;
+    document.head.appendChild(script);
+  } catch (e) {
+    console.warn('Não foi possível carregar o resumo histórico v4:', e);
+  }
 })();
