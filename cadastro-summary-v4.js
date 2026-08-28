@@ -157,27 +157,59 @@
     return unicas.slice(0,4).join(' ');
   }
 
-  function resumoGeral(relato){
-    const bruto=limparBruto(relato);
-    if(!bruto) return '';
+  function qualidadeResumo(texto, bruto){
+    const t=String(texto||'').trim();
+    if(!t) return -999;
+    const n=norm(t);
+    let score=0;
+    const sentencas=(t.match(/[^.!?]+[.!?]+|[^.!?]+$/g)||[]).length;
+    if(sentencas>=1 && sentencas<=4) score+=4;
+    if(t.length>=80 && t.length<=520) score+=4;
+    if(PADROES.fato.test(t)||PADROES.fato.test(n)) score+=7;
+    if(PADROES.meio.test(t)||PADROES.meio.test(n)) score+=3;
+    if(PADROES.consequencia.test(t)||PADROES.consequencia.test(n)) score+=3;
+    if(PADROES.statusAutor.test(t)||PADROES.statusAutor.test(n)) score+=4;
+    if(PADROES.desfecho.test(t)||PADROES.desfecho.test(n)) score+=5;
+    if(PADROES.vitima.test(t)||PADROES.vitima.test(n)) score+=2;
+    if(/GUARNI[CÇ][ÃA]O.*ACIONAD|VIA CIOPS|CENTRAL CICC|MANTIVEMOS CONTATO|FOI REALIZADO CONTATO/i.test(t)) score-=8;
+    if(/OFICIAL DE OPERA[CÇ][ÕO]ES|DIRETOR DA ESCOLA|REPRESENTANTE DO COL[ÉE]GIO/i.test(t)) score-=5;
+    if(/\[PESSOA ENVOLVIDA\]/i.test(t)) score-=5;
+    if(/\b(?:CEL|MAJ|CAP|TEN|SGT|CB|SD)\b/i.test(t)) score-=4;
+    if(bruto && t.length > bruto.length*.62) score-=6;
+    if(t.length>700) score-=8;
+    return score;
+  }
 
-    const frases=(bruto.match(/[^.!?]+[.!?]+|[^.!?]+$/g)||[bruto])
-      .map(x=>x.trim()).filter(semRuido);
-    if(!frases.length) return fallback ? fallback(bruto) : bruto;
-
-    const itens=frases.map((f,i)=>classificar(f,i)).filter(x=>x.total>0 || x.fato || x.desfecho || x.statusAutor);
-    if(!itens.length) return fallback ? fallback(bruto) : bruto;
-
-    const selecionados=selecionar(itens);
-    let resultado=fundirSaidas(selecionados.map(x=>x.frase));
-    if(!resultado || resultado.length<35) resultado=fallback ? fallback(bruto) : bruto;
-
-    resultado=resultado
+  function higienizarResultado(resultado){
+    return String(resultado||'')
       .replace(/\[PESSOA ENVOLVIDA\]/gi,'')
       .replace(/\s{2,}/g,' ')
       .replace(/\s+([,.;:])/g,'$1')
       .trim();
-    return resultado;
+  }
+
+  function resumoGeral(relato){
+    const bruto=limparBruto(relato);
+    if(!bruto) return '';
+
+    const apoio = fallback ? higienizarResultado(fallback(bruto)) : '';
+    const frases=(bruto.match(/[^.!?]+[.!?]+|[^.!?]+$/g)||[bruto])
+      .map(x=>x.trim()).filter(semRuido);
+    if(!frases.length) return apoio || bruto;
+
+    const itens=frases.map((f,i)=>classificar(f,i)).filter(x=>x.total>0 || x.fato || x.desfecho || x.statusAutor);
+    if(!itens.length) return apoio || bruto;
+
+    const selecionados=selecionar(itens);
+    const candidato=higienizarResultado(fundirSaidas(selecionados.map(x=>x.frase)));
+    if(!candidato || candidato.length<35) return apoio || candidato || bruto;
+
+    if(apoio){
+      const qc=qualidadeResumo(candidato,bruto);
+      const qa=qualidadeResumo(apoio,bruto);
+      if(qa >= qc+2) return apoio;
+    }
+    return candidato;
   }
 
   try{
