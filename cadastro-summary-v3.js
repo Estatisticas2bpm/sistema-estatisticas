@@ -143,13 +143,29 @@
     console.warn('Não foi possível ativar o resumo histórico v3:', e);
   }
 
-  // A versão v4 generaliza a mesma lógica para qualquer relato, independentemente da natureza.
+  // A versão v4 generaliza a lógica para qualquer relato e, após carregada,
+  // a v5 aplica a organização obrigatória INÍCIO -> DESENVOLVIMENTO -> DESFECHO
+  // com saída final sempre em caixa alta.
+  function carregarV5(){
+    try {
+      const v5 = document.createElement('script');
+      v5.src = 'cadastro-summary-v5.js?v=20260831-1';
+      v5.defer = false;
+      document.head.appendChild(v5);
+    } catch (e) {
+      console.warn('Não foi possível carregar o resumo histórico v5:', e);
+    }
+  }
+
   try {
     const script = document.createElement('script');
     script.src = 'cadastro-summary-v4.js?v=20260828-1';
     script.defer = false;
+    script.onload = carregarV5;
+    script.onerror = carregarV5;
     document.head.appendChild(script);
   } catch (e) {
     console.warn('Não foi possível carregar o resumo histórico v4:', e);
+    carregarV5();
   }
 })();
