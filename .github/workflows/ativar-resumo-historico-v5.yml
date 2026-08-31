@@ -1,0 +1,46 @@
+name: Ativar resumo histórico v5
+
+on:
+  push:
+    paths:
+      - '.github/workflows/ativar-resumo-historico-v5.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  ativar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Carregar módulo v5 no cadastro
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('cadastro.html')
+          s=p.read_text(encoding='utf-8')
+          antigo='html=html.replace(\'</body>\',\'<script src="cadastro-enhancements.js?v=20260828-1"><\\/script><script src="cadastro-summary-v2.js?v=20260828-1"><\\/script><script src="cadastro-summary-v3.js?v=20260828-1"><\\/script></body>\');'
+          novo='html=html.replace(\'</body>\',\'<script src="cadastro-enhancements.js?v=20260828-1"><\\/script><script src="cadastro-summary-v2.js?v=20260828-1"><\\/script><script src="cadastro-summary-v3.js?v=20260828-1"><\\/script><script src="cadastro-summary-v5.js?v=20260831-1"><\\/script></body>\');'
+          if 'cadastro-summary-v5.js' in s:
+            raise SystemExit(0)
+          if antigo not in s:
+            raise SystemExit('Ponto de carregamento dos módulos de resumo não encontrado')
+          s=s.replace(antigo,novo,1)
+          p.write_text(s,encoding='utf-8')
+
+      - name: Validar
+        run: |
+          grep -q 'cadastro-summary-v5.js?v=20260831-1' cadastro.html
+          test -f cadastro-summary-v5.js
+
+      - name: Publicar
+        run: |
+          if git diff --quiet; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cadastro.html
+          git commit -m "Ativa resumo histórico cronológico v5"
+          git push
