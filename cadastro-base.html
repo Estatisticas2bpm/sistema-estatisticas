@@ -231,6 +231,10 @@
     .arquivo-pdf { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
     .botao-importar-pdf { display:inline-flex; align-items:center; gap:8px; padding:11px 16px; border-radius:9px; background:#1d4ed8; color:#fff; font-weight:700; cursor:pointer; }
     .botao-importar-pdf:hover { background:#1e40af; }
+    .indicador-pdf { display:inline-flex; align-items:center; gap:4px; width:max-content; margin-top:5px; padding:3px 7px; border-radius:999px; background:#dcfce7; color:#166534; font-size:11px; font-weight:800; letter-spacing:.01em; }
+    .indicador-pdf.provavel { background:#fef3c7; color:#92400e; }
+    .item-estruturado.origem-pdf { position:relative; padding-top:38px; }
+    .item-estruturado.origem-pdf>.indicador-pdf { position:absolute; top:9px; left:14px; }
     .status-importacao { margin-top:12px; padding:12px; border-radius:9px; background:#fff; border:1px solid #dbeafe; color:#334155; }
     .status-importacao.sucesso { border-color:#86efac; background:#f0fdf4; color:#166534; }
     .status-importacao.erro { border-color:#fca5a5; background:#fef2f2; color:#991b1b; }
@@ -291,7 +295,7 @@
     <section class="importador-pdf" aria-labelledby="tituloImportarPdf">
       <h2 id="tituloImportarPdf">Preencher cadastro pelo PDF da ocorrência</h2>
       <p>O documento é processado temporariamente no seu navegador e não é enviado nem armazenado pelo sistema.</p>
-      <p>Os dados encontrados serão preenchidos como rascunho. Para o endereço, o sistema prepara logradouro e bairro; clique na lupa e confirme o resultado correto no mapa. <small>Leitor PDF v2.1</small></p>
+        <p>Os dados encontrados serão preenchidos como rascunho. Para o endereço, o sistema prepara logradouro e bairro; clique na lupa e confirme o resultado correto no mapa. <small>Leitor PDF v3.0</small></p>
       <div class="importador-acoes">
         <label class="botao-importar-pdf" for="arquivoOcorrenciaPdf">Selecionar PDF</label>
         <input class="arquivo-pdf" id="arquivoOcorrenciaPdf" type="file" accept="application/pdf,.pdf">
@@ -696,15 +700,19 @@
     <form class="modal-conteudo" id="formNovoBairro" method="dialog"><h3>Cadastrar novo bairro</h3><p>Cadastre apenas se o bairro ainda não estiver na lista.</p><div class="campo"><label for="novoBairro">Nome do bairro</label><input id="novoBairro" maxlength="100" required></div><div class="modal-acoes"><button class="botao-secundario" id="cancelarNovoBairro" type="button">Cancelar</button><button type="submit">Salvar bairro</button></div></form>
   </dialog>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="pdf-importer-core.js?v=20260831-8"></script>
   <script>
     const SUPABASE_URL = "https://jppmhhukujigxupgskdk.supabase.co";
     const SUPABASE_KEY = "sb_publishable_ZVnU35i2x9zwppQqYg7UYw_mzaT43aG";
     const banco = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const PDF_CORE = window.PdfImporterCore;
 
     let catalogos = {tipos:[],subtipos:[],bairros:[],locais:[],comandantes:[]};
     let googleAddressElement = null;
     let geocodificadorGoogle = null;
     let temporizadorNumeroEndereco = null;
+    let buscarSugestoesGoogleAtivo = null;
+    let escolherSugestaoGoogleAtiva = null;
     const ALIASES_LOCAIS_ENTREGA = {
       "1DP":"1º DP", "2DP":"2º DP", "3DP":"3º DP", "4DP":"4º DP", "5DP":"5º DP",
       "2BPM":"2º BPM", "PCI":"PC I", "PCII":"PC II", "NCPA":"NPCA",
@@ -734,9 +742,11 @@
         banco.rpc("obter_catalogos_cadastro"),
         banco.rpc("obter_comandantes_publicos")
       ]);
-      if (resposta.error) { console.error(resposta.error); return; }
-      catalogos = resposta.data || catalogos;
-      catalogos.comandantes = respostaComandantes.error ? [] : (respostaComandantes.data || []);
+      const comandantesCarregados = respostaComandantes.error ? catalogos.comandantes : (respostaComandantes.data || []);
+      if (resposta.error) console.error(resposta.error);
+      else catalogos = resposta.data || catalogos;
+      catalogos.comandantes = comandantesCarregados;
+      if (respostaComandantes.error) console.error(respostaComandantes.error);
       catalogos.locais = [...new Set((catalogos.locais || []).map(padronizarLocalEntrega).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"pt-BR"));
       preencherLista("listaOcorrencias", catalogos.tipos.map(t => t.nome));
       preencherLista("listaBairros", catalogos.bairros);
@@ -988,6 +998,8 @@
           await selecionarEnderecoGoogle({placePrediction:predicao});
           caixaSugestoes.hidden = true;
         }
+        buscarSugestoesGoogleAtivo = buscarSugestoesGoogle;
+        escolherSugestaoGoogleAtiva = escolherSugestaoGoogle;
         campoGoogle.addEventListener("input", () => {
           clearTimeout(temporizadorSugestoes);
           const termo = campoGoogle.value.trim();
@@ -1064,6 +1076,28 @@
     function escaparHtml(valor) {
       return String(valor || "").replace(/[&<>"']/g, caractere => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[caractere]));
     }
+    function limparIndicadoresPdf() {
+      document.querySelectorAll(".indicador-pdf").forEach(item => item.remove());
+      document.querySelectorAll(".origem-pdf").forEach(item => item.classList.remove("origem-pdf"));
+    }
+    function marcarCampoPdf(id, provavel = false, texto) {
+      const campo = document.getElementById(id);
+      if (!campo || !String(campo.value || "").trim()) return;
+      const recipiente = campo.closest(".campo") || campo.parentElement;
+      if (!recipiente || recipiente.querySelector(":scope > .indicador-pdf")) return;
+      const indicador = document.createElement("span");
+      indicador.className = "indicador-pdf" + (provavel ? " provavel" : "");
+      indicador.textContent = texto || (provavel ? "✓ Associação provável — conferir" : "✓ Identificado no PDF");
+      recipiente.appendChild(indicador);
+    }
+    function marcarItemPdf(elemento, provavel = false) {
+      if (!elemento) return;
+      elemento.classList.add("origem-pdf");
+      const indicador = document.createElement("span");
+      indicador.className = "indicador-pdf" + (provavel ? " provavel" : "");
+      indicador.textContent = provavel ? "✓ Interpretado do PDF — conferir" : "✓ Identificado no PDF";
+      elemento.prepend(indicador);
+    }
     function dataIso(valor) {
       const partes = String(valor || "").split("/");
       return partes.length === 3 ? `${partes[2]}-${partes[1]}-${partes[0]}` : "";
@@ -1079,7 +1113,7 @@
       if (s.startsWith("MASC")) return "M";
       return s ? "Outro" : "";
     }
-    function resumirRelatoPdf(relato) {
+    function resumirRelatoPdf(relato, pessoas, itensOperacionais) {
       const limpo = String(relato || "")
         .replace(/(?:Era o que tinha|Era o que havia|Diante dos fatos, era o que havia) a relatar\.?/gi, "")
         .replace(/\s+/g, " ")
@@ -1092,6 +1126,13 @@
         const conducao = quantidade === "DOIS INDIVÍDUOS" ? "AMBOS FORAM" : "FORAM";
         return `RESUMO: ${contexto}${quantidade}${suspeita} FORAM ABORDADOS E IDENTIFICADOS COMO REEDUCANDOS EM DESCUMPRIMENTO DE MEDIDAS CAUTELARES. APÓS CONSULTA À DICAP, ${conducao} CONDUZIDOS À UNIDADE PARA AS PROVIDÊNCIAS CABÍVEIS.`;
       }
+      const veiculosRecuperados = (itensOperacionais && itensOperacionais.recuperados || []).filter(item=>["CARRO","MOTOCICLETA","MOTONETA","CAMINHONETE","CAMINHÃO","ÔNIBUS/MICRO-ÔNIBUS"].includes(item.tipo));
+      if ((comparavel.includes("FURTO") || comparavel.includes("ROUBO") || comparavel.includes("SUBTRAI")) && veiculosRecuperados.length) {
+        const quantidade = veiculosRecuperados.length >= 2 ? `${veiculosRecuperados.length} VEÍCULOS` : "UM VEÍCULO";
+        let resumo = `DURANTE O ATENDIMENTO, A GUARNIÇÃO LOCALIZOU E RECUPEROU ${quantidade} COM REGISTRO DE ROUBO/FURTO.`;
+        if (comparavel.includes("CONDUZID") || comparavel.includes("APRESENTAD")) resumo += " OS ENVOLVIDOS FORAM CONDUZIDOS À UNIDADE POLICIAL PARA AS PROVIDÊNCIAS CABÍVEIS.";
+        return "RESUMO: " + resumo;
+      }
       if ((comparavel.includes("FURTO") || comparavel.includes("ROUBO") || comparavel.includes("SUBTRAIRAM")) && comparavel.includes("MOTOCICLETA")) {
         const modelo = (limpo.match(/motocicleta\s+([A-Z0-9ÁÉÍÓÚÂÊÔÃÕÇ/ -]{4,50}?)(?=,\s*(?:de\s+cor|cor|ano|placa)|\.)/i) || [,"MOTOCICLETA"])[1].trim().toUpperCase();
         const partes = [];
@@ -1102,6 +1143,8 @@
         if ((comparavel.includes("LOCALIZADOR") || comparavel.includes("RASTREADOR")) && (comparavel.includes("NAO ENCONTRARAM") || comparavel.includes("NADA FOI CONSTATADO") || comparavel.includes("NAO FOI LOCALIZ"))) resumo += " O VEÍCULO POSSUÍA RASTREADOR, PORÉM NÃO FOI LOCALIZADO APÓS BUSCAS NA ÁREA INDICADA.";
         return "RESUMO: " + resumo.toUpperCase();
       }
+      const resumoEstruturado = PDF_CORE && PDF_CORE.resumirHistorico ? PDF_CORE.resumirHistorico(limpo, pessoas || {}) : "";
+      if (resumoEstruturado) return "RESUMO: " + resumoEstruturado;
       const nucleo = limpo.replace(/^[\s\S]{0,500}?(?:relatar os seguintes fatos|relatou que|informou que)\s*:\s*/i,"");
       const frases = (nucleo.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [nucleo]).filter(frase => !/USO DE ALGEMAS|ESTADO F[ÍI]SICO|INTEGRIDADE F[ÍI]SICA|FERIMENTO|ERA O QUE|IMPRESSO POR|C[ÓO]DIGO VERIFICADOR/i.test(frase));
       const termosImportantes = ["AUTOR","INFRATOR","INVADI","SUBTRAI","AMEAC","AGRESS","LESAO","DANIFIC","PATRIMON","EVADIU","APREEND","ARMA","DROGA","CONDUZ","PRISAO","LOCALIZ","RECUPER","PROVIDENCIA","ORIENTOU","MEDIDA PROTETIVA","DESCUMPRIMENTO","CAUTELAR","ABORD","DICAP","REEDUCANDO","PATRULHAMENTO"];
@@ -1216,7 +1259,9 @@
         const bloco = resultado[3];
         const nacionalidade = bloco.match(/Nacionalidade:\s*([^\n]*?)\s+Sexo:/i);
         const sexo = bloco.match(/Sexo:\s*([^\n]*?)(?:\s+Nasc:|\s+Idade|\n)/i);
-        const idade = bloco.match(/Idade\s*:?[ ]*(\d{1,3})/i);
+        const idadeComNascimento = bloco.match(/Idade\s*:?\s*(\d{1,3})(?=\d{2}\/\d{2}\/\d{4}\s*Nasc)/i);
+        const idadeIsolada = bloco.match(/Idade\s*:?\s*(\d{1,3})(?=\s|$)/i);
+        const idade = idadeComNascimento || idadeIsolada;
         const papel = textoComparavel(resultado[2]);
         const pessoa = {
           nome:resultado[1].trim(),
@@ -1226,7 +1271,7 @@
           policialMilitar:/Profiss[ãa]o:\s*Policial Militar/i.test(bloco)
         };
         if (papel.includes("VITIMA")) pessoas.vitimas.push(pessoa);
-        else if (papel.includes("AUTOR") || papel.includes("INFRATOR")) pessoas.infratores.push(pessoa);
+        else if (papel.includes("AUTOR") || papel.includes("INFRATOR") || papel.includes("SUSPEITO")) pessoas.infratores.push(pessoa);
         else pessoas.envolvidos.push(pessoa);
       }
       return pessoas;
@@ -1237,8 +1282,13 @@
       return achado ? Math.max(1, Number(achado[1])) : 1;
     }
     function extrairItensOperacionaisPdf(valor) {
+      if (PDF_CORE && PDF_CORE.extrairItensOperacionais) return PDF_CORE.extrairItensOperacionais(valor);
       const dados = {armas:[],municoes:[],entorpecentes:[],recuperados:[],subtraidos:[],armasBrancas:[],balanca:false};
-      String(valor || "").split(/(?=\bGrupo\s+)/i).forEach(bloco => {
+      const textoObjetos = String(valor || "");
+      const indiceDescricao = textoObjetos.search(/\bDescri[çc][ãa]o\s+/i);
+      const indiceGrupo = textoObjetos.search(/\bGrupo\s+/i);
+      const descricaoAntesDoGrupo = indiceDescricao >= 0 && (indiceGrupo < 0 || indiceDescricao < indiceGrupo);
+      if (!descricaoAntesDoGrupo) textoObjetos.split(/(?=\bGrupo\s+)/i).forEach(bloco => {
         if (!/^Grupo\s+/i.test(bloco)) return;
         const grupo = (bloco.match(/^Grupo\s+(.+?)\s+Subgrupo\s+/i) || [,"OUTRO"])[1].trim();
         const subgrupo = (bloco.match(/\bSubgrupo\s+(.+?)(?=\s+Identificador\s+[ÚU]nico\b|\s+Descri[çc][ãa]o\b|\s+Situa[çc][ãa]o\b)/i) || [,""])[1].trim();
@@ -1304,6 +1354,90 @@
         else if (chave.includes("VEICULO")) tipo="CARRO";
         dados.recuperados.push({tipo,quantidade:quantidadeObjetoPdf(descricao,tipo === "OUTRO" ? ".+" : textoComparavel(tipo).replace(/ /g,"\\s+")),detalhes:descricao});
       });
+      const chaveItem = item => textoComparavel(JSON.stringify(item));
+      const adicionarUnico = (lista,item) => {
+        const chave = chaveItem(item);
+        if (!lista.some(existente=>chaveItem(existente)===chave)) lista.push(item);
+      };
+      const registrosDescricao = descricaoAntesDoGrupo ? textoObjetos.split(/(?=\bDescri[çc][ãa]o\s+)/i).slice(1) : [];
+      registrosDescricao.forEach(registro => {
+        const descricao = ((registro.match(/^Descri[çc][ãa]o\s+([\s\S]*?)(?=\s+Situa[çc][ãa]o\b|\s+Quantidade\b|\s+Valor Total\b|\s+Marca\b|$)/i)||[])[1]||"").replace(/\s+/g," ").trim();
+        const quantidadeCampo = Number((((registro.match(/\bQuantidade\s+(\d+(?:[.,]\d+)?)/i)||[])[1])||"1").replace(",","."))||1;
+        const classificacao = registro.match(/(?:^|\s)(Droga|Arma\s+Branca|Arma\s+de\s+Fogo|Muni[çc][ãa]o|Celulares?|Ve[íi]culo|Outros\s+Meios\s+de\s+Transporte|Ferramentas\s+e\s+Acess[óo]rios|Moeda\s+Nacional|Outros)\s*Grupo\s*([\s\S]*?)Subgrupo/i);
+        const grupo = classificacao ? classificacao[1].replace(/\s+/g," ").trim() : "";
+        const subgrupo = classificacao ? classificacao[2].replace(/\s+/g," ").trim() : "";
+        const chave = textoComparavel([grupo,subgrupo,descricao].join(" "));
+        const situacao = textoComparavel(((registro.match(/\bSitua[çc][ãa]o\s+([\s\S]*?)(?=\s+(?:Droga|Arma\s+Branca|Arma\s+de\s+Fogo|Muni[çc][ãa]o|Celulares?|Ve[íi]culo|Outros\s+Meios\s+de\s+Transporte|Ferramentas\s+e\s+Acess[óo]rios|Moeda\s+Nacional|Outros)\s*Grupo|$)/i)||[])[1])||"");
+        const calibre = ((registro.match(/(?:CALIBRE|CAL\.?)\s*:?\s*(\.?\d{1,3}(?:\s*MM)?|12|20|28|32|36)/i)||[])[1])||null;
+        if (/SIMULACRO|REPLICA/.test(chave)) {
+          const item={categoria:"SIMULACRO",quantidade:quantidadeObjetoPdf(descricao,"SIMULACROS?|ARMAS?"),tipo:null,calibre:null,detalhes:descricao||"SIMULACRO"};
+          adicionarUnico(dados.armas,item);
+          return;
+        }
+        if (/ARMA DE FOGO|PISTOLA|REVOLVER|ESPINGARDA|FUZIL|CARABINA|SUBMETRALHADORA|GARRUCHA/.test(chave)) {
+          const tipo=TIPOS_ARMA_FOGO.filter(t=>t!=="OUTRO").find(t=>chave.includes(textoComparavel(t)))||"OUTRO";
+          const item={categoria:"ARMA DE FOGO",quantidade:quantidadeObjetoPdf(descricao,"PISTOLAS?|REVOLVERES?|ESPINGARDAS?|FUZIS?|CARABINAS?|SUBMETRALHADORAS?|GARRUCHAS?|ARMAS?"),tipo,calibre,detalhes:descricao};
+          adicionarUnico(dados.armas,item);
+          return;
+        }
+        if (/MUNICAO|CARTUCHO/.test(chave)) {
+          const item={quantidade:quantidadeObjetoPdf(descricao,"MUNICOES?|CARTUCHOS?"),calibre,detalhes:descricao};
+          adicionarUnico(dados.municoes,item);
+          return;
+        }
+        if (/ARMA BRANCA|\bFACA\b|\bCANIVETE\b|\bFACAO\b/.test(chave)) {
+          const item={quantidade:quantidadeObjetoPdf(descricao,"FACAS?|CANIVETES?|FACOES?"),descricao};
+          adicionarUnico(dados.armasBrancas,item);
+          return;
+        }
+        const subgrupoDroga = textoComparavel(subgrupo);
+        const tipoDroga = subgrupoDroga.includes("PASTA BASE") ? "PASTA BASE"
+          : subgrupoDroga.includes("CRACK") ? "CRACK"
+          : subgrupoDroga.includes("COCAINA") ? "COCAÍNA"
+          : subgrupoDroga.includes("MACONHA") ? "MACONHA"
+          : subgrupoDroga.includes("SKANK") ? "SKANK"
+          : TIPOS_ENTORPECENTES.filter(t=>t!=="OUTRO").find(t=>chave.includes(textoComparavel(t)));
+        if (tipoDroga||/ENTORPECENTE|DROGA|SUBSTANCIA.*(?:COCAINA|MACONHA|CRACK)/.test(chave)) {
+          const achado=(descricao+" "+registro.slice(0,500)).match(/\b(\d+)\s*(?:\([^)]*\)\s*)?(INV[ÓO]LUCROS?|POR[ÇC][ÕO]ES?|TABLETES?|TIJOLOS?|PAPELOTES?|PINOS?|COMPRIMIDOS?|SACOLAS?|UNIDADES?|PEDRAS?)\b/i);
+          if (!achado) return;
+          const formaChave=textoComparavel(achado[2]);
+          const forma=formaChave.includes("INVOLUCRO")?"INVÓLUCRO":formaChave.includes("PORCAO")?"PORÇÃO":formaChave.includes("TABLETE")?"TABLETE":formaChave.includes("TIJOLO")?"TIJOLO":formaChave.includes("PAPELOTE")?"PAPELOTE":formaChave.includes("PINO")?"PINO":formaChave.includes("COMPRIMIDO")?"COMPRIMIDO":formaChave.includes("SACOLA")?"SACOLA":"UNIDADE";
+          const item={tipo:tipoDroga||"OUTRO",quantidade:Number(achado[1]),forma_apresentacao:forma,detalhes:descricao};
+          adicionarUnico(dados.entorpecentes,item);
+          return;
+        }
+        if (/BALANCA.*PRECISAO/.test(chave)) dados.balanca=true;
+        if (!/RECUPERAD|APREENDID|ENCONTRAD/.test(situacao)) return;
+        let tipo="OUTRO";
+        if (chave.includes("BICICLETA ELETRICA")) tipo="BICICLETA ELÉTRICA";
+        else if (chave.includes("BICICLETA MOTORIZADA")) tipo="BICICLETA MOTORIZADA";
+        else if (chave.includes("MOTOCICLETA")) tipo="MOTOCICLETA";
+        else if (chave.includes("MOTONETA")) tipo="MOTONETA";
+        else if (chave.includes("BICICLETA")) tipo="BICICLETA";
+        else if (chave.includes("CELULAR")) tipo="CELULAR";
+        else if (chave.includes("TABLET")) tipo="TABLET";
+        else if (chave.includes("NOTEBOOK")) tipo="NOTEBOOK";
+        else if (chave.includes("BALANCA")&&chave.includes("PRECISAO")) tipo="BALANÇA DE PRECISÃO";
+        const item={tipo,quantidade:quantidadeCampo,detalhes:descricao || subgrupo};
+        adicionarUnico(dados.recuperados,item);
+      });
+      const regexVeiculo=/Placa\s+([A-Z0-9-]+)([\s\S]{0,700}?)Marca\/Modelo\s+(.+?)(?=\s+Ve[íi]culo Adulterado|\s+Situa[çc][ãa]o)([\s\S]{0,220}?)Situa[çc][ãa]o\s+(.+?)(?=\s+(?:Ve[íi]culoGrupo|Nome Envolvido|RR\d{6,}|Descri[çc][ãa]o|$))/gi;
+      let veiculo;
+      while ((veiculo=regexVeiculo.exec(String(valor||"")))) {
+        const placa=veiculo[1],antes=veiculo[2],marcaModelo=veiculo[3].replace(/\s+/g," ").trim(),situacao=textoComparavel(veiculo[5]);
+        const cor=((antes.match(/\bCor\s+(.+?)(?=\s+UF Ve[íi]culo|\s+Munic[íi]pio Ve[íi]culo|$)/i)||[])[1]||"").replace(/\s+/g," ").trim();
+        const ano=((antes.match(/Ano\/Modelo Fabrica[çc][ãa]o\s+(\d{4}\/\d{4})/i)||[])[1])||"";
+        const chassi=((antes.match(/N[úu]mero do Chassi\s+([A-Z0-9-]+)/i)||[])[1])||"";
+        const categoria=/MOTO|BIZ|CG\b|MOTONETA/.test(textoComparavel(marcaModelo))?"MOTOCICLETA":"AUTOMÓVEL";
+        if (/FURTAD|ROUBAD/.test(situacao)) {
+          const item={tipoSubtracao:situacao.includes("ROUBAD")?"ROUBO":"FURTO",categoria,quantidade:1,descricao:marcaModelo,marcaModelo,cor,placa,imei:"",identificador:chassi,situacao:/RECUPERAD|APREENDID|ENCONTRAD/.test(situacao)?"RECUPERADO":"SUBTRAÍDO"};
+          adicionarUnico(dados.subtraidos,item);
+        }
+        if (/RECUPERAD|APREENDID|ENCONTRAD/.test(situacao)) {
+          const item={tipo:categoria==="MOTOCICLETA"?"MOTOCICLETA":"CARRO",quantidade:1,detalhes:[marcaModelo,cor&&"COR "+cor,placa&&"PLACA "+placa,ano&&"ANO/MODELO "+ano].filter(Boolean).join(", ")};
+          adicionarUnico(dados.recuperados,item);
+        }
+      }
       return dados;
     }
     function extrairBemSubtraidoDoRelato(relato, natureza) {
@@ -1343,12 +1477,8 @@
         const bemDoRelato = extrairBemSubtraidoDoRelato(historico ? historico[1] : "", natureza ? natureza[1] : "");
         if (bemDoRelato) itensOperacionais.subtraidos.push(bemDoRelato);
       }
-      let relato = historico ? limparRelatoPdfBruto(historico[1]) : "";
-      relato = ocultarNomesEmMaiusculas(relato);
-      pessoas.vitimas.forEach(p => { if (p.nome) relato = relato.replace(new RegExp(p.nome.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"gi"),"A VÍTIMA"); });
-      pessoas.infratores.forEach(p => { if (p.nome) relato = relato.replace(new RegExp(p.nome.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"gi"),"O INFRATOR"); });
-      pessoas.envolvidos.forEach(p => { if (p.nome) relato = relato.replace(new RegExp(p.nome.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"gi"),"O ENVOLVIDO"); });
-      relato = resumirRelatoPdf(relato);
+      const relatoFonte = historico ? limparRelatoPdfBruto(historico[1]) : "";
+      const relato = resumirRelatoPdf(relatoFonte, pessoas, itensOperacionais);
       if (pessoas.vitimas.length || pessoas.infratores.length) pessoas.envolvidos = [];
       else pessoas.envolvidos = pessoas.envolvidos.filter(pessoa => !pessoa.policialMilitar);
       return {
@@ -1356,37 +1486,78 @@
         data: inicio ? dataIso(inicio[1]) : "",
         horaInicial: inicio ? inicio[2] : "",
         horaFinal: fim ? fim[1] : "",
+        municipio: local ? local[1].replace(/\s*\([^)]*\)\s*$/," ").trim() : "",
         vtr: vtr ? vtr[1] : "",
-        comandante: comandante ? comandante[1].trim() : "",
+        comandanteExtraido: comandante ? comandante[1].trim() : "",
+        comandante:{valor:null,sugestao:null,score:0,origem:null,automatico:false,ambiguo:false},
+        localEntrega:{valor:null,sugestao:null,score:0,origem:null,automatico:false,ambiguo:false},
         natureza: natureza ? natureza[1].replace(/N[ãa]o Houve/gi," ").replace(/\s+/g," ").trim() : "",
         historico: relato,
+        historicoFonte: relatoFonte,
         materialidade: objetos ? resumirMaterialidadePdf(objetos[1]) : "",
         enderecoReferencia: local ? `${local[3].trim()}${local[4] ? ", nº " + local[4].trim() : ""} - ${local[2].trim()}` : "",
         logradouroPdf: local ? local[3].trim() : "",
         numeroPdf: local && local[4] ? local[4].trim() : "",
         bairroPdf: local ? local[2].trim() : "",
+        quantidadeLocais: (texto.match(/Local do Fato/g) || []).length,
         pessoas,
         itensOperacionais,
         indicadores:{
           disparo:/DISPARO(?:S)?\s+DE\s+ARMA|EFETUOU\s+DISPARO/i.test(texto),
           autoResistencia:/AUTO\s+DE\s+RESIST[ÊE]NCIA|RESIST[ÊE]NCIA\s+[ÀA]\s+PRIS[ÃA]O/i.test(texto),
-          foragidos:(texto.match(/(\d+)\s+FORAGID[OA]S?\s+(?:CAPTURAD|LOCALIZAD)/i)||[])[1] || ""
+          foragidos:(texto.match(/(\d+)\s+FORAGID[OA]S?\s+(?:CAPTURAD|LOCALIZAD)/i)||[])[1] || "",
+          conducoes:/\b(?:CONDUZID[OA]S?|APRESENTAD[OA]S?)\b/i.test(relatoFonte),
+          orientacoes:/\bORIENTA(?:DO|DA|DOS|DAS|ÇÃO|COES|ÇÕES)\b/i.test(relatoFonte)
         }
       };
     }
     async function preencherEnderecoPdfAutomatico(dados) {
       const logradouro = String(dados.logradouroPdf || "").replace(/\s+N[º°:]?\s*\d+.*$/i,"").trim();
       const bairro = String(dados.bairroPdf || "").replace(/\s+CEP\s*:?.*$/i,"").trim();
-      document.getElementById("enderecoAproximado").value = [logradouro,bairro].filter(Boolean).join(", ");
+      const pesquisa = [logradouro,bairro,"Boa Vista RR"].filter(Boolean).join(", ");
+      document.getElementById("enderecoAproximado").value = pesquisa;
       document.getElementById("enderecoGoogle").value = "";
       document.getElementById("endereco").value = "";
       document.getElementById("enderecoFormatado").value = "";
       document.getElementById("latitude").value = "";
       document.getElementById("longitude").value = "";
-      document.getElementById("bairro").value = "";
-      document.getElementById("numeroEndereco").value = "";
-      document.getElementById("statusEndereco").textContent = logradouro ? "Endereço do PDF preparado. Clique na lupa e selecione o resultado correto." : "Endereço não identificado no PDF. Pesquise manualmente.";
-      return Boolean(logradouro);
+      document.getElementById("bairro").value = bairro ? bairroPadronizado(bairro) : "";
+      document.getElementById("numeroEndereco").value = dados.numeroPdf || "";
+      if (!logradouro) {
+        document.getElementById("statusEndereco").textContent = "Endereço não identificado no PDF. Pesquise manualmente.";
+        return {preparado:false,confirmado:false,score:0};
+      }
+      if (Number(dados.quantidadeLocais) > 1) {
+        document.getElementById("statusEndereco").textContent = "O PDF possui mais de um local. A pesquisa foi preparada, mas confirme manualmente o endereço correto.";
+        return {preparado:true,confirmado:false,score:0.55};
+      }
+      for (let tentativa=0; tentativa<8 && !buscarSugestoesGoogleAtivo; tentativa++) await new Promise(resolve=>setTimeout(resolve,250));
+      if (!buscarSugestoesGoogleAtivo || !escolherSugestaoGoogleAtiva) {
+        document.getElementById("statusEndereco").textContent = "Endereço do PDF preparado. Clique na lupa e selecione o resultado correto.";
+        return {preparado:true,confirmado:false,score:0.6};
+      }
+      try {
+        const sugestoes = await buscarSugestoesGoogleAtivo(pesquisa);
+        const primeira = sugestoes[0];
+        const textoSugestao = primeira && primeira.placePrediction && primeira.placePrediction.text ? primeira.placePrediction.text.toString() : "";
+        const termosRua = textoComparavel(logradouro).split(" ").filter(t=>t.length>2&&!/^(RUA|AV|AVENIDA|TRAVESSA|ALAMEDA|RODOVIA)$/.test(t));
+        const alvo = textoComparavel(textoSugestao);
+        const cobertura = termosRua.length ? termosRua.filter(t=>alvo.includes(t)).length / termosRua.length : 0;
+        const emBoaVista = alvo.includes("BOA VISTA") && (alvo.includes("RR") || alvo.includes("RORAIMA"));
+        const bairroCompativel = !bairro || alvo.includes(textoComparavel(bairro)) || cobertura === 1;
+        const score = (emBoaVista ? 0.35 : 0) + cobertura * 0.5 + (bairroCompativel ? 0.15 : 0);
+        if (!primeira || score < 0.85) throw new Error("ENDERECO_AMBIGUO");
+        await escolherSugestaoGoogleAtiva(primeira);
+        document.getElementById("enderecoAproximado").value = textoSugestao || pesquisa;
+        document.getElementById("numeroEndereco").value = dados.numeroPdf || "";
+        if (dados.numeroPdf) await atualizarCoordenadasPeloNumero();
+        document.getElementById("statusEndereco").textContent = "Endereço associado automaticamente ao Google Maps. Confira o logradouro, o bairro e o número.";
+        return {preparado:true,confirmado:true,score:Number(score.toFixed(2))};
+      } catch (erro) {
+        if (erro && erro.message !== "ENDERECO_AMBIGUO") console.error("Falha ao associar o endereço do PDF.",erro);
+        document.getElementById("statusEndereco").textContent = "Endereço do PDF preparado. Clique na lupa e confirme o resultado correto.";
+        return {preparado:true,confirmado:false,score:0.65};
+      }
     }
     async function lerTextoPdfLocal(arquivo) {
       const pdfjsLib = await import(PDFJS_URL);
@@ -1414,6 +1585,7 @@
     }
     async function preencherRascunhoPdf(dados) {
       if (!catalogos.tipos.length) await carregarCatalogos();
+      limparIndicadoresPdf();
       document.getElementById("tipoRegistro").value = "BO";
       document.getElementById("numeroBo").value = dados.numeroBo;
       document.getElementById("data").value = dados.data;
@@ -1421,7 +1593,7 @@
       document.getElementById("horaFinal").value = dados.horaFinal;
       document.getElementById("vtr").value = dados.vtr;
       document.getElementById("statusAtendimento").value = "ATENDIDA";
-      document.getElementById("municipio").value = "BOA VISTA";
+      document.getElementById("municipio").value = normalizarCatalogo(dados.municipio || "BOA VISTA");
       const tipo = melhorItemCatalogo(catalogos.tipos, dados.natureza, true);
       document.getElementById("ocorrencia").value = tipo ? tipo.nome : "";
       atualizarSubtipos();
@@ -1430,9 +1602,9 @@
         const subtipo = melhorItemCatalogo(subtipos, dados.natureza);
         document.getElementById("crime").value = subtipo ? subtipo.nome : "";
       }
-      const comandanteNormalizado = normalizarComandante(dados.comandante);
-      const comandante = catalogos.comandantes.find(c => comandanteNormalizado.includes(normalizarComandante(c)) || normalizarComandante(c).includes(comandanteNormalizado));
+      const comandante = dados.comandante && (dados.comandante.valor || dados.comandante.sugestao);
       document.getElementById("comandante").value = comandante || "";
+      document.getElementById("localEntrega").value = dados.localEntrega && (dados.localEntrega.valor || dados.localEntrega.sugestao) || "";
       document.getElementById("mo").value = dados.historico;
       document.getElementById("materialidade").value = dados.materialidade;
       preencherPessoaPrincipal("vitima", dados.pessoas.vitimas[0]);
@@ -1443,7 +1615,6 @@
       dados.pessoas.infratores.slice(1).forEach(p => adicionarPessoa("infrator",p));
       document.getElementById("envolvidosAdicionais").replaceChildren();
       dados.pessoas.envolvidos.forEach(p => adicionarPessoa("envolvido",p));
-      if (!dados.pessoas.envolvidos.length) adicionarPessoa("envolvido");
       document.getElementById("armasItens").replaceChildren();
       document.getElementById("municoesItens").replaceChildren();
       document.getElementById("entorpecentesItens").replaceChildren();
@@ -1454,6 +1625,9 @@
       dados.itensOperacionais.entorpecentes.forEach(adicionarEntorpecenteItem);
       dados.itensOperacionais.recuperados.forEach(adicionarItemRecuperado);
       dados.itensOperacionais.subtraidos.forEach(adicionarBemSubtraido);
+      ["armasItens","municoesItens","entorpecentesItens","itensRecuperados","bensSubtraidos"].forEach(id => {
+        document.querySelectorAll("#"+id+" .item-estruturado").forEach(item => marcarItemPdf(item));
+      });
       atualizarListaVazia(document.getElementById("armasItens"),"Nenhuma arma ou simulacro informado.");
       atualizarListaVazia(document.getElementById("municoesItens"),"Nenhuma munição informada.");
       atualizarListaVazia(document.getElementById("entorpecentesItens"),"Nenhum entorpecente informado.");
@@ -1465,10 +1639,18 @@
       document.getElementById("disparo").value = dados.indicadores.disparo ? "SIM" : "";
       document.getElementById("autoResistencia").value = dados.indicadores.autoResistencia ? "SIM" : "";
       document.getElementById("foragidos").value = dados.indicadores.foragidos;
-      const relato = textoComparavel(dados.historico);
-      definirResultadoImportado("resultadoConducao","numeroConduzidos", relato.includes("CONDUZ") && dados.pessoas.infratores.length ? dados.pessoas.infratores.length : 0);
-      definirResultadoImportado("resultadoOrientacao","orientacoes", relato.includes("ORIENTOU") || relato.includes("ORIENTADA") ? 1 : 0);
+      const pessoasConduzidas = dados.pessoas.infratores.length || dados.pessoas.envolvidos.length;
+      definirResultadoImportado("resultadoConducao","numeroConduzidos", dados.indicadores.conducoes && pessoasConduzidas ? pessoasConduzidas : 0);
+      definirResultadoImportado("resultadoOrientacao","orientacoes", dados.indicadores.orientacoes ? 1 : 0);
+      const tiposVeiculo = new Set(["CARRO","MOTOCICLETA","MOTONETA","CAMINHONETE","CAMINHÃO","ÔNIBUS/MICRO-ÔNIBUS","BICICLETA","BICICLETA ELÉTRICA","BICICLETA MOTORIZADA","VEÍCULO ELÉTRICO"]);
+      const totalVeiculos = dados.itensOperacionais.recuperados.filter(item => tiposVeiculo.has(item.tipo)).reduce((total,item)=>total+(Number(item.quantidade)||0),0);
+      definirResultadoImportado("resultadoVeiculo","veiculosRecuperados",totalVeiculos);
       const enderecoPreparado = await preencherEnderecoPdfAutomatico(dados);
+      ["tipoRegistro","numeroBo","data","horaInicial","horaFinal","vtr","municipio","ocorrencia","crime","mo","materialidade","localEntrega","quantArmaBranca","armaBranca","balanca","disparo","autoResistencia","foragidos","numeroConduzidos","orientacoes","veiculosRecuperados"].forEach(id=>marcarCampoPdf(id,false));
+      marcarCampoPdf("comandante",!(dados.comandante&&dados.comandante.automatico));
+      ["nacVitima","sexoVitima","idadeVitima","nacInfrator","sexoInfrator","idadeInfrator"].forEach(id=>marcarCampoPdf(id,false));
+      if (enderecoPreparado.confirmado) ["enderecoGoogle","numeroEndereco","bairro"].forEach(id=>marcarCampoPdf(id,true,"✓ Associação ao mapa — conferir"));
+      else ["enderecoAproximado","numeroEndereco","bairro"].forEach(id=>marcarCampoPdf(id,true,"✓ Extraído do PDF — confirmar no mapa"));
       data.dispatchEvent(new Event("change"));
       horaInicial.dispatchEvent(new Event("change"));
       return enderecoPreparado;
@@ -1486,13 +1668,24 @@
         if (texto.trim().length < 150) throw new Error("Não foi possível encontrar texto suficiente. O PDF pode estar digitalizado como imagem.");
         const dados = extrairDadosOcorrenciaPdf(texto);
         if (!dados.numeroBo && !dados.data && !dados.historico) throw new Error("O documento não corresponde ao modelo de ocorrência reconhecido pelo sistema.");
+        if (!catalogos.tipos.length) await carregarCatalogos();
+        if (PDF_CORE) {
+          dados.comandante = PDF_CORE.associarComandante(texto,catalogos.comandantes);
+          dados.localEntrega = PDF_CORE.associarLocalEntrega(texto,catalogos.locais,dados.historicoFonte);
+        } else {
+          const literal = catalogos.comandantes.find(item=>normalizarComandante(item)===normalizarComandante(dados.comandanteExtraido));
+          dados.comandante = {valor:literal||null,sugestao:null,score:literal?1:0,origem:"campo explícito",automatico:Boolean(literal),ambiguo:false};
+        }
+        delete dados.historicoFonte;
         const enderecoPreparado = await preencherRascunhoPdf(dados);
         importacaoPdfPendente = true;
         const totalPessoas = dados.pessoas.vitimas.length + dados.pessoas.infratores.length + dados.pessoas.envolvidos.length;
         const totalItens = dados.itensOperacionais.armas.length + dados.itensOperacionais.municoes.length + dados.itensOperacionais.entorpecentes.length + dados.itensOperacionais.recuperados.length + dados.itensOperacionais.subtraidos.length + dados.itensOperacionais.armasBrancas.length;
-        const pendencias = [!document.getElementById("ocorrencia").value && "tipo de ocorrência", !document.getElementById("comandante").value && "comandante", "selecionar o endereço correto pela lupa"].filter(Boolean);
+        const pendencias = [!document.getElementById("ocorrencia").value && "tipo de ocorrência", !document.getElementById("comandante").value && (dados.comandante.ambiguo ? "comandante ambíguo" : "comandante"), !enderecoPreparado.confirmado && "confirmar endereço no mapa"].filter(Boolean);
+        const comandanteInfo = dados.comandante.valor || dados.comandante.sugestao ? `${dados.comandante.valor || dados.comandante.sugestao} (${Math.round(dados.comandante.score*100)}%, ${dados.comandante.origem || "associação"})` : dados.comandante.ambiguo ? "mais de um candidato semelhante; escolha manualmente" : "não identificado com segurança";
+        const localInfo = dados.localEntrega.valor || dados.localEntrega.sugestao ? `${dados.localEntrega.valor || dados.localEntrega.sugestao} (${Math.round(dados.localEntrega.score*100)}%)` : "não identificado com segurança";
         statusImportacaoPdf.className = "status-importacao sucesso";
-        statusImportacaoPdf.innerHTML = `<strong>Rascunho preenchido.</strong> ${totalPessoas} pessoa(s) e ${totalItens} item(ns) operacional(is) identificados. Confira todos os campos antes de salvar.<br><strong>Endereço informado no PDF:</strong> ${escaparHtml(dados.enderecoReferencia || "não identificado")}.<br><strong>Pesquisa preparada:</strong> ${enderecoPreparado ? "logradouro e bairro preenchidos sem o número; clique na lupa e selecione o endereço correto" : "endereço não identificado; pesquise manualmente"}.<br><strong>Pendente de conferência:</strong> ${escaparHtml(pendencias.join(", ") || "somente a revisão geral")}. O PDF já foi descartado da memória.`;
+        statusImportacaoPdf.innerHTML = `<strong>Rascunho preenchido.</strong> ${totalPessoas} pessoa(s) e ${totalItens} item(ns) operacional(is) identificados. Confira todos os campos antes de salvar.<br><strong>Comandante:</strong> ${escaparHtml(comandanteInfo)}.<br><strong>Local de entrega:</strong> ${escaparHtml(localInfo)}.<br><strong>Endereço informado no PDF:</strong> ${escaparHtml(dados.enderecoReferencia || "não identificado")}.<br><strong>Mapa:</strong> ${enderecoPreparado.confirmado ? "associação automática realizada; confira o resultado e o número" : enderecoPreparado.preparado ? "pesquisa preparada; clique na lupa e selecione o endereço correto" : "endereço não identificado; pesquise manualmente"}.<br><strong>Pendente de conferência:</strong> ${escaparHtml(pendencias.join(", ") || "somente a revisão geral")}. O PDF já foi descartado da memória.`;
         formulario.scrollIntoView({behavior:"smooth",block:"start"});
       } catch (erro) {
         console.error(erro);
