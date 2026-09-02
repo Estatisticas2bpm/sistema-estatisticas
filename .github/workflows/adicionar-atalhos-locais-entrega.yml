@@ -1,0 +1,49 @@
+name: Adicionar atalhos de locais de entrega
+
+on:
+  push:
+    paths:
+      - '.github/workflows/adicionar-atalhos-locais-entrega.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Adicionar novos atalhos
+        shell: python
+        run: |
+          from pathlib import Path
+
+          p = Path('cadastro.html')
+          s = p.read_text(encoding='utf-8')
+
+          antigo = '<button type="button" data-local-rapido="PC II" style="background:#eef5ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:8px 12px;font-size:13px;font-weight:800">PC II</button><button type="button" data-local-rapido="4 DP" style="background:#eef5ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:8px 12px;font-size:13px;font-weight:800">4º DP</button><button type="button" data-local-rapido="PC I" style="background:#eef5ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:8px 12px;font-size:13px;font-weight:800">PC I</button>'
+
+          novo = antigo + '<button type="button" data-local-rapido="DEAM" style="background:#eef5ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:8px 12px;font-size:13px;font-weight:800">DEAM</button><button type="button" data-local-rapido="5 DP" style="background:#eef5ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:8px 12px;font-size:13px;font-weight:800">5º DP</button><button type="button" data-local-rapido="DGH" style="background:#eef5ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:8px 12px;font-size:13px;font-weight:800">DGH</button>'
+
+          if antigo not in s:
+            raise SystemExit('Bloco atual de atalhos não encontrado')
+
+          s = s.replace(antigo, novo, 1)
+          p.write_text(s, encoding='utf-8')
+
+      - name: Validar
+        run: |
+          grep -q 'data-local-rapido="DEAM"' cadastro.html
+          grep -q 'data-local-rapido="5 DP"' cadastro.html
+          grep -q 'data-local-rapido="DGH"' cadastro.html
+
+      - name: Publicar
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cadastro.html
+          git commit -m "Adiciona atalhos DEAM 5 DP e DGH no cadastro"
+          git push
