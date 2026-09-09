@@ -20,6 +20,7 @@
     input { width:100%; padding:11px 12px; border:1px solid var(--borda); border-radius:8px; font:inherit; }
     button { min-height:43px; padding:10px 18px; border:0; border-radius:8px; background:var(--azul); color:white; font-size:15px; cursor:pointer; }
     .status { margin:18px 0 10px; color:var(--suave); }
+    .filtro-dashboard{display:inline-flex;align-items:center;gap:8px;margin:0 0 12px;padding:8px 11px;border-radius:999px;background:#e8f1fb;color:#1f5a8a;font-size:12px;font-weight:800}.filtro-dashboard button{min-height:0;padding:3px 7px;border-radius:999px;background:#fff;color:#1f5a8a;border:1px solid #b8cbe0;font-size:12px}
     .tabela-wrap { overflow-x:auto; }
     table { width:100%; border-collapse:collapse; background:white; }
     th,td { padding:12px 10px; border-bottom:1px solid var(--borda); text-align:left; vertical-align:top; }
@@ -43,7 +44,7 @@
       <div><label for="dataFiltro">Data</label><input id="dataFiltro" type="date"></div>
       <button id="btnPesquisar" type="button">Pesquisar</button>
     </div>
-    <p id="status" class="status">Carregando ocorrências...</p>
+    <p id="status" class="status">Carregando ocorrências...</p><div id="filtroDashboard" class="filtro-dashboard" hidden>Lista selecionada no Dashboard <button id="limparFiltroDashboard" type="button">Limpar</button></div>
     <div class="tabela-wrap"><table><thead><tr><th>Data</th><th>Tipo</th><th>Nº BO</th><th>TCO vinculado</th><th>Ocorrência</th><th>Bairro</th><th>Ações</th></tr></thead><tbody id="resultado"></tbody></table></div>
   </section></main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -53,6 +54,9 @@
     const dataFiltro = document.getElementById("dataFiltro");
     const resultado = document.getElementById("resultado");
     const statusEl = document.getElementById("status");
+    const filtroDashboardEl = document.getElementById("filtroDashboard");
+    const parametrosIniciais = new URLSearchParams(location.search);
+    let idsDashboard = new Set((parametrosIniciais.get("ids") || "").split(",").map(x=>x.trim()).filter(Boolean));
     function escapar(valor) {
       return String(valor == null ? "" : valor).replace(/[&<>"']/g, function(c) {
         return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c];
@@ -73,17 +77,21 @@
     async function carregar() {
       statusEl.textContent = "Carregando ocorrências...";
       resultado.innerHTML = "";
-      const resposta = await banco.rpc("consultar_ocorrencias_publicas_v2", {
-        termo_busca: busca.value.trim() || null,
-        data_busca: dataFiltro.value || null
-      });
+      const usarFiltroDashboard = idsDashboard.size > 0 && !busca.value.trim() && !dataFiltro.value;
+      filtroDashboardEl.hidden = !usarFiltroDashboard;
+      const resposta = usarFiltroDashboard
+        ? await banco.rpc("consultar_ocorrencias_por_ids_publicas", { p_ids: Array.from(idsDashboard) })
+        : await banco.rpc("consultar_ocorrencias_publicas_v2", {
+            termo_busca: busca.value.trim() || null,
+            data_busca: dataFiltro.value || null
+          });
       if (resposta.error) {
         console.error(resposta.error);
         statusEl.textContent = "Não foi possível carregar as ocorrências.";
         return;
       }
       const dados = resposta.data || [];
-      statusEl.textContent = dados.length + " ocorrência(s) encontrada(s).";
+      statusEl.textContent = dados.length + " ocorrência(s) encontrada(s)." + (usarFiltroDashboard ? " Lista aberta a partir do Dashboard." : "");
       if (!dados.length) {
         resultado.innerHTML = '<tr><td colspan="7" class="vazio">Nenhum registro encontrado.</td></tr>';
         return;
@@ -124,11 +132,12 @@
       await carregar();
       statusEl.textContent = "Ocorrência "+numero+" excluída com sucesso.";
     });
-    const termoInicial = new URLSearchParams(location.search).get("q");
-    if (termoInicial) busca.value = termoInicial;
-    document.getElementById("btnPesquisar").addEventListener("click", carregar);
-    busca.addEventListener("keydown", function(e) { if (e.key === "Enter") carregar(); });
-    dataFiltro.addEventListener("change", carregar);
+    const termoInicial = parametrosIniciais.get("q");
+    if (termoInicial) { busca.value = termoInicial; idsDashboard.clear(); }
+    document.getElementById("btnPesquisar").addEventListener("click", function(){ idsDashboard.clear(); carregar(); });
+    busca.addEventListener("keydown", function(e) { if (e.key === "Enter") { idsDashboard.clear(); carregar(); } });
+    dataFiltro.addEventListener("change", function(){ idsDashboard.clear(); carregar(); });
+    document.getElementById("limparFiltroDashboard").addEventListener("click", function(){ idsDashboard.clear(); filtroDashboardEl.hidden=true; history.replaceState(null,"","consulta.html"); carregar(); });
     carregar();
   </script>
 </body>
