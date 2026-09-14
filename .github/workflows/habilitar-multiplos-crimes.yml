@@ -1,0 +1,51 @@
+name: Habilitar múltiplos crimes
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/habilitar-multiplos-crimes.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Atualizar cadastro e dashboard
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          base = Path('cadastro-base.html')
+          s = base.read_text(encoding='utf-8')
+          antigo = '          crime: document.getElementById("crime").value || null,\n'
+          novo = ('          crime: document.getElementById("crime").value || null,\n'
+                  '          crimes_itens: window.obterCrimesSelecionados ? window.obterCrimesSelecionados() : (document.getElementById("crime").value ? [{nome:document.getElementById("crime").value}] : []),\n')
+          if antigo in s and 'crimes_itens: window.obterCrimesSelecionados' not in s:
+              s = s.replace(antigo, novo, 1)
+          s = s.replace('cadastro-subtipo.js?v=20260914-1', 'cadastro-subtipo.js?v=20260914-2')
+          base.write_text(s, encoding='utf-8')
+
+          dash = Path('dashboard.html')
+          d = dash.read_text(encoding='utf-8')
+          antigo_filtro = "['subtipo',x=>x.crime]"
+          novo_filtro = "['subtipo',x=>(Array.isArray(x.crimes_itens)&&x.crimes_itens.length?x.crimes_itens.map(c=>typeof c==='string'?c:(c.nome||'')).join(' | '):x.crime)]"
+          if antigo_filtro in d:
+              d = d.replace(antigo_filtro, novo_filtro, 1)
+          dash.write_text(d, encoding='utf-8')
+          PY
+      - name: Commitar alterações
+        run: |
+          if git diff --quiet; then
+            echo 'Sem alterações.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add cadastro-base.html dashboard.html
+          git commit -m 'Habilita vários crimes no mesmo BO'
+          git push
