@@ -2069,6 +2069,7 @@
 
           ocorrencia: document.getElementById("ocorrencia").value.trim(),
           crime: document.getElementById("crime").value || null,
+          crimes_itens: window.obterCrimesSelecionados ? window.obterCrimesSelecionados() : (document.getElementById("crime").value ? [{nome:document.getElementById("crime").value}] : []),
           detalhes: document.getElementById("resultadoOutro").checked ? document.getElementById("outroResultadoDescricao").value.trim() || null : null,
           providencia_1: providenciasSelecionadas[0] || null,
           numero_conduzidos: document.getElementById("resultadoConducao").checked ? document.getElementById("numeroConduzidos").value : null,
@@ -2183,6 +2184,6 @@
     });
   </script>
   <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB-IcfbT-uuHlYSNcvmhbSqkPGqh2wl4Rc&libraries=places&v=weekly&loading=async&callback=iniciarAutocompleteGoogle"></script>
-<script src="cadastro-subtipo.js?v=20260914-1"></script>
+<script src="cadastro-subtipo.js?v=20260914-2"></script>
 </body>
 </html>
