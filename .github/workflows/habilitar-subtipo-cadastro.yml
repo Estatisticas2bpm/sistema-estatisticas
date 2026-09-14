@@ -1,0 +1,46 @@
+name: Habilitar cadastro de subtipo
+
+on:
+  push:
+    paths:
+      - '.github/workflows/habilitar-subtipo-cadastro.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Incluir módulo de subtipo no cadastro
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('cadastro-base.html')
+          s = p.read_text(encoding='utf-8')
+          tag = '<script src="cadastro-subtipo.js?v=20260914-1"></script>'
+          if tag not in s:
+              if '</body>' not in s:
+                  raise SystemExit('Fechamento </body> não encontrado em cadastro-base.html')
+              s = s.replace('</body>', tag + '\n</body>', 1)
+              p.write_text(s, encoding='utf-8')
+
+      - name: Validar inclusão
+        shell: python
+        run: |
+          from pathlib import Path
+          s = Path('cadastro-base.html').read_text(encoding='utf-8')
+          assert 'cadastro-subtipo.js?v=20260914-1' in s
+
+      - name: Publicar
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cadastro-base.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Habilita cadastro de subtipo de ocorrência"
+          git push
