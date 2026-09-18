@@ -260,7 +260,7 @@
       else if (chave.includes("TABLET")) tipo="TABLET";
       else if (chave.includes("NOTEBOOK")) tipo="NOTEBOOK";
       else if (chave.includes("BALANCA") && chave.includes("PRECISAO")) tipo="BALANÇA DE PRECISÃO";
-      adicionarUnico(dados.recuperados,{tipo,quantidade:numeroFisico(registro,"UNIDADES?"),detalhes:descricao || subgrupo});
+      adicionarUnico(dados.recuperados,{tipo,quantidade:numeroFisico(registro,"UNIDADES?"),restricao:/RECUPERAD|FURTAD|ROUBAD/.test(situacao)?"SIM":"NÃO",detalhes:descricao || subgrupo});
     });
     const placasProcessadas = new Set();
     function processarVeiculo(placaInformada, blocoInformado) {
@@ -274,7 +274,7 @@
       const situacao = normalizar(((bloco.match(/Situa[çc][ãa]o\s+([\s\S]*?)(?=\s+[ÚU]ltima Atualiza[çc][ãa]o|$)/i)||[])[1])||"");
       const categoria = /MOTO|BIZ|CG\b|MOTONETA/.test(normalizar(marcaModelo)) ? "MOTOCICLETA" : "AUTOMÓVEL";
       if (/FURTAD|ROUBAD/.test(situacao)) adicionarUnico(dados.subtraidos,{tipoSubtracao:situacao.includes("ROUBAD")?"ROUBO":"FURTO",categoria,quantidade:1,descricao:marcaModelo||categoria,marcaModelo,cor,placa,imei:"",identificador:chassi,situacao:/RECUPERAD|APREENDID|ENCONTRAD/.test(situacao)?"RECUPERADO":"SUBTRAÍDO"});
-      if (/RECUPERAD|APREENDID|ENCONTRAD/.test(situacao)) adicionarUnico(dados.recuperados,{tipo:categoria==="MOTOCICLETA"?"MOTOCICLETA":"CARRO",quantidade:1,detalhes:[marcaModelo,cor&&"COR "+cor,placa&&"PLACA "+placa,ano&&"ANO/MODELO "+ano].filter(Boolean).join(", ")});
+      if (/RECUPERAD|APREENDID|ENCONTRAD/.test(situacao)) adicionarUnico(dados.recuperados,{tipo:categoria==="MOTOCICLETA"?"MOTOCICLETA":"CARRO",quantidade:1,restricao:/RECUPERAD|FURTAD|ROUBAD/.test(situacao)?"SIM":"NÃO",detalhes:[marcaModelo,cor&&"COR "+cor,placa&&"PLACA "+placa,ano&&"ANO/MODELO "+ano].filter(Boolean).join(", ")});
       placasProcessadas.add(placa);
     }
     texto.split(/(?=\bGrupo\s+Ve[íi]culo\s+Subgrupo\s+)/i)
