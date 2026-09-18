@@ -1331,7 +1331,7 @@
           const achado = descricao.match(/\b(\d+)\s*(INV[ÓO]LUCROS?|POR[ÇC][ÕO]ES?|TABLETES?|TIJOLOS?|PAPELOTES?|PINOS?|COMPRIMIDOS?|SACOLAS?|UNIDADES?)\b/i);
           if (achado) {
             const formaChave = textoComparavel(achado[2]);
-            const forma = formaChave.includes("INVOLUCRO") ? "INVÓLUCRO" : formaChave.includes("PORCAO") ? "PORÇÃO" : formaChave.includes("TABLETE") ? "TABLETE" : formaChave.includes("TIJOLO") ? "TIJOLO" : formaChave.includes("PAPELOTE") ? "PAPELOTE" : formaChave.includes("PINO") ? "PINO" : formaChave.includes("COMPRIMIDO") ? "COMPRIMIDO" : formaChave.includes("SACOLA") ? "SACOLA" : "UNIDADE";
+            const forma = formaChave.includes("INVOLUCRO") ? "INVÓLUCRO" : formaChave.includes("PORCAO") ? "PORÇÃO" : formaChave.includes("TABLETE") ? "TABLETE" : formaChave.includes("TIJOLO") ? "TIJOLO" : formaChave.includes("PAPELOTE") ? "PAPELOTE" : formaChave.includes("PINO") ? "PINO" : formaChave.includes("COMPRIMIDO") ? "COMPRIMIDO" : formaChave.includes("SACOLA") ? "SACOLA" : "OUTROS";
             dados.entorpecentes.push({tipo:tipoDroga || "OUTRO",quantidade:Number(achado[1]),forma_apresentacao:forma,detalhes:descricao});
           }
           return;
@@ -1794,7 +1794,7 @@
     const TIPOS_ARMA_FOGO = ["PISTOLA","REVÓLVER","ESPINGARDA","FUZIL","CARABINA","SUBMETRALHADORA","GARRUCHA","ARMA ARTESANAL","OUTRO"];
     const TIPOS_ITENS_RECUPERADOS = ["CARRO","MOTOCICLETA","MOTONETA","CAMINHONETE","CAMINHÃO","ÔNIBUS/MICRO-ÔNIBUS","BICICLETA","BICICLETA ELÉTRICA","BICICLETA MOTORIZADA","VEÍCULO ELÉTRICO","CELULAR","TABLET","NOTEBOOK","BALANÇA DE PRECISÃO","OUTRO"];
     const TIPOS_ENTORPECENTES = ["MACONHA","COCAÍNA","PASTA BASE","CRACK","SKANK","ECSTASY","LSD","OUTRO"];
-    const FORMAS_ENTORPECENTES = ["INVÓLUCRO","PORÇÃO","TABLETE","TIJOLO","PAPELOTE","PINO","COMPRIMIDO","SACOLA","UNIDADE","OUTRO"];
+    const FORMAS_ENTORPECENTES = ["INVÓLUCRO","PORÇÃO","TABLETE","TIJOLO","PAPELOTE","PINO","COMPRIMIDO","SACOLA","OUTROS"];
     const CATEGORIAS_BENS_SUBTRAIDOS = ["AUTOMÓVEL","MOTOCICLETA","BICICLETA","CELULAR","OUTROS"];
     function opcoesHtml(opcoes, selecionado) {
       return '<option value="">Selecione</option>' + opcoes.map(opcao => `<option${opcao === selecionado ? " selected" : ""}>${opcao}</option>`).join("");
