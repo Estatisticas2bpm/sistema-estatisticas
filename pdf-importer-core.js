@@ -240,7 +240,7 @@
         const achado = descricao.match(/\b(\d+)\s*(?:\([^)]*\)\s*)?(INV[ÓO]LUCROS?|POR[ÇC][ÕO]ES?|TABLETES?|TIJOLOS?|PAPELOTES?|PINOS?|COMPRIMIDOS?|SACOLAS?|UNIDADES?|PEDRAS?)\b/i);
         if (!achado) return;
         const formaChave = normalizar(achado[2]);
-        const forma = formaChave.includes("INVOLUCRO") ? "INVÓLUCRO" : formaChave.includes("PORCAO") ? "PORÇÃO" : formaChave.includes("TABLETE") ? "TABLETE" : formaChave.includes("TIJOLO") ? "TIJOLO" : formaChave.includes("PAPELOTE") ? "PAPELOTE" : formaChave.includes("PINO") ? "PINO" : formaChave.includes("COMPRIMIDO") ? "COMPRIMIDO" : formaChave.includes("SACOLA") ? "SACOLA" : "UNIDADE";
+        const forma = formaChave.includes("INVOLUCRO") ? "INVÓLUCRO" : formaChave.includes("PORCAO") ? "PORÇÃO" : formaChave.includes("TABLETE") ? "TABLETE" : formaChave.includes("TIJOLO") ? "TIJOLO" : formaChave.includes("PAPELOTE") ? "PAPELOTE" : formaChave.includes("PINO") ? "PINO" : formaChave.includes("COMPRIMIDO") ? "COMPRIMIDO" : formaChave.includes("SACOLA") ? "SACOLA" : "OUTROS";
         adicionarUnico(dados.entorpecentes,{tipo,quantidade:Number(achado[1]),forma_apresentacao:forma,detalhes:descricao});
         return;
       }
