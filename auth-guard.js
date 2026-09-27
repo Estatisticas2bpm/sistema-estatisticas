@@ -8,7 +8,7 @@
 
   if(!cfg||!cfg.enabled){
     document.addEventListener('DOMContentLoaded',esconderAdministracaoDesativada,{once:true});
-    window.SistemaAuth={enabled:false,ready:Promise.resolve({enabled:false}),pode:()=>true,temModulo:()=>false,modulos:[],perfil:null,user:null,sair:async()=>{location.href='index.html';}};
+    window.SistemaAuth={enabled:false,ready:Promise.resolve({enabled:false}),pode:()=>true,temModulo:()=>false,modulos:[],planilha:null,perfil:null,user:null,sair:async()=>{location.href='index.html';}};
     return;
   }
 
@@ -80,11 +80,32 @@
     return new Set((r.data||[]).map(x=>normalizarModulo(x.codigo)).filter(Boolean));
   }
 
-  function aplicarPermissoes(perfil,modulos){
-    document.querySelectorAll('[data-permission],[data-module]').forEach(el=>{
+  async function carregarPlanilhaUsuario(client){
+    const r=await client.rpc('obter_planilha_usuario');
+    if(r.error){
+      console.error('Não foi possível carregar a planilha da unidade; atalho bloqueado:',r.error);
+      return null;
+    }
+    const linha=Array.isArray(r.data)?r.data[0]:r.data;
+    return linha?.google_sheet_url?linha:null;
+  }
+
+  function aplicarPermissoes(perfil,modulos,planilha){
+    document.querySelectorAll('[data-permission],[data-module],[data-planilha-unidade]').forEach(el=>{
       const permitidoPerfil=pode(perfil,el.getAttribute('data-permission'));
       const permitidoModulo=temModulo(modulos,el.getAttribute('data-module'));
-      el.hidden=!(permitidoPerfil&&permitidoModulo);
+      const precisaPlanilha=el.hasAttribute('data-planilha-unidade');
+      const permitidoPlanilha=!precisaPlanilha||!!planilha?.google_sheet_url;
+      if(precisaPlanilha){
+        if(permitidoPlanilha){
+          el.setAttribute('href',planilha.google_sheet_url);
+          el.setAttribute('target','_blank');
+          el.setAttribute('rel','noopener');
+        }else{
+          el.removeAttribute('href');
+        }
+      }
+      el.hidden=!(permitidoPerfil&&permitidoModulo&&permitidoPlanilha);
     });
     document.querySelectorAll('a[href]').forEach(el=>{
       const p=permissaoPorHref(el.getAttribute('href'));
@@ -174,16 +195,19 @@
         return null;
       }
 
-      const modulos=await carregarModulos(client);
+      const [modulos,planilha]=await Promise.all([
+        carregarModulos(client),
+        carregarPlanilhaUsuario(client)
+      ]);
       const mPagina=moduloDaPagina();
       if(mPagina&&!temModulo(modulos,mPagina)){
         location.replace(cfg.homePage+'?erro=modulo-indisponivel');
         return null;
       }
 
-      window.SistemaAuth={enabled:true,client,user,perfil,modulos:[...modulos],pode:(p)=>pode(perfil.perfil,p),temModulo:(m)=>temModulo(modulos,m),ready:null,sair:async()=>{await client.auth.signOut({scope:'local'});location.replace(cfg.loginPage);}};
+      window.SistemaAuth={enabled:true,client,user,perfil,modulos:[...modulos],planilha,pode:(p)=>pode(perfil.perfil,p),temModulo:(m)=>temModulo(modulos,m),ready:null,sair:async()=>{await client.auth.signOut({scope:'local'});location.replace(cfg.loginPage);}};
 
-      const aplicar=()=>{aplicarPermissoes(perfil.perfil,modulos);instalarIdentificacao(perfil,client);mostrarAvisoDeAcesso();};
+      const aplicar=()=>{aplicarPermissoes(perfil.perfil,modulos,planilha);instalarIdentificacao(perfil,client);mostrarAvisoDeAcesso();};
       if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',aplicar,{once:true});
       else aplicar();
 
@@ -202,5 +226,5 @@
     }
   })();
 
-  window.SistemaAuth={enabled:true,ready,pode:()=>false,temModulo:()=>false,modulos:[],perfil:null,user:null};
+  window.SistemaAuth={enabled:true,ready,pode:()=>false,temModulo:()=>false,modulos:[],planilha:null,perfil:null,user:null};
 })();
