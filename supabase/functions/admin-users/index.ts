@@ -31,14 +31,26 @@ async function usuarioDaRequisicao(req: Request) {
   return data.user;
 }
 
+const uuidValido = (v: unknown) =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(limpar(v));
+
 async function unidadePorId(unidadeId?: string | null) {
   if (!unidadeId) return null;
   const { data, error } = await admin.from("unidades")
-    .select("id,sigla,nome")
+    .select("id,sigla,nome,ativo")
     .eq("id", unidadeId)
     .maybeSingle();
   if (error) throw error;
   return data || null;
+}
+
+async function validarUnidadeAtiva(unidadeId: unknown) {
+  const id = limpar(unidadeId);
+  if (!uuidValido(id)) throw new Error("Unidade inválida.");
+  const unidade = await unidadePorId(id);
+  if (!unidade) throw new Error("A unidade selecionada não existe.");
+  if (unidade.ativo !== true) throw new Error("A unidade selecionada não está ativa.");
+  return unidade;
 }
 
 async function perfilDoUsuario(userId: string) {
@@ -52,18 +64,18 @@ async function perfilDoUsuario(userId: string) {
 }
 
 async function perfisComUnidades() {
-  const [{ data: users, error: usersError }, { data: units, error: unitsError }] = await Promise.all([
+  const [{ data: users, error: usersError }, { data: todasUnidades, error: unitsError }] = await Promise.all([
     admin.from("perfis_usuarios")
       .select("user_id,nome,nome_guerra,matricula,email,perfil,unidade_id,ativo,senha_temporaria,criado_em")
       .order("nome"),
-    admin.from("unidades").select("id,sigla,nome,ativo").eq("ativo", true).order("sigla"),
+    admin.from("unidades").select("id,sigla,nome,ativo").order("sigla"),
   ]);
   if (usersError) throw usersError;
   if (unitsError) throw unitsError;
-  const mapa = new Map((units || []).map((u: any) => [u.id, u]));
+  const mapa = new Map((todasUnidades || []).map((u: any) => [u.id, u]));
   return {
     users: (users || []).map((u: any) => ({ ...u, unidades: u.unidade_id ? mapa.get(u.unidade_id) || null : null })),
-    units: units || [],
+    units: (todasUnidades || []).filter((u: any) => u.ativo === true),
   };
 }
 
@@ -122,6 +134,7 @@ Deno.serve(async (req: Request) => {
         .eq("ativo", true)
         .maybeSingle();
       if (unidadeError) throw unidadeError;
+      if (!unidade?.id) throw new Error("O 2º BPM precisa estar ativo para concluir a configuração inicial.");
 
       const nome = limpar(caller.user_metadata?.nome || caller.user_metadata?.full_name || caller.email || "ADMINISTRADOR");
       const { error: inserirError } = await admin.from("perfis_usuarios").insert({
@@ -142,7 +155,9 @@ Deno.serve(async (req: Request) => {
 
     if (action === "password_changed") {
       const perfil = await perfilDoUsuario(caller.id);
-      if (!perfil || perfil.ativo !== true) return resposta({ error: "Usuário não autorizado." }, 403);
+      if (!perfil || perfil.ativo !== true || perfil.unidades?.ativo !== true) {
+        return resposta({ error: "Usuário ou unidade principal não autorizado." }, 403);
+      }
       const { error } = await admin.from("perfis_usuarios")
         .update({ senha_temporaria: false, atualizado_em: new Date().toISOString() })
         .eq("user_id", caller.id);
@@ -152,8 +167,8 @@ Deno.serve(async (req: Request) => {
     }
 
     const perfilCaller = await perfilDoUsuario(caller.id);
-    if (!perfilCaller || perfilCaller.ativo !== true || perfilCaller.perfil !== "ADMIN") {
-      return resposta({ error: "Somente administradores podem gerenciar usuários." }, 403);
+    if (!perfilCaller || perfilCaller.ativo !== true || perfilCaller.perfil !== "ADMIN" || perfilCaller.unidades?.ativo !== true) {
+      return resposta({ error: "Somente administradores ativos de uma unidade ativa podem gerenciar usuários." }, 403);
     }
 
     if (action === "list") {
@@ -174,6 +189,7 @@ Deno.serve(async (req: Request) => {
       if (!nome || !nomeGuerra) throw new Error("Nome completo e nome de guerra são obrigatórios.");
       if (!perfisValidos.has(perfil)) throw new Error("Perfil de acesso inválido.");
       if (!unidadeId) throw new Error("Informe a unidade do usuário.");
+      await validarUnidadeAtiva(unidadeId);
 
       const { data: authData, error: authError } = await admin.auth.admin.createUser({
         email,
@@ -220,6 +236,9 @@ Deno.serve(async (req: Request) => {
 
       const atual = await perfilDoUsuario(targetId);
       if (!atual) throw new Error("Usuário não encontrado.");
+      if (atual.ativo === true || unidadeId !== atual.unidade_id) {
+        await validarUnidadeAtiva(unidadeId);
+      }
       if (email && email !== atual.email) {
         const { error } = await admin.auth.admin.updateUserById(targetId, { email, email_confirm: true });
         if (error) throw error;
@@ -256,6 +275,9 @@ Deno.serve(async (req: Request) => {
     }
 
     if (action === "reactivate") {
+      const alvo = await perfilDoUsuario(targetId);
+      if (!alvo) throw new Error("Usuário não encontrado.");
+      await validarUnidadeAtiva(alvo.unidade_id);
       const { error } = await admin.from("perfis_usuarios").update({ ativo: true, atualizado_em: new Date().toISOString() }).eq("user_id", targetId);
       if (error) throw error;
       const { error: unbanError } = await admin.auth.admin.updateUserById(targetId, { ban_duration: "0s" });
