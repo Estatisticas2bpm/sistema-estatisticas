@@ -130,7 +130,7 @@
     if(!r.data)return null;
     let unidade=null;
     if(r.data.unidade_id){
-      const u=await client.from('unidades').select('id,sigla,nome').eq('id',r.data.unidade_id).maybeSingle();
+      const u=await client.from('unidades').select('id,sigla,nome,ativo').eq('id',r.data.unidade_id).maybeSingle();
       if(!u.error)unidade=u.data||null;
     }
     return {...r.data,unidades:unidade};
@@ -155,6 +155,11 @@
       if(perfil.ativo!==true){
         await client.auth.signOut({scope:'local'}).catch(()=>{});
         location.replace(urlLogin('bloqueado'));
+        return null;
+      }
+      if(!perfil.unidade_id||!perfil.unidades||perfil.unidades.ativo!==true){
+        await client.auth.signOut({scope:'local'}).catch(()=>{});
+        location.replace(urlLogin('unidade-indisponivel'));
         return null;
       }
 
