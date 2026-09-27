@@ -31,5 +31,8 @@ window.SISTEMA_AUTH_CONFIG = Object.freeze({
     "painel-tv.html":"tv",
     "fluxos.html":"fluxos",
     "usuarios.html":"usuarios"
+  }),
+  pageModules: Object.freeze({
+    "acoes.html":"ACOES_SOCIAIS"
   })
 });
