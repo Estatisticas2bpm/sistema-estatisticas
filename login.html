@@ -22,7 +22,7 @@
 const cfg=window.SISTEMA_AUTH_CONFIG;
 const mensagem=document.getElementById('mensagem'),form=document.getElementById('formLogin'),btn=document.getElementById('entrar'),btnRecuperar=document.getElementById('recuperarSenha'),email=document.getElementById('email'),senha=document.getElementById('senha');
 function msg(texto,tipo='erro'){mensagem.textContent=texto;mensagem.className='msg '+tipo;}
-function erroQuery(){const e=new URLSearchParams(location.search).get('erro');return ({'nao-autorizado':'Este usuário não possui autorização para acessar o sistema.','bloqueado':'Este usuário está bloqueado. Procure o administrador.','falha-validacao':'Não foi possível validar seu perfil de acesso. Tente novamente.','sem-permissao':'Seu perfil não possui permissão para acessar a página solicitada.'})[e]||'';}
+function erroQuery(){const e=new URLSearchParams(location.search).get('erro');return ({'nao-autorizado':'Este usuário não possui autorização para acessar o sistema.','bloqueado':'Este usuário está bloqueado. Procure o administrador.','unidade-indisponivel':'Sua unidade principal está indisponível ou inativa. Procure o administrador do sistema.','falha-validacao':'Não foi possível validar seu perfil de acesso. Tente novamente.','sem-permissao':'Seu perfil não possui permissão para acessar a página solicitada.'})[e]||'';}
 if(!cfg){msg('Configuração de autenticação não encontrada.');form.querySelectorAll('input,button').forEach(x=>x.disabled=true);}else{
   const db=supabase.createClient(cfg.supabaseUrl,cfg.publishableKey);
   if(!cfg.enabled){const s=document.getElementById('statusModulo');s.style.display='block';s.textContent='O módulo de autenticação está preparado, mas ainda não foi ativado no backend institucional.';}
