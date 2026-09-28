@@ -1,6 +1,8 @@
 (function(){
   const cfg=window.SISTEMA_AUTH_CONFIG;
   const pathname=(location.pathname.split('/').pop()||'index.html').toLowerCase();
+  let contextoAtual=null;
+  const permissoesEscritaOperacional=new Set(['cadastro','tco','acoes']);
 
   function esconderAdministracaoDesativada(){
     document.querySelectorAll('[data-auth-only],[data-module],[data-permission="usuarios"],[data-permission="configuracoes"],[data-permission="logs"]').forEach(el=>{el.hidden=true;});
@@ -42,6 +44,7 @@
 
   function pode(perfil,permissao){
     if(!permissao)return true;
+    if(contextoAtual?.somente_leitura_operacional&&permissoesEscritaOperacional.has(permissao))return false;
     const lista=cfg.permissions[normalizarPerfil(perfil)]||[];
     return lista.includes(permissao);
   }
@@ -70,6 +73,19 @@
   function temModulo(modulos,codigo){
     if(!codigo)return true;
     return modulos.has(normalizarModulo(codigo));
+  }
+
+  async function carregarContextoUnidade(client,perfil){
+    const r=await client.rpc('obter_contexto_unidade_usuario');
+    if(r.error)throw r.error;
+    const contexto=r.data;
+    if(!contexto?.unidade_id)throw new Error('Não foi possível determinar a unidade de trabalho atual.');
+    contextoAtual=contexto;
+    perfil.unidade_principal_id=perfil.unidade_id;
+    perfil.unidades_principal=perfil.unidades||null;
+    perfil.unidade_id=contexto.unidade_id;
+    perfil.unidades={id:contexto.unidade_id,sigla:contexto.sigla,nome:contexto.nome,tipo:contexto.tipo,ativo:true};
+    return contexto;
   }
 
   async function carregarModulos(client){
@@ -134,6 +150,64 @@
       badge.style.cssText='position:fixed;right:14px;top:14px;z-index:99998;background:#ffffffed;color:#071b33;border:1px solid #cbd9e6;border-left:4px solid #0e4f8a;border-radius:10px;box-shadow:0 6px 20px #071b3320;padding:8px 11px;font:900 11px/1.2 Inter,Segoe UI,Arial,sans-serif;letter-spacing:.55px;text-transform:uppercase;backdrop-filter:blur(6px)';
       document.body.appendChild(badge);
     }
+  }
+
+  async function instalarSeletorUnidadeAdmin(perfil,client){
+    if(normalizarPerfil(perfil.perfil)!=='ADMIN'||contextoAtual?.pode_alternar!==true)return;
+    const badge=document.getElementById('sistemaUnidadeAtiva');
+    if(!badge||badge.dataset.adminSelector==='1')return;
+
+    const r=await client.rpc('listar_unidades_contexto_admin');
+    if(r.error){console.error('Não foi possível carregar as unidades para o modo administrador:',r.error);return;}
+    const unidades=r.data||[];
+    if(!unidades.length)return;
+
+    badge.dataset.adminSelector='1';
+    badge.style.maxWidth='min(92vw,390px)';
+    badge.style.textTransform='none';
+    badge.style.letterSpacing='0';
+    badge.style.padding='10px 12px';
+    badge.style.borderLeftColor=contextoAtual?.somente_leitura_operacional?'#b7791f':'#0e4f8a';
+    badge.innerHTML='';
+
+    const titulo=document.createElement('div');
+    titulo.textContent='MODO ADMINISTRADOR · UNIDADE DE TRABALHO';
+    titulo.style.cssText='font-size:10px;font-weight:900;letter-spacing:.65px;text-transform:uppercase;margin-bottom:6px;color:#496b86';
+
+    const select=document.createElement('select');
+    select.setAttribute('aria-label','Unidade de trabalho do administrador');
+    select.style.cssText='width:100%;border:1px solid #cbd9e6;border-radius:8px;padding:7px 9px;background:#fff;color:#071b33;font:800 12px Inter,Segoe UI,Arial,sans-serif;cursor:pointer';
+    unidades.forEach(u=>{
+      const op=document.createElement('option');
+      op.value=u.id;
+      op.textContent=formatarSiglaUnidade(u.sigla)+(u.nome&&u.nome!==u.sigla?' — '+u.nome:'');
+      select.appendChild(op);
+    });
+    select.value=contextoAtual.unidade_id;
+
+    const detalhe=document.createElement('div');
+    detalhe.style.cssText='margin-top:6px;font-size:10px;line-height:1.35;color:#66758a;font-weight:700';
+    detalhe.textContent=contextoAtual?.somente_leitura_operacional
+      ? 'Contexto de comando: consulta consolidada. Cadastro e alterações operacionais ficam bloqueados.'
+      : 'Os registros e filtros usam esta unidade como contexto. Sua unidade principal não é alterada.';
+
+    select.addEventListener('change',async()=>{
+      const anterior=contextoAtual.unidade_id;
+      select.disabled=true;
+      detalhe.textContent='Alterando unidade de trabalho...';
+      const troca=await client.rpc('definir_contexto_unidade_admin',{p_unidade_id:select.value});
+      if(troca.error){
+        console.error(troca.error);
+        alert('Não foi possível alterar a unidade de trabalho: '+troca.error.message);
+        select.value=anterior;
+        select.disabled=false;
+        detalhe.textContent='A unidade de trabalho não foi alterada.';
+        return;
+      }
+      location.reload();
+    });
+
+    badge.append(titulo,select,detalhe);
   }
 
   function instalarIdentificacao(perfil,client){
@@ -211,6 +285,8 @@
         return null;
       }
 
+      await carregarContextoUnidade(client,perfil);
+
       const pPagina=permissaoDaPagina();
       if(pPagina&&!pode(perfil.perfil,pPagina)){
         location.replace(cfg.homePage+'?erro=sem-permissao');
@@ -227,9 +303,9 @@
         return null;
       }
 
-      window.SistemaAuth={enabled:true,client,user,perfil,modulos:[...modulos],planilha,pode:(p)=>pode(perfil.perfil,p),temModulo:(m)=>temModulo(modulos,m),ready:null,sair:async()=>{await client.auth.signOut({scope:'local'});location.replace(cfg.loginPage);}};
+      window.SistemaAuth={enabled:true,client,user,perfil,contexto:contextoAtual,modulos:[...modulos],planilha,pode:(p)=>pode(perfil.perfil,p),temModulo:(m)=>temModulo(modulos,m),ready:null,sair:async()=>{await client.auth.signOut({scope:'local'});location.replace(cfg.loginPage);}};
 
-      const aplicar=()=>{aplicarIdentidadeVisual(perfil);aplicarPermissoes(perfil.perfil,modulos,planilha);instalarIdentificacao(perfil,client);mostrarAvisoDeAcesso();};
+      const aplicar=()=>{aplicarIdentidadeVisual(perfil);aplicarPermissoes(perfil.perfil,modulos,planilha);instalarIdentificacao(perfil,client);instalarSeletorUnidadeAdmin(perfil,client).catch(e=>console.error('Falha ao instalar seletor administrativo:',e));mostrarAvisoDeAcesso();};
       if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',aplicar,{once:true});
       else aplicar();
 
