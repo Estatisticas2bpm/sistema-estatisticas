@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SIE-CPC — Matriz Territorial Oficial</title>
+<style>
+*{box-sizing:border-box}:root{--navy:#071b33;--blue:#0e4f8a;--steel:#496b86;--teal:#2f7278;--green:#39705a;--amber:#b7791f;--bg:#eef3f8;--card:#fff;--line:#d7e0ea;--muted:#66758a;--ink:#172033}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px Inter,Segoe UI,Arial,sans-serif}
+header{background:radial-gradient(circle at 85% 0,#196ba9 0,transparent 32%),linear-gradient(125deg,#06172c,#0a355f 60%,#0a526e);color:#fff;padding:24px 4% 62px}
+.head{width:min(1400px,96%);margin:auto;display:flex;justify-content:space-between;align-items:center;gap:16px}.brand{display:flex;align-items:center;gap:13px}.brand img{width:58px;height:58px;object-fit:contain}.brand b{display:block;font-size:18px}.brand small{color:#bfd4e7}.actions{display:flex;gap:8px;flex-wrap:wrap}.actions a{color:#fff;text-decoration:none;border:1px solid #ffffff55;border-radius:10px;padding:9px 12px;font-weight:800}
+.hero{width:min(1400px,96%);margin:31px auto 0}.eyebrow{color:#9ee5e7;font-size:11px;font-weight:900;letter-spacing:1.15px;text-transform:uppercase}.hero h1{margin:8px 0 7px;font-size:clamp(29px,4vw,43px)}.hero p{margin:0;max-width:900px;color:#c9dbea;line-height:1.55}
+main{width:min(1400px,96%);margin:-31px auto 45px}.panel{background:#fff;border:1px solid var(--line);border-radius:17px;padding:18px;box-shadow:0 8px 28px #102e4a0f;margin-bottom:16px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:16px}.kpi{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;position:relative;overflow:hidden}.kpi:before{content:"";position:absolute;inset:0 auto 0 0;width:4px;background:var(--accent,var(--blue))}.kpi small{display:block;color:var(--muted);font-size:10px;font-weight:900;text-transform:uppercase}.kpi strong{display:block;font-size:28px;color:var(--navy);margin-top:6px}
+.search{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end}.search label{font-size:11px;font-weight:900;color:#52677a;text-transform:uppercase}.search input{display:block;width:100%;margin-top:5px;border:1px solid #cbd7e3;border-radius:10px;padding:11px 12px;font:inherit}.btn{border:0;border-radius:10px;padding:11px 16px;background:var(--blue);color:#fff;font-weight:900;cursor:pointer}
+.result{margin-top:14px;border:1px solid #d8e6ee;border-radius:13px;background:#f8fbfd;padding:14px;display:none}.result strong{color:var(--navy)}.path{margin-top:8px;display:flex;gap:7px;flex-wrap:wrap}.chip{display:inline-flex;background:#eaf3f9;color:#194f78;border-radius:999px;padding:7px 10px;font-size:11px;font-weight:900}.muted{color:var(--muted)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.aisc{border:1px solid #d9e4ed;border-radius:16px;padding:17px;background:#fbfdff}.aiscHead{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px}.aisc h2{margin:0;color:var(--navy);font-size:19px}.aiscHead p{margin:4px 0 0;color:var(--muted);font-size:12px}.legal{background:#eef6fb;color:#1d567f;border-radius:999px;padding:6px 9px;font-size:10px;font-weight:900;white-space:nowrap}
+.siscGrid{display:grid;gap:11px}.sisc{border:1px solid #e1e8ef;border-radius:13px;padding:13px;background:#fff}.sisc h3{margin:0 0 10px;color:var(--blue);font-size:15px}.setor{border-top:1px solid #edf2f6;padding:10px 0 3px}.setor:first-of-type{border-top:0;padding-top:0}.setor b{font-size:12px;color:#334b60}.bairros{margin-top:7px;display:flex;gap:6px;flex-wrap:wrap}.bairro{background:#f2f6f9;border:1px solid #e2e9ef;border-radius:8px;padding:5px 7px;font-size:11px;color:#465b6d}.bairro.special{background:#fff7e9;border-color:#efd69e}
+.notice{background:#fff8e8;border:1px solid #efd292;color:#694b12;border-radius:14px;padding:14px;line-height:1.55}.notice b{display:block;margin-bottom:4px}.exception{background:#f8fbfd;border:1px solid #dbe7ef;border-left:4px solid var(--amber);border-radius:12px;padding:14px;line-height:1.55}.exception strong{color:var(--navy)}
+.loading{position:fixed;inset:0;background:#ffffffdf;display:grid;place-items:center;z-index:99999;color:var(--navy);font-weight:900;font-size:17px}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:5px 10px 30px}
+@media(max-width:850px){.grid{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.head{align-items:flex-start;flex-direction:column}}@media(max-width:520px){.kpis,.search{grid-template-columns:1fr}}
+</style>
+<script src="auth-config.js"></script><script src="auth-guard.js"></script>
+</head>
+<body>
+<div class="loading" id="loading">Carregando matriz territorial oficial...</div>
+<header>
+ <div class="head"><div class="brand"><img src="brasao-pmrr.png" alt="Brasão da PMRR"><div><b>SIE-CPC</b><small>Sistema Integrado de Estatística do CPC</small></div></div>
+ <div class="actions"><a href="dashboard-cpc.html">◎ Central Executiva</a><a href="mapa-criminal.html">⌖ Mapa Criminal</a><a href="index.html">← Página inicial</a></div></div>
+ <div class="hero"><div class="eyebrow">Referência territorial · Decreto nº 22.414-E/2017</div><h1>Matriz Territorial Oficial do CPC</h1><p>Organização da responsabilidade territorial da Capital por AISC, SISC, Setor e localidade, integrada às unidades atuais do SIE-CPC.</p></div>
+</header>
+<main>
+ <section class="kpis">
+  <div class="kpi" style="--accent:var(--blue)"><small>AISC</small><strong id="kAisc">—</strong></div>
+  <div class="kpi" style="--accent:var(--teal)"><small>SISC</small><strong id="kSisc">—</strong></div>
+  <div class="kpi" style="--accent:var(--green)"><small>Setores</small><strong id="kSetores">—</strong></div>
+  <div class="kpi" style="--accent:var(--amber)"><small>Localidades</small><strong id="kBairros">—</strong></div>
+ </section>
+
+ <section class="panel">
+  <div class="search"><label>Localizar bairro / localidade<input id="busca" placeholder="Ex.: Asa Branca, Centro, Araceli, Santa Teresa"></label><button id="pesquisar" class="btn" type="button">Classificar território</button></div>
+  <div id="resultado" class="result"></div>
+ </section>
+
+ <section class="notice"><b>Sobre os limites cartográficos</b>Esta matriz representa a composição textual oficial das AISC, SISC e Setores. Os polígonos e memoriais descritivos não são inferidos pelo sistema, porque os anexos cartográficos mencionados no Decreto não integram o arquivo-base utilizado nesta implementação.</section>
+
+ <section id="hierarquia" class="grid" style="margin-top:16px"></section>
+
+ <section class="panel">
+  <div style="margin-bottom:10px"><strong style="font-size:17px;color:var(--navy)">Regra territorial especial</strong><div class="muted" style="margin-top:3px">Art. 14, parágrafo único</div></div>
+  <div id="excecoes"></div>
+ </section>
+</main>
+<footer>SIE-CPC — Polícia Militar de Roraima · Matriz territorial de referência</footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const cfg=window.SISTEMA_AUTH_CONFIG,db=supabase.createClient(cfg.supabaseUrl,cfg.publishableKey),$=id=>document.getElementById(id);let cat=null;
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function sigla(v){const s=String(v||''),m=s.match(/^(\d+)BPM$/i);return m?m[1]+'º BPM':s}
+function porId(arr,id){return (arr||[]).find(x=>x.id===id)}
+function render(){
+ $('kAisc').textContent=(cat.aisc||[]).length;$('kSisc').textContent=(cat.sisc||[]).length;$('kSetores').textContent=(cat.setores||[]).length;$('kBairros').textContent=(cat.bairros||[]).length;
+ $('hierarquia').innerHTML=(cat.aisc||[]).map(a=>{const siscs=(cat.sisc||[]).filter(s=>s.aisc_id===a.id);return '<article class="aisc"><div class="aiscHead"><div><h2>'+esc(a.codigo)+'</h2><p>'+esc(a.nome)+'</p><p><b>Unidade atual:</b> '+esc(sigla(a.unidade_sigla))+' · <b>referência no Decreto:</b> '+esc(a.unidade_referencia_decreto)+'</p></div><span class="legal">'+esc(a.artigo_referencia)+'</span></div><div class="siscGrid">'+siscs.map(s=>{const setores=(cat.setores||[]).filter(st=>st.sisc_id===s.id);return '<section class="sisc"><h3>'+esc(s.codigo)+'</h3>'+setores.map(st=>{const bs=(cat.bairros||[]).filter(b=>b.setor_id===st.id);return '<div class="setor"><b>Setor '+esc(st.codigo)+'</b><div class="bairros">'+bs.map(b=>'<span class="bairro'+(b.tipo_local!=='BAIRRO'?' special':'')+'" title="'+esc(b.nome_decreto)+'">'+esc(b.nome)+(b.tipo_local==='LOTEAMENTO'?' · loteamento':b.tipo_local==='DISTRITO_INDUSTRIAL'?' · distrito industrial':'')+'</span>').join('')+'</div></div>'}).join('')+'</section>'}).join('')+'</div></article>'}).join('');
+ $('excecoes').innerHTML=(cat.excecoes||[]).length?(cat.excecoes||[]).map(e=>'<div class="exception"><strong>'+esc(e.localidade)+' — '+esc(e.municipio)+'</strong>'+esc(e.regra)+'<div class="muted" style="margin-top:5px">Referência: '+esc(e.artigo_referencia)+' · unidade do Decreto: '+esc(e.unidade_referencia_decreto)+'</div></div>').join(''):'<div class="muted">Nenhuma regra especial cadastrada.</div>';
+}
+async function pesquisar(){
+ const v=$('busca').value.trim(),box=$('resultado');if(!v){box.style.display='none';return}
+ const r=await db.rpc('territorio_por_bairro',{valor:v});box.style.display='block';
+ if(r.error){box.innerHTML='<span class="muted">Não foi possível consultar: '+esc(r.error.message)+'</span>';return}
+ const t=r.data;if(!t){box.innerHTML='<strong>Sem classificação territorial no Decreto nº 22.414-E/2017.</strong><div class="muted" style="margin-top:5px">O nome informado não corresponde a uma das 57 localidades listadas nas SISC 1 a 6.</div>';return}
+ box.innerHTML='<strong>'+esc(t.bairro)+' — '+esc(t.bairro_decreto)+'</strong><div class="path"><span class="chip">'+esc(t.aisc)+'</span><span class="chip">'+esc(t.sisc)+'</span><span class="chip">Setor '+esc(t.setor)+'</span><span class="chip">'+esc(sigla(t.unidade_sigla))+' territorial</span></div><div class="muted" style="margin-top:8px">Referência: '+esc(t.artigo_referencia)+' · no Decreto: '+esc(t.unidade_referencia_decreto)+'</div>';
+}
+$('pesquisar').onclick=pesquisar;$('busca').addEventListener('keydown',e=>{if(e.key==='Enter')pesquisar()});
+(async()=>{try{if(window.SistemaAuth?.ready)await window.SistemaAuth.ready;const r=await db.rpc('obter_catalogo_territorial_cpc');if(r.error)throw r.error;cat=r.data||{};render()}catch(e){console.error(e);$('hierarquia').innerHTML='<div class="panel">Não foi possível carregar a matriz territorial: '+esc(e.message)+'</div>'}finally{$('loading').style.display='none'}})();
+</script>
+</body></html>

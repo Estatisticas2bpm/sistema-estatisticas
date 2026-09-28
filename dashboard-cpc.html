@@ -19,9 +19,9 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
 .rankList{display:grid;gap:8px}.rankRow{display:grid;grid-template-columns:34px 1fr 48px;gap:8px;align-items:center;border-bottom:1px solid #edf2f6;padding:9px 0}.rankRow:last-child{border:0}.rankPos{font-weight:900;color:#7a8998}.rankName{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rankValue{text-align:right;color:var(--blue);font-weight:900}
 .tableWrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:900px}th,td{padding:10px;border-bottom:1px solid #e6edf3;text-align:right}th{background:#f5f8fb;color:#40566c;font-size:11px;text-transform:uppercase;position:sticky;top:0}th:first-child,td:first-child{text-align:left}.unit{font-weight:900;color:var(--navy)}.sub{display:block;color:var(--muted);font-size:11px;font-weight:400;margin-top:2px}
 .naturezas{display:grid;grid-template-columns:repeat(2,1fr);gap:13px}.naturezaBox{border:1px solid #dde6ee;border-radius:13px;padding:14px;background:#fbfdff}.naturezaBox h3{margin:0 0 10px;color:var(--navy)}.rank{display:grid;grid-template-columns:24px 1fr 42px;gap:8px;padding:7px 0;border-bottom:1px solid #edf2f6}.rank:last-child{border:0}.rank i{font-style:normal;color:var(--muted);font-weight:900}.rank span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rank b{text-align:right;color:var(--blue)}
-.quick{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.quick a{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid #dce6ee;border-radius:12px;padding:13px 14px;color:var(--navy);text-decoration:none;font-weight:900;background:#fbfdff}.quick a span{color:var(--blue)}
+.quick{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}.territoryGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.territoryBox{border:1px solid #dde6ee;border-radius:13px;padding:14px;background:#fbfdff}.territoryBox h3{margin:0 0 10px;color:var(--navy);font-size:15px}.quick a{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid #dce6ee;border-radius:12px;padding:13px 14px;color:var(--navy);text-decoration:none;font-weight:900;background:#fbfdff}.quick a span{color:var(--blue)}
 .loading{position:fixed;inset:0;background:#ffffffdf;display:grid;place-items:center;z-index:100000;color:var(--navy);font-weight:900;font-size:17px}footer{text-align:center;color:var(--muted);padding:5px 10px 30px;font-size:12px}.empty{color:var(--muted);padding:24px 0;text-align:center}
-@media(max-width:1150px){.kpis{grid-template-columns:repeat(4,1fr)}.filters{grid-template-columns:repeat(3,1fr)}.quick{grid-template-columns:1fr 1fr}}@media(max-width:820px){.hero{grid-template-columns:1fr}.scopeHero{justify-self:start;text-align:left}.grid2,.naturezas{grid-template-columns:1fr}.filters{grid-template-columns:1fr 1fr}.kpis{grid-template-columns:1fr 1fr}.head{align-items:flex-start;flex-direction:column}}@media(max-width:520px){.kpis,.filters,.quick{grid-template-columns:1fr}}
+@media(max-width:1150px){.kpis{grid-template-columns:repeat(4,1fr)}.filters{grid-template-columns:repeat(3,1fr)}.quick{grid-template-columns:1fr 1fr}.territoryGrid{grid-template-columns:1fr}}@media(max-width:820px){.hero{grid-template-columns:1fr}.scopeHero{justify-self:start;text-align:left}.grid2,.naturezas{grid-template-columns:1fr}.filters{grid-template-columns:1fr 1fr}.kpis{grid-template-columns:1fr 1fr}.head{align-items:flex-start;flex-direction:column}}@media(max-width:520px){.kpis,.filters,.quick{grid-template-columns:1fr}}
 </style>
 <script src="auth-config.js"></script>
 <script src="auth-guard.js"></script>
@@ -45,10 +45,12 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
       <label>Data inicial<input id="ini" type="date"></label>
       <label>Data final<input id="fim" type="date"></label>
       <label>Unidade<select id="unidade"><option value="">Todas as unidades</option></select></label>
+      <label>AISC<select id="aisc"><option value="">Todas</option></select></label>
+      <label>SISC<select id="sisc"><option value="">Todas</option></select></label>
+      <label>Setor<select id="setor"><option value="">Todos</option></select></label>
       <label>Turno<select id="turno"><option value="">Todos</option><option>MADRUGADA</option><option>MANHÃ</option><option>TARDE</option><option>NOITE</option></select></label>
       <label>Ocorrência / natureza<input id="ocorrencia" placeholder="Todas"></label>
       <label>Bairro<input id="bairro" placeholder="Todos"></label>
-      <label>SISC<select id="sisc"><option value="">Todos</option><option>SISC 4</option><option>SISC 5</option><option>SISC 6</option></select></label>
       <label>Companhia<select id="companhia"><option value="">Todas</option><option value="1ª CIA">1ª Companhia</option><option value="2ª CIA">2ª Companhia</option><option value="3ª CIA">3ª Companhia</option></select></label>
     </div>
     <div class="filterActions" style="margin-top:12px"><button id="atualizar" class="btn" type="button">Aplicar filtros</button><button id="limpar" class="btn secondary" type="button">Limpar filtros</button></div>
@@ -66,6 +68,15 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
   </section>
 
   <section class="panel executive"><h2>Leitura executiva do período</h2><p id="resumoExecutivo">Analisando os indicadores selecionados...</p></section>
+
+  <section class="panel">
+    <div class="sectionTitle"><div><h2>Distribuição territorial oficial</h2><p>Incidência conforme AISC, SISC e Setores definidos no Decreto nº 22.414-E/2017</p></div><a class="tag" href="territorio-cpc.html" style="text-decoration:none">ABRIR MATRIZ TERRITORIAL</a></div>
+    <div class="territoryGrid">
+      <div class="territoryBox"><h3>Por AISC</h3><div id="territorioAisc" class="rankList"></div></div>
+      <div class="territoryBox"><h3>Por SISC</h3><div id="territorioSisc" class="rankList"></div></div>
+      <div class="territoryBox"><h3>Por Setor</h3><div id="territorioSetores" class="rankList"></div></div>
+    </div>
+  </section>
 
   <div class="grid2">
     <section class="panel"><div class="sectionTitle"><div><h2>Distribuição entre unidades</h2><p>Volume de ocorrências conforme os filtros aplicados</p></div><span class="tag">UNIDADES</span></div><div class="chartbox"><canvas id="chartUnidades"></canvas></div></section>
@@ -87,7 +98,7 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
     <div id="naturezas" class="naturezas"></div>
   </section>
 
-  <section class="panel"><div class="sectionTitle"><div><h2>Aprofundar análise</h2><p>Abra as ferramentas especializadas mantendo o contexto CPC</p></div><span class="tag">ATALHOS</span></div><div class="quick"><a href="dashboard.html">Dashboard completo <span>→</span></a><a href="mapa-criminal.html">Mapa criminal <span>→</span></a><a href="analise-temporal.html">Análise temporal <span>→</span></a><a href="relatorio.html">Gerar relatório <span>→</span></a></div></section>
+  <section class="panel"><div class="sectionTitle"><div><h2>Aprofundar análise</h2><p>Abra as ferramentas especializadas mantendo o contexto CPC</p></div><span class="tag">ATALHOS</span></div><div class="quick"><a href="territorio-cpc.html">Matriz territorial <span>→</span></a><a href="dashboard.html">Dashboard completo <span>→</span></a><a href="mapa-criminal.html">Mapa criminal <span>→</span></a><a href="analise-temporal.html">Análise temporal <span>→</span></a><a href="relatorio.html">Gerar relatório <span>→</span></a></div></section>
 </main>
 <footer>SIE-CPC — Polícia Militar de Roraima · Comando de Policiamento da Capital</footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -95,7 +106,7 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
 const cfg=window.SISTEMA_AUTH_CONFIG;
 const db=supabase.createClient(cfg.supabaseUrl,cfg.publishableKey);
 const $=id=>document.getElementById(id);
-let charts={},unidadesCarregadas=false;
+let charts={},unidadesCarregadas=false,catalogoTerritorial=null;
 function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function br(v){return v?String(v).split('-').reverse().join('/'):'—'}
 function n(v){return Number(v)||0}
@@ -103,6 +114,21 @@ function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 function sigla(v){const s=String(v||'').trim(),m=s.match(/^(\d+)BPM$/i);return m?m[1]+'º BPM':s}
 function chart(id,type,labels,datasets,options={}){if(charts[id])charts[id].destroy();charts[id]=new Chart($(id),{type,data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},...options}})}
 function rankList(id,itens,campoNome){const el=$(id),a=itens||[];el.innerHTML=a.length?a.map((x,i)=>'<div class="rankRow"><span class="rankPos">'+(i+1)+'º</span><span class="rankName" title="'+esc(x[campoNome])+'">'+esc(x[campoNome])+'</span><span class="rankValue">'+n(x.total)+'</span></div>').join(''):'<div class="empty">Sem dados para o filtro selecionado.</div>'}
+function popularTerritorio(){
+  if(!catalogoTerritorial)return;
+  const aiscAtual=$('aisc').value,siscAtual=$('sisc').value,setorAtual=$('setor').value;
+  $('aisc').innerHTML='<option value="">Todas</option>'+(catalogoTerritorial.aisc||[]).map(x=>'<option>'+esc(x.codigo)+'</option>').join('');
+  if((catalogoTerritorial.aisc||[]).some(x=>x.codigo===aiscAtual))$('aisc').value=aiscAtual;
+  const aiscObj=(catalogoTerritorial.aisc||[]).find(x=>x.codigo===$('aisc').value);
+  const siscs=(catalogoTerritorial.sisc||[]).filter(x=>!aiscObj||x.aisc_id===aiscObj.id);
+  $('sisc').innerHTML='<option value="">Todas</option>'+siscs.map(x=>'<option>'+esc(x.codigo)+'</option>').join('');
+  if(siscs.some(x=>x.codigo===siscAtual))$('sisc').value=siscAtual;
+  const siscObj=(catalogoTerritorial.sisc||[]).find(x=>x.codigo===$('sisc').value);
+  const siscIds=siscObj?[siscObj.id]:siscs.map(x=>x.id);
+  const setores=(catalogoTerritorial.setores||[]).filter(x=>!siscIds.length||siscIds.includes(x.sisc_id));
+  $('setor').innerHTML='<option value="">Todos</option>'+setores.map(x=>'<option>'+esc(x.codigo)+'</option>').join('');
+  if(setores.some(x=>x.codigo===setorAtual))$('setor').value=setorAtual;
+}
 function popularUnidades(lista){if(unidadesCarregadas)return;const atual=new URLSearchParams(location.search).get('unidade')||'';$('unidade').innerHTML='<option value="">Todas as unidades</option>'+lista.map(u=>'<option value="'+esc(u.id)+'">'+esc(sigla(u.sigla))+' — '+esc(u.nome)+'</option>').join('');if(lista.some(u=>u.id===atual))$('unidade').value=atual;unidadesCarregadas=true}
 function atualizarUrl(){const p=new URLSearchParams();[['ini','ini'],['fim','fim'],['unidade','unidade']].forEach(([id,k])=>{if($(id).value)p.set(k,$(id).value)});history.replaceState(null,'',location.pathname+(p.toString()?'?'+p.toString():''))}
 function renderResumo(d){const r=d.resumo||{},u=d.unidades||[],topN=(d.top_naturezas_geral||[])[0],topB=(d.top_bairros||[])[0];let partes=[];const total=n(r.total_ocorrencias);if(!total){$('resumoExecutivo').textContent='Não há ocorrências no recorte selecionado. Ajuste o período ou os filtros para ampliar a consulta.';return}
@@ -117,13 +143,17 @@ $('kOcorrencias').textContent=n(r.total_ocorrencias);$('kConducoes').textContent
 $('tbodyUnidades').innerHTML=u.length?u.map(x=>'<tr><td><span class="unit">'+esc(sigla(x.sigla))+'</span><span class="sub">'+esc(x.nome)+'</span></td><td>'+n(x.total_ocorrencias)+'</td><td>'+n(x.conducoes)+'</td><td>'+n(x.prisoes)+'</td><td>'+n(x.tcos)+'</td><td>'+n(x.veiculos_recuperados)+'</td><td>'+n(x.ocorrencias_armas)+'</td><td>'+n(x.ocorrencias_drogas)+'</td></tr>').join(''):'<tr><td colspan="8">Nenhuma unidade encontrada para o filtro selecionado.</td></tr>';
 chart('chartUnidades','bar',u.map(x=>sigla(x.sigla)),[{label:'Ocorrências',data:u.map(x=>n(x.total_ocorrencias))}],{scales:{y:{beginAtZero:true,ticks:{precision:0}}}});
 const datas=[...new Set(serie.map(x=>x.data))].sort(),units=[...new Set(serie.map(x=>x.sigla))],mapa=new Map(serie.map(x=>[x.data+'|'+x.sigla,n(x.total)]));const datasets=units.map(s=>({label:sigla(s),data:datas.map(dt=>mapa.get(dt+'|'+s)||0),tension:.25,fill:false}));chart('chartSerie','line',datas.map(br),datasets,{interaction:{mode:'index',intersect:false},scales:{y:{beginAtZero:true,ticks:{precision:0}}}});
-rankList('topNaturezasGeral',d.top_naturezas_geral||[],'natureza');rankList('topBairros',d.top_bairros||[],'bairro');
+rankList('topNaturezasGeral',d.top_naturezas_geral||[],'natureza');rankList('topBairros',d.top_bairros||[],'bairro');rankList('territorioAisc',d.territorio?.aisc||[],'codigo');rankList('territorioSisc',d.territorio?.sisc||[],'codigo');rankList('territorioSetores',d.territorio?.setores||[],'codigo');
 $('naturezas').innerHTML=top.length?top.map(x=>'<div class="naturezaBox"><h3>'+esc(sigla(x.sigla))+'</h3>'+((x.itens||[]).length?(x.itens||[]).map((i,idx)=>'<div class="rank"><i>'+(idx+1)+'º</i><span title="'+esc(i.natureza)+'">'+esc(i.natureza)+'</span><b>'+n(i.total)+'</b></div>').join(''):'<div class="status">Sem ocorrências no período.</div>')+'</div>').join(''):'<div class="empty">Sem dados para exibir.</div>';
 renderResumo(d);const selecionada=(d.unidades_disponiveis||[]).find(x=>x.id===$('unidade').value);$('scope').textContent='Abrangência · '+(selecionada?sigla(selecionada.sigla)+' — '+selecionada.nome:'todas as unidades subordinadas');$('heroScope').textContent=selecionada?sigla(selecionada.sigla)+' — '+selecionada.nome:'Todas as unidades subordinadas';$('heroPeriod').textContent=br($('ini').value)+' a '+br($('fim').value);atualizarUrl()}
-async function carregar(){const ready=window.SistemaAuth?.ready;if(ready)await ready;$('loading').style.display='grid';$('status').textContent='Consultando dados consolidados...';try{const args={data_inicio:$('ini').value||null,data_fim:$('fim').value||null,p_unidade_id:$('unidade').value||null,p_ocorrencia:$('ocorrencia').value.trim()||null,p_bairro:$('bairro').value.trim()||null,p_sisc:$('sisc').value||null,p_companhia:$('companhia').value||null,p_turno:$('turno').value||null};const r=await db.rpc('obter_painel_cpc_filtrado',args);if(r.error)throw r.error;if(!r.data?.autorizado)throw new Error(r.data?.erro||'Acesso não autorizado ao Painel CPC.');popularUnidades(r.data.unidades_disponiveis||[]);if(!args.p_unidade_id&&$('unidade').value){return carregar()}render(r.data);$('status').textContent='Painel atualizado. Os indicadores refletem somente o escopo e os filtros exibidos acima.'}catch(e){console.error(e);$('status').textContent='Não foi possível carregar a Central Executiva do CPC: '+e.message}finally{$('loading').style.display='none'}}
+async function carregar(){const ready=window.SistemaAuth?.ready;if(ready)await ready;$('loading').style.display='grid';$('status').textContent='Consultando dados consolidados...';try{const args={data_inicio:$('ini').value||null,data_fim:$('fim').value||null,p_unidade_id:$('unidade').value||null,p_aisc:$('aisc').value||null,p_sisc:$('sisc').value||null,p_setor:$('setor').value||null,p_ocorrencia:$('ocorrencia').value.trim()||null,p_bairro:$('bairro').value.trim()||null,p_companhia:$('companhia').value||null,p_turno:$('turno').value||null};const r=await db.rpc('obter_painel_cpc_territorial',args);if(r.error)throw r.error;if(!r.data?.autorizado)throw new Error(r.data?.erro||'Acesso não autorizado ao Painel CPC.');popularUnidades(r.data.unidades_disponiveis||[]);if(!args.p_unidade_id&&$('unidade').value){return carregar()}render(r.data);$('status').textContent='Painel atualizado. Os indicadores refletem somente o escopo e os filtros exibidos acima.'}catch(e){console.error(e);$('status').textContent='Não foi possível carregar a Central Executiva do CPC: '+e.message}finally{$('loading').style.display='none'}}
 function periodo(tipo){const h=new Date(),f=new Date(h),i=new Date(h);if(tipo==='hoje'){}else if(tipo==='7dias')i.setDate(h.getDate()-6);else if(tipo==='30dias')i.setDate(h.getDate()-29);else if(tipo==='ano')i.setMonth(0,1);else i.setDate(1);$('ini').value=iso(i);$('fim').value=iso(f);carregar()}
-document.querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>periodo(b.dataset.period));$('atualizar').onclick=carregar;$('limpar').onclick=()=>{$('unidade').value='';$('ocorrencia').value='';$('bairro').value='';$('sisc').value='';$('companhia').value='';$('turno').value='';periodo('mes')};
-const qp=new URLSearchParams(location.search),h=new Date();$('ini').value=qp.get('ini')||iso(new Date(h.getFullYear(),h.getMonth(),1));$('fim').value=qp.get('fim')||iso(h);carregar();
+document.querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>periodo(b.dataset.period));$('atualizar').onclick=carregar;
+$('aisc').onchange=()=>{ $('sisc').value='';$('setor').value='';popularTerritorio(); };
+$('sisc').onchange=()=>{ $('setor').value='';popularTerritorio(); };
+$('limpar').onclick=()=>{$('unidade').value='';$('aisc').value='';$('sisc').value='';$('setor').value='';$('ocorrencia').value='';$('bairro').value='';$('companhia').value='';$('turno').value='';popularTerritorio();periodo('mes')};
+const qp=new URLSearchParams(location.search),h=new Date();$('ini').value=qp.get('ini')||iso(new Date(h.getFullYear(),h.getMonth(),1));$('fim').value=qp.get('fim')||iso(h);
+(async()=>{const ready=window.SistemaAuth?.ready;if(ready)await ready;const tr=await db.rpc('obter_catalogo_territorial_cpc');if(!tr.error){catalogoTerritorial=tr.data||{};popularTerritorio()}else console.error('Falha ao carregar catálogo territorial:',tr.error);carregar()})();
 </script>
 </body>
 </html>

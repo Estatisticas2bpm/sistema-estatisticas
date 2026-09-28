@@ -426,6 +426,7 @@
             <label for="bairro">Bairro</label>
             <input id="bairro" name="bairro" type="text" list="listaBairros" autocomplete="off" placeholder="Preenchido pelo Google ou informado manualmente">
             <small style="color:#64748b">Confira o bairro preenchido pelo Google. Se estiver vazio ou incorreto, você pode editar manualmente.</small>
+            <div id="territorioBairroInfo" hidden style="margin-top:7px;padding:8px 10px;border:1px solid #d8e6ee;border-left:4px solid #1f5a8a;border-radius:9px;background:#f8fbfd;color:#3c5266;font-size:11px;line-height:1.45"></div>
             <datalist id="listaBairros"></datalist><button id="abrirNovoBairro" type="button" hidden aria-hidden="true" tabindex="-1">+</button>
           </div>
 
@@ -836,6 +837,25 @@
       const chave = informado.normalize("NFD").replace(/[\u0300-\u036f]/g,"");
       return catalogos.bairros.find(nome => normalizarCatalogo(nome).normalize("NFD").replace(/[\u0300-\u036f]/g,"") === chave) || informado;
     }
+    function siglaTerritorial(v) {
+      const s=String(v||"").trim(),m=s.match(/^(\d+)BPM$/i);
+      return m?m[1]+"º BPM":s;
+    }
+    let temporizadorTerritorioBairro=null;
+    async function atualizarTerritorioBairro() {
+      const campo=document.getElementById("bairro"),box=document.getElementById("territorioBairroInfo"),valor=campo.value.trim();
+      if(!valor){box.hidden=true;box.textContent="";return}
+      const r=await banco.rpc("territorio_por_bairro",{valor});
+      if(r.error){console.error("Falha ao classificar território:",r.error);box.hidden=true;return}
+      const t=r.data;
+      if(!t){box.hidden=false;box.innerHTML="<b>Território:</b> localidade sem classificação na matriz AISC/SISC/Setor do Decreto nº 22.414-E/2017.";return}
+      box.hidden=false;
+      box.innerHTML="<b>Área territorial oficial:</b> "+[t.aisc,t.sisc,t.setor?"Setor "+t.setor:""].filter(Boolean).join(" · ")+" · <b>Unidade territorial:</b> "+siglaTerritorial(t.unidade_sigla)+"<br><span style='color:#66758a'>Esta classificação indica onde o fato ocorreu e não altera a unidade responsável pelo registro.</span>";
+    }
+    const campoBairroTerritorio=document.getElementById("bairro");
+    campoBairroTerritorio.addEventListener("input",()=>{clearTimeout(temporizadorTerritorioBairro);temporizadorTerritorioBairro=setTimeout(atualizarTerritorioBairro,450)});
+    campoBairroTerritorio.addEventListener("change",atualizarTerritorioBairro);
+    campoBairroTerritorio.addEventListener("blur",atualizarTerritorioBairro);
     const modalBairro = document.getElementById("modalBairro");
     document.getElementById("abrirNovoBairro").addEventListener("click", function() {
       document.getElementById("novoBairro").value = normalizarCatalogo(document.getElementById("bairro").value);
@@ -852,6 +872,7 @@
       catalogos.bairros.sort((a,b)=>a.localeCompare(b,"pt-BR"));
       preencherLista("listaBairros",catalogos.bairros);
       document.getElementById("bairro").value=nome;
+      atualizarTerritorioBairro();
       modalBairro.close();
     });
     document.getElementById("ocorrencia").addEventListener("input", atualizarSubtipos);
