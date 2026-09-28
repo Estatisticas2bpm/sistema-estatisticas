@@ -19,6 +19,7 @@ window.SISTEMA_AUTH_CONFIG = Object.freeze({
     "cadastro-base.html":"cadastro",
     "consulta.html":"consulta",
     "dashboard.html":"dashboard",
+    "dashboard-cpc.html":"dashboard",
     "auditoria.html":"auditoria",
     "analise-temporal.html":"analise",
     "mapa-criminal.html":"mapa",
@@ -33,6 +34,7 @@ window.SISTEMA_AUTH_CONFIG = Object.freeze({
     "usuarios.html":"usuarios"
   }),
   pageModules: Object.freeze({
-    "acoes.html":"ACOES_SOCIAIS"
+    "acoes.html":"ACOES_SOCIAIS",
+    "dashboard-cpc.html":"PAINEL_CPC"
   })
 });
