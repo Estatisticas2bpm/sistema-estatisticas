@@ -147,7 +147,7 @@
       badge.id='sistemaUnidadeAtiva';
       badge.textContent='UNIDADE ATIVA · '+sigla;
       badge.title=nomeUnidade||sigla;
-      badge.style.cssText='position:fixed;right:14px;top:14px;z-index:99998;background:#ffffffed;color:#071b33;border:1px solid #cbd9e6;border-left:4px solid #0e4f8a;border-radius:10px;box-shadow:0 6px 20px #071b3320;padding:8px 11px;font:900 11px/1.2 Inter,Segoe UI,Arial,sans-serif;letter-spacing:.55px;text-transform:uppercase;backdrop-filter:blur(6px)';
+      badge.style.cssText='position:fixed;left:14px;bottom:76px;right:auto;top:auto;z-index:99998;background:#ffffffed;color:#071b33;border:1px solid #cbd9e6;border-left:4px solid #0e4f8a;border-radius:10px;box-shadow:0 6px 20px #071b3320;padding:8px 11px;font:900 11px/1.2 Inter,Segoe UI,Arial,sans-serif;letter-spacing:.55px;text-transform:uppercase;backdrop-filter:blur(6px)';
       document.body.appendChild(badge);
     }
   }
