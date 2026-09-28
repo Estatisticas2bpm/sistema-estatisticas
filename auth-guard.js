@@ -114,6 +114,27 @@
     });
   }
 
+  function aplicarIdentidadeVisual(perfil){
+    const sigla=perfil.unidades?.sigla||'UNIDADE NÃO IDENTIFICADA';
+    const nomeUnidade=perfil.unidades?.nome||'';
+    document.querySelectorAll('[data-sie-unit]').forEach(el=>{
+      el.textContent='Unidade ativa · '+sigla;
+      if(nomeUnidade)el.setAttribute('title',nomeUnidade);
+    });
+    document.querySelectorAll('[data-sie-unit-name]').forEach(el=>{el.textContent=nomeUnidade||sigla;});
+    document.querySelectorAll('[data-sie-user]').forEach(el=>{el.textContent=perfil.nome_guerra||perfil.nome||perfil.email||'Usuário';});
+    document.querySelectorAll('[data-sie-role]').forEach(el=>{el.textContent=normalizarPerfil(perfil.perfil);});
+
+    if(!document.getElementById('sistemaUnidadeAtiva')){
+      const badge=document.createElement('div');
+      badge.id='sistemaUnidadeAtiva';
+      badge.textContent='UNIDADE ATIVA · '+sigla;
+      badge.title=nomeUnidade||sigla;
+      badge.style.cssText='position:fixed;right:14px;top:14px;z-index:99998;background:#ffffffed;color:#071b33;border:1px solid #cbd9e6;border-left:4px solid #0e4f8a;border-radius:10px;box-shadow:0 6px 20px #071b3320;padding:8px 11px;font:900 11px/1.2 Inter,Segoe UI,Arial,sans-serif;letter-spacing:.55px;text-transform:uppercase;backdrop-filter:blur(6px)';
+      document.body.appendChild(badge);
+    }
+  }
+
   function instalarIdentificacao(perfil,client){
     if(document.getElementById('sistemaUsuarioSessao'))return;
     const box=document.createElement('div');
@@ -207,7 +228,7 @@
 
       window.SistemaAuth={enabled:true,client,user,perfil,modulos:[...modulos],planilha,pode:(p)=>pode(perfil.perfil,p),temModulo:(m)=>temModulo(modulos,m),ready:null,sair:async()=>{await client.auth.signOut({scope:'local'});location.replace(cfg.loginPage);}};
 
-      const aplicar=()=>{aplicarPermissoes(perfil.perfil,modulos,planilha);instalarIdentificacao(perfil,client);mostrarAvisoDeAcesso();};
+      const aplicar=()=>{aplicarIdentidadeVisual(perfil);aplicarPermissoes(perfil.perfil,modulos,planilha);instalarIdentificacao(perfil,client);mostrarAvisoDeAcesso();};
       if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',aplicar,{once:true});
       else aplicar();
 
