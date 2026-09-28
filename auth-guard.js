@@ -212,21 +212,6 @@
     badge.append(titulo,select,detalhe);
   }
 
-  function instalarIdentificacao(perfil,client){
-    if(document.getElementById('sistemaUsuarioSessao'))return;
-    const box=document.createElement('div');
-    box.id='sistemaUsuarioSessao';
-    box.style.cssText='position:fixed;right:14px;bottom:14px;z-index:99999;background:#071b33;color:#fff;border:1px solid #ffffff33;border-radius:12px;box-shadow:0 8px 24px #0003;padding:10px 12px;font:12px Arial,sans-serif;display:flex;align-items:center;gap:10px;max-width:min(92vw,420px)';
-    const nome=perfil.nome_guerra||perfil.nome||perfil.email||'Usuário';
-    const unidade=formatarSiglaUnidade(perfil.unidades?.sigla)||'';
-    box.innerHTML='<div style="min-width:0"><strong style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(nome)+'</strong><span style="opacity:.8">'+esc(perfil.perfil)+(unidade?' · '+esc(unidade):'')+'</span></div><button type="button" id="sistemaSair" style="border:1px solid #ffffff55;background:transparent;color:#fff;border-radius:8px;padding:7px 9px;cursor:pointer;font-weight:700">Sair</button>';
-    document.body.appendChild(box);
-    document.getElementById('sistemaSair').addEventListener('click',async()=>{
-      try{await client.auth.signOut({scope:'local'});}catch(_){}
-      location.replace(cfg.loginPage);
-    });
-  }
-
   function mostrarAvisoDeAcesso(){
     const erro=new URLSearchParams(location.search).get('erro');
     if(erro!=='modulo-indisponivel'||document.getElementById('sistemaAvisoAcesso'))return;
@@ -307,7 +292,7 @@
 
       window.SistemaAuth={enabled:true,client,user,perfil,contexto:contextoAtual,modulos:[...modulos],planilha,pode:(p)=>pode(perfil.perfil,p),temModulo:(m)=>temModulo(modulos,m),ready:null,sair:async()=>{await client.auth.signOut({scope:'local'});location.replace(cfg.loginPage);}};
 
-      const aplicar=()=>{aplicarIdentidadeVisual(perfil);aplicarPermissoes(perfil.perfil,modulos,planilha);instalarIdentificacao(perfil,client);instalarSeletorUnidadeAdmin(perfil,client).catch(e=>console.error('Falha ao instalar seletor administrativo:',e));mostrarAvisoDeAcesso();};
+      const aplicar=()=>{aplicarIdentidadeVisual(perfil);aplicarPermissoes(perfil.perfil,modulos,planilha);instalarSeletorUnidadeAdmin(perfil,client).catch(e=>console.error('Falha ao instalar seletor administrativo:',e));mostrarAvisoDeAcesso();};
       if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',aplicar,{once:true});
       else aplicar();
 
