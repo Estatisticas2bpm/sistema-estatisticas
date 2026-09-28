@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Acesso ao Sistema - 2º BPM</title>
+  <title>SIE-CPC — Acesso ao Sistema</title>
   <style>
     *{box-sizing:border-box}:root{--navy:#071b33;--blue:#0e4f8a;--bg:#eef3f8;--line:#d7e0ea;--text:#172033;--muted:#66758a;--red:#b42318;--green:#13795b}
     body{margin:0;min-height:100vh;background:linear-gradient(150deg,#071b33 0,#0a355f 38%,#eef3f8 38%);font-family:Inter,Segoe UI,Arial,sans-serif;color:var(--text);display:flex;flex-direction:column}
@@ -14,9 +14,9 @@
   <script src="auth-config.js"></script>
 </head>
 <body>
-<header><div class="head"><div class="logos"><img src="brasao-pmrr.png" alt="PMRR"><img src="logo-2bpm-novo.png" alt="2º BPM"></div><div><h1>Sistema de Estatísticas Operacionais</h1><p>2º Batalhão da Polícia Militar</p></div></div></header>
+<header><div class="head"><div class="logos"><img src="brasao-pmrr.png" alt="Brasão da Polícia Militar de Roraima"></div><div><h1>SIE-CPC</h1><p>Sistema Integrado de Estatística do CPC<br><span style="font-size:12px;opacity:.85">Polícia Militar de Roraima · Comando de Policiamento da Capital</span></p></div></div></header>
 <main><section class="card"><h2>Acesso ao sistema</h2><p class="desc">Entre com o usuário criado pelo administrador do sistema.</p><div id="statusModulo" class="status-modulo"></div><form id="formLogin"><div class="campo"><label for="email">E-mail</label><input id="email" type="email" autocomplete="username" required></div><div class="campo"><label for="senha">Senha</label><div class="senha"><input id="senha" type="password" autocomplete="current-password" required><button id="mostrarSenha" class="mostrar" type="button">Mostrar</button></div></div><button id="entrar" class="entrar" type="submit">Entrar</button><button id="recuperarSenha" class="recuperar" type="button">Esqueci minha senha</button><div id="mensagem" class="msg"></div></form></section></main>
-<div class="rodape">2º Batalhão da Polícia Militar — Sistema de Estatísticas Operacionais</div>
+<div class="rodape">SIE-CPC — Polícia Militar de Roraima · Comando de Policiamento da Capital</div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const cfg=window.SISTEMA_AUTH_CONFIG;
