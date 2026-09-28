@@ -38,6 +38,7 @@
 
   function normalizarPerfil(v){return String(v||'').trim().toUpperCase();}
   function normalizarModulo(v){return String(v||'').trim().toUpperCase();}
+  function formatarSiglaUnidade(v){const s=String(v||'').trim();const m=s.match(/^(\d+)BPM$/i);return m?m[1]+'º BPM':s;}
 
   function pode(perfil,permissao){
     if(!permissao)return true;
@@ -115,7 +116,7 @@
   }
 
   function aplicarIdentidadeVisual(perfil){
-    const sigla=perfil.unidades?.sigla||'UNIDADE NÃO IDENTIFICADA';
+    const sigla=formatarSiglaUnidade(perfil.unidades?.sigla)||'UNIDADE NÃO IDENTIFICADA';
     const nomeUnidade=perfil.unidades?.nome||'';
     document.querySelectorAll('[data-sie-unit]').forEach(el=>{
       el.textContent='Unidade ativa · '+sigla;
@@ -141,7 +142,7 @@
     box.id='sistemaUsuarioSessao';
     box.style.cssText='position:fixed;right:14px;bottom:14px;z-index:99999;background:#071b33;color:#fff;border:1px solid #ffffff33;border-radius:12px;box-shadow:0 8px 24px #0003;padding:10px 12px;font:12px Arial,sans-serif;display:flex;align-items:center;gap:10px;max-width:min(92vw,420px)';
     const nome=perfil.nome_guerra||perfil.nome||perfil.email||'Usuário';
-    const unidade=perfil.unidades?.sigla||'';
+    const unidade=formatarSiglaUnidade(perfil.unidades?.sigla)||'';
     box.innerHTML='<div style="min-width:0"><strong style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(nome)+'</strong><span style="opacity:.8">'+esc(perfil.perfil)+(unidade?' · '+esc(unidade):'')+'</span></div><button type="button" id="sistemaSair" style="border:1px solid #ffffff55;background:transparent;color:#fff;border-radius:8px;padding:7px 9px;cursor:pointer;font-weight:700">Sair</button>';
     document.body.appendChild(box);
     document.getElementById('sistemaSair').addEventListener('click',async()=>{
