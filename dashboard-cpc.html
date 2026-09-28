@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SIE-CPC — Painel Geral do CPC</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+*{box-sizing:border-box}:root{--navy:#071b33;--blue:#0e4f8a;--steel:#496b86;--teal:#2f7278;--green:#39705a;--amber:#b7791f;--red:#a63d40;--bg:#eef3f8;--card:#fff;--line:#d7e0ea;--muted:#66758a;--ink:#172033}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px Inter,Segoe UI,Arial,sans-serif}
+header{background:radial-gradient(circle at 85% 0,#196ba9 0,transparent 33%),linear-gradient(125deg,#06172c,#0a355f 60%,#0a526e);color:#fff;padding:25px 4% 55px}
+.head{width:min(1400px,96%);margin:auto;display:flex;justify-content:space-between;align-items:center;gap:18px}.brand{display:flex;align-items:center;gap:13px}.brand img{width:58px;height:58px;object-fit:contain}.brand b{display:block;font-size:18px}.brand small{color:#bfd4e7}.headActions{display:flex;gap:8px;flex-wrap:wrap}.head a{color:#fff;text-decoration:none;border:1px solid #ffffff55;border-radius:10px;padding:9px 12px;font-weight:800}
+.hero{width:min(1400px,96%);margin:30px auto 0}.hero .eyebrow{color:#9ee5e7;font-weight:900;font-size:11px;letter-spacing:1.2px;text-transform:uppercase}.hero h1{margin:8px 0 5px;font-size:clamp(27px,4vw,42px)}.hero p{margin:0;color:#c9dbea}
+main{width:min(1400px,96%);margin:-28px auto 45px}.panel{background:#fff;border:1px solid var(--line);border-radius:17px;padding:18px;box-shadow:0 8px 28px #102e4a0f;margin-bottom:16px}
+.filters{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end}.filters label{font-size:11px;font-weight:900;color:#52677a;text-transform:uppercase}.filters input{display:block;width:100%;margin-top:5px;border:1px solid #cbd7e3;border-radius:9px;padding:10px;font:inherit;background:#fff}.btn{border:0;border-radius:9px;padding:11px 16px;background:var(--blue);color:#fff;font-weight:900;cursor:pointer}
+.kpis{display:grid;grid-template-columns:repeat(7,1fr);gap:11px;margin-bottom:16px}.kpi{background:#fff;border:1px solid var(--line);border-radius:14px;padding:15px;position:relative;overflow:hidden}.kpi:before{content:"";position:absolute;inset:0 auto 0 0;width:4px;background:var(--accent,var(--blue))}.kpi small{display:block;color:var(--muted);font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.35px}.kpi strong{display:block;margin-top:7px;font-size:26px;color:var(--navy)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}.sectionTitle{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px}.sectionTitle h2{margin:0 0 4px;font-size:18px}.sectionTitle p{margin:0;color:var(--muted);font-size:12px}.tag{background:#edf5fb;color:var(--blue);border-radius:999px;padding:6px 9px;font-size:10px;font-weight:900}
+.chartbox{height:320px}.tableWrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:900px}th,td{padding:10px;border-bottom:1px solid #e6edf3;text-align:right}th{background:#f5f8fb;color:#40566c;font-size:11px;text-transform:uppercase;position:sticky;top:0}th:first-child,td:first-child{text-align:left}.unit{font-weight:900;color:var(--navy)}.sub{display:block;color:var(--muted);font-size:11px;font-weight:400;margin-top:2px}
+.naturezas{display:grid;grid-template-columns:repeat(2,1fr);gap:13px}.naturezaBox{border:1px solid #dde6ee;border-radius:13px;padding:14px;background:#fbfdff}.naturezaBox h3{margin:0 0 10px;color:var(--navy)}.rank{display:grid;grid-template-columns:24px 1fr 42px;gap:8px;padding:7px 0;border-bottom:1px solid #edf2f6}.rank:last-child{border:0}.rank i{font-style:normal;color:var(--muted);font-weight:900}.rank span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rank b{text-align:right;color:var(--blue)}
+.status{color:var(--muted);font-size:12px;margin-top:8px}.loading{position:fixed;inset:0;background:#ffffffdf;display:grid;place-items:center;z-index:100000;color:var(--navy);font-weight:900;font-size:17px}
+footer{text-align:center;color:var(--muted);padding:5px 10px 30px;font-size:12px}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(4,1fr)}}@media(max-width:800px){.grid2,.naturezas{grid-template-columns:1fr}.filters{grid-template-columns:1fr 1fr}.filters .btn{grid-column:1/-1}.kpis{grid-template-columns:1fr 1fr}.head{align-items:flex-start;flex-direction:column}}@media(max-width:500px){.kpis,.filters{grid-template-columns:1fr}.filters .btn{grid-column:auto}}
+</style>
+<script src="auth-config.js"></script>
+<script src="auth-guard.js"></script>
+</head>
+<body>
+<div id="loading" class="loading">Carregando visão consolidada do CPC...</div>
+<header>
+  <div class="head">
+    <div class="brand"><img src="brasao-pmrr.png" alt="Brasão da PMRR"><div><b>SIE-CPC</b><small>Sistema Integrado de Estatística do CPC</small></div></div>
+    <div class="headActions"><a href="index.html">← Página inicial</a></div>
+  </div>
+  <div class="hero">
+    <div class="eyebrow">Gestão estratégica · somente leitura</div>
+    <h1>Painel Geral do CPC</h1>
+    <p>Visão consolidada e comparativa das unidades subordinadas ao Comando de Policiamento da Capital.</p>
+  </div>
+</header>
+<main>
+  <section class="panel">
+    <div class="filters">
+      <label>Data inicial<input id="ini" type="date"></label>
+      <label>Data final<input id="fim" type="date"></label>
+      <button id="atualizar" class="btn" type="button">Atualizar painel</button>
+    </div>
+    <div id="status" class="status"></div>
+  </section>
+
+  <section class="kpis">
+    <div class="kpi" style="--accent:var(--blue)"><small>Ocorrências</small><strong id="kOcorrencias">0</strong></div>
+    <div class="kpi" style="--accent:var(--steel)"><small>Conduções</small><strong id="kConducoes">0</strong></div>
+    <div class="kpi" style="--accent:var(--red)"><small>Prisões</small><strong id="kPrisoes">0</strong></div>
+    <div class="kpi" style="--accent:var(--teal)"><small>TCOs</small><strong id="kTcos">0</strong></div>
+    <div class="kpi" style="--accent:var(--green)"><small>Veículos recuperados</small><strong id="kVeiculos">0</strong></div>
+    <div class="kpi" style="--accent:var(--amber)"><small>Ocorrências com armas</small><strong id="kArmas">0</strong></div>
+    <div class="kpi" style="--accent:var(--green)"><small>Ocorrências com drogas</small><strong id="kDrogas">0</strong></div>
+  </section>
+
+  <div class="grid2">
+    <section class="panel">
+      <div class="sectionTitle"><div><h2>Comparativo entre unidades</h2><p>Total de ocorrências no período selecionado</p></div><span class="tag">UNIDADES</span></div>
+      <div class="chartbox"><canvas id="chartUnidades"></canvas></div>
+    </section>
+    <section class="panel">
+      <div class="sectionTitle"><div><h2>Evolução diária</h2><p>Ocorrências por unidade ao longo do período</p></div><span class="tag">TENDÊNCIA</span></div>
+      <div class="chartbox"><canvas id="chartSerie"></canvas></div>
+    </section>
+  </div>
+
+  <section class="panel">
+    <div class="sectionTitle"><div><h2>Quadro comparativo operacional</h2><p>Indicadores consolidados por unidade subordinada</p></div><span class="tag">CONSOLIDADO</span></div>
+    <div class="tableWrap"><table><thead><tr><th>Unidade</th><th>Ocorrências</th><th>Conduções</th><th>Prisões</th><th>TCOs</th><th>Veículos rec.</th><th>Com armas</th><th>Com drogas</th></tr></thead><tbody id="tbodyUnidades"></tbody></table></div>
+  </section>
+
+  <section class="panel">
+    <div class="sectionTitle"><div><h2>Principais ocorrências por unidade</h2><p>Top 5 naturezas registradas no período</p></div><span class="tag">NATUREZAS</span></div>
+    <div id="naturezas" class="naturezas"></div>
+  </section>
+</main>
+<footer>SIE-CPC — Polícia Militar de Roraima · Comando de Policiamento da Capital</footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const cfg=window.SISTEMA_AUTH_CONFIG;
+const db=supabase.createClient(cfg.supabaseUrl,cfg.publishableKey);
+const $=id=>document.getElementById(id);
+let charts={};
+function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function n(v){return Number(v)||0}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function sigla(v){const s=String(v||'').trim(),m=s.match(/^(\d+)BPM$/i);return m?m[1]+'º BPM':s}
+function chart(id,type,labels,datasets,options={}){if(charts[id])charts[id].destroy();charts[id]=new Chart($(id),{type,data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},...options}})}
+function render(d){
+  const r=d.resumo||{},u=d.unidades||[],top=d.top_naturezas||[],serie=d.serie_diaria||[];
+  $('kOcorrencias').textContent=n(r.total_ocorrencias);
+  $('kConducoes').textContent=n(r.conducoes);
+  $('kPrisoes').textContent=n(r.prisoes);
+  $('kTcos').textContent=n(r.tcos);
+  $('kVeiculos').textContent=n(r.veiculos_recuperados);
+  $('kArmas').textContent=n(r.ocorrencias_armas);
+  $('kDrogas').textContent=n(r.ocorrencias_drogas);
+
+  $('tbodyUnidades').innerHTML=u.length?u.map(x=>'<tr><td><span class="unit">'+esc(sigla(x.sigla))+'</span><span class="sub">'+esc(x.nome)+'</span></td><td>'+n(x.total_ocorrencias)+'</td><td>'+n(x.conducoes)+'</td><td>'+n(x.prisoes)+'</td><td>'+n(x.tcos)+'</td><td>'+n(x.veiculos_recuperados)+'</td><td>'+n(x.ocorrencias_armas)+'</td><td>'+n(x.ocorrencias_drogas)+'</td></tr>').join(''):'<tr><td colspan="8">Nenhuma unidade ativa encontrada no escopo.</td></tr>';
+
+  chart('chartUnidades','bar',u.map(x=>sigla(x.sigla)),[{label:'Ocorrências',data:u.map(x=>n(x.total_ocorrencias))}]);
+
+  const datas=[...new Set(serie.map(x=>x.data))].sort();
+  const units=[...new Set(u.map(x=>x.sigla))];
+  const mapa=new Map(serie.map(x=>[x.data+'|'+x.sigla,n(x.total)]));
+  const datasets=units.map(s=>({label:sigla(s),data:datas.map(d=>mapa.get(d+'|'+s)||0),tension:.25,fill:false}));
+  chart('chartSerie','line',datas.map(d=>d.split('-').reverse().join('/')),datasets,{interaction:{mode:'index',intersect:false},scales:{y:{beginAtZero:true,ticks:{precision:0}}}});
+
+  $('naturezas').innerHTML=top.length?top.map(x=>'<div class="naturezaBox"><h3>'+esc(sigla(x.sigla))+'</h3>'+((x.itens||[]).length?(x.itens||[]).map((i,idx)=>'<div class="rank"><i>'+(idx+1)+'º</i><span title="'+esc(i.natureza)+'">'+esc(i.natureza)+'</span><b>'+n(i.total)+'</b></div>').join(''):'<div class="status">Sem ocorrências no período.</div>')+'</div>').join(''):'<div class="status">Sem dados para exibir.</div>';
+}
+async function carregar(){
+  $('loading').style.display='grid';
+  $('status').textContent='Consultando dados consolidados...';
+  try{
+    const r=await db.rpc('obter_painel_cpc',{data_inicio:$('ini').value||null,data_fim:$('fim').value||null});
+    if(r.error)throw r.error;
+    if(!r.data?.autorizado)throw new Error(r.data?.erro||'Acesso não autorizado ao Painel CPC.');
+    render(r.data);
+    $('status').textContent='Painel atualizado. Dados consolidados somente das unidades autorizadas no escopo do CPC.';
+  }catch(e){
+    console.error(e);
+    $('status').textContent='Não foi possível carregar o Painel CPC: '+e.message;
+  }finally{$('loading').style.display='none'}
+}
+$('atualizar').onclick=carregar;
+const h=new Date();$('ini').value=iso(new Date(h.getFullYear(),h.getMonth(),1));$('fim').value=iso(h);carregar();
+</script>
+</body>
+</html>
