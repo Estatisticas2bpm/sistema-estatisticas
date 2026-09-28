@@ -3,12 +3,12 @@
   const pathname=(location.pathname.split('/').pop()||'index.html').toLowerCase();
 
   function esconderAdministracaoDesativada(){
-    document.querySelectorAll('[data-auth-only],[data-permission="usuarios"],[data-permission="configuracoes"],[data-permission="logs"]').forEach(el=>{el.hidden=true;});
+    document.querySelectorAll('[data-auth-only],[data-module],[data-permission="usuarios"],[data-permission="configuracoes"],[data-permission="logs"]').forEach(el=>{el.hidden=true;});
   }
 
   if(!cfg||!cfg.enabled){
     document.addEventListener('DOMContentLoaded',esconderAdministracaoDesativada,{once:true});
-    window.SistemaAuth={enabled:false,ready:Promise.resolve({enabled:false}),pode:()=>true,perfil:null,user:null,sair:async()=>{location.href='index.html';}};
+    window.SistemaAuth={enabled:false,ready:Promise.resolve({enabled:false}),pode:()=>true,temModulo:()=>false,modulos:[],planilha:null,perfil:null,user:null,sair:async()=>{location.href='index.html';}};
     return;
   }
 
@@ -26,6 +26,7 @@
   }
 
   function permissaoDaPagina(){return cfg.pagePermissions[pathname]||null;}
+  function moduloDaPagina(){return cfg.pageModules?.[pathname]||null;}
 
   function urlLogin(erro){
     const retorno=pathname&&pathname!==cfg.loginPage?pathname+location.search:'';
@@ -36,6 +37,7 @@
   }
 
   function normalizarPerfil(v){return String(v||'').trim().toUpperCase();}
+  function normalizarModulo(v){return String(v||'').trim().toUpperCase();}
 
   function pode(perfil,permissao){
     if(!permissao)return true;
@@ -54,11 +56,61 @@
     }catch(_){return null;}
   }
 
-  function aplicarPermissoes(perfil){
-    document.querySelectorAll('[data-permission]').forEach(el=>{el.hidden=!pode(perfil,el.getAttribute('data-permission'));});
+  function moduloPorHref(href){
+    if(!href)return null;
+    try{
+      const u=new URL(href,location.href);
+      if(u.origin!==location.origin)return null;
+      const arq=(u.pathname.split('/').pop()||'index.html').toLowerCase();
+      return cfg.pageModules?.[arq]||null;
+    }catch(_){return null;}
+  }
+
+  function temModulo(modulos,codigo){
+    if(!codigo)return true;
+    return modulos.has(normalizarModulo(codigo));
+  }
+
+  async function carregarModulos(client){
+    const r=await client.rpc('obter_modulos_usuario');
+    if(r.error){
+      console.error('Não foi possível carregar os módulos da unidade; acesso especializado bloqueado:',r.error);
+      return new Set();
+    }
+    return new Set((r.data||[]).map(x=>normalizarModulo(x.codigo)).filter(Boolean));
+  }
+
+  async function carregarPlanilhaUsuario(client){
+    const r=await client.rpc('obter_planilha_usuario');
+    if(r.error){
+      console.error('Não foi possível carregar a planilha da unidade; atalho bloqueado:',r.error);
+      return null;
+    }
+    const linha=Array.isArray(r.data)?r.data[0]:r.data;
+    return linha?.google_sheet_url?linha:null;
+  }
+
+  function aplicarPermissoes(perfil,modulos,planilha){
+    document.querySelectorAll('[data-permission],[data-module],[data-planilha-unidade]').forEach(el=>{
+      const permitidoPerfil=pode(perfil,el.getAttribute('data-permission'));
+      const permitidoModulo=temModulo(modulos,el.getAttribute('data-module'));
+      const precisaPlanilha=el.hasAttribute('data-planilha-unidade');
+      const permitidoPlanilha=!precisaPlanilha||!!planilha?.google_sheet_url;
+      if(precisaPlanilha){
+        if(permitidoPlanilha){
+          el.setAttribute('href',planilha.google_sheet_url);
+          el.setAttribute('target','_blank');
+          el.setAttribute('rel','noopener');
+        }else{
+          el.removeAttribute('href');
+        }
+      }
+      el.hidden=!(permitidoPerfil&&permitidoModulo&&permitidoPlanilha);
+    });
     document.querySelectorAll('a[href]').forEach(el=>{
       const p=permissaoPorHref(el.getAttribute('href'));
-      if(p&&!pode(perfil,p))el.hidden=true;
+      const m=moduloPorHref(el.getAttribute('href'));
+      if((p&&!pode(perfil,p))||(m&&!temModulo(modulos,m)))el.hidden=true;
     });
   }
 
@@ -77,6 +129,17 @@
     });
   }
 
+  function mostrarAvisoDeAcesso(){
+    const erro=new URLSearchParams(location.search).get('erro');
+    if(erro!=='modulo-indisponivel'||document.getElementById('sistemaAvisoAcesso'))return;
+    const aviso=document.createElement('div');
+    aviso.id='sistemaAvisoAcesso';
+    aviso.setAttribute('role','alert');
+    aviso.style.cssText='position:fixed;left:50%;top:16px;transform:translateX(-50%);z-index:100000;width:min(92vw,680px);background:#fff7e6;color:#713f12;border:1px solid #f2c66d;border-radius:12px;box-shadow:0 8px 24px #0002;padding:12px 16px;font:600 13px/1.45 Arial,sans-serif;text-align:center';
+    aviso.textContent='Esta funcionalidade não está habilitada para a sua unidade principal.';
+    document.body.appendChild(aviso);
+  }
+
   function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
   async function carregarPerfil(client,user){
@@ -88,7 +151,7 @@
     if(!r.data)return null;
     let unidade=null;
     if(r.data.unidade_id){
-      const u=await client.from('unidades').select('id,sigla,nome').eq('id',r.data.unidade_id).maybeSingle();
+      const u=await client.from('unidades').select('id,sigla,nome,ativo').eq('id',r.data.unidade_id).maybeSingle();
       if(!u.error)unidade=u.data||null;
     }
     return {...r.data,unidades:unidade};
@@ -115,6 +178,11 @@
         location.replace(urlLogin('bloqueado'));
         return null;
       }
+      if(!perfil.unidade_id||!perfil.unidades||perfil.unidades.ativo!==true){
+        await client.auth.signOut({scope:'local'}).catch(()=>{});
+        location.replace(urlLogin('unidade-indisponivel'));
+        return null;
+      }
 
       if(perfil.senha_temporaria===true&&pathname!==cfg.passwordPage){
         location.replace(cfg.passwordPage);
@@ -127,9 +195,19 @@
         return null;
       }
 
-      window.SistemaAuth={enabled:true,client,user,perfil,pode:(p)=>pode(perfil.perfil,p),ready:null,sair:async()=>{await client.auth.signOut({scope:'local'});location.replace(cfg.loginPage);}};
+      const [modulos,planilha]=await Promise.all([
+        carregarModulos(client),
+        carregarPlanilhaUsuario(client)
+      ]);
+      const mPagina=moduloDaPagina();
+      if(mPagina&&!temModulo(modulos,mPagina)){
+        location.replace(cfg.homePage+'?erro=modulo-indisponivel');
+        return null;
+      }
 
-      const aplicar=()=>{aplicarPermissoes(perfil.perfil);instalarIdentificacao(perfil,client);};
+      window.SistemaAuth={enabled:true,client,user,perfil,modulos:[...modulos],planilha,pode:(p)=>pode(perfil.perfil,p),temModulo:(m)=>temModulo(modulos,m),ready:null,sair:async()=>{await client.auth.signOut({scope:'local'});location.replace(cfg.loginPage);}};
+
+      const aplicar=()=>{aplicarPermissoes(perfil.perfil,modulos,planilha);instalarIdentificacao(perfil,client);mostrarAvisoDeAcesso();};
       if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',aplicar,{once:true});
       else aplicar();
 
@@ -148,5 +226,5 @@
     }
   })();
 
-  window.SistemaAuth={enabled:true,ready,pode:()=>false,perfil:null,user:null};
+  window.SistemaAuth={enabled:true,ready,pode:()=>false,temModulo:()=>false,modulos:[],planilha:null,perfil:null,user:null};
 })();
