@@ -674,10 +674,10 @@
   <dialog id="modalComandante">
     <form class="modal-conteudo" id="formNovoComandante" method="dialog">
       <h3 id="tituloModalComandante">Cadastrar novo comandante</h3>
-      <p>Informe somente a graduação abreviada e o nome de guerra. Ex.: SGT Sarmanha.</p>
+      <p>Informe somente a graduação abreviada e o nome de guerra. Ex.: SD PM LIMA.</p>
       <div class="campo">
         <label for="novoComandante">Comandante</label>
-        <input id="novoComandante" type="text" maxlength="80" autocomplete="off" placeholder="Ex.: SGT Sarmanha" required>
+        <input id="novoComandante" type="text" maxlength="80" autocomplete="off" placeholder="Ex.: SD PM LIMA" required>
       </div>
       <div class="modal-acoes">
         <button class="botao-secundario" id="cancelarNovoComandante" type="button">Cancelar</button>
@@ -810,7 +810,7 @@
       evento.preventDefault();
       const nome = normalizarComandante(novoComandante.value);
       if (!/^(CEL|TEN CEL|MAJ|CAP|TEN|ASP|ST|SGT|CB|SD|AL SGT)\s+\S/.test(nome)) {
-        alert("Use o padrão Graduação + Nome de Guerra. Ex.: SGT Sarmanha.");
+        alert("Use o padrão Graduação + Nome de Guerra. Ex.: SD PM LIMA.");
         return;
       }
       const botao = document.getElementById("salvarNovoComandante");
