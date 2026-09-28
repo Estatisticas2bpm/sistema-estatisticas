@@ -147,8 +147,8 @@
       badge.id='sistemaUnidadeAtiva';
       badge.textContent='UNIDADE ATIVA · '+sigla;
       badge.title=nomeUnidade||sigla;
-      badge.style.cssText='position:fixed;left:14px;bottom:76px;right:auto;top:auto;z-index:99998;background:#ffffffed;color:#071b33;border:1px solid #cbd9e6;border-left:4px solid #0e4f8a;border-radius:10px;box-shadow:0 6px 20px #071b3320;padding:8px 11px;font:900 11px/1.2 Inter,Segoe UI,Arial,sans-serif;letter-spacing:.55px;text-transform:uppercase;backdrop-filter:blur(6px)';
-      document.body.appendChild(badge);
+      badge.style.cssText='position:relative;z-index:20;width:100%;min-height:30px;background:#f7fafc;color:#43566a;border:0;border-bottom:1px solid #dbe4ec;padding:4px 12px;font:800 10px/1.2 Inter,Segoe UI,Arial,sans-serif;letter-spacing:.35px;text-transform:uppercase;display:flex;align-items:center;gap:7px;box-shadow:none';
+      document.body.insertBefore(badge,document.body.firstChild);
     }
   }
 
@@ -163,20 +163,20 @@
     if(!unidades.length)return;
 
     badge.dataset.adminSelector='1';
-    badge.style.maxWidth='min(92vw,390px)';
+    badge.style.maxWidth='none';
     badge.style.textTransform='none';
     badge.style.letterSpacing='0';
-    badge.style.padding='10px 12px';
-    badge.style.borderLeftColor=contextoAtual?.somente_leitura_operacional?'#b7791f':'#0e4f8a';
+    badge.style.padding='4px 12px';
+    badge.style.borderBottomColor=contextoAtual?.somente_leitura_operacional?'#d8b66c':'#dbe4ec';
     badge.innerHTML='';
 
     const titulo=document.createElement('div');
-    titulo.textContent='MODO ADMINISTRADOR · UNIDADE DE TRABALHO';
-    titulo.style.cssText='font-size:10px;font-weight:900;letter-spacing:.65px;text-transform:uppercase;margin-bottom:6px;color:#496b86';
+    titulo.textContent='Unidade de trabalho:';
+    titulo.style.cssText='font-size:9px;font-weight:900;letter-spacing:.45px;text-transform:uppercase;color:#66758a;white-space:nowrap';
 
     const select=document.createElement('select');
     select.setAttribute('aria-label','Unidade de trabalho do administrador');
-    select.style.cssText='width:100%;border:1px solid #cbd9e6;border-radius:8px;padding:7px 9px;background:#fff;color:#071b33;font:800 12px Inter,Segoe UI,Arial,sans-serif;cursor:pointer';
+    select.style.cssText='width:auto;max-width:min(62vw,310px);border:1px solid #d1dbe4;border-radius:6px;padding:3px 24px 3px 7px;background:#fff;color:#17324a;font:800 10px Inter,Segoe UI,Arial,sans-serif;cursor:pointer';
     unidades.forEach(u=>{
       const op=document.createElement('option');
       op.value=u.id;
@@ -186,7 +186,8 @@
     select.value=contextoAtual.unidade_id;
 
     const detalhe=document.createElement('div');
-    detalhe.style.cssText='margin-top:6px;font-size:10px;line-height:1.35;color:#66758a;font-weight:700';
+    detalhe.setAttribute('aria-live','polite');
+    detalhe.style.cssText='position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0';
     detalhe.textContent=contextoAtual?.somente_leitura_operacional
       ? 'Contexto de comando: consulta consolidada. Cadastro e alterações operacionais ficam bloqueados.'
       : 'Os registros e filtros usam esta unidade como contexto. Sua unidade principal não é alterada.';
@@ -207,6 +208,7 @@
       location.reload();
     });
 
+    badge.title=detalhe.textContent;
     badge.append(titulo,select,detalhe);
   }
 
