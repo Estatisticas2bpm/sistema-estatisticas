@@ -8,11 +8,13 @@ const migrations=fs.readdirSync(path.join(raiz,'supabase','migrations'));
 const migA=migrations.find(x=>x.endsWith('_fase3m_a_territorio_oficial_decreto_22414.sql'));
 const migB=migrations.find(x=>x.endsWith('_fase3m_b_rpcs_territoriais.sql'));
 const migC=migrations.find(x=>x.endsWith('_fase3m_c_painel_cpc_territorial.sql'));
-assert.ok(migA&&migB&&migC,'as três migrations territoriais devem estar versionadas');
+const migD=migrations.find(x=>x.endsWith('_fase3m_d_compatibilidade_service_role_territorio.sql'));
+assert.ok(migA&&migB&&migC&&migD,'as quatro migrations territoriais devem estar versionadas');
 
 const a=ler(path.join('supabase','migrations',migA));
 const b=ler(path.join('supabase','migrations',migB));
 const c=ler(path.join('supabase','migrations',migC));
+const d=ler(path.join('supabase','migrations',migD));
 const index=ler('index.html'),painel=ler('dashboard-cpc.html'),dash=ler('dashboard.html'),mapa=ler('mapa-criminal.html'),cad=ler('cadastro-base.html'),cfg=ler('auth-config.js'),territorio=ler('territorio-cpc.html');
 
 assert.match(a,/Decreto nº 22\.414-E\/2017/);
@@ -31,6 +33,8 @@ assert.match(b,/obter_home_cpc_territorial/i);
 assert.match(b,/obter_mapa_cpc_territorial/i);
 assert.match(c,/obter_painel_cpc_territorial/i);
 assert.doesNotMatch(a+b+c,/security definer/i);
+assert.match(d,/to service_role/i);
+assert.match(d,/territorio_por_bairro\(text\)/i);
 
 assert.match(cfg,/"territorio-cpc\.html":"dashboard"/);
 assert.match(cfg,/"territorio-cpc\.html":"PAINEL_CPC"/);
@@ -45,7 +49,7 @@ assert.match(dash,/id="aisc"/);assert.match(dash,/id="setor"/);assert.match(dash
 assert.match(mapa,/Unidade que registrou/);assert.match(mapa,/Território:/);assert.match(mapa,/obter_dados_dashboard_territorial/);
 assert.match(cad,/territorioBairroInfo/);assert.match(cad,/territorio_por_bairro/);
 
-const todos=a+b+c+index+painel+dash+mapa+cad+territorio;
+const todos=a+b+c+d+index+painel+dash+mapa+cad+territorio;
 assert.doesNotMatch(todos,/fe74963f-c11a-4d6f-84be-7dcd8e15ff59/i);
 assert.doesNotMatch(todos,/f09a10df-cd1d-48d1-a093-bf731906e175/i);
 
