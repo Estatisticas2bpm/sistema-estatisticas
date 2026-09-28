@@ -76,15 +76,17 @@ function perfil(a,prefix,chartId,box){let pessoas=listaPessoas(a,prefix),nacs=ra
 async function carregar(){loading.style.display='grid';let calls=[db.rpc('obter_dados_dashboard_territorial',{data_inicio:ini.value,data_fim:fim.value}),db.rpc('obter_tcos_dashboard_territorial',{data_inicio:ini.value,data_fim:fim.value})],temComparacao=comparar.value!=='nenhum';if(temComparacao){let pc=periodoComparado();calls.push(db.rpc('obter_dados_dashboard_territorial',{data_inicio:pc[0],data_fim:pc[1]}),db.rpc('obter_tcos_dashboard_territorial',{data_inicio:pc[0],data_fim:pc[1]}))}let r=await Promise.all(calls);if(r[0].error){loading.textContent='Erro ao carregar: '+r[0].error.message;return}if(r[1].error){loading.textContent='Erro ao carregar TCOs: '+r[1].error.message;return}atual=r[0].data||[];tcosAtual=r[1].data||[];anterior=temComparacao?(r[2].data||[]):[];tcosAnterior=temComparacao?(r[3].data||[]):[];render()}
 function popularTerritorio(){
  if(!catalogoTerritorial)return;
- let aAnt=aisc.value,sAnt=sisc.value,stAnt=setor.value;
- aisc.innerHTML='<option value="">Todas</option>'+(catalogoTerritorial.aisc||[]).map(x=>'<option>'+esc(x.codigo)+'</option>').join('');
- if((catalogoTerritorial.aisc||[]).some(x=>x.codigo===aAnt))aisc.value=aAnt;
- let ao=(catalogoTerritorial.aisc||[]).find(x=>x.codigo===aisc.value),ss=(catalogoTerritorial.sisc||[]).filter(x=>!ao||x.aisc_id===ao.id);
+ let aAnt=aisc.value,sAnt=sisc.value,stAnt=setor.value,ctx=window.SistemaAuth?.contexto||{},todasAisc=catalogoTerritorial.aisc||[];
+ let aiscPermitidas=ctx.tipo==='COMANDO'?todasAisc:todasAisc.filter(x=>String(x.unidade_id)===String(ctx.unidade_id));
+ aisc.innerHTML='<option value="">Todas</option>'+aiscPermitidas.map(x=>'<option>'+esc(x.codigo)+'</option>').join('');
+ if(aiscPermitidas.some(x=>x.codigo===aAnt))aisc.value=aAnt;else aisc.value='';
+ let idsAiscPermitidas=aiscPermitidas.map(x=>x.id),ao=aiscPermitidas.find(x=>x.codigo===aisc.value);
+ let ss=(catalogoTerritorial.sisc||[]).filter(x=>ao?x.aisc_id===ao.id:idsAiscPermitidas.includes(x.aisc_id));
  sisc.innerHTML='<option value="">Todas</option>'+ss.map(x=>'<option>'+esc(x.codigo)+'</option>').join('');
- if(ss.some(x=>x.codigo===sAnt))sisc.value=sAnt;
- let so=(catalogoTerritorial.sisc||[]).find(x=>x.codigo===sisc.value),ids=so?[so.id]:ss.map(x=>x.id),sts=(catalogoTerritorial.setores||[]).filter(x=>!ids.length||ids.includes(x.sisc_id));
+ if(ss.some(x=>x.codigo===sAnt))sisc.value=sAnt;else sisc.value='';
+ let so=ss.find(x=>x.codigo===sisc.value),ids=so?[so.id]:ss.map(x=>x.id),sts=(catalogoTerritorial.setores||[]).filter(x=>ids.includes(x.sisc_id));
  setor.innerHTML='<option value="">Todos</option>'+sts.map(x=>'<option>'+esc(x.codigo)+'</option>').join('');
- if(sts.some(x=>x.codigo===stAnt))setor.value=stAnt;
+ if(sts.some(x=>x.codigo===stAnt))setor.value=stAnt;else setor.value='';
 }
 document.querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>{let h=new Date(),i=new Date(h),p=b.dataset.period;if(p==='semana')i.setDate(h.getDate()-(h.getDay()||7)+1);else if(p==='mes')i=new Date(h.getFullYear(),h.getMonth(),1);else if(p==='trimestre')i=new Date(h.getFullYear(),Math.floor(h.getMonth()/3)*3,1);else if(p==='semestre')i=new Date(h.getFullYear(),h.getMonth()<6?0:6,1);else if(p==='ano')i=new Date(h.getFullYear(),0,1);ini.value=fmt(i);fim.value=fmt(h);carregar()});
 aplicar.onclick=carregar;filtroTipoSubtracao.onchange=render;aisc.onchange=()=>{sisc.value='';setor.value='';popularTerritorio();render()};sisc.onchange=()=>{setor.value='';popularTerritorio();render()};setor.onchange=render;
