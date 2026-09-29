@@ -7,6 +7,7 @@ window.SISTEMA_AUTH_CONFIG = Object.freeze({
   loginPage: "login.html",
   homePage: "index.html",
   passwordPage: "alterar-senha.html",
+  profilePage: "meu-perfil.html",
   permissions: Object.freeze({
     ADMIN: ["cadastro","consulta","dashboard","auditoria","analise","mapa","tco","relatorio","planilha","acoes","tv","fluxos","usuarios","logs","configuracoes"],
     ESTATISTICA: ["cadastro","consulta","dashboard","auditoria","analise","mapa","tco","relatorio","planilha","acoes","tv","fluxos","logs"],
