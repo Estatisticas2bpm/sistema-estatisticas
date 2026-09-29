@@ -229,6 +229,11 @@
     nome.title=nome.textContent;
     nome.style.cssText='display:block;font-size:11px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
 
+    const perfilLink=document.createElement('a');
+    perfilLink.href=cfg.profilePage||'meu-perfil.html';
+    perfilLink.textContent='Perfil';
+    perfilLink.style.cssText='flex:0 0 auto;border:1px solid #ffffff44;background:#ffffff0d;color:#fff;text-decoration:none;border-radius:7px;padding:5px 8px;font:800 10px Inter,Segoe UI,Arial,sans-serif';
+
     const sair=document.createElement('button');
     sair.type='button';
     sair.id='sistemaSair';
@@ -242,7 +247,7 @@
     });
 
     dados.append(nome);
-    box.append(dados,sair);
+    box.append(dados,perfilLink,sair);
     document.body.appendChild(box);
   }
 
