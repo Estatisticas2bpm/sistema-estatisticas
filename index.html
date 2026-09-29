@@ -74,9 +74,9 @@ function renderResumoCiptur(d,dAnt,autos,autosAnt,hoje,pc){
   veiculosSub.textContent="Carros "+carros+" · Motos "+motos;
   periodoComparativo.textContent="1º a "+hoje.getDate()+" de "+nomeMes(hoje).toLowerCase()+" × 1º a "+pc[1].getDate()+" de "+nomeMes(pc[1]).toLowerCase();
   comparativoMes.innerHTML=itemComparativo("Ocorrências",d.length,dAnt.length,"crime")+itemComparativo("Conduções",c1,cAnt,"prod")+itemComparativo("Autos de infração",ai,aiAnt,"prod")+itemComparativo("Veículos removidos",rem,remAnt,"prod");
-  var partes=["Até "+hoje.toLocaleDateString("pt-BR",{day:"2-digit",month:"long"})+", a CIPTUR registrou "+d.length+" ocorrência"+(d.length===1?"":"s")+", "+ai+" A.I. e "+rem+" remoção"+(rem===1?"":"ões")+" de veículo"+(rem===1?"":"s")+"."];
+  var partes=["Até "+hoje.toLocaleDateString("pt-BR",{day:"2-digit",month:"long"})+", a CIPTUR registrou "+d.length+" ocorrência"+(d.length===1?"":"s")+", "+ai+" A.I. e "+rem+" "+(rem===1?"remoção":"remoções")+" de veículo"+(rem===1?"":"s")+"."];
   var topO=rank(d,"ocorrencia","crime")[0];if(topO)partes.push("A ocorrência policial mais frequente é "+topO[0]+", com "+topO[1]+" registro"+(topO[1]===1?"":"s")+".");
-  if(c1)partes.push("Foram registradas "+c1+" condução"+(c1===1?"":"ões")+" no período.");
+  if(c1)partes.push("Foram registradas "+c1+" "+(c1===1?"condução":"conduções")+" no período.");
   if(rem)partes.push("Nas remoções, constam "+carros+" carro"+(carros===1?"":"s")+" e "+motos+" moto"+(motos===1?"":"s")+".");
   resumoInteligente.textContent=partes.join(" ");
 }
