@@ -224,14 +224,10 @@
     dados.style.cssText='min-width:0;max-width:245px';
 
     const nome=document.createElement('strong');
-    nome.textContent=perfil.nome||perfil.email||'Usuário';
+    const identificacao=[perfil.posto_graduacao,perfil.nome_guerra].filter(Boolean).join(' ').trim();
+    nome.textContent=identificacao||perfil.nome_guerra||perfil.nome||perfil.email||'Usuário';
     nome.title=nome.textContent;
     nome.style.cssText='display:block;font-size:11px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
-
-    const guerra=document.createElement('span');
-    guerra.textContent=perfil.nome_guerra||'';
-    guerra.title=guerra.textContent;
-    guerra.style.cssText='display:block;margin-top:1px;font-size:10px;font-weight:700;opacity:.78;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
 
     const sair=document.createElement('button');
     sair.type='button';
@@ -246,7 +242,6 @@
     });
 
     dados.append(nome);
-    if(perfil.nome_guerra)dados.append(guerra);
     box.append(dados,sair);
     document.body.appendChild(box);
   }
@@ -266,7 +261,7 @@
 
   async function carregarPerfil(client,user){
     const r=await client.from(cfg.profileTable)
-      .select('user_id,nome,nome_guerra,matricula,email,perfil,ativo,senha_temporaria,unidade_id')
+      .select('user_id,nome,nome_guerra,posto_graduacao,matricula,email,perfil,ativo,senha_temporaria,unidade_id')
       .eq('user_id',user.id)
       .maybeSingle();
     if(r.error)throw r.error;
