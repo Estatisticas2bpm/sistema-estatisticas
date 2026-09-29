@@ -77,7 +77,8 @@ async function carregar(){loading.style.display='grid';let calls=[db.rpc('obter_
 function popularTerritorio(){
  if(!catalogoTerritorial)return;
  let aAnt=aisc.value,sAnt=sisc.value,stAnt=setor.value,ctx=window.SistemaAuth?.contexto||{},todasAisc=catalogoTerritorial.aisc||[];
- let aiscPermitidas=ctx.tipo==='COMANDO'?todasAisc:todasAisc.filter(x=>String(x.unidade_id)===String(ctx.unidade_id));
+ let aiscDaUnidade=todasAisc.filter(x=>String(x.unidade_id)===String(ctx.unidade_id));
+ let aiscPermitidas=ctx.tipo==='COMANDO'||!aiscDaUnidade.length?todasAisc:aiscDaUnidade;
  aisc.innerHTML='<option value="">Todas</option>'+aiscPermitidas.map(x=>'<option>'+esc(x.codigo)+'</option>').join('');
  if(aiscPermitidas.some(x=>x.codigo===aAnt))aisc.value=aAnt;else aisc.value='';
  let idsAiscPermitidas=aiscPermitidas.map(x=>x.id),ao=aiscPermitidas.find(x=>x.codigo===aisc.value);
