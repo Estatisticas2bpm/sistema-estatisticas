@@ -19,6 +19,11 @@ const admin = createClient(url, secretKey, {
 });
 
 const perfisValidos = new Set(["ADMIN", "ESTATISTICA", "OPERADOR", "GESTOR", "CONSULTA"]);
+const postosGraduacoesValidos = new Set([
+  "CEL PM", "TEN CEL PM", "MAJ PM", "CAP PM", "1º TEN PM", "2º TEN PM",
+  "ASP OF PM", "AL OF PM", "SUB TEN PM", "1º SGT PM", "2º SGT PM",
+  "3º SGT PM", "CB PM", "SD PM",
+]);
 const limpar = (v: unknown) => String(v ?? "").trim();
 const upper = (v: unknown) => limpar(v).toUpperCase();
 
@@ -55,7 +60,7 @@ async function validarUnidadeAtiva(unidadeId: unknown) {
 
 async function perfilDoUsuario(userId: string) {
   const { data, error } = await admin.from("perfis_usuarios")
-    .select("user_id,nome,nome_guerra,matricula,email,perfil,ativo,senha_temporaria,unidade_id")
+    .select("user_id,nome,nome_guerra,posto_graduacao,matricula,email,perfil,ativo,senha_temporaria,unidade_id")
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw error;
@@ -66,7 +71,7 @@ async function perfilDoUsuario(userId: string) {
 async function perfisComUnidades() {
   const [{ data: users, error: usersError }, { data: todasUnidades, error: unitsError }] = await Promise.all([
     admin.from("perfis_usuarios")
-      .select("user_id,nome,nome_guerra,matricula,email,perfil,unidade_id,ativo,senha_temporaria,criado_em")
+      .select("user_id,nome,nome_guerra,posto_graduacao,matricula,email,perfil,unidade_id,ativo,senha_temporaria,criado_em")
       .order("nome"),
     admin.from("unidades").select("id,sigla,nome,ativo").order("sigla"),
   ]);
@@ -180,6 +185,7 @@ Deno.serve(async (req: Request) => {
       const password = limpar(body.password);
       const nome = limpar(body.nome);
       const nomeGuerra = upper(body.nome_guerra);
+      const postoGraduacao = upper(body.posto_graduacao);
       const matricula = limpar(body.matricula) || null;
       const perfil = upper(body.perfil);
       const unidadeId = limpar(body.unidade_id);
@@ -187,6 +193,7 @@ Deno.serve(async (req: Request) => {
       if (!email || !email.includes("@")) throw new Error("Informe um e-mail válido.");
       if (password.length < 8) throw new Error("A senha temporária deve ter pelo menos 8 caracteres.");
       if (!nome || !nomeGuerra) throw new Error("Nome completo e nome de guerra são obrigatórios.");
+      if (!postosGraduacoesValidos.has(postoGraduacao)) throw new Error("Informe um posto ou graduação válido.");
       if (!perfisValidos.has(perfil)) throw new Error("Perfil de acesso inválido.");
       if (!unidadeId) throw new Error("Informe a unidade do usuário.");
       await validarUnidadeAtiva(unidadeId);
@@ -204,6 +211,7 @@ Deno.serve(async (req: Request) => {
         user_id: userId,
         nome,
         nome_guerra: nomeGuerra,
+        posto_graduacao: postoGraduacao,
         matricula,
         email,
         perfil,
@@ -216,7 +224,7 @@ Deno.serve(async (req: Request) => {
         await admin.auth.admin.deleteUser(userId).catch(() => {});
         throw perfilError;
       }
-      await log(caller.id, "CRIOU_USUARIO", "usuario", userId, { nome, nome_guerra: nomeGuerra, email, perfil, unidade_id: unidadeId });
+      await log(caller.id, "CRIOU_USUARIO", "usuario", userId, { nome, nome_guerra: nomeGuerra, posto_graduacao: postoGraduacao, email, perfil, unidade_id: unidadeId });
       return resposta({ ok: true, user_id: userId });
     }
 
@@ -226,11 +234,12 @@ Deno.serve(async (req: Request) => {
     if (action === "update") {
       const nome = limpar(body.nome);
       const nomeGuerra = upper(body.nome_guerra);
+      const postoGraduacao = upper(body.posto_graduacao);
       const perfil = upper(body.perfil);
       const unidadeId = limpar(body.unidade_id);
       const matricula = limpar(body.matricula) || null;
       const email = limpar(body.email).toLowerCase();
-      if (!nome || !nomeGuerra || !unidadeId || !perfisValidos.has(perfil)) throw new Error("Dados do usuário inválidos.");
+      if (!nome || !nomeGuerra || !unidadeId || !postosGraduacoesValidos.has(postoGraduacao) || !perfisValidos.has(perfil)) throw new Error("Dados do usuário inválidos.");
       if (targetId === caller.id && perfil !== "ADMIN") throw new Error("Você não pode remover seu próprio perfil de administrador.");
       await garantirUltimoAdmin(targetId, perfil, false);
 
@@ -244,11 +253,11 @@ Deno.serve(async (req: Request) => {
         if (error) throw error;
       }
       const { error } = await admin.from("perfis_usuarios").update({
-        nome, nome_guerra: nomeGuerra, matricula, email: email || atual.email,
+        nome, nome_guerra: nomeGuerra, posto_graduacao: postoGraduacao, matricula, email: email || atual.email,
         perfil, unidade_id: unidadeId, atualizado_em: new Date().toISOString(),
       }).eq("user_id", targetId);
       if (error) throw error;
-      await log(caller.id, "EDITOU_USUARIO", "usuario", targetId, { nome, nome_guerra: nomeGuerra, perfil, unidade_id: unidadeId });
+      await log(caller.id, "EDITOU_USUARIO", "usuario", targetId, { nome, nome_guerra: nomeGuerra, posto_graduacao: postoGraduacao, perfil, unidade_id: unidadeId });
       return resposta({ ok: true });
     }
 
