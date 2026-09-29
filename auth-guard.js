@@ -212,6 +212,45 @@
     badge.append(titulo,select,detalhe);
   }
 
+  function instalarIdentificacaoSessao(perfil,client){
+    if(document.getElementById('sistemaUsuarioSessao'))return;
+
+    const box=document.createElement('div');
+    box.id='sistemaUsuarioSessao';
+    box.setAttribute('aria-label','Usuário conectado');
+    box.style.cssText='position:fixed;right:12px;bottom:12px;z-index:99999;max-width:min(88vw,330px);background:#071b33f2;color:#fff;border:1px solid #ffffff2e;border-radius:10px;box-shadow:0 6px 18px #0003;padding:7px 8px 7px 10px;font:11px/1.25 Inter,Segoe UI,Arial,sans-serif;display:flex;align-items:center;gap:9px;backdrop-filter:blur(5px)';
+
+    const dados=document.createElement('div');
+    dados.style.cssText='min-width:0;max-width:245px';
+
+    const nome=document.createElement('strong');
+    nome.textContent=perfil.nome||perfil.email||'Usuário';
+    nome.title=nome.textContent;
+    nome.style.cssText='display:block;font-size:11px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+
+    const guerra=document.createElement('span');
+    guerra.textContent=perfil.nome_guerra||'';
+    guerra.title=guerra.textContent;
+    guerra.style.cssText='display:block;margin-top:1px;font-size:10px;font-weight:700;opacity:.78;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+
+    const sair=document.createElement('button');
+    sair.type='button';
+    sair.id='sistemaSair';
+    sair.textContent='Sair';
+    sair.style.cssText='flex:0 0 auto;border:1px solid #ffffff55;background:transparent;color:#fff;border-radius:7px;padding:5px 8px;cursor:pointer;font:800 10px Inter,Segoe UI,Arial,sans-serif';
+    sair.addEventListener('click',async()=>{
+      sair.disabled=true;
+      sair.textContent='Saindo...';
+      try{await client.auth.signOut({scope:'local'});}catch(_){}
+      location.replace(cfg.loginPage);
+    });
+
+    dados.append(nome);
+    if(perfil.nome_guerra)dados.append(guerra);
+    box.append(dados,sair);
+    document.body.appendChild(box);
+  }
+
   function mostrarAvisoDeAcesso(){
     const erro=new URLSearchParams(location.search).get('erro');
     if(erro!=='modulo-indisponivel'||document.getElementById('sistemaAvisoAcesso'))return;
@@ -292,7 +331,7 @@
 
       window.SistemaAuth={enabled:true,client,user,perfil,contexto:contextoAtual,modulos:[...modulos],planilha,pode:(p)=>pode(perfil.perfil,p),temModulo:(m)=>temModulo(modulos,m),ready:null,sair:async()=>{await client.auth.signOut({scope:'local'});location.replace(cfg.loginPage);}};
 
-      const aplicar=()=>{aplicarIdentidadeVisual(perfil);aplicarPermissoes(perfil.perfil,modulos,planilha);instalarSeletorUnidadeAdmin(perfil,client).catch(e=>console.error('Falha ao instalar seletor administrativo:',e));mostrarAvisoDeAcesso();};
+      const aplicar=()=>{aplicarIdentidadeVisual(perfil);aplicarPermissoes(perfil.perfil,modulos,planilha);instalarIdentificacaoSessao(perfil,client);instalarSeletorUnidadeAdmin(perfil,client).catch(e=>console.error('Falha ao instalar seletor administrativo:',e));mostrarAvisoDeAcesso();};
       if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',aplicar,{once:true});
       else aplicar();
 
