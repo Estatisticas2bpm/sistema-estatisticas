@@ -145,7 +145,7 @@ $('formAi').addEventListener('submit',async e=>{
 (async()=>{
   auth=await window.SistemaAuth.ready;if(!auth)return;db=auth.client;
   if(String(auth.contexto?.sigla||'').toUpperCase()!=='CIPTUR'){location.replace('index.html?erro=modulo-indisponivel');return}
-  $('dataInfracao').value=new Date().toLocaleDateString('en-CA');
+  const h=new Date(),hoje=h.getFullYear()+'-'+String(h.getMonth()+1).padStart(2,'0')+'-'+String(h.getDate()).padStart(2,'0');$('dataInfracao').value=hoje;
   try{await Promise.all([carregarCatalogo(),carregarRegistros()])}catch(err){console.error(err);status('Erro ao carregar o módulo: '+err.message,'erro')}
 })();
 </script>
