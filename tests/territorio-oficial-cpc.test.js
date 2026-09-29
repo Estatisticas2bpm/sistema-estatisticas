@@ -53,6 +53,15 @@ assert.match(dash,/id="aisc"/);assert.match(dash,/id="setor"/);assert.match(dash
 assert.match(mapa,/Unidade que registrou/);assert.match(mapa,/Território:/);assert.match(mapa,/obter_dados_dashboard_territorial/);
 assert.match(cad,/territorioBairroInfo/);assert.match(cad,/territorio_por_bairro/);
 
+
+const migCiptur=migrations.find(x=>x.endsWith('_fase3o_ativar_ciptur.sql'));
+assert.ok(migCiptur,'a migration de ativação da CIPTUR deve estar versionada');
+const ativarCiptur=ler(path.join('supabase','migrations',migCiptur));
+assert.match(ativarCiptur,/where sigla='CIPTUR'/i);
+assert.match(ativarCiptur,/set ativo=true/i);
+assert.match(dash,/aiscDaUnidade/);
+assert.match(dash,/!aiscDaUnidade\.length\?todasAisc:aiscDaUnidade/);
+
 const todos=a+b+c+d+e+index+painel+dash+mapa+cad+territorio;
 assert.doesNotMatch(todos,/fe74963f-c11a-4d6f-84be-7dcd8e15ff59/i);
 assert.doesNotMatch(todos,/f09a10df-cd1d-48d1-a093-bf731906e175/i);
