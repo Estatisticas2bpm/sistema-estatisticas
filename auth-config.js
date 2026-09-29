@@ -18,6 +18,7 @@ window.SISTEMA_AUTH_CONFIG = Object.freeze({
   pagePermissions: Object.freeze({
     "cadastro.html":"cadastro",
     "cadastro-base.html":"cadastro",
+    "autos-infracao.html":"cadastro",
     "consulta.html":"consulta",
     "dashboard.html":"dashboard",
     "dashboard-cpc.html":"dashboard",
@@ -38,6 +39,7 @@ window.SISTEMA_AUTH_CONFIG = Object.freeze({
   pageModules: Object.freeze({
     "acoes.html":"ACOES_SOCIAIS",
     "dashboard-cpc.html":"PAINEL_CPC",
-    "territorio-cpc.html":"PAINEL_CPC"
+    "territorio-cpc.html":"PAINEL_CPC",
+    "autos-infracao.html":"AUTOS_INFRACAO"
   })
 });
