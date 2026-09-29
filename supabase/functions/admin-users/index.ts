@@ -171,6 +171,38 @@ Deno.serve(async (req: Request) => {
       return resposta({ ok: true });
     }
 
+    if (action === "self_update") {
+      const atual = await perfilDoUsuario(caller.id);
+      if (!atual || atual.ativo !== true || atual.unidades?.ativo !== true) {
+        return resposta({ error: "Usuário ou unidade principal não autorizado." }, 403);
+      }
+
+      const nome = limpar(body.nome);
+      const nomeGuerra = upper(body.nome_guerra);
+      const postoGraduacao = upper(body.posto_graduacao);
+      const matricula = limpar(body.matricula) || null;
+
+      if (!nome || !nomeGuerra) throw new Error("Nome completo e nome de guerra são obrigatórios.");
+      if (!postosGraduacoesValidos.has(postoGraduacao)) throw new Error("Informe um posto ou graduação válido.");
+
+      const { error } = await admin.from("perfis_usuarios").update({
+        nome,
+        nome_guerra: nomeGuerra,
+        posto_graduacao: postoGraduacao,
+        matricula,
+        atualizado_em: new Date().toISOString(),
+      }).eq("user_id", caller.id);
+      if (error) throw error;
+
+      await log(caller.id, "EDITOU_PROPRIO_PERFIL", "usuario", caller.id, {
+        nome,
+        nome_guerra: nomeGuerra,
+        posto_graduacao: postoGraduacao,
+        matricula,
+      });
+      return resposta({ ok: true, profile: await perfilDoUsuario(caller.id) });
+    }
+
     const perfilCaller = await perfilDoUsuario(caller.id);
     if (!perfilCaller || perfilCaller.ativo !== true || perfilCaller.perfil !== "ADMIN" || perfilCaller.unidades?.ativo !== true) {
       return resposta({ error: "Somente administradores ativos de uma unidade ativa podem gerenciar usuários." }, 403);
