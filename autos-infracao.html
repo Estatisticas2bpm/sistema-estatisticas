@@ -11,7 +11,7 @@ header{background:linear-gradient(120deg,#071b33,#0e4f8a);color:#fff;padding:22p
 main{padding:22px 0 70px}.panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:18px;box-shadow:0 6px 22px #071b330c}
 .panel h2{margin:0 0 5px;color:var(--navy)}.sub{margin:0 0 17px;color:var(--muted);line-height:1.45}
 .formgrid{display:grid;grid-template-columns:220px 1fr;gap:13px}.campo{position:relative}.campo label{display:block;font-size:12px;font-weight:900;color:#455b70;margin-bottom:5px}
-.campo input{width:100%;padding:12px;border:1px solid #cbd7e2;border-radius:10px;font:inherit;background:#fff}.campo input:focus{outline:2px solid #0e4f8a22;border-color:#6d9bbc}
+.campo input,.campo select{width:100%;padding:12px;border:1px solid #cbd7e2;border-radius:10px;font:inherit;background:#fff}.campo input:focus,.campo select:focus{outline:2px solid #0e4f8a22;border-color:#6d9bbc}
 .hint{font-size:11px;color:var(--muted);margin-top:5px}.resultado{margin-top:16px;border:1px solid #cfe0ea;background:#f8fbfd;border-radius:13px;padding:15px;display:none}
 .resultado.show{display:block}.resultado h3{margin:0 0 9px;color:var(--navy);font-size:16px}.meta{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
 .meta div{background:#fff;border:1px solid #e0e8ef;border-radius:9px;padding:10px}.meta small{display:block;color:var(--muted);font-weight:800;margin-bottom:4px}.meta strong{color:var(--navy)}
@@ -20,7 +20,7 @@ main{padding:22px 0 70px}.panel{background:#fff;border:1px solid var(--line);bor
 .sugestao:hover{background:#f2f7fb}.sugestao b{display:block;color:var(--blue);margin-bottom:2px}.sugestao span{font-size:11px;color:var(--muted)}
 .actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:15px}.btn{border:0;border-radius:9px;padding:10px 14px;background:var(--blue);color:#fff;font-weight:900;cursor:pointer}.btn.green{background:var(--green)}.btn.light{background:#e8eef5;color:#29445d}.btn.danger{background:#fff;color:var(--red);border:1px solid #efc4c1}.btn:disabled{opacity:.55;cursor:wait}
 .status{display:none;margin-top:12px;padding:10px 12px;border-radius:9px}.status.ok{display:block;background:#ecfdf3;color:#067647;border:1px solid #abefc6}.status.erro{display:block;background:#fef3f2;color:#b42318;border:1px solid #fecdca}.status.info{display:block;background:#eff8ff;color:#175cd3;border:1px solid #b2ddff}
-.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin:16px 0}.card{border:1px solid var(--line);border-radius:12px;padding:13px;background:#fbfdff}.card small{color:var(--muted);font-weight:800}.card strong{display:block;font-size:24px;color:var(--navy);margin-top:5px}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin:16px 0}.card{border:1px solid var(--line);border-radius:12px;padding:13px;background:#fbfdff}.card small{color:var(--muted);font-weight:800}.card strong{display:block;font-size:24px;color:var(--navy);margin-top:5px}
 .tablewrap{overflow:auto;max-height:520px}table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid #e7edf3;text-align:left;white-space:nowrap}th{background:#f4f7fa;color:#445b70;position:sticky;top:0}.desc{white-space:normal;min-width:290px}.mini{font-size:11px;color:var(--muted)}
 @media(max-width:720px){.head{align-items:flex-start;flex-direction:column}.formgrid,.meta,.cards{grid-template-columns:1fr}.sugestoes{top:72px}}
 </style>
@@ -40,6 +40,16 @@ main{padding:22px 0 70px}.panel{background:#fff;border:1px solid var(--line);bor
         <input id="codigo" inputmode="numeric" maxlength="20" required placeholder="Ex.: 6599-2 ou 65.992">
         <div class="hint">Pode digitar com ou sem ponto/hífen. Se o código estiver incompleto, o sistema apresenta as opções.</div>
         <div id="sugestoes" class="sugestoes"></div>
+      </div>
+    </div>
+    <div class="formgrid" style="margin-top:13px">
+      <div class="campo">
+        <label>Houve remoção de veículo? *</label>
+        <select id="houveRemocao" required><option value="NAO">Não</option><option value="SIM">Sim</option></select>
+      </div>
+      <div class="campo" id="campoTipoVeiculo" hidden>
+        <label>Tipo de veículo removido *</label>
+        <select id="tipoVeiculo"><option value="">Selecione...</option><option value="CARRO">Carro</option><option value="MOTO">Moto</option></select>
       </div>
     </div>
     <div id="resultado" class="resultado">
@@ -66,8 +76,9 @@ main{padding:22px 0 70px}.panel{background:#fff;border:1px solid var(--line);bor
     <div class="card"><small>A.I. exibidos</small><strong id="kTotal">0</strong></div>
     <div class="card"><small>Códigos diferentes</small><strong id="kCodigos">0</strong></div>
     <div class="card"><small>Valor nominal dos registros exibidos</small><strong id="kValor">R$ 0,00</strong></div>
+    <div class="card"><small>Remoções de veículos</small><strong id="kRemocoes">0</strong></div>
   </div>
-  <div class="tablewrap"><table><thead><tr><th>Data</th><th>Código</th><th>Infração</th><th>Classificação</th><th>Valor</th><th>Ações</th></tr></thead><tbody id="tabela"></tbody></table></div>
+  <div class="tablewrap"><table><thead><tr><th>Data</th><th>Código</th><th>Infração</th><th>Classificação</th><th>Valor</th><th>Remoção</th><th>Ações</th></tr></thead><tbody id="tabela"></tbody></table></div>
 </section>
 </main>
 <script>
@@ -106,36 +117,41 @@ async function carregarCatalogo(){
 function podeEditar(r){const p=auth.perfil.perfil;return p==='ADMIN'||p==='ESTATISTICA'||String(r.criado_por)===String(auth.user.id)}
 function podeExcluir(){return ['ADMIN','ESTATISTICA'].includes(auth.perfil.perfil)}
 async function carregarRegistros(){
-  const r=await db.from('ciptur_autos_infracao').select('id,data_infracao,codigo_infracao,descricao_snapshot,base_legal_snapshot,pontos_snapshot,gravidade_snapshot,valor_snapshot,valor_texto_snapshot,criado_por,criado_em').order('data_infracao',{ascending:false}).order('criado_em',{ascending:false}).limit(100);
+  const r=await db.from('ciptur_autos_infracao').select('id,data_infracao,codigo_infracao,descricao_snapshot,base_legal_snapshot,pontos_snapshot,gravidade_snapshot,valor_snapshot,valor_texto_snapshot,houve_remocao,tipo_veiculo_removido,criado_por,criado_em').order('data_infracao',{ascending:false}).order('criado_em',{ascending:false}).limit(100);
   if(r.error)throw r.error;registros=r.data||[];renderTabela();
 }
 function renderTabela(){
   kTotal.textContent=registros.length;kCodigos.textContent=new Set(registros.map(r=>r.codigo_infracao)).size;
   kValor.textContent=brl(registros.reduce((s,r)=>s+(Number(r.valor_snapshot)||0),0));
-  tabela.innerHTML=registros.length?registros.map(r=>'<tr><td>'+dataBr(r.data_infracao)+'</td><td><b>'+esc(r.codigo_infracao)+'</b></td><td class="desc">'+esc(r.descricao_snapshot)+'</td><td>'+esc([r.gravidade_snapshot,r.pontos_snapshot!=null?r.pontos_snapshot+' pts':''].filter(Boolean).join(' · '))+'</td><td>'+esc(r.valor_snapshot==null?r.valor_texto_snapshot:brl(r.valor_snapshot))+'</td><td>'+(podeEditar(r)?'<button class="btn light" type="button" data-edit="'+r.id+'">Editar</button> ':'')+(podeExcluir()?'<button class="btn danger" type="button" data-del="'+r.id+'">Excluir</button>':'')+'</td></tr>').join(''):'<tr><td colspan="6" class="mini">Nenhum A.I. lançado ainda.</td></tr>';
+  kRemocoes.textContent=registros.filter(r=>r.houve_remocao).length;
+  tabela.innerHTML=registros.length?registros.map(r=>'<tr><td>'+dataBr(r.data_infracao)+'</td><td><b>'+esc(r.codigo_infracao)+'</b></td><td class="desc">'+esc(r.descricao_snapshot)+'</td><td>'+esc([r.gravidade_snapshot,r.pontos_snapshot!=null?r.pontos_snapshot+' pts':''].filter(Boolean).join(' · '))+'</td><td>'+esc(r.valor_snapshot==null?r.valor_texto_snapshot:brl(r.valor_snapshot))+'</td><td>'+(r.houve_remocao?esc(r.tipo_veiculo_removido||'SIM'):'—')+'</td><td>'+(podeEditar(r)?'<button class="btn light" type="button" data-edit="'+r.id+'">Editar</button> ':'')+(podeExcluir()?'<button class="btn danger" type="button" data-del="'+r.id+'">Excluir</button>':'')+'</td></tr>').join(''):'<tr><td colspan="7" class="mini">Nenhum A.I. lançado ainda.</td></tr>';
   tabela.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editar(b.dataset.edit));
   tabela.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>excluir(b.dataset.del));
 }
 function editar(id){
   const r=registros.find(x=>x.id===id);if(!r)return;editandoId=id;$('dataInfracao').value=r.data_infracao;$('codigo').value=r.codigo_infracao;
+  $('houveRemocao').value=r.houve_remocao?'SIM':'NAO';alternarRemocao();$('tipoVeiculo').value=r.houve_remocao?(r.tipo_veiculo_removido||''):'';
   selecionar(catalogo.find(c=>c.codigo===r.codigo_infracao));$('salvar').textContent='Salvar alteração';$('cancelarEdicao').hidden=false;window.scrollTo({top:0,behavior:'smooth'});
 }
-function cancelar(){editandoId=null;$('codigo').value='';selecionar(null);$('salvar').textContent='Salvar A.I.';$('cancelarEdicao').hidden=true;limparStatus()}
+function alternarRemocao(){const sim=$('houveRemocao').value==='SIM';$('campoTipoVeiculo').hidden=!sim;$('tipoVeiculo').required=sim;if(!sim)$('tipoVeiculo').value=''}
+function cancelar(){editandoId=null;$('codigo').value='';$('houveRemocao').value='NAO';alternarRemocao();selecionar(null);$('salvar').textContent='Salvar A.I.';$('cancelarEdicao').hidden=true;limparStatus()}
 async function excluir(id){
   if(!confirm('Excluir este lançamento de A.I.?'))return;
   const r=await db.from('ciptur_autos_infracao').delete().eq('id',id);if(r.error){status('Não foi possível excluir: '+r.error.message,'erro');return}
   status('A.I. excluído.','ok');await carregarRegistros();
 }
 $('codigo').addEventListener('input',resolverCodigo);$('codigo').addEventListener('blur',()=>setTimeout(()=>{$('sugestoes').classList.remove('show')},180));
-$('cancelarEdicao').onclick=cancelar;
+$('houveRemocao').addEventListener('change',alternarRemocao);$('cancelarEdicao').onclick=cancelar;
 $('formAi').addEventListener('submit',async e=>{
   e.preventDefault();limparStatus();resolverCodigo();if(!selecionado){status('Informe um código completo e válido do catálogo.','erro');return}
   const data=$('dataInfracao').value;if(!data){status('Informe a data.','erro');return}
+  const houveRemocao=$('houveRemocao').value==='SIM',tipoVeiculo=houveRemocao?$('tipoVeiculo').value:null;
+  if(houveRemocao&&!tipoVeiculo){status('Informe se o veículo removido foi carro ou moto.','erro');return}
   const b=$('salvar');b.disabled=true;b.textContent='Salvando...';
   try{
-    let r;
-    if(editandoId)r=await db.from('ciptur_autos_infracao').update({data_infracao:data,codigo_infracao:selecionado.codigo}).eq('id',editandoId);
-    else r=await db.from('ciptur_autos_infracao').insert({data_infracao:data,codigo_infracao:selecionado.codigo,unidade_id:auth.contexto.unidade_id});
+    let r,payload={data_infracao:data,codigo_infracao:selecionado.codigo,houve_remocao:houveRemocao,tipo_veiculo_removido:tipoVeiculo};
+    if(editandoId)r=await db.from('ciptur_autos_infracao').update(payload).eq('id',editandoId);
+    else r=await db.from('ciptur_autos_infracao').insert({...payload,unidade_id:auth.contexto.unidade_id});
     if(r.error)throw r.error;
     const msg=editandoId?'A.I. atualizado com sucesso.':'A.I. registrado com sucesso.';
     cancelar();$('dataInfracao').value=data;status(msg,'ok');await carregarRegistros();$('codigo').focus();
@@ -145,7 +161,7 @@ $('formAi').addEventListener('submit',async e=>{
 (async()=>{
   auth=await window.SistemaAuth.ready;if(!auth)return;db=auth.client;
   if(String(auth.contexto?.sigla||'').toUpperCase()!=='CIPTUR'){location.replace('index.html?erro=modulo-indisponivel');return}
-  const h=new Date(),hoje=h.getFullYear()+'-'+String(h.getMonth()+1).padStart(2,'0')+'-'+String(h.getDate()).padStart(2,'0');$('dataInfracao').value=hoje;
+  const h=new Date(),hoje=h.getFullYear()+'-'+String(h.getMonth()+1).padStart(2,'0')+'-'+String(h.getDate()).padStart(2,'0');$('dataInfracao').value=hoje;alternarRemocao();
   try{await Promise.all([carregarCatalogo(),carregarRegistros()])}catch(err){console.error(err);status('Erro ao carregar o módulo: '+err.message,'erro')}
 })();
 </script>
