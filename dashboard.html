@@ -5,7 +5,7 @@
 <body><div class="loading" id="loading">Carregando dados estatísticos...</div><header><div class="head"><div><h1>Dashboard Completo</h1><p>Análise estatística operacional da unidade ativa</p></div><div><a href="#" data-permission="planilha" data-planilha-unidade hidden>▦ Google Planilhas</a> <a href="index.html">← Página inicial</a></div></div></header><main>
 <section class="panel"><div class="presets"><button data-period="hoje">Hoje</button><button data-period="semana">Semana atual</button><button data-period="mes">Mês atual</button><button data-period="trimestre">Trimestre</button><button data-period="semestre">Semestre</button><button data-period="ano">Ano</button></div><div class="filters">
 <label>Data inicial<input id="ini" type="date"></label><label>Data final<input id="fim" type="date"></label><label>Comparar com<select id="comparar"><option value="anterior">Período anterior</option><option value="ano">Mesmo período do ano anterior</option><option value="nenhum">Sem comparação</option></select></label><label>AISC<select id="aisc"><option value="">Todas</option></select></label><label>SISC<select id="sisc"><option value="">Todas</option></select></label><label>Setor<select id="setor"><option value="">Todos</option></select></label><label>Companhia<select id="companhia"><option value="">Todas</option><option value="1ª CIA">1ª Companhia</option><option value="2ª CIA">2ª Companhia</option><option value="3ª CIA">3ª Companhia</option></select></label><label>Situação<select id="status"><option value="">Todas</option><option>ATENDIDA</option><option>DEMANDA REPRIMIDA</option></select></label><label>Ocorrência<input id="ocorrencia" placeholder="Todas"></label><label>Subtipo<input id="subtipo" placeholder="Todos"></label><label>Bairro<input id="bairro" placeholder="Todos"></label><label>Logradouro<input id="logradouro" placeholder="Todos"></label><label>Comandante<input id="comandante" placeholder="Todos"></label><label>Viatura<input id="vtr" placeholder="Todas"></label><label>Turno<select id="turno"><option value="">Todos</option><option>MADRUGADA</option><option>MANHÃ</option><option>TARDE</option><option>NOITE</option></select></label><label>Documento / classificação<select id="documento"><option value="">Todos</option><option>BO</option><option>TCO</option><option>ROP</option><option value="TS">TÁTICO SETORIAL</option><option value="AME">AME</option></select></label></div><div class="actions"><button class="btn" id="aplicar">Atualizar dashboard</button><button class="btn green" id="gerarPdf">Gerar Relatório PDF</button></div></section>
-<nav id="navCiptur" class="module-nav" hidden aria-label="Módulos do painel CIPTUR"><a href="#secVisaoGeral">Visão geral</a><a href="#secCipturTransito">Fiscalização · A.I. e remoções</a><a href="#secCipturTor">TOR</a><a href="#secProdutividade">Produtividade</a><a href="autos-infracao.html">Cadastrar A.I.</a></nav><nav id="navGiro" class="module-nav" hidden aria-label="Módulos do painel GIRO"><a href="#secVisaoGeral">Visão geral</a><a href="#secGiroAbordagens">Abordagens</a><a id="navGiroAcesso" href="#secGiroAcesso" hidden>Gerenciar acesso</a><a href="giro-abordagem.html" target="_blank" rel="noopener">Registro mobile ↗</a><a href="#secProdutividade">Produtividade</a><a href="#secApreensoes">Apreensões</a><a href="#secComandantes">Comandantes</a></nav>
+<nav id="navCiptur" class="module-nav" hidden aria-label="Módulos do painel CIPTUR"><a href="#secVisaoGeral">Visão geral</a><a href="#secCipturTransito">Fiscalização · A.I. e remoções</a><a href="#secCipturTor">TOR</a><a href="#secProdutividade">Produtividade</a><a href="autos-infracao.html">Cadastrar A.I.</a></nav><nav id="navGiro" class="module-nav" hidden aria-label="Módulos do painel GIRO"><a href="#secVisaoGeral">Visão geral</a><a href="#secGiroAbordagens">Abordagens</a><a id="navGiroAcesso" href="#secGiroAcesso" hidden>Gerenciar acesso</a><a href="giro-abordagem.html?v=20261001-geocode2" target="_blank" rel="noopener">Registro mobile ↗</a><a href="#secProdutividade">Produtividade</a><a href="#secApreensoes">Apreensões</a><a href="#secComandantes">Comandantes</a></nav>
 <section class="cards" id="secVisaoGeral"><div class="card"><small>Total de ocorrências</small><strong id="kTotal">0</strong><em id="vTotal"></em></div><div class="card teal"><small>Ocorrências atendidas</small><strong id="kAtendidas">0</strong></div><div class="card red"><small>Demandas reprimidas</small><strong id="kReprimidas">0</strong></div><div class="card steel"><small>Documentos produzidos</small><strong id="kDocumentos">0</strong></div><div class="card steel"><small>Conduções</small><strong id="kConduzidos">0</strong><em>inclui compatibilidade com registros legados</em></div></section><section class="section" id="secGiroAbordagens" hidden>
   <span class="module-tag">Produtividade preventiva · GIRO</span>
   <h2>Abordagens de Rua</h2>
@@ -43,6 +43,9 @@
     <div><h3 style="margin:0 0 8px;color:var(--navy)">Distribuição por hora</h3><div class="chartbox"><canvas id="chartGiroAbordagemHora"></canvas></div></div>
   </div>
   <p class="giro-data-note" id="giroQualidadeLocal">Bairro e logradouro dependem do endereço identificado no momento do registro mobile.</p>
+  <div class="actions" id="giroCorrecaoLocalAcoes" hidden>
+    <button class="btn green" id="giroCorrigirLocais" type="button">Corrigir locais pendentes</button>
+  </div>
 </section>
 <section class="section" id="secGiroAcesso" hidden>
   <span class="module-tag">Gestão de acesso · GIRO</span>
@@ -56,7 +59,7 @@
   <div class="actions">
     <button class="btn green" id="giroPainelSalvarAcesso" type="button">Criar acesso</button>
     <button class="btn red" id="giroPainelAlternarAcesso" type="button" hidden>Bloquear acesso</button>
-    <a class="btn" href="giro-abordagem.html" target="_blank" rel="noopener">Abrir formulário mobile ↗</a>
+    <a class="btn" href="giro-abordagem.html?v=20261001-geocode2" target="_blank" rel="noopener">Abrir formulário mobile ↗</a>
   </div>
   <div id="giroPainelAcessoStatus" class="giro-access-status">Consultando a situação do acesso...</div>
 </section>
@@ -342,7 +345,11 @@ function renderGiroAbordagens(){
   rows('tabGiroFaixas',faixas.map(f=>'<tr><td>'+f[0]+'</td><td>'+pessoas.filter(x=>num(x.idade)>=f[1]&&num(x.idade)<=f[2]).length+'</td></tr>').join(''));
 
   const comBairro=a.filter(x=>String(x.bairro||'').trim()).length,comLog=a.filter(x=>String(x.endereco||'').trim()).length;
-  $('giroQualidadeLocal').textContent='Dados territoriais disponíveis em '+comBairro+' de '+a.length+' abordagem(ns) para bairro e '+comLog+' de '+a.length+' para logradouro.';
+  const pendentes=(abordagensGiroAtual||[]).filter(x=>!String(x.bairro||'').trim()||!String(x.endereco||'').trim()).length;
+  $('giroQualidadeLocal').textContent='Dados territoriais disponíveis em '+comBairro+' de '+a.length+' abordagem(ns) para bairro e '+comLog+' de '+a.length+' para logradouro.'+(pendentes?' Há '+pendentes+' registro(s) do período aguardando correção de local.':'');
+  const podeCorrigir=podeGerenciarAcessoGiroPainel()&&pendentes>0;
+  $('giroCorrecaoLocalAcoes').hidden=!podeCorrigir;
+  if(podeCorrigir)$('giroCorrigirLocais').textContent='Corrigir '+pendentes+' local(is) pendente(s)';
 }
 function renderCiptur(){
   if(!ehCiptur())return;
@@ -437,6 +444,42 @@ function popularTerritorio(){
  setor.innerHTML='<option value="">Todos</option>'+sts.map(x=>'<option>'+esc(x.codigo)+'</option>').join('');
  if(sts.some(x=>x.codigo===stAnt))setor.value=stAnt;else setor.value='';
 }
+function dadosEnderecoOsmGiro(data){
+  const a=data?.address||{},rua=a.road||a.pedestrian||a.residential||a.path||a.footway||a.cycleway||a.highway||'',numero=a.house_number||'';
+  const bairro=a.suburb||a.neighbourhood||a.quarter||a.city_district||a.borough||'';
+  const municipio=a.city||a.town||a.municipality||a.county||'';
+  const endereco=[rua,numero].filter(Boolean).join(', ')||(data?.display_name?String(data.display_name).split(',').slice(0,2).join(', '):'');
+  return {endereco,bairro,municipio};
+}
+async function reverseOsmGiro(lat,lon){
+  const url='https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&addressdetails=1&accept-language=pt-BR&lat='+encodeURIComponent(lat)+'&lon='+encodeURIComponent(lon);
+  const r=await fetch(url,{headers:{Accept:'application/json'}});
+  if(!r.ok)throw new Error('Geocodificador retornou '+r.status);
+  return dadosEnderecoOsmGiro(await r.json());
+}
+async function corrigirLocaisPendentesGiro(){
+  if(!ehGiro()||!podeGerenciarAcessoGiroPainel())return;
+  const pendentes=(abordagensGiroAtual||[]).filter(x=>!String(x.bairro||'').trim()||!String(x.endereco||'').trim());
+  if(!pendentes.length)return;
+  const b=$('giroCorrigirLocais');b.disabled=true;
+  let ok=0,falhas=0;
+  try{
+    for(let i=0;i<pendentes.length;i++){
+      const x=pendentes[i];
+      b.textContent='Corrigindo '+(i+1)+' de '+pendentes.length+'...';
+      try{
+        const local=await reverseOsmGiro(x.latitude,x.longitude);
+        if(!local.endereco||!local.bairro){falhas++;continue}
+        const r=await db.from('giro_abordagens').update(local).eq('id',x.id);
+        if(r.error)throw r.error;
+        Object.assign(x,local);ok++;
+      }catch(e){console.warn('Falha ao corrigir local da abordagem',x.id,e);falhas++}
+      if(i<pendentes.length-1)await new Promise(resolve=>setTimeout(resolve,1100));
+    }
+    renderGiroAbordagens();
+    $('giroQualidadeLocal').textContent=(ok?ok+' local(is) corrigido(s). ':'')+(falhas?falhas+' registro(s) ainda sem identificação automática. ':'')+'Geocodificação complementar: © OpenStreetMap contributors.';
+  }finally{b.disabled=false;renderGiroAbordagens()}
+}
 function prepararFiltrosAbordagemGiro(){
   if(!$('giroFiltroHoraInicio')||!$('giroFiltroHoraFim'))return;
   const opts=Array.from({length:24},(_,h)=>'<option value="'+h+'">'+String(h).padStart(2,'0')+':00</option>').join('');
@@ -446,6 +489,7 @@ function prepararFiltrosAbordagemGiro(){
 }
 ['giroFiltroBairro','giroFiltroLogradouro'].forEach(id=>$(id)?.addEventListener('input',renderGiroAbordagens));
 ['giroFiltroTipo','giroFiltroHoraInicio','giroFiltroHoraFim'].forEach(id=>$(id)?.addEventListener('change',renderGiroAbordagens));
+$('giroCorrigirLocais')?.addEventListener('click',corrigirLocaisPendentesGiro);
 $('giroLimparFiltros')?.addEventListener('click',()=>{$('giroFiltroBairro').value='';$('giroFiltroLogradouro').value='';$('giroFiltroTipo').value='';$('giroFiltroHoraInicio').value='0';$('giroFiltroHoraFim').value='23';renderGiroAbordagens()});
 $('giroPainelSalvarAcesso')?.addEventListener('click',salvarAcessoGiroPainel);
 $('giroPainelAlternarAcesso')?.addEventListener('click',alternarAcessoGiroPainel);
