@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SIE-CPC — Gestão do Acesso GIRO Abordagens</title>
+<style>
+*{box-sizing:border-box}:root{--navy:#071b33;--blue:#0e4f8a;--green:#13795b;--red:#b42318;--bg:#eef3f8;--line:#d7e0ea;--muted:#66758a}
+body{margin:0;background:var(--bg);font:14px Inter,Segoe UI,Arial,sans-serif;color:#172033}
+header{background:linear-gradient(120deg,#071b33,#0a355f);color:#fff;padding:22px}
+.head,main{width:min(920px,94%);margin:auto}.head{display:flex;justify-content:space-between;align-items:center;gap:15px}
+.head h1{margin:0;font-size:23px}.head p{margin:5px 0 0;color:#c9d8e6}
+.head a{color:#fff;text-decoration:none;border:1px solid #ffffff55;padding:9px 12px;border-radius:9px}
+main{padding:28px 0 55px}.panel{background:#fff;border:1px solid var(--line);border-radius:17px;padding:24px;box-shadow:0 7px 26px #071b330d}
+.tag{display:inline-flex;padding:5px 9px;border-radius:999px;background:#e8f3f5;color:#285f65;font-size:10px;font-weight:900;letter-spacing:.3px;text-transform:uppercase}
+h2{margin:11px 0 6px;color:var(--navy);font-size:24px}.sub{margin:0 0 20px;color:var(--muted);line-height:1.55}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.campo label{display:block;font-size:11px;font-weight:900;color:#455b70;text-transform:uppercase;margin-bottom:6px}
+.campo input{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:#fff;font:inherit}.campo input[readonly]{background:#f8fafc;color:#52677a}
+.acoes{display:flex;gap:9px;flex-wrap:wrap;margin-top:17px}.btn{border:0;border-radius:10px;padding:11px 14px;background:var(--blue);color:#fff;font-weight:900;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+.btn.green{background:var(--green)}.btn.red{background:var(--red)}.btn.gray{background:#52677a}.btn:disabled{opacity:.55;cursor:wait}
+.status{margin-top:16px;padding:11px 13px;border-radius:10px;background:#eff8ff;color:#175cd3;border:1px solid #b2ddff}
+.status.ok{background:#ecfdf3;color:#067647;border-color:#abefc6}.status.erro{background:#fef3f2;color:#b42318;border-color:#fecdca}
+.note{margin-top:18px;padding-top:16px;border-top:1px solid #e8edf2;color:var(--muted);font-size:12px;line-height:1.5}
+.loading{position:fixed;inset:0;background:#ffffffee;display:grid;place-items:center;z-index:10;font-weight:900;color:var(--navy)}
+@media(max-width:650px){.grid{grid-template-columns:1fr}.head{align-items:flex-start;flex-direction:column}.acoes .btn{width:100%}}
+</style>
+<script src="auth-config.js"></script>
+<script src="auth-guard.js"></script>
+</head>
+<body>
+<div id="loading" class="loading">Carregando gestão do acesso...</div>
+<header>
+  <div class="head">
+    <div><h1>Gestão do acesso — GIRO Abordagens</h1><p>Administração da credencial compartilhada do formulário mobile</p></div>
+    <a href="index.html">← Página inicial</a>
+  </div>
+</header>
+<main>
+  <section class="panel">
+    <span class="tag">Gestão administrativa · GIRO</span>
+    <h2>Acesso Compartilhado — Abordagens</h2>
+    <p class="sub">Crie ou altere a credencial usada pelas equipes de patrulhamento para registrar abordagens no celular. A senha atual nunca é exibida; para alterá-la, informe uma nova senha.</p>
+
+    <div class="grid">
+      <div class="campo"><label>Login</label><input value="GIRO ABORDAGENS" readonly></div>
+      <div class="campo"><label>Situação</label><input id="situacao" value="Carregando..." readonly></div>
+      <div class="campo" style="grid-column:1/-1"><label id="senhaLabel">Senha compartilhada</label><input id="senha" type="password" minlength="8" autocomplete="new-password" placeholder="Mínimo 8 caracteres"></div>
+    </div>
+
+    <div class="acoes">
+      <button class="btn green" id="salvar" type="button">Criar acesso</button>
+      <button class="btn red" id="alternar" type="button" hidden>Bloquear acesso</button>
+      <a class="btn" href="giro-abordagem.html?v=20261001-geocode2" target="_blank" rel="noopener">Abrir formulário mobile ↗</a>
+    </div>
+
+    <div id="status" class="status">Consultando a situação do acesso...</div>
+    <div class="note">Esta página administra somente o acesso compartilhado das abordagens do GIRO. Ela não concede permissão para gerenciar usuários de outras unidades nem exibe relatórios estatísticos.</div>
+  </section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+let acesso=null,auth=null;
+
+function mostrarStatus(texto,tipo=''){
+  const el=$('status');el.textContent=texto;el.className='status'+(tipo?' '+tipo:'');
+}
+function autorizado(){
+  const perfil=String(auth?.perfil?.perfil||'').toUpperCase();
+  const sigla=String(auth?.contexto?.sigla||auth?.perfil?.unidades?.sigla||'').toUpperCase();
+  return sigla==='GIRO'&&(perfil==='ADMIN'||perfil==='ESTATISTICA');
+}
+async function invocar(body){
+  const client=auth?.client||window.SistemaAuth?.client;
+  const fn=window.SISTEMA_AUTH_CONFIG?.adminFunction||'admin-users';
+  if(!client)throw new Error('Sessão do SIE-CPC indisponível.');
+  const r=await client.functions.invoke(fn,{body});
+  if(r.error)throw r.error;
+  if(r.data?.error)throw new Error(r.data.error);
+  return r.data||{};
+}
+function render(){
+  const existe=!!acesso?.user_id,ativo=acesso?.ativo===true;
+  $('situacao').value=!existe?'NÃO CRIADO':ativo?'ATIVO':'BLOQUEADO';
+  $('salvar').textContent=existe?'Alterar senha':'Criar acesso';
+  $('senhaLabel').textContent=existe?'Nova senha compartilhada':'Senha compartilhada';
+  $('alternar').hidden=!existe;
+  if(existe){
+    $('alternar').textContent=ativo?'Bloquear acesso':'Reativar acesso';
+    $('alternar').className='btn '+(ativo?'red':'green');
+  }
+  mostrarStatus(!existe?'Defina uma senha para criar o acesso compartilhado das equipes.':ativo?'Acesso compartilhado ativo. A senha pode ser substituída a qualquer momento.':'Acesso compartilhado bloqueado. Reative quando quiser liberar novos lançamentos.',ativo?'ok':'');
+}
+async function carregar(){
+  mostrarStatus('Consultando a situação do acesso...');
+  const d=await invocar({action:'giro_access_status'});
+  acesso=d.access||null;render();
+}
+$('salvar').addEventListener('click',async()=>{
+  const senha=String($('senha').value||'');
+  if(senha.length<8){mostrarStatus('A senha precisa ter pelo menos 8 caracteres.','erro');return}
+  const b=$('salvar');b.disabled=true;
+  try{
+    const action=acesso?.user_id?'giro_access_reset_password':'giro_access_create';
+    const d=await invocar({action,password:senha});
+    acesso=d.access||acesso;$('senha').value='';
+    mostrarStatus(action==='giro_access_create'?'Acesso compartilhado criado com sucesso.':'Senha compartilhada alterada com sucesso.','ok');
+    await carregar();
+  }catch(e){console.error(e);mostrarStatus('Não foi possível concluir: '+(e.message||e),'erro')}
+  finally{b.disabled=false}
+});
+$('alternar').addEventListener('click',async()=>{
+  if(!acesso?.user_id)return;
+  const ativo=acesso.ativo===true;
+  if(ativo&&!confirm('Bloquear temporariamente o acesso compartilhado das abordagens?'))return;
+  const b=$('alternar');b.disabled=true;
+  try{
+    const d=await invocar({action:ativo?'giro_access_deactivate':'giro_access_reactivate'});
+    acesso=d.access||acesso;await carregar();
+  }catch(e){console.error(e);mostrarStatus('Não foi possível alterar o acesso: '+(e.message||e),'erro')}
+  finally{b.disabled=false}
+});
+(async()=>{
+  try{
+    auth=window.SistemaAuth?.client&&window.SistemaAuth?.user?window.SistemaAuth:await window.SistemaAuth?.ready;
+    if(!auth)return;
+    if(!autorizado()){location.replace('index.html?erro=sem-permissao');return}
+    $('loading').style.display='none';
+    await carregar();
+  }catch(e){
+    console.error(e);$('loading').style.display='none';
+    mostrarStatus('Não foi possível carregar a gestão do acesso: '+(e.message||e),'erro');
+  }
+})();
+</script>
+</body>
+</html>

@@ -21,6 +21,7 @@ window.SISTEMA_AUTH_CONFIG = Object.freeze({
     "autos-infracao.html":"cadastro",
     "consulta.html":"consulta",
     "dashboard.html":"dashboard",
+    "giro-acesso-abordagens.html":"dashboard",
     "dashboard-cpc.html":"dashboard",
     "territorio-cpc.html":"dashboard",
     "auditoria.html":"auditoria",
