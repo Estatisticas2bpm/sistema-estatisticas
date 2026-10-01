@@ -67,7 +67,17 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
     <div class="kpi" style="--accent:var(--green)"><small>Com drogas</small><strong id="kDrogas">0</strong><em>ocorrências com registro</em></div>
   </section>
 
-  <section class="panel executive"><h2>Leitura executiva do período</h2><p id="resumoExecutivo">Analisando os indicadores selecionados...</p></section>
+  <section class="panel executive"><h2>Leitura executiva do período</h2><p id="resumoExecutivo">Analisando os indicadores selecionados...</p></section><section class="panel" id="secAbordagensGiroCpc">
+  <div class="sectionTitle"><div><h2>Abordagens preventivas — GIRO</h2><p>Produtividade de abordagens registrada pelas equipes do GIRO. Este bloco considera período e unidade; filtros criminais/territoriais de BO não alteram estes números.</p></div><span class="tag">GIRO</span></div>
+  <div class="kpis" style="margin-bottom:16px">
+    <div class="kpi"><small>Abordagens</small><strong id="cpcGiroAbordagens">0</strong></div>
+    <div class="kpi"><small>Pessoas abordadas</small><strong id="cpcGiroPessoas">0</strong></div>
+    <div class="kpi"><small>A pé</small><strong id="cpcGiroPe">0</strong></div>
+    <div class="kpi"><small>Motocicletas</small><strong id="cpcGiroMoto">0</strong></div>
+    <div class="kpi"><small>Veículos</small><strong id="cpcGiroVeiculo">0</strong></div>
+  </div>
+  <div class="chartbox"><canvas id="chartCpcGiroAbordagens"></canvas></div>
+</section>
 
   <section class="panel">
     <div class="sectionTitle"><div><h2>Distribuição territorial oficial</h2><p>Incidência conforme AISC, SISC e Setores definidos no Decreto nº 22.414-E/2017</p></div><a class="tag" href="territorio-cpc.html" style="text-decoration:none">ABRIR MATRIZ TERRITORIAL</a></div>
@@ -106,7 +116,7 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
 const cfg=window.SISTEMA_AUTH_CONFIG;
 const db=supabase.createClient(cfg.supabaseUrl,cfg.publishableKey);
 const $=id=>document.getElementById(id);
-let charts={},unidadesCarregadas=false,catalogoTerritorial=null;
+let charts={},unidadesCarregadas=false,catalogoTerritorial=null,abordagensGiroCpc=[];
 function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function br(v){return v?String(v).split('-').reverse().join('/'):'—'}
 function n(v){return Number(v)||0}
@@ -138,6 +148,18 @@ if(topN)partes.push('A natureza com maior frequência é '+topN.natureza+', com 
 if(topB&&String(topB.bairro).toUpperCase()!=='NÃO INFORMADO')partes.push('O bairro com maior concentração é '+topB.bairro+', com '+n(topB.total)+' ocorrência'+(n(topB.total)===1?'':'s')+'.');
 let oper=[];if(n(r.conducoes))oper.push(n(r.conducoes)+' condução'+(n(r.conducoes)===1?'':'ões'));if(n(r.tcos))oper.push(n(r.tcos)+' TCO'+(n(r.tcos)===1?'':'s'));if(n(r.veiculos_recuperados))oper.push(n(r.veiculos_recuperados)+' veículo'+(n(r.veiculos_recuperados)===1?'':'s')+' recuperado'+(n(r.veiculos_recuperados)===1?'':'s'));if(oper.length)partes.push('No resultado operacional constam '+oper.join(', ')+'.');
 $('resumoExecutivo').textContent=partes.join(' ')}
+function renderAbordagensGiroCpc(){
+  let lista=abordagensGiroCpc||[],u=$('unidade').value;
+  if(u)lista=lista.filter(x=>String(x.unidade_id)===String(u));
+  $('cpcGiroAbordagens').textContent=lista.length;
+  $('cpcGiroPessoas').textContent=lista.reduce((s,x)=>s+n(x.quantidade_pessoas),0);
+  $('cpcGiroPe').textContent=lista.filter(x=>x.tipo_abordagem==='A_PE').length;
+  $('cpcGiroMoto').textContent=lista.filter(x=>x.tipo_abordagem==='MOTO').length;
+  $('cpcGiroVeiculo').textContent=lista.filter(x=>x.tipo_abordagem==='VEICULO').length;
+  const dias={};lista.forEach(x=>{const d=String(x.registrado_em||'').slice(0,10);if(d)dias[d]=(dias[d]||0)+1});
+  const itens=Object.entries(dias).sort((a,b)=>a[0].localeCompare(b[0]));
+  chart('chartCpcGiroAbordagens','line',itens.map(x=>br(x[0])),[{label:'Abordagens',data:itens.map(x=>x[1]),tension:.25,fill:false}],{scales:{y:{beginAtZero:true,ticks:{precision:0}}}});
+}
 function render(d){const r=d.resumo||{},u=d.unidades||[],top=d.top_naturezas||[],serie=d.serie_diaria||[];
 $('kOcorrencias').textContent=n(r.total_ocorrencias);$('kConducoes').textContent=n(r.conducoes);$('kPrisoes').textContent=n(r.prisoes);$('kTcos').textContent=n(r.tcos);$('kVeiculos').textContent=n(r.veiculos_recuperados);$('kArmas').textContent=n(r.ocorrencias_armas);$('kDrogas').textContent=n(r.ocorrencias_drogas);
 $('tbodyUnidades').innerHTML=u.length?u.map(x=>'<tr><td><span class="unit">'+esc(sigla(x.sigla))+'</span><span class="sub">'+esc(x.nome)+'</span></td><td>'+n(x.total_ocorrencias)+'</td><td>'+n(x.conducoes)+'</td><td>'+n(x.prisoes)+'</td><td>'+n(x.tcos)+'</td><td>'+n(x.veiculos_recuperados)+'</td><td>'+n(x.ocorrencias_armas)+'</td><td>'+n(x.ocorrencias_drogas)+'</td></tr>').join(''):'<tr><td colspan="8">Nenhuma unidade encontrada para o filtro selecionado.</td></tr>';
@@ -145,8 +167,8 @@ chart('chartUnidades','bar',u.map(x=>sigla(x.sigla)),[{label:'Ocorrências',data
 const datas=[...new Set(serie.map(x=>x.data))].sort(),units=[...new Set(serie.map(x=>x.sigla))],mapa=new Map(serie.map(x=>[x.data+'|'+x.sigla,n(x.total)]));const datasets=units.map(s=>({label:sigla(s),data:datas.map(dt=>mapa.get(dt+'|'+s)||0),tension:.25,fill:false}));chart('chartSerie','line',datas.map(br),datasets,{interaction:{mode:'index',intersect:false},scales:{y:{beginAtZero:true,ticks:{precision:0}}}});
 rankList('topNaturezasGeral',d.top_naturezas_geral||[],'natureza');rankList('topBairros',d.top_bairros||[],'bairro');rankList('territorioAisc',d.territorio?.aisc||[],'codigo');rankList('territorioSisc',d.territorio?.sisc||[],'codigo');rankList('territorioSetores',d.territorio?.setores||[],'codigo');
 $('naturezas').innerHTML=top.length?top.map(x=>'<div class="naturezaBox"><h3>'+esc(sigla(x.sigla))+'</h3>'+((x.itens||[]).length?(x.itens||[]).map((i,idx)=>'<div class="rank"><i>'+(idx+1)+'º</i><span title="'+esc(i.natureza)+'">'+esc(i.natureza)+'</span><b>'+n(i.total)+'</b></div>').join(''):'<div class="status">Sem ocorrências no período.</div>')+'</div>').join(''):'<div class="empty">Sem dados para exibir.</div>';
-renderResumo(d);const selecionada=(d.unidades_disponiveis||[]).find(x=>x.id===$('unidade').value);$('scope').textContent='Abrangência · '+(selecionada?sigla(selecionada.sigla)+' — '+selecionada.nome:'todas as unidades subordinadas');$('heroScope').textContent=selecionada?sigla(selecionada.sigla)+' — '+selecionada.nome:'Todas as unidades subordinadas';$('heroPeriod').textContent=br($('ini').value)+' a '+br($('fim').value);atualizarUrl()}
-async function carregar(){const ready=window.SistemaAuth?.ready;if(ready)await ready;$('loading').style.display='grid';$('status').textContent='Consultando dados consolidados...';try{const args={data_inicio:$('ini').value||null,data_fim:$('fim').value||null,p_unidade_id:$('unidade').value||null,p_aisc:$('aisc').value||null,p_sisc:$('sisc').value||null,p_setor:$('setor').value||null,p_ocorrencia:$('ocorrencia').value.trim()||null,p_bairro:$('bairro').value.trim()||null,p_companhia:$('companhia').value||null,p_turno:$('turno').value||null};const r=await db.rpc('obter_painel_cpc_territorial',args);if(r.error)throw r.error;if(!r.data?.autorizado)throw new Error(r.data?.erro||'Acesso não autorizado ao Painel CPC.');popularUnidades(r.data.unidades_disponiveis||[]);if(!args.p_unidade_id&&$('unidade').value){return carregar()}render(r.data);$('status').textContent='Painel atualizado. Os indicadores refletem somente o escopo e os filtros exibidos acima.'}catch(e){console.error(e);$('status').textContent='Não foi possível carregar a Central Executiva do CPC: '+e.message}finally{$('loading').style.display='none'}}
+renderAbordagensGiroCpc();renderResumo(d);const selecionada=(d.unidades_disponiveis||[]).find(x=>x.id===$('unidade').value);$('scope').textContent='Abrangência · '+(selecionada?sigla(selecionada.sigla)+' — '+selecionada.nome:'todas as unidades subordinadas');$('heroScope').textContent=selecionada?sigla(selecionada.sigla)+' — '+selecionada.nome:'Todas as unidades subordinadas';$('heroPeriod').textContent=br($('ini').value)+' a '+br($('fim').value);atualizarUrl()}
+async function carregar(){const ready=window.SistemaAuth?.ready;if(ready)await ready;$('loading').style.display='grid';$('status').textContent='Consultando dados consolidados...';try{const args={data_inicio:$('ini').value||null,data_fim:$('fim').value||null,p_unidade_id:$('unidade').value||null,p_aisc:$('aisc').value||null,p_sisc:$('sisc').value||null,p_setor:$('setor').value||null,p_ocorrencia:$('ocorrencia').value.trim()||null,p_bairro:$('bairro').value.trim()||null,p_companhia:$('companhia').value||null,p_turno:$('turno').value||null};const [r,ga]=await Promise.all([db.rpc('obter_painel_cpc_territorial',args),db.from('giro_abordagens').select('id,unidade_id,registrado_em,tipo_abordagem,quantidade_pessoas').gte('registrado_em',($('ini').value||'1900-01-01')+'T00:00:00').lte('registrado_em',($('fim').value||'2999-12-31')+'T23:59:59.999')]);if(r.error)throw r.error;if(ga.error)throw ga.error;if(!r.data?.autorizado)throw new Error(r.data?.erro||'Acesso não autorizado ao Painel CPC.');abordagensGiroCpc=ga.data||[];popularUnidades(r.data.unidades_disponiveis||[]);if(!args.p_unidade_id&&$('unidade').value){return carregar()}render(r.data);$('status').textContent='Painel atualizado. Os indicadores refletem somente o escopo e os filtros exibidos acima.'}catch(e){console.error(e);$('status').textContent='Não foi possível carregar a Central Executiva do CPC: '+e.message}finally{$('loading').style.display='none'}}
 function periodo(tipo){const h=new Date(),f=new Date(h),i=new Date(h);if(tipo==='hoje'){}else if(tipo==='7dias')i.setDate(h.getDate()-6);else if(tipo==='30dias')i.setDate(h.getDate()-29);else if(tipo==='ano')i.setMonth(0,1);else i.setDate(1);$('ini').value=iso(i);$('fim').value=iso(f);carregar()}
 document.querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>periodo(b.dataset.period));$('atualizar').onclick=carregar;
 $('aisc').onchange=()=>{ $('sisc').value='';$('setor').value='';popularTerritorio(); };
