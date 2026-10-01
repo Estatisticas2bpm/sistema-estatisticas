@@ -170,7 +170,7 @@ async function excluir(id){
   status('A.I. excluído.','ok');await carregarRegistros();
 }
 $('agenteAutuador').addEventListener('input',()=>{clearTimeout(timerBuscaAgente);timerBuscaAgente=setTimeout(buscarAgentes,180)});
-$('agenteAutuador').addEventListener('focus',()=>{if($('agenteAutuador').value.trim().length>=2)buscarAgentes()});
+$('agenteAutuador').addEventListener('focus',()=>{if(!agenteSelecionado&&$('agenteAutuador').value.trim().length>=2)buscarAgentes()});
 $('agenteAutuador').addEventListener('blur',()=>setTimeout(()=>{$('sugestoesAgentes').classList.remove('show')},180));
 $('codigo').addEventListener('input',resolverCodigo);$('codigo').addEventListener('blur',()=>setTimeout(()=>{$('sugestoes').classList.remove('show')},180));
 $('houveRemocao').addEventListener('change',alternarRemocao);$('cancelarEdicao').onclick=cancelar;
