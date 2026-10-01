@@ -24,6 +24,7 @@ const postosGraduacoesValidos = new Set([
   "ASP OF PM", "AL OF PM", "SUB TEN PM", "1º SGT PM", "2º SGT PM",
   "3º SGT PM", "CB PM", "SD PM",
 ]);
+const GIRO_ABORDAGENS_EMAIL = "giro.abordagens@siecpc.local";
 const limpar = (v: unknown) => String(v ?? "").trim();
 const upper = (v: unknown) => limpar(v).toUpperCase();
 
@@ -56,6 +57,25 @@ async function validarUnidadeAtiva(unidadeId: unknown) {
   if (!unidade) throw new Error("A unidade selecionada não existe.");
   if (unidade.ativo !== true) throw new Error("A unidade selecionada não está ativa.");
   return unidade;
+}
+
+async function unidadeGiro() {
+  const { data, error } = await admin.from("unidades")
+    .select("id,sigla,nome,ativo")
+    .eq("sigla", "GIRO")
+    .maybeSingle();
+  if (error) throw error;
+  return data || null;
+}
+
+async function acessoGiroAbordagens() {
+  const { data, error } = await admin.from("giro_acessos_abordagem")
+    .select("user_id,unidade_id,ativo,criado_em,atualizado_em")
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  const unidade = data ? await unidadePorId(data.unidade_id) : await unidadeGiro();
+  return data ? { ...data, email: GIRO_ABORDAGENS_EMAIL, unidade } : { email: GIRO_ABORDAGENS_EMAIL, ativo: false, user_id: null, unidade };
 }
 
 async function perfilDoUsuario(userId: string) {
@@ -206,6 +226,76 @@ Deno.serve(async (req: Request) => {
     const perfilCaller = await perfilDoUsuario(caller.id);
     if (!perfilCaller || perfilCaller.ativo !== true || perfilCaller.perfil !== "ADMIN" || perfilCaller.unidades?.ativo !== true) {
       return resposta({ error: "Somente administradores ativos de uma unidade ativa podem gerenciar usuários." }, 403);
+    }
+
+    if (action === "giro_access_status") {
+      return resposta({ access: await acessoGiroAbordagens() });
+    }
+
+    if (action === "giro_access_create") {
+      const password = limpar(body.password);
+      if (password.length < 8) throw new Error("A senha compartilhada deve ter pelo menos 8 caracteres.");
+      const unidade = await unidadeGiro();
+      if (!unidade) throw new Error("A unidade GIRO não está cadastrada.");
+      if (unidade.ativo !== true) throw new Error("Ative o GIRO antes de liberar o acesso compartilhado de abordagens.");
+      const atual = await acessoGiroAbordagens();
+      if (atual?.user_id) throw new Error("O acesso compartilhado do GIRO já existe.");
+
+      const { data: authData, error: authError } = await admin.auth.admin.createUser({
+        email: GIRO_ABORDAGENS_EMAIL,
+        password,
+        email_confirm: true,
+        user_metadata: { nome: "GIRO ABORDAGENS" },
+      });
+      if (authError || !authData.user) throw authError || new Error("Não foi possível criar o acesso compartilhado.");
+
+      const userId = authData.user.id;
+      const { error: acessoError } = await admin.from("giro_acessos_abordagem").insert({
+        user_id: userId,
+        unidade_id: unidade.id,
+        ativo: true,
+      });
+      if (acessoError) {
+        await admin.auth.admin.deleteUser(userId).catch(() => {});
+        throw acessoError;
+      }
+      await log(caller.id, "CRIOU_ACESSO_GIRO_ABORDAGENS", "giro_acesso_abordagem", userId, { unidade_id: unidade.id });
+      return resposta({ ok: true, access: await acessoGiroAbordagens() });
+    }
+
+    if (action === "giro_access_reset_password") {
+      const password = limpar(body.password);
+      if (password.length < 8) throw new Error("A senha compartilhada deve ter pelo menos 8 caracteres.");
+      const atual = await acessoGiroAbordagens();
+      if (!atual?.user_id) throw new Error("O acesso compartilhado do GIRO ainda não foi criado.");
+      const { error } = await admin.auth.admin.updateUserById(atual.user_id, { password });
+      if (error) throw error;
+      await log(caller.id, "REDEFINIU_SENHA_GIRO_ABORDAGENS", "giro_acesso_abordagem", atual.user_id);
+      return resposta({ ok: true });
+    }
+
+    if (action === "giro_access_deactivate") {
+      const atual = await acessoGiroAbordagens();
+      if (!atual?.user_id) throw new Error("O acesso compartilhado do GIRO ainda não foi criado.");
+      const { error } = await admin.from("giro_acessos_abordagem").update({ ativo: false, atualizado_em: new Date().toISOString() }).eq("user_id", atual.user_id);
+      if (error) throw error;
+      const { error: banError } = await admin.auth.admin.updateUserById(atual.user_id, { ban_duration: "876000h" });
+      if (banError) console.error("Acesso GIRO bloqueado no banco, mas houve falha no ban do Auth:", banError.message);
+      await log(caller.id, "BLOQUEOU_ACESSO_GIRO_ABORDAGENS", "giro_acesso_abordagem", atual.user_id);
+      return resposta({ ok: true, access: await acessoGiroAbordagens() });
+    }
+
+    if (action === "giro_access_reactivate") {
+      const atual = await acessoGiroAbordagens();
+      if (!atual?.user_id) throw new Error("O acesso compartilhado do GIRO ainda não foi criado.");
+      const unidade = await unidadeGiro();
+      if (!unidade || unidade.ativo !== true) throw new Error("O GIRO precisa estar ativo para reativar o acesso de abordagens.");
+      const { error } = await admin.from("giro_acessos_abordagem").update({ ativo: true, atualizado_em: new Date().toISOString() }).eq("user_id", atual.user_id);
+      if (error) throw error;
+      const { error: unbanError } = await admin.auth.admin.updateUserById(atual.user_id, { ban_duration: "0s" });
+      if (unbanError) throw unbanError;
+      await log(caller.id, "REATIVOU_ACESSO_GIRO_ABORDAGENS", "giro_acesso_abordagem", atual.user_id);
+      return resposta({ ok: true, access: await acessoGiroAbordagens() });
     }
 
     if (action === "list") {
