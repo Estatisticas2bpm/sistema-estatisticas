@@ -200,6 +200,16 @@
     .sugestao-endereco-google:hover,
     .sugestao-endereco-google:focus-visible { background:#dbeafe; color:#1e3a8a !important; -webkit-text-fill-color:#1e3a8a; outline:none; }
     .botao-adicionar { width: 44px; min-width: 44px; padding: 0; font-size: 25px; font-weight: bold; line-height: 1; border-radius: 8px; }
+    .atalhos-locais-linha { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:8px; }
+    .atalhos-locais-rapidos { display:flex; gap:8px; flex-wrap:wrap; flex:1; min-width:0; }
+    .atalho-local-rapido { width:auto; min-width:0; padding:7px 11px; border:1px solid #bfdbfe; background:#eef5ff; color:#1d4ed8; font-size:13px; font-weight:800; border-radius:8px; }
+    .atalho-local-rapido:hover { background:#dbeafe; }
+    .botao-gerenciar-atalhos { width:36px; min-width:36px; height:36px; padding:0; border-radius:8px; font-size:17px; display:grid; place-items:center; flex:0 0 36px; }
+    .atalhos-editor-lista { display:grid; gap:8px; margin-top:12px; }
+    .atalho-editor-item { display:grid; grid-template-columns:minmax(0,1fr) auto auto auto; gap:6px; align-items:center; padding:9px 10px; border:1px solid #dbe4ee; border-radius:9px; background:#f8fafc; }
+    .atalho-editor-item strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .atalho-editor-item button { width:34px; min-width:34px; height:34px; padding:0; font-size:16px; border-radius:7px; }
+    .atalhos-editor-vazio { color:#64748b; font-size:13px; margin:8px 0 0; }
     .cabecalho-pessoas { display:flex; justify-content:space-between; align-items:center; gap:12px; grid-column:1/-1; margin-top:6px; }
     .cabecalho-pessoas .subtitulo { margin:0; }
     .adicionar-pessoa { width:auto; min-width:0; padding:9px 13px; font-size:14px; }
@@ -435,6 +445,11 @@
           <div class="campo duplo">
             <label for="localEntrega">Local de entrega do relatório</label>
             <div class="campo-com-acao"><input id="localEntrega" name="localEntrega" type="text" list="listaLocais" autocomplete="off" placeholder="Digite para pesquisar e selecione"><button class="botao-adicionar" id="abrirNovoLocalEntrega" type="button" title="Cadastrar novo local de entrega" aria-label="Cadastrar novo local de entrega">+</button></div><datalist id="listaLocais"></datalist>
+            <div class="atalhos-locais-linha">
+              <div class="atalhos-locais-rapidos" id="atalhosLocaisRapidos" aria-label="Atalhos rápidos de local de entrega"></div>
+              <button class="botao-gerenciar-atalhos" id="gerenciarAtalhosLocais" type="button" title="Gerenciar atalhos desta unidade" aria-label="Gerenciar atalhos desta unidade">⚙</button>
+            </div>
+            <span class="nota">Atalhos rápidos personalizados para a unidade ativa. Configure até 6.</span>
           </div>
         </div>
       </section>
@@ -699,6 +714,24 @@
   <dialog id="modalNovoLocalEntrega">
     <form class="modal-conteudo" id="formNovoLocalEntrega" method="dialog"><h3>Cadastrar local de entrega</h3><p>Cadastre somente se o local ainda não estiver na lista.</p><div class="campo"><label for="novoLocalEntrega">Nome ou sigla do local</label><input id="novoLocalEntrega" maxlength="120" required placeholder="Ex.: DEAM"></div><div class="modal-acoes"><button class="botao-secundario" id="cancelarNovoLocalEntrega" type="button">Cancelar</button><button type="submit">Adicionar local</button></div></form>
   </dialog>
+  <dialog id="modalAtalhosLocais">
+    <form class="modal-conteudo" id="formAtalhosLocais" method="dialog">
+      <h3>Gerenciar atalhos rápidos</h3>
+      <p>Escolha até 6 locais para aparecerem como botões rápidos nesta unidade. A configuração é compartilhada por todos os operadores da unidade.</p>
+      <div class="campo">
+        <label for="atalhoLocalNovo">Adicionar local</label>
+        <div class="campo-com-acao">
+          <select id="atalhoLocalNovo"><option value="">Selecione um local</option></select>
+          <button class="botao-adicionar" id="adicionarAtalhoLocal" type="button" title="Adicionar atalho" aria-label="Adicionar atalho">+</button>
+        </div>
+      </div>
+      <div class="atalhos-editor-lista" id="listaAtalhosLocaisEditor"></div>
+      <div class="modal-acoes">
+        <button class="botao-secundario" id="cancelarAtalhosLocais" type="button">Cancelar</button>
+        <button id="salvarAtalhosLocais" type="submit">Salvar atalhos</button>
+      </div>
+    </form>
+  </dialog>
   <dialog id="modalBairro">
     <form class="modal-conteudo" id="formNovoBairro" method="dialog"><h3>Cadastrar novo bairro</h3><p>Cadastre apenas se o bairro ainda não estiver na lista.</p><div class="campo"><label for="novoBairro">Nome do bairro</label><input id="novoBairro" maxlength="100" required></div><div class="modal-acoes"><button class="botao-secundario" id="cancelarNovoBairro" type="button">Cancelar</button><button type="submit">Salvar bairro</button></div></form>
   </dialog>
@@ -711,6 +744,9 @@
     const PDF_CORE = window.PdfImporterCore;
 
     let catalogos = {tipos:[],subtipos:[],bairros:[],locais:[],comandantes:[]};
+    let atalhosLocaisRapidos = [];
+    let atalhosLocaisRascunho = [];
+    let catalogoLocaisAtalhos = [];
     let googleAddressElement = null;
     let geocodificadorGoogle = null;
     let temporizadorNumeroEndereco = null;
@@ -755,7 +791,170 @@
       preencherLista("listaBairros", catalogos.bairros);
       preencherLista("listaLocais", catalogos.locais);
       preencherLista("listaComandantes", catalogos.comandantes || []);
+      await carregarAtalhosLocaisRapidos();
     }
+    const modalAtalhosLocais = document.getElementById("modalAtalhosLocais");
+    const listaAtalhosLocaisEditor = document.getElementById("listaAtalhosLocaisEditor");
+    const atalhoLocalNovo = document.getElementById("atalhoLocalNovo");
+
+    function renderizarAtalhosLocaisRapidos() {
+      const recipiente = document.getElementById("atalhosLocaisRapidos");
+      recipiente.replaceChildren();
+      atalhosLocaisRapidos.forEach(item => {
+        const botao = document.createElement("button");
+        botao.type = "button";
+        botao.className = "atalho-local-rapido";
+        botao.textContent = item.nome;
+        botao.title = "Preencher local de entrega: " + item.nome;
+        botao.addEventListener("click", () => {
+          document.getElementById("localEntrega").value = item.nome;
+        });
+        recipiente.appendChild(botao);
+      });
+    }
+
+    async function carregarAtalhosLocaisRapidos() {
+      const resposta = await banco.rpc("obter_atalhos_locais_unidade");
+      if (resposta.error) {
+        console.error("Não foi possível carregar os atalhos da unidade.", resposta.error);
+        atalhosLocaisRapidos = [];
+      } else {
+        atalhosLocaisRapidos = (resposta.data || []).map(item => ({
+          id:item.id,
+          local_id:Number(item.local_id),
+          nome:item.nome,
+          ordem:Number(item.ordem)
+        }));
+      }
+      renderizarAtalhosLocaisRapidos();
+    }
+
+    async function carregarCatalogoLocaisAtalhos() {
+      const resposta = await banco.from("locais_apresentacao")
+        .select("id,nome")
+        .eq("ativo",true)
+        .order("nome");
+      if (resposta.error) throw resposta.error;
+      catalogoLocaisAtalhos = (resposta.data || []).map(item => ({id:Number(item.id),nome:item.nome}));
+    }
+
+    function atualizarSeletorNovoAtalho() {
+      const idsUsados = new Set(atalhosLocaisRascunho.map(item => Number(item.local_id)));
+      const valorAtual = Number(atalhoLocalNovo.value || 0);
+      atalhoLocalNovo.innerHTML = '<option value="">Selecione um local</option>';
+      catalogoLocaisAtalhos
+        .filter(item => !idsUsados.has(Number(item.id)))
+        .forEach(item => {
+          const opcao = document.createElement("option");
+          opcao.value = String(item.id);
+          opcao.textContent = item.nome;
+          atalhoLocalNovo.appendChild(opcao);
+        });
+      if (valorAtual && !idsUsados.has(valorAtual)) atalhoLocalNovo.value = String(valorAtual);
+    }
+
+    function renderizarEditorAtalhos() {
+      listaAtalhosLocaisEditor.replaceChildren();
+      if (!atalhosLocaisRascunho.length) {
+        const vazio = document.createElement("p");
+        vazio.className = "atalhos-editor-vazio";
+        vazio.textContent = "Nenhum atalho configurado. Adicione um local acima.";
+        listaAtalhosLocaisEditor.appendChild(vazio);
+      }
+      atalhosLocaisRascunho.forEach((item, indice) => {
+        const linha = document.createElement("div");
+        linha.className = "atalho-editor-item";
+
+        const nome = document.createElement("strong");
+        nome.textContent = item.nome;
+
+        const subir = document.createElement("button");
+        subir.type = "button";
+        subir.textContent = "↑";
+        subir.title = "Mover para cima";
+        subir.disabled = indice === 0;
+        subir.addEventListener("click", () => {
+          [atalhosLocaisRascunho[indice-1], atalhosLocaisRascunho[indice]] = [atalhosLocaisRascunho[indice], atalhosLocaisRascunho[indice-1]];
+          renderizarEditorAtalhos();
+        });
+
+        const descer = document.createElement("button");
+        descer.type = "button";
+        descer.textContent = "↓";
+        descer.title = "Mover para baixo";
+        descer.disabled = indice === atalhosLocaisRascunho.length - 1;
+        descer.addEventListener("click", () => {
+          [atalhosLocaisRascunho[indice+1], atalhosLocaisRascunho[indice]] = [atalhosLocaisRascunho[indice], atalhosLocaisRascunho[indice+1]];
+          renderizarEditorAtalhos();
+        });
+
+        const remover = document.createElement("button");
+        remover.type = "button";
+        remover.textContent = "×";
+        remover.title = "Remover atalho";
+        remover.addEventListener("click", () => {
+          atalhosLocaisRascunho.splice(indice,1);
+          renderizarEditorAtalhos();
+        });
+
+        linha.append(nome,subir,descer,remover);
+        listaAtalhosLocaisEditor.appendChild(linha);
+      });
+      atualizarSeletorNovoAtalho();
+    }
+
+    document.getElementById("gerenciarAtalhosLocais").addEventListener("click", async () => {
+      try {
+        await Promise.all([carregarAtalhosLocaisRapidos(),carregarCatalogoLocaisAtalhos()]);
+        atalhosLocaisRascunho = atalhosLocaisRapidos.map(item => ({local_id:Number(item.local_id),nome:item.nome}));
+        renderizarEditorAtalhos();
+        modalAtalhosLocais.showModal();
+      } catch (erro) {
+        console.error(erro);
+        alert("Não foi possível abrir a configuração de atalhos.");
+      }
+    });
+
+    document.getElementById("adicionarAtalhoLocal").addEventListener("click", () => {
+      if (atalhosLocaisRascunho.length >= 6) {
+        alert("Esta unidade já possui 6 atalhos. Remova um antes de adicionar outro.");
+        return;
+      }
+      const id = Number(atalhoLocalNovo.value || 0);
+      const local = catalogoLocaisAtalhos.find(item => Number(item.id) === id);
+      if (!local) {
+        alert("Selecione um local para adicionar.");
+        return;
+      }
+      if (!atalhosLocaisRascunho.some(item => Number(item.local_id) === id)) {
+        atalhosLocaisRascunho.push({local_id:id,nome:local.nome});
+      }
+      renderizarEditorAtalhos();
+    });
+
+    document.getElementById("cancelarAtalhosLocais").addEventListener("click", () => modalAtalhosLocais.close());
+
+    document.getElementById("formAtalhosLocais").addEventListener("submit", async evento => {
+      evento.preventDefault();
+      const botao = document.getElementById("salvarAtalhosLocais");
+      botao.disabled = true;
+      botao.textContent = "Salvando...";
+      try {
+        const resposta = await banco.rpc("salvar_atalhos_locais_unidade", {
+          p_locais: atalhosLocaisRascunho.map(item => Number(item.local_id))
+        });
+        if (resposta.error) throw resposta.error;
+        await carregarAtalhosLocaisRapidos();
+        modalAtalhosLocais.close();
+      } catch (erro) {
+        console.error(erro);
+        alert("Não foi possível salvar os atalhos: " + (erro.message || "erro desconhecido"));
+      } finally {
+        botao.disabled = false;
+        botao.textContent = "Salvar atalhos";
+      }
+    });
+
     const modalNovoLocalEntrega = document.getElementById("modalNovoLocalEntrega");
     const novoLocalEntrega = document.getElementById("novoLocalEntrega");
     document.getElementById("abrirNovoLocalEntrega").addEventListener("click", () => {
