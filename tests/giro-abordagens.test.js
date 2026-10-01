@@ -52,5 +52,14 @@ assert.match(usuarios,/giro_access_reset_password/);
 assert.match(edge,/GIRO_ABORDAGENS_EMAIL/);
 assert.match(edge,/giro_access_deactivate/);
 assert.match(edge,/giro_acessos_abordagem/);
+assert.match(dashboard,/id="secGiroAcesso" hidden/);
+assert.match(dashboard,/Gerenciar acesso/);
+assert.match(dashboard,/Alterar senha/);
+assert.match(dashboard,/giro_access_status/);
+assert.match(dashboard,/giro_access_reset_password/);
+assert.match(edge,/function podeGerenciarAcessoGiro/);
+assert.match(edge,/sigla === "GIRO" && perfil\.perfil === "ESTATISTICA"/);
+assert.match(edge,/Somente ADMIN ou ESTATÍSTICA do GIRO podem gerenciar/);
+assert.match(edge,/Somente administradores ativos de uma unidade ativa podem gerenciar usuários/);
 
 console.log('GIRO: módulo de abordagens mobile, painéis, mapa e acesso validados.');
