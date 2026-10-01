@@ -184,7 +184,7 @@
     }
 
     .campo-com-acao { display: flex; gap: 8px; align-items: stretch; }
-    .campo-com-acao input { flex: 1; min-width:0; }
+    .campo-com-acao input, .campo-com-acao select { flex: 1; min-width:0; }
     .campo-com-acao.guarnicao { gap:5px; align-items:center; }
     .botao-adicionar.botao-guarnicao { width:34px; min-width:34px; height:36px; padding:0; font-size:18px; border-radius:7px; flex:0 0 34px; }
     .resultados-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
@@ -797,6 +797,10 @@
     const listaAtalhosLocaisEditor = document.getElementById("listaAtalhosLocaisEditor");
     const atalhoLocalNovo = document.getElementById("atalhoLocalNovo");
 
+    function rotuloLocalAtalho(valor) {
+      return String(valor || "").replace(/^(\d+)\s+DP$/i, "$1º DP");
+    }
+
     function renderizarAtalhosLocaisRapidos() {
       const recipiente = document.getElementById("atalhosLocaisRapidos");
       recipiente.replaceChildren();
@@ -804,8 +808,8 @@
         const botao = document.createElement("button");
         botao.type = "button";
         botao.className = "atalho-local-rapido";
-        botao.textContent = item.nome;
-        botao.title = "Preencher local de entrega: " + item.nome;
+        botao.textContent = rotuloLocalAtalho(item.nome);
+        botao.title = "Preencher local de entrega: " + rotuloLocalAtalho(item.nome);
         botao.addEventListener("click", () => {
           document.getElementById("localEntrega").value = item.nome;
         });
@@ -866,7 +870,7 @@
         linha.className = "atalho-editor-item";
 
         const nome = document.createElement("strong");
-        nome.textContent = item.nome;
+        nome.textContent = rotuloLocalAtalho(item.nome);
 
         const subir = document.createElement("button");
         subir.type = "button";
