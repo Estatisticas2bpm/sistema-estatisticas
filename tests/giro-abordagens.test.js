@@ -53,6 +53,10 @@ assert.match(dashboard,/corrigirLocaisPendentesGiro/);
 assert.match(dashboard,/reverseOsmGiro/);
 assert.match(dashboard,/Geocodificação complementar: © OpenStreetMap contributors/);
 assert.match(dashboard,/function filtrarAbordagensGiro\(lista\)/);
+assert.match(dashboard,/function normalizarFiltroLivre\(v\)/);
+assert.doesNotMatch(dashboard,/const b=norm\(\$\('giroFiltroBairro'\)/);
+assert.match(dashboard,/T00:00:00-04:00/);
+assert.match(dashboard,/T23:59:59\.999-04:00/);
 assert.match(dashboard,/Motocicletas abordadas/);
 assert.match(dashboard,/\(ehCiptur\(\)\|\|ehGiro\(\)\)\?\[\]/);
 
@@ -68,6 +72,8 @@ assert.match(mapa,/ABORDAGEM GIRO/);
 assert.match(mapa,/function filtrarAbordagens\(\)/);
 assert.match(mapa,/baseAbordagens/);
 assert.match(mapa,/giro-moto-marker/);
+assert.match(mapa,/gruposAbordagens/);
+assert.match(mapa,/deslocamento=grupo\.length>1/);
 assert.match(mapa,/L\.divIcon/);
 assert.match(mapa,/🏍️/);
 
@@ -102,6 +108,9 @@ assert.match(home,/db\.from\("giro_abordagens"\)/);
 assert.match(home,/ABORDAGEM GIRO/);
 assert.match(home,/camadaGiroMapa\.onchange=renderizarMapa/);
 assert.match(home,/giro-moto-marker/);
+assert.match(home,/gruposAbordagens/);
+assert.match(home,/deslocamento=grupo\.length>1/);
+assert.match(home,/iconAnchor:\[13-deslocamento,13\]/);
 assert.match(home,/typeof pt\.setRadius==="function"/);
 assert.match(home,/🏍️/);
 

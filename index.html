@@ -133,10 +133,17 @@ function renderizarMapa(){
     var cat=categoriaMapa(x.ocorrencia||x.crime),unidade=modoCpc&&x.unidade_sigla?'<br><b>Unidade: '+escHome(siglaHome(x.unidade_sigla))+'</b>':"",bo=x.numero_bo?'<br>BO: '+escHome(x.numero_bo):"",pt=L.circleMarker([x.latitude,x.longitude],{radius:8,color:"#fff",weight:2,fillColor:cat[1],fillOpacity:.9}).bindPopup("<b>"+escHome(x.ocorrencia||x.crime||"Ocorrência")+"</b><br><span style='color:"+cat[1]+";font-weight:700'>"+cat[0]+"</span>"+unidade+bo+"<br>"+escHome(x.endereco||"Endereço não informado")+"<br>"+escHome(x.bairro||"")+"<br>"+fmt(new Date(x.data_ocorrencia+"T12:00:00")));
     pt.addTo(camadaPontos);limites.push([x.latitude,x.longitude])
   });
+  var gruposAbordagens={};
+  abordagens.forEach(function(x){
+    var chave=Number(x.latitude).toFixed(4)+','+Number(x.longitude).toFixed(4);
+    (gruposAbordagens[chave]||(gruposAbordagens[chave]=[])).push(x);
+  });
   abordagens.forEach(function(x){
     var dataHora=x.registrado_em?new Date(x.registrado_em).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}):"";
     var local=[x.endereco,x.bairro,x.municipio].filter(Boolean).join(" · ")||"Local capturado por GPS";
-    var iconeMoto=L.divIcon({className:"giro-moto-marker",html:"<span aria-hidden='true'>🏍️</span>",iconSize:[26,26],iconAnchor:[13,13],popupAnchor:[0,-12]});
+    var chave=Number(x.latitude).toFixed(4)+','+Number(x.longitude).toFixed(4),grupo=gruposAbordagens[chave]||[x],indice=grupo.indexOf(x);
+    var deslocamento=grupo.length>1?(indice-(grupo.length-1)/2)*18:0;
+    var iconeMoto=L.divIcon({className:"giro-moto-marker",html:"<span aria-hidden='true'>🏍️</span>",iconSize:[26,26],iconAnchor:[13-deslocamento,13],popupAnchor:[deslocamento,-12]});
     var pt=L.marker([Number(x.latitude),Number(x.longitude)],{icon:iconeMoto,title:"Abordagem GIRO"})
       .bindPopup("<b>ABORDAGEM GIRO</b><br><span style='color:#111;font-weight:800'>🏍️ "+escHome(rotuloAbordagemGiro(x.tipo_abordagem))+"</span><br>"+Number(x.quantidade_pessoas||0)+" pessoa(s) abordada(s)<br>"+escHome(local)+"<br>"+escHome(dataHora));
     pt.addTo(camadaPontos);limites.push([Number(x.latitude),Number(x.longitude)])
@@ -163,7 +170,7 @@ async function carregarMapa(){
     if(modoGiro){
       var rr=await Promise.all([
         db.rpc("obter_ocorrencias_mapa",{data_inicio:p[0],data_fim:p[1],tipo_filtro:tipoMapa.value||null}),
-        db.from("giro_abordagens").select("id,registrado_em,tipo_abordagem,quantidade_pessoas,latitude,longitude,endereco,bairro,municipio").gte("registrado_em",p[0]+"T00:00:00").lte("registrado_em",p[1]+"T23:59:59.999")
+        db.from("giro_abordagens").select("id,registrado_em,tipo_abordagem,quantidade_pessoas,latitude,longitude,endereco,bairro,municipio").gte("registrado_em",p[0]+"T00:00:00-04:00").lte("registrado_em",p[1]+"T23:59:59.999-04:00")
       ]);
       r=rr[0];g=rr[1];
     }else{

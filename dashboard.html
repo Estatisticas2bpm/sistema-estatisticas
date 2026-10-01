@@ -299,12 +299,15 @@ function logradouroAbordagem(x){
   return e?(e.split(',')[0].trim()||'NÃO INFORMADO'):'NÃO INFORMADO';
 }
 function bairroAbordagem(x){return String(x.bairro||'').trim()||'NÃO INFORMADO'}
+function normalizarFiltroLivre(v){
+  return String(v??'').trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
+}
 function filtrarAbordagensGiro(lista){
   if(!ehGiro())return [];
-  const b=norm($('giroFiltroBairro')?.value||''),l=norm($('giroFiltroLogradouro')?.value||''),t=$('giroFiltroTipo')?.value||'';
+  const b=normalizarFiltroLivre($('giroFiltroBairro')?.value),l=normalizarFiltroLivre($('giroFiltroLogradouro')?.value),t=$('giroFiltroTipo')?.value||'';
   const hi=Number($('giroFiltroHoraInicio')?.value??0),hf=Number($('giroFiltroHoraFim')?.value??23);
   return (lista||[]).filter(x=>{
-    const h=horaAbordagem(x),bb=norm(bairroAbordagem(x)),ll=norm(logradouroAbordagem(x));
+    const h=horaAbordagem(x),bb=normalizarFiltroLivre(bairroAbordagem(x)),ll=normalizarFiltroLivre(logradouroAbordagem(x));
     const horaOk=hi<=hf?(h>=hi&&h<=hf):(h>=hi||h<=hf);
     return (!b||bb.includes(b))&&(!l||ll.includes(l))&&(!t||x.tipo_abordagem===t)&&horaOk;
   });
@@ -412,9 +415,9 @@ function perfil(a,prefix,chartId,box){let pessoas=listaPessoas(a,prefix),nacs=ra
 async function carregar(){loading.style.display='grid';let calls=[db.rpc('obter_dados_dashboard_territorial',{data_inicio:ini.value,data_fim:fim.value}),db.rpc('obter_tcos_dashboard_territorial',{data_inicio:ini.value,data_fim:fim.value})],temComparacao=comparar.value!=='nenhum',pc=temComparacao?periodoComparado():null;if(temComparacao)calls.push(db.rpc('obter_dados_dashboard_territorial',{data_inicio:pc[0],data_fim:pc[1]}),db.rpc('obter_tcos_dashboard_territorial',{data_inicio:pc[0],data_fim:pc[1]}));let r=await Promise.all(calls);if(r[0].error){loading.textContent='Erro ao carregar: '+r[0].error.message;return}if(r[1].error){loading.textContent='Erro ao carregar TCOs: '+r[1].error.message;return}atual=r[0].data||[];tcosAtual=r[1].data||[];anterior=temComparacao?(r[2].data||[]):[];tcosAnterior=temComparacao?(r[3].data||[]):[];
   autosCipturAtual=[];autosCipturAnterior=[];abordagensGiroAtual=[];abordagensGiroAnterior=[];
   if(ehGiro()){
-    const fimAtual=fim.value+'T23:59:59.999';
-    let gCalls=[db.from('giro_abordagens').select('id,registrado_em,tipo_abordagem,pessoas,quantidade_pessoas,latitude,longitude,endereco,bairro,municipio').gte('registrado_em',ini.value+'T00:00:00').lte('registrado_em',fimAtual)];
-    if(temComparacao)gCalls.push(db.from('giro_abordagens').select('id,registrado_em,tipo_abordagem,pessoas,quantidade_pessoas,latitude,longitude,endereco,bairro,municipio').gte('registrado_em',pc[0]+'T00:00:00').lte('registrado_em',pc[1]+'T23:59:59.999'));
+    const fimAtual=fim.value+'T23:59:59.999-04:00';
+    let gCalls=[db.from('giro_abordagens').select('id,registrado_em,tipo_abordagem,pessoas,quantidade_pessoas,latitude,longitude,endereco,bairro,municipio').gte('registrado_em',ini.value+'T00:00:00-04:00').lte('registrado_em',fimAtual)];
+    if(temComparacao)gCalls.push(db.from('giro_abordagens').select('id,registrado_em,tipo_abordagem,pessoas,quantidade_pessoas,latitude,longitude,endereco,bairro,municipio').gte('registrado_em',pc[0]+'T00:00:00-04:00').lte('registrado_em',pc[1]+'T23:59:59.999-04:00'));
     const gr=await Promise.all(gCalls);
     if(gr[0].error){loading.textContent='Erro ao carregar abordagens: '+gr[0].error.message;return}
     abordagensGiroAtual=gr[0].data||[];
