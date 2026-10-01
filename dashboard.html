@@ -181,12 +181,12 @@ function renderCipturTor(registros){
 function renderGiro(registros){
   if(!ehGiro())return;
   const base=registros||[],armas=totaisCategoriasArmas(base);
-  giroOcorrencias.textContent=base.length;
-  giroConducoes.textContent=soma(base,'conducoes_operacionais');
-  giroPrisoes.textContent=soma(base,'numero_prisoes');
-  giroVeiculos.textContent=soma(base,'veiculos_recuperados');
-  giroArmas.textContent=armas.fogo;
-  giroDrogas.textContent=base.filter(temEntorpecente).length;
+  $('giroOcorrencias').textContent=base.length;
+  $('giroConducoes').textContent=soma(base,'conducoes_operacionais');
+  $('giroPrisoes').textContent=soma(base,'numero_prisoes');
+  $('giroVeiculos').textContent=soma(base,'veiculos_recuperados');
+  $('giroArmas').textContent=armas.fogo;
+  $('giroDrogas').textContent=base.filter(temEntorpecente).length;
   const meses={};
   base.forEach(x=>{const d=String(x.data_ocorrencia||'').slice(0,7);if(d)meses[d]=(meses[d]||0)+1});
   const mesItens=Object.entries(meses).sort((a,b)=>a[0].localeCompare(b[0]));
