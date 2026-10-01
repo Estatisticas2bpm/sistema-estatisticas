@@ -701,7 +701,7 @@
     <form class="modal-conteudo" id="formNovoBairro" method="dialog"><h3>Cadastrar novo bairro</h3><p>Cadastre apenas se o bairro ainda não estiver na lista.</p><div class="campo"><label for="novoBairro">Nome do bairro</label><input id="novoBairro" maxlength="100" required></div><div class="modal-acoes"><button class="botao-secundario" id="cancelarNovoBairro" type="button">Cancelar</button><button type="submit">Salvar bairro</button></div></form>
   </dialog>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="pdf-importer-core.js?v=20260918-1"></script>
+  <script src="pdf-importer-core.js?v=20261001-guarnicao1"></script>
   <script>
     const SUPABASE_URL = "https://jppmhhukujigxupgskdk.supabase.co";
     const SUPABASE_KEY = "sb_publishable_ZVnU35i2x9zwppQqYg7UYw_mzaT43aG";
@@ -1486,13 +1486,14 @@
         || texto.match(/(?:^|\s)0*(\d{4,10})\s*\/\s*(20\d{2})(?:\s|$)/m);
       const inicio = texto.match(/Data\/Hora do Fato In[íi]cio:\s*(\d{2}\/\d{2}\/\d{4})\s*(\d{2}:\d{2})/i);
       const fim = texto.match(/Data\/Hora do Fato Fim:\s*\d{2}\/\d{2}\/\d{4}\s*(\d{2}:\d{2})/i);
-      const vtr = texto.match(/(?:VTR|Viatura)\s*(?:N[º°])?\s*:?\s*(\d{2,5})/i);
+      const vtr = texto.match(/(?:VTR|Viatura)\s*(?:N[º°])?\s*[-:]?\s*(?:TOR\s*)?(\d{2,5})/i);
       const comandante = texto.match(/Comandante da Guarni[çc][ãa]o:\s*([^\n]+)/i);
       const natureza = texto.match(/Natureza\s+Meio\(s\) Empregado\(s\)\s*([\s\S]*?)(?=ENVOLVIDO\(S\))/i);
       const historico = texto.match(/RELATO\/HIST[ÓO]RICO\s*([\s\S]*?)(?=ASSINATURAS)/i);
       const objetos = texto.match(/OBJETO\(S\) ENVOLVIDO\(S\)\s*([\s\S]*?)(?=RELATO\/HIST[ÓO]RICO)/i);
       const local = texto.match(/Local do Fato[\s\S]*?Munic[íi]pio:\s*([^\n]+)[\s\S]*?Bairro:\s*([^\n]+)[\s\S]*?Logradouro:\s*([^\n]*?)(?:\s+N[º°]:\s*([^\n]+))?\n/i);
       const pessoas = extrairPessoasPdf(texto);
+      const guarnicaoCiptur = PDF_CORE && PDF_CORE.extrairGuarnicaoCiptur ? PDF_CORE.extrairGuarnicaoCiptur(texto) : {cmt:"",mot:"",ptr1:"",ptr2:"",tor:false};
       const itensOperacionais = extrairItensOperacionaisPdf(objetos ? objetos[1] : "");
       if (!itensOperacionais.subtraidos.length) {
         const bemDoRelato = extrairBemSubtraidoDoRelato(historico ? historico[1] : "", natureza ? natureza[1] : "");
@@ -1509,7 +1510,8 @@
         horaFinal: fim ? fim[1] : "",
         municipio: local ? local[1].replace(/\s*\([^)]*\)\s*$/," ").trim() : "",
         vtr: vtr ? vtr[1] : "",
-        comandanteExtraido: comandante ? comandante[1].trim() : "",
+        comandanteExtraido: comandante ? comandante[1].trim() : (guarnicaoCiptur.cmt || ""),
+        guarnicaoCiptur,
         comandante:{valor:null,sugestao:null,score:0,origem:null,automatico:false,ambiguo:false},
         localEntrega:{valor:null,sugestao:null,score:0,origem:null,automatico:false,ambiguo:false},
         natureza: natureza ? natureza[1].replace(/N[ãa]o Houve/gi," ").replace(/\s+/g," ").trim() : "",
@@ -1624,7 +1626,12 @@
         document.getElementById("crime").value = subtipo ? subtipo.nome : "";
       }
       const comandante = dados.comandante && (dados.comandante.valor || dados.comandante.sugestao);
-      document.getElementById("comandante").value = comandante || "";
+      document.getElementById("comandante").value = comandante || dados.guarnicaoCiptur?.cmt || "";
+      definirCampo("guarnicaoMot",dados.guarnicaoCiptur?.mot || "");
+      definirCampo("guarnicaoPtr1",dados.guarnicaoCiptur?.ptr1 || "");
+      definirCampo("guarnicaoPtr2",dados.guarnicaoCiptur?.ptr2 || "");
+      const torImportado=document.getElementById("grupamentoTor");
+      if(torImportado && dados.guarnicaoCiptur?.tor) torImportado.checked=true;
       document.getElementById("localEntrega").value = dados.localEntrega && (dados.localEntrega.valor || dados.localEntrega.sugestao) || "";
       document.getElementById("mo").value = dados.historico;
       document.getElementById("materialidade").value = dados.materialidade;
@@ -1669,6 +1676,7 @@
       const enderecoPreparado = await preencherEnderecoPdfAutomatico(dados);
       ["tipoRegistro","numeroBo","data","horaInicial","horaFinal","vtr","municipio","ocorrencia","crime","mo","materialidade","localEntrega","quantArmaBranca","armaBranca","balanca","disparo","autoResistencia","foragidos","numeroConduzidos","orientacoes","veiculosRecuperados"].forEach(id=>marcarCampoPdf(id,false));
       marcarCampoPdf("comandante",!(dados.comandante&&dados.comandante.automatico));
+      ["guarnicaoMot","guarnicaoPtr1","guarnicaoPtr2"].forEach(id=>marcarCampoPdf(id,false));
       ["nacVitima","sexoVitima","idadeVitima","nacInfrator","sexoInfrator","idadeInfrator"].forEach(id=>marcarCampoPdf(id,false));
       if (enderecoPreparado.confirmado) ["enderecoGoogle","numeroEndereco","bairro"].forEach(id=>marcarCampoPdf(id,true,"✓ Associação ao mapa — conferir"));
       else ["enderecoAproximado","numeroEndereco","bairro"].forEach(id=>marcarCampoPdf(id,true,"✓ Extraído do PDF — confirmar no mapa"));
