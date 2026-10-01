@@ -79,7 +79,7 @@ function renderResumoGiro(d,dAnt,abord,abordAnt,hoje,pc){
   tcosSub.textContent="abordagens registradas no mês";veiculosSub.textContent="pessoas abordadas no mês";
   periodoComparativo.textContent="1º a "+hoje.getDate()+" de "+nomeMes(hoje).toLowerCase()+" × 1º a "+pc[1].getDate()+" de "+nomeMes(pc[1]).toLowerCase();
   comparativoMes.innerHTML=itemComparativo("Ocorrências",d.length,dAnt.length,"crime")+itemComparativo("Conduções",c,cAnt,"prod")+itemComparativo("Abordagens",ab,abAnt,"prod")+itemComparativo("Pessoas abordadas",pessoas,pessoasAnt,"prod");
-  resumoInteligente.textContent="Até "+hoje.toLocaleDateString("pt-BR",{day:"2-digit",month:"long"})+", o GIRO registrou "+d.length+" ocorrência"+(d.length===1?"":"s")+", "+ab+" abordagem"+(ab===1?"":"ens")+" e "+pessoas+" pessoa"+(pessoas===1?"":"s")+" abordada"+(pessoas===1?"":"s")+".";
+  resumoInteligente.textContent="Até "+hoje.toLocaleDateString("pt-BR",{day:"2-digit",month:"long"})+", o GIRO registrou "+d.length+" ocorrência"+(d.length===1?"":"s")+", "+ab+" "+(ab===1?"abordagem":"abordagens")+" e "+pessoas+" pessoa"+(pessoas===1?"":"s")+" abordada"+(pessoas===1?"":"s")+".";
 }
 function aplicarModoCiptur(){
   var kpiAi=tcosProduzidos.closest(".kpi"),kpiRem=veiculosRecuperadosKpi.closest(".kpi");
