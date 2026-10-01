@@ -31,7 +31,7 @@ main{padding:22px 0 70px}.panel{background:#fff;border:1px solid var(--line);bor
 <main>
 <section class="panel">
   <h2>Novo A.I.</h2>
-  <p class="sub">Informe somente a data e o código da infração. Descrição, base legal, classificação, pontos e valor são preenchidos automaticamente pelo catálogo cadastrado.</p>
+  <p class="sub">Informe a data, o agente autuador e o código da infração. Descrição, base legal, classificação, pontos e valor são preenchidos automaticamente pelo catálogo cadastrado.</p>
   <form id="formAi" autocomplete="off">
     <div class="formgrid">
       <div class="campo"><label>Data *</label><input id="dataInfracao" type="date" required></div>
@@ -40,6 +40,14 @@ main{padding:22px 0 70px}.panel{background:#fff;border:1px solid var(--line);bor
         <input id="codigo" inputmode="numeric" maxlength="20" required placeholder="Ex.: 6599-2 ou 65.992">
         <div class="hint">Pode digitar com ou sem ponto/hífen. Se o código estiver incompleto, o sistema apresenta as opções.</div>
         <div id="sugestoes" class="sugestoes"></div>
+      </div>
+    </div>
+    <div class="formgrid" style="margin-top:13px">
+      <div class="campo" style="grid-column:1/-1">
+        <label>Agente autuador *</label>
+        <input id="agenteAutuador" autocomplete="off" required placeholder="Digite o código do agente ou o nome">
+        <div class="hint">Pesquise pelo código (ex.: PM5994) ou pelo nome. Se um código tiver mais de um nome na lista fornecida, confira o policial antes de selecionar.</div>
+        <div id="sugestoesAgentes" class="sugestoes"></div>
       </div>
     </div>
     <div class="formgrid" style="margin-top:13px">
@@ -78,11 +86,11 @@ main{padding:22px 0 70px}.panel{background:#fff;border:1px solid var(--line);bor
     <div class="card"><small>Valor nominal dos registros exibidos</small><strong id="kValor">R$ 0,00</strong></div>
     <div class="card"><small>Remoções de veículos</small><strong id="kRemocoes">0</strong></div>
   </div>
-  <div class="tablewrap"><table><thead><tr><th>Data</th><th>Código</th><th>Infração</th><th>Classificação</th><th>Valor</th><th>Remoção</th><th>Ações</th></tr></thead><tbody id="tabela"></tbody></table></div>
+  <div class="tablewrap"><table><thead><tr><th>Data</th><th>Código</th><th>Agente autuador</th><th>Infração</th><th>Classificação</th><th>Valor</th><th>Remoção</th><th>Ações</th></tr></thead><tbody id="tabela"></tbody></table></div>
 </section>
 </main>
 <script>
-const $=id=>document.getElementById(id);let auth=null,db=null,catalogo=[],selecionado=null,editandoId=null,registros=[];
+const $=id=>document.getElementById(id);let auth=null,db=null,catalogo=[],selecionado=null,agenteSelecionado=null,editandoId=null,registros=[],timerBuscaAgente=null,buscaAgenteSeq=0;
 const brl=v=>v==null?'—':Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const dataBr=v=>{if(!v)return '—';const p=String(v).slice(0,10).split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:v};
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -110,6 +118,26 @@ function resolverCodigo(){
   $('sugestoes').classList.add('show');
   $('sugestoes').querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>selecionar(op[Number(b.dataset.i)]));
 }
+function selecionarAgente(a){
+  agenteSelecionado=a||null;$('sugestoesAgentes').classList.remove('show');$('sugestoesAgentes').innerHTML='';
+  $('agenteAutuador').value=a?[a.codigo,a.nome].filter(Boolean).join(' — '):'';
+}
+function renderSugestoesAgentes(itens){
+  const box=$('sugestoesAgentes');
+  if(!itens.length){box.innerHTML='<div style="padding:11px;color:#b42318">Nenhum agente encontrado.</div>';box.classList.add('show');return}
+  box.innerHTML=itens.map((a,i)=>'<button type="button" class="sugestao" data-agente-i="'+i+'"><b>'+esc(a.codigo)+' — '+esc(a.nome)+'</b><span>'+(a.codigo_ambiguo?'Código ambíguo na lista fornecida — confira o nome.':'Agente de trânsito PMRR')+'</span></button>').join('');
+  box.classList.add('show');
+  box.querySelectorAll('[data-agente-i]').forEach(b=>b.onclick=()=>selecionarAgente(itens[Number(b.dataset.agenteI)]));
+}
+async function buscarAgentes(){
+  const termo=$('agenteAutuador').value.trim();agenteSelecionado=null;
+  if(termo.length<2){$('sugestoesAgentes').classList.remove('show');$('sugestoesAgentes').innerHTML='';return}
+  const seq=++buscaAgenteSeq;
+  const r=await db.rpc('buscar_agentes_transito',{p_busca:termo});
+  if(seq!==buscaAgenteSeq)return;
+  if(r.error){console.error(r.error);$('sugestoesAgentes').innerHTML='<div style="padding:11px;color:#b42318">Não foi possível pesquisar os agentes.</div>';$('sugestoesAgentes').classList.add('show');return}
+  renderSugestoesAgentes(r.data||[]);
+}
 async function carregarCatalogo(){
   const r=await db.from('ciptur_catalogo_infracoes').select('codigo,codigo_normalizado,descricao,base_legal,pontos,gravidade,valor,valor_texto').eq('ativo',true).order('codigo');
   if(r.error)throw r.error;catalogo=r.data||[];
@@ -117,39 +145,43 @@ async function carregarCatalogo(){
 function podeEditar(r){const p=auth.perfil.perfil;return p==='ADMIN'||p==='ESTATISTICA'||String(r.criado_por)===String(auth.user.id)}
 function podeExcluir(){return ['ADMIN','ESTATISTICA'].includes(auth.perfil.perfil)}
 async function carregarRegistros(){
-  const r=await db.from('ciptur_autos_infracao').select('id,data_infracao,codigo_infracao,descricao_snapshot,base_legal_snapshot,pontos_snapshot,gravidade_snapshot,valor_snapshot,valor_texto_snapshot,houve_remocao,tipo_veiculo_removido,criado_por,criado_em').order('data_infracao',{ascending:false}).order('criado_em',{ascending:false}).limit(100);
+  const r=await db.from('ciptur_autos_infracao').select('id,data_infracao,codigo_infracao,agente_autuador_id,agente_codigo_snapshot,agente_nome_snapshot,descricao_snapshot,base_legal_snapshot,pontos_snapshot,gravidade_snapshot,valor_snapshot,valor_texto_snapshot,houve_remocao,tipo_veiculo_removido,criado_por,criado_em').order('data_infracao',{ascending:false}).order('criado_em',{ascending:false}).limit(100);
   if(r.error)throw r.error;registros=r.data||[];renderTabela();
 }
 function renderTabela(){
   kTotal.textContent=registros.length;kCodigos.textContent=new Set(registros.map(r=>r.codigo_infracao)).size;
   kValor.textContent=brl(registros.reduce((s,r)=>s+(Number(r.valor_snapshot)||0),0));
   kRemocoes.textContent=registros.filter(r=>r.houve_remocao).length;
-  tabela.innerHTML=registros.length?registros.map(r=>'<tr><td>'+dataBr(r.data_infracao)+'</td><td><b>'+esc(r.codigo_infracao)+'</b></td><td class="desc">'+esc(r.descricao_snapshot)+'</td><td>'+esc([r.gravidade_snapshot,r.pontos_snapshot!=null?r.pontos_snapshot+' pts':''].filter(Boolean).join(' · '))+'</td><td>'+esc(r.valor_snapshot==null?r.valor_texto_snapshot:brl(r.valor_snapshot))+'</td><td>'+(r.houve_remocao?esc(r.tipo_veiculo_removido||'SIM'):'—')+'</td><td>'+(podeEditar(r)?'<button class="btn light" type="button" data-edit="'+r.id+'">Editar</button> ':'')+(podeExcluir()?'<button class="btn danger" type="button" data-del="'+r.id+'">Excluir</button>':'')+'</td></tr>').join(''):'<tr><td colspan="7" class="mini">Nenhum A.I. lançado ainda.</td></tr>';
+  tabela.innerHTML=registros.length?registros.map(r=>'<tr><td>'+dataBr(r.data_infracao)+'</td><td><b>'+esc(r.codigo_infracao)+'</b></td><td><b>'+esc(r.agente_codigo_snapshot||'—')+'</b><div class="mini">'+esc(r.agente_nome_snapshot||'Registro anterior sem agente informado')+'</div></td><td class="desc">'+esc(r.descricao_snapshot)+'</td><td>'+esc([r.gravidade_snapshot,r.pontos_snapshot!=null?r.pontos_snapshot+' pts':''].filter(Boolean).join(' · '))+'</td><td>'+esc(r.valor_snapshot==null?r.valor_texto_snapshot:brl(r.valor_snapshot))+'</td><td>'+(r.houve_remocao?esc(r.tipo_veiculo_removido||'SIM'):'—')+'</td><td>'+(podeEditar(r)?'<button class="btn light" type="button" data-edit="'+r.id+'">Editar</button> ':'')+(podeExcluir()?'<button class="btn danger" type="button" data-del="'+r.id+'">Excluir</button>':'')+'</td></tr>').join(''):'<tr><td colspan="8" class="mini">Nenhum A.I. lançado ainda.</td></tr>';
   tabela.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editar(b.dataset.edit));
   tabela.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>excluir(b.dataset.del));
 }
 function editar(id){
   const r=registros.find(x=>x.id===id);if(!r)return;editandoId=id;$('dataInfracao').value=r.data_infracao;$('codigo').value=r.codigo_infracao;
   $('houveRemocao').value=r.houve_remocao?'SIM':'NAO';alternarRemocao();$('tipoVeiculo').value=r.houve_remocao?(r.tipo_veiculo_removido||''):'';
+  if(r.agente_autuador_id)selecionarAgente({id:r.agente_autuador_id,codigo:r.agente_codigo_snapshot,nome:r.agente_nome_snapshot,codigo_ambiguo:false});else selecionarAgente(null);
   selecionar(catalogo.find(c=>c.codigo===r.codigo_infracao));$('salvar').textContent='Salvar alteração';$('cancelarEdicao').hidden=false;window.scrollTo({top:0,behavior:'smooth'});
 }
 function alternarRemocao(){const sim=$('houveRemocao').value==='SIM';$('campoTipoVeiculo').hidden=!sim;$('tipoVeiculo').required=sim;if(!sim)$('tipoVeiculo').value=''}
-function cancelar(){editandoId=null;$('codigo').value='';$('houveRemocao').value='NAO';alternarRemocao();selecionar(null);$('salvar').textContent='Salvar A.I.';$('cancelarEdicao').hidden=true;limparStatus()}
+function cancelar(){editandoId=null;$('codigo').value='';selecionarAgente(null);$('houveRemocao').value='NAO';alternarRemocao();selecionar(null);$('salvar').textContent='Salvar A.I.';$('cancelarEdicao').hidden=true;limparStatus()}
 async function excluir(id){
   if(!confirm('Excluir este lançamento de A.I.?'))return;
   const r=await db.from('ciptur_autos_infracao').delete().eq('id',id);if(r.error){status('Não foi possível excluir: '+r.error.message,'erro');return}
   status('A.I. excluído.','ok');await carregarRegistros();
 }
+$('agenteAutuador').addEventListener('input',()=>{clearTimeout(timerBuscaAgente);timerBuscaAgente=setTimeout(buscarAgentes,180)});
+$('agenteAutuador').addEventListener('focus',()=>{if($('agenteAutuador').value.trim().length>=2)buscarAgentes()});
+$('agenteAutuador').addEventListener('blur',()=>setTimeout(()=>{$('sugestoesAgentes').classList.remove('show')},180));
 $('codigo').addEventListener('input',resolverCodigo);$('codigo').addEventListener('blur',()=>setTimeout(()=>{$('sugestoes').classList.remove('show')},180));
 $('houveRemocao').addEventListener('change',alternarRemocao);$('cancelarEdicao').onclick=cancelar;
 $('formAi').addEventListener('submit',async e=>{
-  e.preventDefault();limparStatus();resolverCodigo();if(!selecionado){status('Informe um código completo e válido do catálogo.','erro');return}
+  e.preventDefault();limparStatus();resolverCodigo();if(!agenteSelecionado){status('Pesquise e selecione o agente autuador.','erro');return}if(!selecionado){status('Informe um código completo e válido do catálogo.','erro');return}
   const data=$('dataInfracao').value;if(!data){status('Informe a data.','erro');return}
   const houveRemocao=$('houveRemocao').value==='SIM',tipoVeiculo=houveRemocao?$('tipoVeiculo').value:null;
   if(houveRemocao&&!tipoVeiculo){status('Informe se o veículo removido foi carro ou moto.','erro');return}
   const b=$('salvar');b.disabled=true;b.textContent='Salvando...';
   try{
-    let r,payload={data_infracao:data,codigo_infracao:selecionado.codigo,houve_remocao:houveRemocao,tipo_veiculo_removido:tipoVeiculo};
+    let r,payload={data_infracao:data,codigo_infracao:selecionado.codigo,agente_autuador_id:agenteSelecionado.id,houve_remocao:houveRemocao,tipo_veiculo_removido:tipoVeiculo};
     if(editandoId)r=await db.from('ciptur_autos_infracao').update(payload).eq('id',editandoId);
     else r=await db.from('ciptur_autos_infracao').insert({...payload,unidade_id:auth.contexto.unidade_id});
     if(r.error)throw r.error;
