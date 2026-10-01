@@ -12,7 +12,7 @@
   try {
     const sessaoCadastro=window.SistemaAuth?.ready?await window.SistemaAuth.ready:window.SistemaAuth;
     const ehCipturCadastro=String(sessaoCadastro?.contexto?.sigla||sessaoCadastro?.perfil?.unidades?.sigla||'').toUpperCase()==='CIPTUR';
-    const resposta=await fetch('cadastro-base.html?v=20261001-guarnicao2',{cache:'no-store'});
+    const resposta=await fetch('cadastro-base.html?v=20261001-atalhos1',{cache:'no-store'});
     if(!resposta.ok) throw new Error('Falha ao carregar a base do cadastro.');
     let html=await resposta.text();
 
@@ -42,11 +42,8 @@
       '<div class="campo"><label>Tipo de documento</label><input id="tipoDocumentoExibicao" type="text" value="BO" readonly aria-label="Tipo de documento"><select id="tipoRegistro" name="tipoRegistro" required hidden><option value="BO" selected>BO</option><option value="ROP">ROP</option><option value="TCO">TCO</option><option value="NI">NI</option></select><span class="nota">Nos novos registros, toda ocorrência operacional é registrada por Boletim de Ocorrência (BO).</span></div><div class="campo duplo"><label>Guarnição especializada</label><div class="selecao-grupamento" style="display:flex;gap:10px;flex-wrap:wrap">'+opcoesGrupamento+'</div><span class="nota">'+notaGrupamento+'</span></div>'
     );
 
-    // Atalhos para os três locais de entrega mais usados na planilha oficial de 2026.
-    html=html.replace(
-      '<div class="campo duplo">\n            <label for="localEntrega">Local de entrega do relatório</label>\n            <div class="campo-com-acao"><input id="localEntrega" name="localEntrega" type="text" list="listaLocais" autocomplete="off" placeholder="Digite para pesquisar e selecione"><button class="botao-adicionar" id="abrirNovoLocalEntrega" type="button" title="Cadastrar novo local de entrega" aria-label="Cadastrar novo local de entrega">+</button></div><datalist id="listaLocais"></datalist>\n          </div>',
-      '<div class="campo duplo">\n            <label for="localEntrega">Local de entrega do relatório</label>\n            <div class="campo-com-acao"><input id="localEntrega" name="localEntrega" type="text" list="listaLocais" autocomplete="off" placeholder="Digite para pesquisar e selecione"><button class="botao-adicionar" id="abrirNovoLocalEntrega" type="button" title="Cadastrar novo local de entrega" aria-label="Cadastrar novo local de entrega">+</button></div><datalist id="listaLocais"></datalist>\n            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button type="button" data-local-rapido="PC II" style="background:#eef5ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:8px 12px;font-size:13px;font-weight:800">PC II</button><button type="button" data-local-rapido="4 DP" style="background:#eef5ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:8px 12px;font-size:13px;font-weight:800">4º DP</button><button type="button" data-local-rapido="PC I" style="background:#eef5ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:8px 12px;font-size:13px;font-weight:800">PC I</button><button type="button" data-local-rapido="DEAM" style="background:#eef5ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:8px 12px;font-size:13px;font-weight:800">DEAM</button><button type="button" data-local-rapido="5 DP" style="background:#eef5ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:8px 12px;font-size:13px;font-weight:800">5º DP</button><button type="button" data-local-rapido="DGH" style="background:#eef5ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:8px 12px;font-size:13px;font-weight:800">DGH</button></div>\n            <span class="nota">Atalhos dos locais de entrega mais utilizados em 2026.</span>\n          </div>'
-    );
+    // Os atalhos rápidos de local de entrega agora são carregados do Supabase por unidade.
+    // A base do cadastro renderiza e gerencia a configuração de até seis atalhos.
 
     // Comandante é obrigatório em NOVOS cadastros.
     html=html.replace(
