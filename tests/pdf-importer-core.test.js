@@ -138,4 +138,29 @@ assert.match(viasDeFato,/ARMAS BRANCAS/);
 assert.match(viasDeFato,/CONDUZIDOS/);
 assert.ok(viasDeFato.length < 500);
 
+
+const guarnicaoCiptur = core.extrairGuarnicaoCiptur(`
+RELATO/HISTÓRICO
+Texto do atendimento.
+VTR - TOR 176
+CMT - ST PM ALFA
+MOT - CB PM BRAVO
+PTR - CB PM CHARLIE
+SEG - CB PM DELTA
+ASSINATURAS
+`);
+assert.deepEqual(guarnicaoCiptur,{
+  cmt:"ST PM ALFA",
+  mot:"CB PM BRAVO",
+  ptr1:"CB PM CHARLIE",
+  ptr2:"CB PM DELTA",
+  tor:true
+});
+
+const guarnicaoCipturNovaSigla = core.extrairGuarnicaoCiptur(
+  "CMT - TEN PM ALFA MOT - SD PM BRAVO PTR 1 - SD PM CHARLIE PTR 2 - SD PM DELTA ASSINATURAS"
+);
+assert.equal(guarnicaoCipturNovaSigla.ptr1,"SD PM CHARLIE");
+assert.equal(guarnicaoCipturNovaSigla.ptr2,"SD PM DELTA");
+
 console.log("pdf-importer-core: todos os testes passaram");
