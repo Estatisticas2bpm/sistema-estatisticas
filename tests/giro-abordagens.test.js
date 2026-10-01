@@ -70,5 +70,11 @@ assert.match(home,/id="giroAccessShortcut"/);
 assert.match(home,/Gerenciar acesso das abordagens/);
 assert.match(home,/perfilGiro==='ADMIN'\|\|perfilGiro==='ESTATISTICA'/);
 assert.match(home,/dashboard\.html\?v=20261001-giroaccess1#secGiroAcesso/);
+assert.match(home,/id="camadaGiroMapa"/);
+assert.match(home,/Ocorrências \+ abordagens/);
+assert.match(home,/abordagensMapaAtuais/);
+assert.match(home,/db\.from\("giro_abordagens"\)/);
+assert.match(home,/ABORDAGEM GIRO/);
+assert.match(home,/camadaGiroMapa\.onchange=renderizarMapa/);
 
 console.log('GIRO: módulo de abordagens mobile, painéis, mapa e acesso validados.');
