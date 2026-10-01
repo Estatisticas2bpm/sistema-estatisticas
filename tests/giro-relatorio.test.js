@@ -4,6 +4,7 @@ const path=require('node:path');
 const root=path.resolve(__dirname,'..');
 const report=fs.readFileSync(path.join(root,'relatorio.html'),'utf8');
 const dashboard=fs.readFileSync(path.join(root,'dashboard.html'),'utf8');
+const logo=fs.readFileSync(path.join(root,'assets/logos/giro-brasao.svg'),'utf8');
 
 const a=report.indexOf('async function buildGiro()');
 const b=report.indexOf('async function build(){',a);
@@ -21,6 +22,10 @@ assert.match(giro,/giro_abordagens/);
 assert.match(giro,/T00:00:00-04:00/);
 assert.match(giro,/T23:59:59\.999-04:00/);
 assert.match(giro,/RELATÓRIO DE PRODUTIVIDADE OPERACIONAL - GIRO/);
+assert.match(giro,/assets\/logos\/giro-brasao\.svg/);
+assert.doesNotMatch(giro,/<div class="cover-brand">SIE-CPC<\/div>/);
+assert.match(report,/\.cover-brand-img\{/);
+assert.match(logo,/<svg[\s\S]*viewBox="94 172 407 532"/);
 assert.match(giro,/ABORDAGENS DE RUA - PRODUTIVIDADE PREVENTIVA/);
 assert.match(giro,/TOTAL DE ABORDAGENS/);
 assert.match(giro,/PESSOAS ABORDADAS/);
@@ -46,6 +51,6 @@ assert.doesNotMatch(giro,/PR6/);
 assert.doesNotMatch(giro,/PROGRAMAS DE PREVENÇÃO À CRIMINALIDADE/);
 
 assert.match(report,/if\(ehGiroRel\(\)\)\{[\s\S]*?siscWrap[\s\S]*?companhiaWrap/);
-assert.match(dashboard,/relatorio\.html\?v=20261001-girorel1/);
+assert.match(dashboard,/relatorio\.html\?v=20261001-girorel2/);
 
 console.log('GIRO: relatório estatístico específico validado.');
