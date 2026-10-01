@@ -82,7 +82,10 @@ input:focus{outline:3px solid #bfdbfe;border-color:#60a5fa}.btn{border:0;border-
         <button id="capturarGps" type="button" class="btn green">⌖ Localizar</button>
         <div id="gpsStatus" class="gpsStatus">Localização ainda não capturada.</div>
       </div>
-      <div id="enderecoBox" class="address hidden"><b>Endereço identificado</b><span id="enderecoTexto"></span></div>
+      <div id="enderecoBox" class="address hidden"><b>Endereço identificado</b><span id="enderecoTexto"></span></div><div id="localManualBox" class="hidden" style="margin-top:9px">
+  <div class="campo"><label for="logradouroManual">Rua / logradouro</label><input id="logradouroManual" autocomplete="street-address" placeholder="Opcional se não identificar automaticamente"></div>
+  <div class="campo"><label for="bairroManual">Bairro</label><input id="bairroManual" autocomplete="address-level3" placeholder="Opcional se não identificar automaticamente"></div>
+</div>
     </section>
 
     <div id="formStatus" class="status"></div>
@@ -96,7 +99,7 @@ const SUPABASE_KEY='sb_publishable_ZVnU35i2x9zwppQqYg7UYw_mzaT43aG';
 const EMAIL_COMPARTILHADO='giro.abordagens@siecpc.local';
 const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{storageKey:'sie-cpc-giro-abordagem-auth',persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
 const $=id=>document.getElementById(id);
-let tipoSelecionado='',localizacao=null,contadorPessoas=0,geocoder=null;
+let tipoSelecionado='',localizacao=null,contadorPessoas=0,geocoder=null,geocodePromise=null;
 
 function status(id,msg,tipo='info'){
   const el=$(id);el.textContent=msg;el.className='status show '+tipo;
@@ -173,11 +176,17 @@ function aplicarEndereco(resultado){
   $('enderecoBox').classList.remove('hidden');
 }
 async function reverseGeocode(){
-  if(!geocoder||!localizacao)return;
+  if(!localizacao)return false;
+  if(!geocoder){
+    await new Promise(r=>setTimeout(r,700));
+    if(!geocoder){$('localManualBox').classList.remove('hidden');return false}
+  }
   try{
     const {results}=await geocoder.geocode({location:{lat:localizacao.latitude,lng:localizacao.longitude}});
-    aplicarEndereco(results?.[0]);
+    if(results?.[0]){aplicarEndereco(results[0]);$('localManualBox').classList.add('hidden');return true}
   }catch(err){console.warn('Falha no endereço automático:',err)}
+  $('localManualBox').classList.remove('hidden');
+  return false;
 }
 $('capturarGps').onclick=()=>{
   limparStatus('formStatus');
@@ -187,8 +196,9 @@ $('capturarGps').onclick=()=>{
     localizacao={latitude:pos.coords.latitude,longitude:pos.coords.longitude,precisao:pos.coords.accuracy,endereco:'',bairro:'',municipio:''};
     $('gpsStatus').className='gpsStatus ok';
     $('gpsStatus').textContent='Local capturado · precisão aproximada '+Math.round(pos.coords.accuracy)+' m';
+    geocodePromise=reverseGeocode();
+    await geocodePromise;
     b.disabled=false;b.textContent='⌖ Atualizar';
-    await reverseGeocode();
   },err=>{
     b.disabled=false;b.textContent='⌖ Localizar';
     $('gpsStatus').textContent='Não foi possível capturar a localização.';
@@ -199,7 +209,7 @@ function resetarFormulario(){
   tipoSelecionado='';$('tipoGrid').querySelectorAll('.tipoBtn').forEach(x=>x.classList.remove('active'));
   $('pessoas').replaceChildren();adicionarPessoa();localizacao=null;
   $('gpsStatus').className='gpsStatus';$('gpsStatus').textContent='Localização ainda não capturada.';
-  $('capturarGps').textContent='⌖ Localizar';$('enderecoBox').classList.add('hidden');$('enderecoTexto').textContent='';
+  $('capturarGps').textContent='⌖ Localizar';$('enderecoBox').classList.add('hidden');$('enderecoTexto').textContent='';$('localManualBox').classList.add('hidden');$('logradouroManual').value='';$('bairroManual').value='';geocodePromise=null;
 }
 $('salvar').onclick=async()=>{
   limparStatus('formStatus');
@@ -210,6 +220,11 @@ $('salvar').onclick=async()=>{
   if(!localizacao){status('formStatus','Capture a localização antes de salvar.','err');return}
   const b=$('salvar');b.disabled=true;b.textContent='SALVANDO...';
   try{
+    if(geocodePromise)await geocodePromise;
+    if(localizacao){
+      if(!localizacao.endereco)localizacao.endereco=String($('logradouroManual').value||'').trim();
+      if(!localizacao.bairro)localizacao.bairro=String($('bairroManual').value||'').trim();
+    }
     const {data,error}=await db.rpc('registrar_abordagem_giro',{
       p_tipo_abordagem:tipoSelecionado,
       p_pessoas:pessoas,
