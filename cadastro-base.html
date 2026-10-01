@@ -184,7 +184,9 @@
     }
 
     .campo-com-acao { display: flex; gap: 8px; align-items: stretch; }
-    .campo-com-acao input { flex: 1; }
+    .campo-com-acao input { flex: 1; min-width:0; }
+    .campo-com-acao.guarnicao { gap:5px; align-items:center; }
+    .botao-adicionar.botao-guarnicao { width:34px; min-width:34px; height:36px; padding:0; font-size:18px; border-radius:7px; flex:0 0 34px; }
     .resultados-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
     .resultado-opcao { display:flex; align-items:center; gap:9px; min-height:46px; padding:10px 12px; border:1px solid #cbd5e1; border-radius:10px; background:#f8fafc; cursor:pointer; font-weight:700; color:#334155; }
     .resultado-opcao:has(input:checked) { border-color:#2563eb; background:#eff6ff; color:#1d4ed8; }
@@ -532,11 +534,11 @@
         <div class="grade">
           <div class="campo">
             <label for="comandante">Comandante da viatura</label>
-            <div class="campo-com-acao">
+            <div class="campo-com-acao guarnicao">
               <input id="comandante" name="comandante" type="text" list="listaComandantes" autocomplete="off" placeholder="Pesquise e selecione">
               <datalist id="listaComandantes"></datalist>
-              <button class="botao-adicionar" id="editarComandante" type="button" title="Editar comandante selecionado" aria-label="Editar comandante selecionado">✎</button>
-              <button class="botao-adicionar" id="abrirNovoComandante" type="button" title="Cadastrar novo comandante" aria-label="Cadastrar novo comandante">+</button>
+              <button class="botao-adicionar botao-guarnicao" id="editarComandante" type="button" title="Editar policial selecionado" aria-label="Editar policial selecionado">✎</button>
+              <button class="botao-adicionar botao-guarnicao" id="abrirNovoComandante" type="button" title="Incluir policial na lista" aria-label="Incluir policial na lista">+</button>
             </div>
             <span class="nota">Use o padrão: graduação abreviada + nome de guerra.</span>
           </div>
@@ -674,15 +676,15 @@
 
   <dialog id="modalComandante">
     <form class="modal-conteudo" id="formNovoComandante" method="dialog">
-      <h3 id="tituloModalComandante">Cadastrar novo comandante</h3>
+      <h3 id="tituloModalComandante">Cadastrar policial</h3>
       <p>Informe somente a graduação abreviada e o nome de guerra. Ex.: SD PM LIMA.</p>
       <div class="campo">
-        <label for="novoComandante">Comandante</label>
+        <label for="novoComandante">Policial</label>
         <input id="novoComandante" type="text" maxlength="80" autocomplete="off" placeholder="Ex.: SD PM LIMA" required>
       </div>
       <div class="modal-acoes">
         <button class="botao-secundario" id="cancelarNovoComandante" type="button">Cancelar</button>
-        <button id="salvarNovoComandante" type="submit">Salvar comandante</button>
+        <button id="salvarNovoComandante" type="submit">Salvar policial</button>
       </div>
     </form>
   </dialog>
@@ -782,28 +784,50 @@
     const campoComandante = document.getElementById("comandante");
     const novoComandante = document.getElementById("novoComandante");
     let comandanteEmEdicao = null;
+    let campoPolicialAtivo = campoComandante;
+    let rotuloPolicialAtivo = "CMT";
     function normalizarComandante(valor) {
       return String(valor || "").trim().replace(/\s+/g," ").toUpperCase();
     }
-    document.getElementById("abrirNovoComandante").addEventListener("click", function() {
+    function abrirInclusaoPolicial(campo,rotulo) {
+      campoPolicialAtivo = campo || campoComandante;
+      rotuloPolicialAtivo = rotulo || "Policial";
       comandanteEmEdicao = null;
-      document.getElementById("tituloModalComandante").textContent = "Cadastrar novo comandante";
-      novoComandante.value = normalizarComandante(campoComandante.value);
+      document.getElementById("tituloModalComandante").textContent = "Incluir policial — " + rotuloPolicialAtivo;
+      novoComandante.value = normalizarComandante(campoPolicialAtivo.value);
       modalComandante.showModal();
       novoComandante.focus();
-    });
-    document.getElementById("editarComandante").addEventListener("click", function() {
-      const atual = normalizarComandante(campoComandante.value);
+    }
+    function abrirEdicaoPolicial(campo,rotulo) {
+      campoPolicialAtivo = campo || campoComandante;
+      rotuloPolicialAtivo = rotulo || "Policial";
+      const atual = normalizarComandante(campoPolicialAtivo.value);
       if (!catalogos.comandantes.includes(atual)) {
-        alert("Primeiro selecione na lista o comandante que deseja editar.");
+        alert("Primeiro selecione na lista o policial que deseja editar.");
         return;
       }
       comandanteEmEdicao = atual;
-      document.getElementById("tituloModalComandante").textContent = "Editar comandante";
+      document.getElementById("tituloModalComandante").textContent = "Editar policial — " + rotuloPolicialAtivo;
       novoComandante.value = atual;
       modalComandante.showModal();
       novoComandante.focus();
+    }
+    document.getElementById("abrirNovoComandante").addEventListener("click", function() {
+      abrirInclusaoPolicial(campoComandante,"CMT");
     });
+    document.getElementById("editarComandante").addEventListener("click", function() {
+      abrirEdicaoPolicial(campoComandante,"CMT");
+    });
+    window.configurarCampoPolicialGuarnicao = function(campoId,editarId,incluirId,rotulo) {
+      const campo=document.getElementById(campoId), editar=document.getElementById(editarId), incluir=document.getElementById(incluirId);
+      if(!campo) return;
+      campo.setAttribute("list","listaComandantes");
+      editar?.addEventListener("click",()=>abrirEdicaoPolicial(campo,rotulo));
+      incluir?.addEventListener("click",()=>abrirInclusaoPolicial(campo,rotulo));
+    };
+    window.configurarCampoPolicialGuarnicao("guarnicaoMot","editarGuarnicaoMot","abrirNovoGuarnicaoMot","MOT");
+    window.configurarCampoPolicialGuarnicao("guarnicaoPtr1","editarGuarnicaoPtr1","abrirNovoGuarnicaoPtr1","PTR 1");
+    window.configurarCampoPolicialGuarnicao("guarnicaoPtr2","editarGuarnicaoPtr2","abrirNovoGuarnicaoPtr2","PTR 2");
     document.getElementById("cancelarNovoComandante").addEventListener("click", function() {
       modalComandante.close();
     });
@@ -821,13 +845,13 @@
         ? await banco.rpc("editar_comandante_publico", {p_nome_atual:comandanteEmEdicao,p_novo_nome:nome})
         : await banco.rpc("cadastrar_comandante_publico", {p_nome:nome});
       botao.disabled = false;
-      botao.textContent = "Salvar comandante";
+      botao.textContent = "Salvar policial";
       if (resposta.error) { alert("Não foi possível cadastrar: " + resposta.error.message); return; }
       if (comandanteEmEdicao) catalogos.comandantes = catalogos.comandantes.filter(v => v !== comandanteEmEdicao);
       if (!catalogos.comandantes.includes(nome)) catalogos.comandantes.push(nome);
       catalogos.comandantes.sort((a,b) => a.localeCompare(b,"pt-BR"));
       preencherLista("listaComandantes", catalogos.comandantes);
-      campoComandante.value = nome;
+      if (campoPolicialAtivo) campoPolicialAtivo.value = nome;
       comandanteEmEdicao = null;
       modalComandante.close();
     });
