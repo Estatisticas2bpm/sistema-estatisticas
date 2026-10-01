@@ -825,6 +825,9 @@
       editar?.addEventListener("click",()=>abrirEdicaoPolicial(campo,rotulo));
       incluir?.addEventListener("click",()=>abrirInclusaoPolicial(campo,rotulo));
     };
+    window.configurarCampoPolicialGuarnicao("guarnicaoMot","editarGuarnicaoMot","abrirNovoGuarnicaoMot","MOT");
+    window.configurarCampoPolicialGuarnicao("guarnicaoPtr1","editarGuarnicaoPtr1","abrirNovoGuarnicaoPtr1","PTR 1");
+    window.configurarCampoPolicialGuarnicao("guarnicaoPtr2","editarGuarnicaoPtr2","abrirNovoGuarnicaoPtr2","PTR 2");
     document.getElementById("cancelarNovoComandante").addEventListener("click", function() {
       modalComandante.close();
     });
