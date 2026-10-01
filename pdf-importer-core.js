@@ -65,9 +65,9 @@
     };
     const linhas = String(texto || "").split(/\r?\n/).map(linha => linha.trim()).filter(Boolean);
     linhas.forEach((linha, indice) => {
-      let m = linha.match(/(?:COMANDANTE\s+DA\s+GUARNI[ÇC][ÃA]O|COMANDANTE\s+DA\s+VTR|COMANDANTE|CMT\s+GU|CMT\s+VTR)\s*:?\s*(.+)$/i);
+      let m = linha.match(/(?:COMANDANTE\s+DA\s+GUARNI[ÇC][ÃA]O|COMANDANTE\s+DA\s+VTR|COMANDANTE|CMT\s+GU|CMT\s+VTR|CMT)\s*(?:[-:]\s*)?(.+)$/i);
       if (m) adicionar(m[1], "campo explícito", 0.10);
-      m = linha.match(/^CMT\s+((?:(?:TEN\s+CEL|AL\s+SGT|CEL|MAJ|CAP|TEN|ASP|ST|SGT|CB|SD)(?:\s+PM)?\s+).+)$/i);
+      m = linha.match(/^CMT\s*(?:[-:]\s*)?((?:(?:TEN\s+CEL|AL\s+SGT|CEL|MAJ|CAP|TEN|ASP|ST|SGT|CB|SD)(?:\s+PM)?\s+).+)$/i);
       if (m) adicionar(m[1], "identificação CMT", 0.10);
       if (/RESPONS[ÁA]VEL\s+PELO\s+ATENDIMENTO/i.test(linha)) {
         for (let volta = 1; volta <= 4; volta++) {
@@ -82,6 +82,49 @@
     const impresso = String(texto || "").match(/Impresso\s+por:\s*([^\n-]{4,100})/i);
     if (impresso) adicionar(impresso[1], "responsável pela impressão", -0.04);
     return candidatos;
+  }
+
+  function extrairGuarnicaoCiptur(texto) {
+    const fonte = String(texto || "");
+    const resultado = {cmt:"", mot:"", ptr1:"", ptr2:"", tor:false};
+
+    const limpar = valor => String(valor || "")
+      .replace(/\s+/g, " ")
+      .replace(/[|;]+$/g, "")
+      .trim();
+
+    const atribuir = (chave, valor) => {
+      const limpo = limpar(valor);
+      if (limpo && !resultado[chave]) resultado[chave] = limpo;
+    };
+
+    const linhas = fonte.split(/\r?\n/).map(linha => linha.trim()).filter(Boolean);
+    linhas.forEach(linha => {
+      let m = linha.match(/^CMT\s*[-:]\s*(.+)$/i);
+      if (m) return atribuir("cmt", m[1]);
+      m = linha.match(/^MOT\s*[-:]\s*(.+)$/i);
+      if (m) return atribuir("mot", m[1]);
+      m = linha.match(/^PTR\s*1?\s*[-:]\s*(.+)$/i);
+      if (m) return atribuir("ptr1", m[1]);
+      m = linha.match(/^(?:PTR\s*2|SEG)\s*[-:]\s*(.+)$/i);
+      if (m) return atribuir("ptr2", m[1]);
+      if (/^VTR\s*[-:]\s*TOR\b/i.test(linha)) resultado.tor = true;
+    });
+
+    const plano = fonte.replace(/\s+/g, " ");
+    const capturarPlano = (chave, rotulo) => {
+      if (resultado[chave]) return;
+      const re = new RegExp("\\b" + rotulo + "\\s*[-:]\\s*(.+?)(?=\\s+(?:CMT|MOT|PTR\\s*1|PTR\\s*2|PTR|SEG|VTR)\\s*[-:]|\\s+ASSINATURAS\\b|$)", "i");
+      const m = plano.match(re);
+      if (m) atribuir(chave, m[1]);
+    };
+    capturarPlano("cmt", "CMT");
+    capturarPlano("mot", "MOT");
+    capturarPlano("ptr1", "PTR(?:\\s*1)?");
+    capturarPlano("ptr2", "(?:PTR\\s*2|SEG)");
+    if (/\bVTR\s*[-:]\s*TOR\b/i.test(plano)) resultado.tor = true;
+
+    return resultado;
   }
 
   function pontuarNome(candidatoPdf, nomeCatalogo, frequenciaTokens, confiancaContexto) {
@@ -387,6 +430,7 @@
     similaridadeTexto,
     candidatosComandante,
     associarComandante,
+    extrairGuarnicaoCiptur,
     associarLocalEntrega,
     extrairItensOperacionais,
     limparHistorico,
