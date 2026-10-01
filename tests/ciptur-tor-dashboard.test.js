@@ -12,6 +12,10 @@ assert.match(cadastro,/ehCipturCadastro/);
 assert.match(cadastro,/grupamentoTor/);
 assert.match(cadastro,/TOR — TÁTICO OSTENSIVO RODOVIÁRIO/);
 assert.match(cadastro,/grupamento_atendimento:grupamentoSelecionado\(\)/);
+// O clique manual no TOR deve permanecer marcado; a sincronização só sobrescreve ao carregar um registro.
+assert.match(cadastro,/if\(origem\)\{\\n\s*if\(grupamentoTor\)grupamentoTor\.checked/);
+assert.doesNotMatch(cadastro,/const grupo=origem[^;]+;\\n\s*if\(grupamentoTor\)grupamentoTor\.checked/);
+assert.match(cadastro,/grupamentoTor\?\.addEventListener\("change",\(\)=>sincronizarGrupamentoComTipo\(\)\)/);
 assert.match(cadastro,/Boolean\(document\.getElementById\("grupamentoTatico"\)\?\.checked\)/);
 
 // Fora da CIPTUR, Tático Setorial e AME continuam disponíveis.
