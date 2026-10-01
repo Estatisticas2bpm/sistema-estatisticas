@@ -9,31 +9,36 @@ const home=read('index.html');
 
 assert.match(dashboard,/function ehGiro\(\)\{return siglaUnidadeAtiva\(\)==='GIRO'\}/);
 assert.match(dashboard,/id="navGiro"/);
-assert.match(dashboard,/id="secGiroOperacional" hidden/);
-assert.match(dashboard,/Resumo Operacional — GIRO/);
-assert.match(dashboard,/id="giroOcorrencias"/);
-assert.match(dashboard,/id="giroConducoes"/);
-assert.match(dashboard,/id="giroPrisoes"/);
-assert.match(dashboard,/id="giroVeiculos"/);
-assert.match(dashboard,/id="giroArmas"/);
-assert.match(dashboard,/id="giroDrogas"/);
-assert.match(dashboard,/id="chartGiroMes"/);
-assert.match(dashboard,/id="tabGiroOcorrencias"/);
-assert.match(dashboard,/function renderGiro\(registros\)/);
-assert.match(dashboard,/soma\(base,'numero_prisoes'\)/);
-assert.match(dashboard,/totaisCategoriasArmas\(base\)/);
-assert.match(dashboard,/base\.filter\(temEntorpecente\)\.length/);
-assert.match(dashboard,/configurarModuloCiptur\(\);configurarModuloGiro\(\)/);
+assert.match(dashboard,/id="secVisaoGeral"/);
+assert.match(dashboard,/id="secGiroAbordagens" hidden/);
+assert.doesNotMatch(dashboard,/id="secGiroOperacional"/);
+assert.doesNotMatch(dashboard,/Resumo Operacional — GIRO/);
 
-// No modo GIRO, classificações específicas de outras unidades não ficam no seletor.
+// O GIRO reaproveita o dashboard-base e acrescenta somente o módulo de abordagens.
+assert.match(dashboard,/Total de ocorrências/);
+assert.match(dashboard,/Ocorrências atendidas/);
+assert.match(dashboard,/Demandas reprimidas/);
+assert.match(dashboard,/Documentos produzidos/);
+assert.match(dashboard,/Conduções/);
+assert.match(dashboard,/Bairros com mais abordagens/);
+assert.match(dashboard,/Ruas \/ logradouros/);
+assert.match(dashboard,/Horários com mais abordagens/);
+assert.match(dashboard,/Motocicletas abordadas/);
+assert.match(dashboard,/Veículos abordados/);
+
+// No modo GIRO, módulos específicos da CIPTUR ficam explicitamente ocultos.
+assert.match(dashboard,/secCipturTransito'\)\)\$\('secCipturTransito'\)\.hidden=true/);
+assert.match(dashboard,/secCipturTor'\)\)\$\('secCipturTor'\)\.hidden=true/);
 assert.match(dashboard,/if\(\$\('documento'\)\)\{[\s\S]*?<option>BO<\/option><option>TCO<\/option><option>ROP<\/option>/);
+assert.match(dashboard,/\(ehCiptur\(\)\|\|ehGiro\(\)\)\?\[\]/);
 assert.match(dashboard,/const lblCompanhia=\$\('companhia'\)\?\.closest\('label'\);if\(lblCompanhia\)lblCompanhia\.hidden=true/);
 
-// A página inicial reconhece a unidade sem alterar os KPIs genéricos.
+// A página inicial reconhece a unidade e o mapa operacional próprio.
 assert.match(home,/modoGiro=false/);
 assert.match(home,/function aplicarModoGiro\(\)/);
 assert.match(home,/siglaAtiva==="GIRO"/);
 assert.match(home,/Visão rápida — GIRO/);
 assert.match(home,/Mapa Operacional — GIRO/);
+assert.match(home,/giro-moto-marker/);
 
-console.log('GIRO: painel operacional base validado.');
+console.log('GIRO: dashboard-base + abordagens específicas validados.');

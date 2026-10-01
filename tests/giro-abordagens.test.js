@@ -25,6 +25,10 @@ assert.match(mobile,/Adicionar pessoa/);
 assert.match(mobile,/navigator\.geolocation\.getCurrentPosition/);
 assert.match(mobile,/registrar_abordagem_giro/);
 assert.doesNotMatch(mobile,/auth-guard\.js/);
+assert.match(mobile,/geocodePromise/);
+assert.match(mobile,/id="localManualBox"/);
+assert.match(mobile,/id="bairroManual"/);
+assert.match(mobile,/id="logradouroManual"/);
 
 // Painel GIRO.
 assert.match(dashboard,/id="secGiroAbordagens" hidden/);
@@ -33,6 +37,17 @@ assert.match(dashboard,/Pessoas abordadas/);
 assert.match(dashboard,/function renderGiroAbordagens\(\)/);
 assert.match(dashboard,/db\.from\('giro_abordagens'\)/);
 assert.match(dashboard,/Registro mobile ↗/);
+assert.match(dashboard,/id="giroFiltroBairro"/);
+assert.match(dashboard,/id="giroFiltroLogradouro"/);
+assert.match(dashboard,/id="giroFiltroHoraInicio"/);
+assert.match(dashboard,/id="tabGiroBairros"/);
+assert.match(dashboard,/id="tabGiroLogradouros"/);
+assert.match(dashboard,/id="tabGiroHorarios"/);
+assert.match(dashboard,/id="chartGiroAbordagemDia"/);
+assert.match(dashboard,/id="chartGiroAbordagemHora"/);
+assert.match(dashboard,/function filtrarAbordagensGiro\(lista\)/);
+assert.match(dashboard,/Motocicletas abordadas/);
+assert.match(dashboard,/\(ehCiptur\(\)\|\|ehGiro\(\)\)\?\[\]/);
 
 // CPC.
 assert.match(cpc,/Abordagens preventivas — GIRO/);
@@ -45,6 +60,9 @@ assert.match(mapa,/Somente abordagens GIRO/);
 assert.match(mapa,/ABORDAGEM GIRO/);
 assert.match(mapa,/function filtrarAbordagens\(\)/);
 assert.match(mapa,/baseAbordagens/);
+assert.match(mapa,/giro-moto-marker/);
+assert.match(mapa,/L\.divIcon/);
+assert.match(mapa,/🏍️/);
 
 // Administração do acesso compartilhado.
 assert.match(usuarios,/Acesso compartilhado — GIRO Abordagens/);
@@ -76,5 +94,8 @@ assert.match(home,/abordagensMapaAtuais/);
 assert.match(home,/db\.from\("giro_abordagens"\)/);
 assert.match(home,/ABORDAGEM GIRO/);
 assert.match(home,/camadaGiroMapa\.onchange=renderizarMapa/);
+assert.match(home,/giro-moto-marker/);
+assert.match(home,/typeof pt\.setRadius==="function"/);
+assert.match(home,/🏍️/);
 
 console.log('GIRO: módulo de abordagens mobile, painéis, mapa e acesso validados.');
