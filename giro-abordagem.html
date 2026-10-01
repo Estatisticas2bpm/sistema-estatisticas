@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#071A2B">
+<title>SIE-CPC — Abordagem Rápida GIRO</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box} :root{--navy:#071A2B;--blue:#1F5A8A;--teal:#2F7278;--green:#39705A;--amber:#B7791F;--red:#A63D40;--bg:#eef2f6;--line:#d7e0e8;--muted:#667085}
+body{margin:0;font:15px Inter,Segoe UI,Arial,sans-serif;background:var(--bg);color:#172033;min-height:100vh}
+header{background:linear-gradient(130deg,#071A2B,#0B2239 60%,#173B57);color:#fff;padding:20px 18px 22px}
+.head{width:min(680px,100%);margin:auto;display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.brand small{display:block;color:#b7cbe0;margin-top:5px}.brand b{font-size:21px}.logout{border:1px solid #ffffff55;background:transparent;color:#fff;border-radius:9px;padding:8px 10px;font-weight:800}
+main{width:min(680px,94%);margin:16px auto 36px}.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:17px;box-shadow:0 5px 22px #18354d0d;margin-bottom:14px}
+h1,h2,h3{margin:0;color:var(--navy)}h1{font-size:23px}.sub{color:var(--muted);margin:6px 0 0;font-size:13px;line-height:1.45}
+.login{margin-top:34px}.campo{margin-top:14px}.campo label{display:block;font-size:11px;font-weight:900;text-transform:uppercase;color:#52677a;margin-bottom:6px}
+input{width:100%;border:1px solid #cbd7e2;border-radius:11px;padding:13px 12px;font-size:16px;background:#fff}
+input:focus{outline:3px solid #bfdbfe;border-color:#60a5fa}.btn{border:0;border-radius:11px;padding:13px 15px;font-size:15px;font-weight:900;cursor:pointer}
+.btn.primary{background:var(--blue);color:#fff;width:100%}.btn.green{background:var(--green);color:#fff}.btn.gray{background:#eef2f6;color:#29465f}.btn.red{background:#fff1f2;color:#9f1239;border:1px solid #fecdd3}
+.tipoGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.tipoBtn,.optBtn{border:1px solid #c7d3df;background:#f8fafc;color:#29465f;border-radius:12px;padding:13px 8px;font-weight:900;cursor:pointer}
+.tipoBtn.active,.optBtn.active{background:#dbeafe;border-color:#60a5fa;color:#123f67;box-shadow:inset 0 0 0 1px #60a5fa}.tipoBtn span{display:block;font-size:24px;margin-bottom:4px}
+.pessoa{border:1px solid #dde5ec;border-radius:13px;padding:13px;margin-top:12px;background:#fbfdff}.pessoaHead{display:flex;justify-content:space-between;align-items:center;gap:10px}.pessoaHead b{color:var(--navy)}.removerPessoa{border:0;background:#fff1f2;color:#9f1239;width:32px;height:32px;border-radius:9px;font-size:20px;font-weight:900}
+.optRow{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:7px}.optBtn{padding:10px 5px;font-size:12px}.idade{margin-top:10px}.idade input{font-size:22px;font-weight:900;text-align:center}
+.addPessoa{width:100%;margin-top:12px}.gps{display:flex;gap:9px;align-items:stretch;margin-top:12px}.gps .btn{flex:0 0 auto}.gpsStatus{flex:1;border:1px solid #dbe4ee;border-radius:11px;padding:11px;background:#f8fafc;color:#52677a;font-size:12px;line-height:1.4}.gpsStatus.ok{border-color:#86c7a9;background:#effaf4;color:#285b43}
+.address{margin-top:9px;padding:11px;border-radius:11px;background:#f8fafc;border:1px solid #e1e7ee;font-size:13px;line-height:1.45}.address b{display:block;color:#29465f;margin-bottom:3px}
+.meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.pill{font-size:11px;font-weight:800;background:#eef5ff;color:#315a7a;border-radius:999px;padding:6px 9px}
+.save{position:sticky;bottom:10px;z-index:5;background:linear-gradient(180deg,#eef2f600,#eef2f6 24%);padding-top:18px}.save .btn{width:100%;font-size:17px;padding:15px}
+.status{margin-top:10px;padding:10px 12px;border-radius:10px;font-size:13px;display:none}.status.show{display:block}.status.ok{background:#eaf7ef;color:#285b43}.status.err{background:#fff1f2;color:#9f1239}.status.info{background:#eef5ff;color:#315a7a}
+.hidden{display:none!important}.loading{position:fixed;inset:0;background:#ffffffea;display:grid;place-items:center;z-index:20;font-weight:900;color:var(--navy)}
+@media(max-width:480px){.tipoGrid{gap:6px}.tipoBtn{padding:12px 5px;font-size:12px}.optBtn{font-size:11px}.card{padding:14px}main{width:96%}}
+</style>
+</head>
+<body>
+<div id="loading" class="loading">Carregando acesso do GIRO...</div>
+<header>
+  <div class="head">
+    <div class="brand"><b>SIE-CPC · GIRO</b><small>Registro rápido de abordagens</small></div>
+    <button id="sair" class="logout hidden" type="button">Sair</button>
+  </div>
+</header>
+<main>
+  <section id="loginBox" class="card login hidden">
+    <h1>Acesso de patrulhamento</h1>
+    <p class="sub">Acesso exclusivo para registro de abordagens do GIRO. Esta conta não permite consultar outros dados do SIE-CPC.</p>
+    <form id="loginForm">
+      <div class="campo"><label>Login</label><input value="GIRO ABORDAGENS" readonly></div>
+      <div class="campo"><label for="senha">Senha</label><input id="senha" type="password" minlength="8" autocomplete="current-password" required autofocus></div>
+      <div class="campo"><button class="btn primary" id="entrar" type="submit">Entrar</button></div>
+      <div id="loginStatus" class="status"></div>
+    </form>
+  </section>
+
+  <section id="formBox" class="hidden">
+    <section class="card">
+      <h2>Nova abordagem</h2>
+      <p class="sub">Data e hora são registradas automaticamente ao salvar.</p>
+      <div class="meta"><span class="pill">BR pré-marcado</span><span class="pill">Masculino pré-marcado</span><span class="pill">GPS obrigatório</span></div>
+    </section>
+
+    <section class="card">
+      <h3>Tipo da abordagem</h3>
+      <p class="sub">Toque em uma opção.</p>
+      <div class="tipoGrid" id="tipoGrid">
+        <button type="button" class="tipoBtn" data-tipo="A_PE"><span>🚶</span>A PÉ</button>
+        <button type="button" class="tipoBtn" data-tipo="MOTO"><span>🏍</span>MOTO</button>
+        <button type="button" class="tipoBtn" data-tipo="VEICULO"><span>🚗</span>VEÍCULO</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3>Pessoas abordadas</h3>
+      <p class="sub">Informe somente a idade. Nacionalidade e sexo já começam nas opções mais frequentes.</p>
+      <div id="pessoas"></div>
+      <button id="adicionarPessoa" type="button" class="btn gray addPessoa">＋ Adicionar pessoa</button>
+    </section>
+
+    <section class="card">
+      <h3>Local da abordagem</h3>
+      <p class="sub">Toque na lupa para capturar a posição atual e preencher o endereço automaticamente.</p>
+      <div class="gps">
+        <button id="capturarGps" type="button" class="btn green">⌖ Localizar</button>
+        <div id="gpsStatus" class="gpsStatus">Localização ainda não capturada.</div>
+      </div>
+      <div id="enderecoBox" class="address hidden"><b>Endereço identificado</b><span id="enderecoTexto"></span></div>
+    </section>
+
+    <div id="formStatus" class="status"></div>
+    <div class="save"><button id="salvar" type="button" class="btn green">SALVAR ABORDAGEM</button></div>
+  </section>
+</main>
+
+<script>
+const SUPABASE_URL='https://jppmhhukujigxupgskdk.supabase.co';
+const SUPABASE_KEY='sb_publishable_ZVnU35i2x9zwppQqYg7UYw_mzaT43aG';
+const EMAIL_COMPARTILHADO='giro.abordagens@siecpc.local';
+const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const $=id=>document.getElementById(id);
+let tipoSelecionado='',localizacao=null,contadorPessoas=0,geocoder=null;
+
+function status(id,msg,tipo='info'){
+  const el=$(id);el.textContent=msg;el.className='status show '+tipo;
+}
+function limparStatus(id){const el=$(id);el.textContent='';el.className='status';}
+function mostrarLogin(){
+  $('loading').classList.add('hidden');$('loginBox').classList.remove('hidden');$('formBox').classList.add('hidden');$('sair').classList.add('hidden');
+}
+function mostrarFormulario(){
+  $('loading').classList.add('hidden');$('loginBox').classList.add('hidden');$('formBox').classList.remove('hidden');$('sair').classList.remove('hidden');
+  if(!$('pessoas').children.length)adicionarPessoa();
+}
+async function acessoValido(){
+  const {data:{session}}=await db.auth.getSession();
+  if(!session?.user)return false;
+  const {data,error}=await db.from('giro_acessos_abordagem').select('user_id,ativo').eq('user_id',session.user.id).eq('ativo',true).maybeSingle();
+  return !error&&!!data;
+}
+$('loginForm').addEventListener('submit',async e=>{
+  e.preventDefault();limparStatus('loginStatus');
+  const b=$('entrar');b.disabled=true;b.textContent='Entrando...';
+  try{
+    const {error}=await db.auth.signInWithPassword({email:EMAIL_COMPARTILHADO,password:$('senha').value});
+    if(error)throw new Error('Senha inválida ou acesso indisponível.');
+    if(!await acessoValido()){await db.auth.signOut({scope:'local'});throw new Error('Este acesso não está autorizado para registrar abordagens.');}
+    $('senha').value='';mostrarFormulario();
+  }catch(err){status('loginStatus',err.message||'Não foi possível entrar.','err')}
+  finally{b.disabled=false;b.textContent='Entrar'}
+});
+$('sair').onclick=async()=>{await db.auth.signOut({scope:'local'});mostrarLogin()};
+
+function criarPessoa(){
+  contadorPessoas++;
+  const div=document.createElement('div');div.className='pessoa';div.dataset.pessoa='1';
+  div.innerHTML='<div class="pessoaHead"><b>Pessoa <span class="numeroPessoa"></span></b><button type="button" class="removerPessoa" title="Remover pessoa">×</button></div>'+
+  '<div class="campo"><label>Nacionalidade</label><div class="optRow nacionalidade">'+
+  '<button type="button" class="optBtn active" data-value="BR">BRASILEIRA</button><button type="button" class="optBtn" data-value="VE">VENEZUELANA</button><button type="button" class="optBtn" data-value="OUTRA">OUTRA</button></div></div>'+
+  '<div class="campo"><label>Sexo</label><div class="optRow sexo">'+
+  '<button type="button" class="optBtn active" data-value="M">MASCULINO</button><button type="button" class="optBtn" data-value="F">FEMININO</button><button type="button" class="optBtn" data-value="NI">NI</button></div></div>'+
+  '<div class="idade"><label style="display:block;font-size:11px;font-weight:900;text-transform:uppercase;color:#52677a;margin-bottom:6px">Idade</label><input data-idade type="number" inputmode="numeric" min="0" max="130" placeholder="Idade" required></div>';
+  div.querySelectorAll('.optRow').forEach(row=>row.addEventListener('click',e=>{
+    const b=e.target.closest('.optBtn');if(!b)return;
+    row.querySelectorAll('.optBtn').forEach(x=>x.classList.toggle('active',x===b));
+  }));
+  div.querySelector('.removerPessoa').onclick=()=>{if($('pessoas').children.length<=1)return;div.remove();renumerarPessoas()};
+  return div;
+}
+function renumerarPessoas(){
+  [...$('pessoas').children].forEach((p,i)=>{p.querySelector('.numeroPessoa').textContent=i+1;p.querySelector('.removerPessoa').style.visibility=$('pessoas').children.length>1?'visible':'hidden'});
+}
+function adicionarPessoa(){if($('pessoas').children.length>=20){status('formStatus','Limite de 20 pessoas por abordagem.','err');return}$('pessoas').appendChild(criarPessoa());renumerarPessoas()}
+$('adicionarPessoa').onclick=adicionarPessoa;
+$('tipoGrid').addEventListener('click',e=>{const b=e.target.closest('.tipoBtn');if(!b)return;tipoSelecionado=b.dataset.tipo;$('tipoGrid').querySelectorAll('.tipoBtn').forEach(x=>x.classList.toggle('active',x===b))});
+
+function pessoasPayload(){
+  return [...$('pessoas').children].map(p=>({
+    nacionalidade:p.querySelector('.nacionalidade .active')?.dataset.value||'BR',
+    sexo:p.querySelector('.sexo .active')?.dataset.value||'M',
+    idade:String(p.querySelector('[data-idade]').value||'').trim()
+  }));
+}
+function componente(resultado,tipo){
+  return resultado.address_components?.find(c=>c.types.includes(tipo))?.long_name||'';
+}
+function aplicarEndereco(resultado){
+  if(!resultado)return;
+  const numero=componente(resultado,'street_number'),rua=componente(resultado,'route');
+  const bairro=componente(resultado,'sublocality_level_1')||componente(resultado,'neighborhood')||componente(resultado,'sublocality');
+  const municipio=componente(resultado,'administrative_area_level_2')||componente(resultado,'locality');
+  localizacao.endereco=[rua,numero].filter(Boolean).join(', ')||resultado.formatted_address||'';
+  localizacao.bairro=bairro;
+  localizacao.municipio=municipio;
+  $('enderecoTexto').textContent=[localizacao.endereco,bairro,municipio].filter(Boolean).join(' · ')||'Coordenadas capturadas';
+  $('enderecoBox').classList.remove('hidden');
+}
+async function reverseGeocode(){
+  if(!geocoder||!localizacao)return;
+  try{
+    const {results}=await geocoder.geocode({location:{lat:localizacao.latitude,lng:localizacao.longitude}});
+    aplicarEndereco(results?.[0]);
+  }catch(err){console.warn('Falha no endereço automático:',err)}
+}
+$('capturarGps').onclick=()=>{
+  limparStatus('formStatus');
+  if(!navigator.geolocation){status('formStatus','Este aparelho não disponibiliza geolocalização.','err');return}
+  const b=$('capturarGps');b.disabled=true;b.textContent='Localizando...';$('gpsStatus').className='gpsStatus';$('gpsStatus').textContent='Buscando a posição atual...';
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    localizacao={latitude:pos.coords.latitude,longitude:pos.coords.longitude,precisao:pos.coords.accuracy,endereco:'',bairro:'',municipio:''};
+    $('gpsStatus').className='gpsStatus ok';
+    $('gpsStatus').textContent='Local capturado · precisão aproximada '+Math.round(pos.coords.accuracy)+' m';
+    b.disabled=false;b.textContent='⌖ Atualizar';
+    await reverseGeocode();
+  },err=>{
+    b.disabled=false;b.textContent='⌖ Localizar';
+    $('gpsStatus').textContent='Não foi possível capturar a localização.';
+    status('formStatus',err.code===1?'Autorize o acesso à localização do celular para registrar a abordagem.':'Tente capturar a localização novamente.','err');
+  },{enableHighAccuracy:true,timeout:12000,maximumAge:0});
+};
+function resetarFormulario(){
+  tipoSelecionado='';$('tipoGrid').querySelectorAll('.tipoBtn').forEach(x=>x.classList.remove('active'));
+  $('pessoas').replaceChildren();adicionarPessoa();localizacao=null;
+  $('gpsStatus').className='gpsStatus';$('gpsStatus').textContent='Localização ainda não capturada.';
+  $('capturarGps').textContent='⌖ Localizar';$('enderecoBox').classList.add('hidden');$('enderecoTexto').textContent='';
+}
+$('salvar').onclick=async()=>{
+  limparStatus('formStatus');
+  const pessoas=pessoasPayload();
+  if(!tipoSelecionado){status('formStatus','Selecione A PÉ, MOTO ou VEÍCULO.','err');return}
+  const invalida=pessoas.find(p=>p.idade===''||Number(p.idade)<0||Number(p.idade)>130);
+  if(invalida){status('formStatus','Informe a idade de todas as pessoas abordadas.','err');return}
+  if(!localizacao){status('formStatus','Capture a localização antes de salvar.','err');return}
+  const b=$('salvar');b.disabled=true;b.textContent='SALVANDO...';
+  try{
+    const {data,error}=await db.rpc('registrar_abordagem_giro',{
+      p_tipo_abordagem:tipoSelecionado,
+      p_pessoas:pessoas,
+      p_latitude:localizacao.latitude,
+      p_longitude:localizacao.longitude,
+      p_precisao_metros:localizacao.precisao||null,
+      p_endereco:localizacao.endereco||null,
+      p_bairro:localizacao.bairro||null,
+      p_municipio:localizacao.municipio||null
+    });
+    if(error)throw error;
+    status('formStatus','Abordagem registrada com sucesso.','ok');
+    resetarFormulario();
+    window.scrollTo({top:0,behavior:'smooth'});
+  }catch(err){
+    console.error(err);
+    status('formStatus',err.message||'Não foi possível salvar a abordagem.','err');
+  }finally{b.disabled=false;b.textContent='SALVAR ABORDAGEM'}
+};
+window.iniciarMapaGiro=function(){try{geocoder=new google.maps.Geocoder()}catch(e){console.warn(e)}};
+(async()=>{
+  if(await acessoValido())mostrarFormulario();else mostrarLogin();
+})();
+</script>
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB-IcfbT-uuHlYSNcvmhbSqkPGqh2wl4Rc&v=weekly&callback=iniciarMapaGiro"></script>
+</body>
+</html>
