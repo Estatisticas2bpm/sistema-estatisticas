@@ -72,7 +72,34 @@ function renderGiroAccess(){
   const msg=!unidade?'Unidade GIRO não encontrada.':!unidade.ativo?'O GIRO ainda está inativo. O acesso pode ser preparado, mas só será criado/reativado após a ativação da unidade.':!existe?'Acesso ainda não criado. Defina a senha quando o GIRO estiver pronto para ativação.':ativo?'Acesso compartilhado ativo e restrito ao formulário de abordagens.':'Acesso compartilhado bloqueado.';
   status('statusGiroAccess',msg,unidade?.ativo&&ativo?'ok':'info');
 }
-async function carregar(){status('statusLista','Carregando usuários...','info');try{const [d,g]=await Promise.all([invocar({action:'list'}),invocar({action:'giro_access_status'})]);usuarios=d.users||[];unidades=d.units||[];giroAccess=g.access||null;preencherUnidades();render();renderGiroAccess();status('statusLista',usuarios.length+' usuário(s) cadastrado(s).','info');}catch(e){console.error(e);status('statusLista','Não foi possível carregar os usuários: '+e.message,'erro');status('statusGiroAccess','Não foi possível consultar o acesso do GIRO.','erro');}}
+async function carregar(){
+  status('statusLista','Carregando usuários...','info');
+  status('statusGiroAccess','Consultando acesso do GIRO...','info');
+  const [listaResult,giroResult]=await Promise.allSettled([
+    invocar({action:'list'}),
+    invocar({action:'giro_access_status'})
+  ]);
+
+  if(listaResult.status==='fulfilled'){
+    const d=listaResult.value||{};
+    usuarios=d.users||[];
+    unidades=d.units||[];
+    preencherUnidades();
+    render();
+    status('statusLista',usuarios.length+' usuário(s) cadastrado(s).','info');
+  }else{
+    console.error(listaResult.reason);
+    status('statusLista','Não foi possível carregar os usuários: '+(listaResult.reason?.message||listaResult.reason),'erro');
+  }
+
+  if(giroResult.status==='fulfilled'){
+    giroAccess=giroResult.value?.access||null;
+    renderGiroAccess();
+  }else{
+    console.error(giroResult.reason);
+    status('statusGiroAccess','Não foi possível consultar o acesso do GIRO: '+(giroResult.reason?.message||giroResult.reason),'erro');
+  }
+}
 $('giroAccessSalvar').addEventListener('click',async()=>{
   const senha=$('giroAccessSenha').value;
   if(senha.length<8){status('statusGiroAccess','Informe uma senha com pelo menos 8 caracteres.','erro');return}
