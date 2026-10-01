@@ -320,7 +320,8 @@ function filtrarAbordagensGiro(lista){
   const hi=Number($('giroFiltroHoraInicio')?.value??0),hf=Number($('giroFiltroHoraFim')?.value??23);
   return (lista||[]).filter(x=>{
     const h=horaAbordagem(x),bb=norm(bairroAbordagem(x)),ll=norm(logradouroAbordagem(x));
-    return (!b||bb.includes(b))&&(!l||ll.includes(l))&&(!t||x.tipo_abordagem===t)&&h>=hi&&h<=hf;
+    const horaOk=hi<=hf?(h>=hi&&h<=hf):(h>=hi||h<=hf);
+    return (!b||bb.includes(b))&&(!l||ll.includes(l))&&(!t||x.tipo_abordagem===t)&&horaOk;
   });
 }
 function renderGiroAbordagens(){
