@@ -82,7 +82,7 @@ input:focus{outline:3px solid #bfdbfe;border-color:#60a5fa}.btn{border:0;border-
         <button id="capturarGps" type="button" class="btn green">⌖ Localizar</button>
         <div id="gpsStatus" class="gpsStatus">Localização ainda não capturada.</div>
       </div>
-      <div id="enderecoBox" class="address hidden"><b>Endereço identificado</b><span id="enderecoTexto"></span></div><div id="localManualBox" class="hidden" style="margin-top:9px">
+      <div id="enderecoBox" class="address hidden"><b>Endereço identificado</b><span id="enderecoTexto"></span><small id="enderecoFonte" style="display:block;margin-top:5px;color:#667085"></small></div><div id="localManualBox" class="hidden" style="margin-top:9px">
   <div class="campo"><label for="logradouroManual">Rua / logradouro</label><input id="logradouroManual" autocomplete="street-address" placeholder="Opcional se não identificar automaticamente"></div>
   <div class="campo"><label for="bairroManual">Bairro</label><input id="bairroManual" autocomplete="address-level3" placeholder="Opcional se não identificar automaticamente"></div>
 </div>
@@ -164,29 +164,67 @@ function pessoasPayload(){
 function componente(resultado,tipo){
   return resultado.address_components?.find(c=>c.types.includes(tipo))?.long_name||'';
 }
+function atualizarEnderecoTela(fonte=''){
+  const dados=[localizacao?.endereco,localizacao?.bairro,localizacao?.municipio].filter(Boolean);
+  $('enderecoTexto').textContent=dados.join(' · ')||'Coordenadas capturadas';
+  $('enderecoFonte').textContent=fonte||'';
+  $('enderecoBox').classList.remove('hidden');
+}
 function aplicarEndereco(resultado){
-  if(!resultado)return;
+  if(!resultado||!localizacao)return false;
   const numero=componente(resultado,'street_number'),rua=componente(resultado,'route');
-  const bairro=componente(resultado,'sublocality_level_1')||componente(resultado,'neighborhood')||componente(resultado,'sublocality');
+  const bairro=componente(resultado,'sublocality_level_1')||componente(resultado,'neighborhood')||componente(resultado,'sublocality')||componente(resultado,'administrative_area_level_3');
   const municipio=componente(resultado,'administrative_area_level_2')||componente(resultado,'locality');
   localizacao.endereco=[rua,numero].filter(Boolean).join(', ')||resultado.formatted_address||'';
   localizacao.bairro=bairro;
   localizacao.municipio=municipio;
-  $('enderecoTexto').textContent=[localizacao.endereco,bairro,municipio].filter(Boolean).join(' · ')||'Coordenadas capturadas';
-  $('enderecoBox').classList.remove('hidden');
+  atualizarEnderecoTela('Endereço identificado automaticamente.');
+  return !!(localizacao.endereco&&localizacao.bairro);
+}
+function aplicarEnderecoOsm(data){
+  if(!data?.address||!localizacao)return false;
+  const a=data.address,rua=a.road||a.pedestrian||a.residential||a.path||a.footway||a.cycleway||a.highway||'';
+  const numero=a.house_number||'';
+  const bairro=a.suburb||a.neighbourhood||a.quarter||a.city_district||a.borough||'';
+  const municipio=a.city||a.town||a.municipality||a.county||'';
+  localizacao.endereco=[rua,numero].filter(Boolean).join(', ')||(data.display_name?String(data.display_name).split(',').slice(0,2).join(', '):'');
+  localizacao.bairro=bairro;
+  localizacao.municipio=municipio;
+  atualizarEnderecoTela('Endereço complementar: © OpenStreetMap contributors.');
+  return !!(localizacao.endereco&&localizacao.bairro);
+}
+function prepararLocalManual(){
+  $('logradouroManual').value=localizacao?.endereco||'';
+  $('bairroManual').value=localizacao?.bairro||'';
+  $('localManualBox').classList.remove('hidden');
+}
+async function reverseGeocodeOsm(){
+  if(!localizacao)return false;
+  try{
+    const url='https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&addressdetails=1&accept-language=pt-BR&lat='+encodeURIComponent(localizacao.latitude)+'&lon='+encodeURIComponent(localizacao.longitude);
+    const r=await fetch(url,{headers:{Accept:'application/json'}});
+    if(!r.ok)return false;
+    return aplicarEnderecoOsm(await r.json());
+  }catch(err){console.warn('Falha no geocodificador complementar:',err);return false}
 }
 async function reverseGeocode(){
   if(!localizacao)return false;
-  if(!geocoder){
-    await new Promise(r=>setTimeout(r,700));
-    if(!geocoder){$('localManualBox').classList.remove('hidden');return false}
+  let ok=false;
+  if(!geocoder)await new Promise(r=>setTimeout(r,900));
+  if(geocoder){
+    try{
+      const {results}=await geocoder.geocode({location:{lat:localizacao.latitude,lng:localizacao.longitude}});
+      ok=aplicarEndereco(results?.[0]);
+    }catch(err){console.warn('Falha no Google Geocoder:',err)}
   }
-  try{
-    const {results}=await geocoder.geocode({location:{lat:localizacao.latitude,lng:localizacao.longitude}});
-    if(results?.[0]){aplicarEndereco(results[0]);$('localManualBox').classList.add('hidden');return true}
-  }catch(err){console.warn('Falha no endereço automático:',err)}
-  $('localManualBox').classList.remove('hidden');
-  return false;
+  if(!ok)ok=await reverseGeocodeOsm();
+  if(!ok){
+    prepararLocalManual();
+    status('formStatus','Não foi possível identificar rua e bairro automaticamente. Informe os dois campos abaixo para salvar.','info');
+  }else{
+    $('localManualBox').classList.add('hidden');
+  }
+  return ok;
 }
 $('capturarGps').onclick=()=>{
   limparStatus('formStatus');
@@ -209,7 +247,7 @@ function resetarFormulario(){
   tipoSelecionado='';$('tipoGrid').querySelectorAll('.tipoBtn').forEach(x=>x.classList.remove('active'));
   $('pessoas').replaceChildren();adicionarPessoa();localizacao=null;
   $('gpsStatus').className='gpsStatus';$('gpsStatus').textContent='Localização ainda não capturada.';
-  $('capturarGps').textContent='⌖ Localizar';$('enderecoBox').classList.add('hidden');$('enderecoTexto').textContent='';$('localManualBox').classList.add('hidden');$('logradouroManual').value='';$('bairroManual').value='';geocodePromise=null;
+  $('capturarGps').textContent='⌖ Localizar';$('enderecoBox').classList.add('hidden');$('enderecoTexto').textContent='';$('enderecoFonte').textContent='';$('localManualBox').classList.add('hidden');$('logradouroManual').value='';$('bairroManual').value='';geocodePromise=null;
 }
 $('salvar').onclick=async()=>{
   limparStatus('formStatus');
@@ -224,6 +262,12 @@ $('salvar').onclick=async()=>{
     if(localizacao){
       if(!localizacao.endereco)localizacao.endereco=String($('logradouroManual').value||'').trim();
       if(!localizacao.bairro)localizacao.bairro=String($('bairroManual').value||'').trim();
+    }
+    if(!localizacao?.endereco||!localizacao?.bairro){
+      prepararLocalManual();
+      status('formStatus','Para manter as estatísticas territoriais, informe Rua/Logradouro e Bairro antes de salvar.','err');
+      (!localizacao?.endereco?$('logradouroManual'):$('bairroManual')).focus();
+      return;
     }
     const {data,error}=await db.rpc('registrar_abordagem_giro',{
       p_tipo_abordagem:tipoSelecionado,
