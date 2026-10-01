@@ -10,6 +10,7 @@ const cpc=read('dashboard-cpc.html');
 const mapa=read('mapa-criminal.html');
 const usuarios=read('usuarios.html');
 const edge=read('supabase/functions/admin-users/index.ts');
+const home=read('index.html');
 
 // Mobile: fluxo rápido e restrito.
 assert.match(mobile,/GIRO ABORDAGENS/);
@@ -64,5 +65,10 @@ assert.match(edge,/function podeGerenciarAcessoGiro/);
 assert.match(edge,/sigla === "GIRO" && perfil\.perfil === "ESTATISTICA"/);
 assert.match(edge,/Somente ADMIN ou ESTATÍSTICA do GIRO podem gerenciar/);
 assert.match(edge,/Somente administradores ativos de uma unidade ativa podem gerenciar usuários/);
+
+assert.match(home,/id="giroAccessShortcut"/);
+assert.match(home,/Gerenciar acesso das abordagens/);
+assert.match(home,/perfilGiro==='ADMIN'\|\|perfilGiro==='ESTATISTICA'/);
+assert.match(home,/dashboard\.html\?v=20261001-giroaccess1#secGiroAcesso/);
 
 console.log('GIRO: módulo de abordagens mobile, painéis, mapa e acesso validados.');
