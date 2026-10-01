@@ -29,6 +29,9 @@ assert.match(mobile,/geocodePromise/);
 assert.match(mobile,/id="localManualBox"/);
 assert.match(mobile,/id="bairroManual"/);
 assert.match(mobile,/id="logradouroManual"/);
+assert.match(mobile,/reverseGeocodeOsm/);
+assert.match(mobile,/OpenStreetMap contributors/);
+assert.match(mobile,/Para manter as estatísticas territoriais/);
 
 // Painel GIRO.
 assert.match(dashboard,/id="secGiroAbordagens" hidden/);
@@ -45,6 +48,10 @@ assert.match(dashboard,/id="tabGiroLogradouros"/);
 assert.match(dashboard,/id="tabGiroHorarios"/);
 assert.match(dashboard,/id="chartGiroAbordagemDia"/);
 assert.match(dashboard,/id="chartGiroAbordagemHora"/);
+assert.match(dashboard,/id="giroCorrigirLocais"/);
+assert.match(dashboard,/corrigirLocaisPendentesGiro/);
+assert.match(dashboard,/reverseOsmGiro/);
+assert.match(dashboard,/Geocodificação complementar: © OpenStreetMap contributors/);
 assert.match(dashboard,/function filtrarAbordagensGiro\(lista\)/);
 assert.match(dashboard,/Motocicletas abordadas/);
 assert.match(dashboard,/\(ehCiptur\(\)\|\|ehGiro\(\)\)\?\[\]/);
