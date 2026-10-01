@@ -13,6 +13,8 @@ assert.match(dashboard,/id="secVisaoGeral"/);
 assert.match(dashboard,/id="secGiroAbordagens" hidden/);
 assert.doesNotMatch(dashboard,/id="secGiroOperacional"/);
 assert.doesNotMatch(dashboard,/Resumo Operacional — GIRO/);
+assert.doesNotMatch(dashboard,/secGiroAcesso/);
+assert.doesNotMatch(dashboard,/Gerenciar acesso/);
 
 // O GIRO reaproveita o dashboard-base e acrescenta somente o módulo de abordagens.
 assert.match(dashboard,/Total de ocorrências/);
