@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SIE-CPC — Produtividade da Cavalaria</title>
+<style>
+*{box-sizing:border-box}:root{--navy:#071b33;--blue:#0d5b92;--green:#2f6f54;--gold:#c79a35;--bg:#eef3f8;--line:#d8e1ea;--muted:#66758a;--red:#b42318}
+body{margin:0;background:var(--bg);font:14px Inter,Segoe UI,Arial,sans-serif;color:#172033}
+header{background:linear-gradient(120deg,#071b33,#123c5e 62%,#2f6f54);color:#fff;padding:22px}
+.head,main{width:min(1180px,95%);margin:auto}.head{display:flex;justify-content:space-between;align-items:center;gap:18px}
+.head h1{margin:0;font-size:25px}.head p{margin:5px 0 0;color:#cfdae5}.head a{color:#fff;text-decoration:none;border:1px solid #ffffff55;padding:9px 12px;border-radius:9px}
+main{padding:24px 0 60px}.panel{background:#fff;border:1px solid var(--line);border-radius:17px;padding:22px;box-shadow:0 7px 26px #071b330d;margin-bottom:18px}
+.tag{display:inline-flex;padding:5px 9px;border-radius:999px;background:#e9f4ee;color:#2f6f54;font-size:10px;font-weight:900;letter-spacing:.35px;text-transform:uppercase}
+h2{margin:10px 0 5px;color:var(--navy);font-size:22px}.sub{margin:0 0 18px;color:var(--muted);line-height:1.55}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px}.span2{grid-column:span 2}.span4{grid-column:1/-1}
+.campo label{display:block;font-size:10px;font-weight:900;color:#455b70;text-transform:uppercase;margin:0 0 6px;letter-spacing:.25px}
+.campo input,.campo select,.campo textarea{width:100%;border:1px solid var(--line);border-radius:10px;background:#fff;color:#172033;padding:11px 12px;font:inherit;outline:none}
+.campo textarea{min-height:88px;resize:vertical}.campo input:focus,.campo select:focus,.campo textarea:focus{border-color:#7aa7c5;box-shadow:0 0 0 3px #0d5b9212}
+.bloco{margin-top:18px;padding-top:17px;border-top:1px solid #e6ebf0}.bloco h3{margin:0 0 4px;color:var(--navy);font-size:16px}.bloco p{margin:0 0 13px;color:var(--muted);font-size:12px}
+.numeros{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}.numero{background:#f8fafc;border:1px solid #e2e8ef;border-radius:12px;padding:11px}
+.numero label{font-size:10px;font-weight:900;color:#50667a;text-transform:uppercase;display:block;min-height:28px}.numero input{margin-top:7px;width:100%;border:1px solid #d5dee7;border-radius:9px;padding:10px;font:900 18px Inter,Segoe UI,Arial;text-align:center}
+.actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:20px}.btn{border:0;border-radius:10px;padding:12px 17px;background:var(--green);color:#fff;font-weight:900;cursor:pointer}.btn.secondary{background:#52677a}.btn:disabled{opacity:.55;cursor:wait}
+.status{margin-top:14px;padding:11px 13px;border-radius:10px;background:#eff8ff;color:#175cd3;border:1px solid #b2ddff}.status.ok{background:#ecfdf3;color:#067647;border-color:#abefc6}.status.erro{background:#fef3f2;color:var(--red);border-color:#fecdca}
+.tablewrap{overflow:auto;border:1px solid var(--line);border-radius:12px}table{width:100%;border-collapse:collapse;min-width:900px}th,td{padding:10px 11px;border-bottom:1px solid #e8edf2;text-align:left;vertical-align:top}th{background:#f4f7fa;color:#40576b;font-size:10px;text-transform:uppercase}td{font-size:12px}.pill{display:inline-flex;border-radius:999px;padding:4px 7px;background:#edf3f6;color:#365b70;font-size:10px;font-weight:800}
+.empty{padding:22px;text-align:center;color:var(--muted)}.loading{position:fixed;inset:0;background:#ffffffef;display:grid;place-items:center;z-index:20;font-weight:900;color:var(--navy)}
+.hint{font-size:11px;color:#718096;margin-top:5px}.montado-only[hidden]{display:none!important}
+@media(max-width:900px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.span4{grid-column:1/-1}.numeros{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:590px){.head{align-items:flex-start;flex-direction:column}.grid{grid-template-columns:1fr}.span2,.span4{grid-column:1}.numeros{grid-template-columns:1fr 1fr}.actions .btn{width:100%}}
+</style>
+<script src="auth-config.js"></script>
+<script src="auth-guard.js"></script>
+</head>
+<body>
+<div id="loading" class="loading">Carregando produtividade da Cavalaria...</div>
+<header>
+  <div class="head">
+    <div><h1>Registrar produtividade — Cavalaria</h1><p>Serviço, policiamento e indicadores operacionais do 1º Esquadrão de Polícia Montada</p></div>
+    <a href="index.html">← Página inicial</a>
+  </div>
+</header>
+<main>
+  <section class="panel">
+    <span class="tag">Cavalaria · produtividade operacional</span>
+    <h2>Novo serviço / atividade</h2>
+    <p class="sub">Registre uma única vez o serviço realizado. O tipo de policiamento alimentará a produtividade da modalidade; o contexto identifica eventos, visitas e ações institucionais sem duplicar o lançamento.</p>
+    <form id="form">
+      <div class="grid">
+        <div class="campo"><label>Data *</label><input id="dataServico" type="date" required></div>
+        <div class="campo"><label>Início</label><input id="horaInicio" type="time"></div>
+        <div class="campo"><label>Fim</label><input id="horaFim" type="time"></div>
+        <div class="campo"><label>Documento relacionado</label><input id="numeroDocumento" placeholder="BO, ROP, relatório ou SEI"></div>
+
+        <div class="campo span2"><label>Tipo de policiamento *</label>
+          <select id="tipoPoliciamento" required>
+            <option value="POLICIAMENTO_MOTORIZADO">Policiamento Motorizado</option>
+            <option value="POLICIAMENTO_MONTADO">Policiamento Montado</option>
+            <option value="POLICIAMENTO_OPERACOES">Policiamento em Operações</option>
+            <option value="POLICIAMENTO_COMUNITARIO">Policiamento Comunitário</option>
+          </select>
+        </div>
+        <div class="campo span2"><label>Contexto da atividade *</label>
+          <select id="contextoAtividade" required>
+            <option value="ROTINA">Rotina</option>
+            <option value="EVENTO">Evento / Grande evento</option>
+            <option value="VISITA_TECNICA">Visita técnica / Escola</option>
+            <option value="ACAO_SOCIAL">Ação social</option>
+            <option value="REPRESENTACAO_INSTITUCIONAL">Representação institucional</option>
+            <option value="OUTRO">Outro</option>
+          </select>
+        </div>
+
+        <div class="campo span2"><label>Local / instituição / evento *</label><input id="localidade" required placeholder="Ex.: Parque Anauá, Escola..., evento..."></div>
+        <div class="campo"><label>Bairro</label><input id="bairro" placeholder="Bairro"></div>
+        <div class="campo"><label>Endereço / logradouro</label><input id="endereco" placeholder="Rua, avenida, referência"></div>
+
+        <div class="campo span2"><label>Comandante da guarnição</label><input id="comandante" placeholder="Posto/graduação e nome"></div>
+        <div class="campo span2"><label>Viaturas empregadas</label><input id="viaturas" placeholder="Ex.: HIPO 184, HIPO 753"><div class="hint">Separe mais de uma por vírgula.</div></div>
+
+        <div class="campo span2"><label>Guarnição</label><textarea id="guarnicao" placeholder="Um policial por linha. Ex.: 2º SGT ... — CMT GU"></textarea></div>
+        <div class="campo span2 montado-only" id="blocoSolipedes" hidden><label>Solípedes empregados</label><input id="solipedes" placeholder="Ex.: APOLO, IMPERADOR, XERIFE"><div class="hint">Separe mais de um por vírgula.</div></div>
+      </div>
+
+      <div class="bloco">
+        <h3>Produtividade do serviço</h3>
+        <p>Use zero quando não houver resultado naquela categoria. Esses campos correspondem aos indicadores mensais já usados pela Cavalaria.</p>
+        <div class="numeros">
+          <div class="numero"><label>Abordagem a pessoas</label><input id="abordagensPessoas" type="number" min="0" value="0"></div>
+          <div class="numero"><label>Abordagem a motos</label><input id="abordagensMotos" type="number" min="0" value="0"></div>
+          <div class="numero"><label>Abordagem a carros</label><input id="abordagensCarros" type="number" min="0" value="0"></div>
+          <div class="numero"><label>ROPs produzidos</label><input id="ropsProduzidos" type="number" min="0" value="0"></div>
+          <div class="numero"><label>Veículos removidos</label><input id="veiculosRemovidos" type="number" min="0" value="0"></div>
+          <div class="numero"><label>Foragidos presos</label><input id="foragidosPresos" type="number" min="0" value="0"></div>
+          <div class="numero"><label>Armas apreendidas</label><input id="armasApreendidas" type="number" min="0" value="0"></div>
+        </div>
+      </div>
+
+      <div class="bloco">
+        <div class="campo"><label>Observações / resultado da atividade</label><textarea id="observacoes" placeholder="Resumo do serviço, finalidade, resultado alcançado ou informação relevante."></textarea></div>
+      </div>
+
+      <div class="actions">
+        <button class="btn" id="salvar" type="submit">Salvar produtividade</button>
+        <button class="btn secondary" id="limpar" type="button">Limpar formulário</button>
+      </div>
+      <div id="status" class="status">Aguardando preenchimento.</div>
+    </form>
+  </section>
+
+  <section class="panel">
+    <span class="tag">Conferência</span>
+    <h2>Últimos lançamentos</h2>
+    <p class="sub">Registros recentes da unidade ativa para conferência rápida do operador.</p>
+    <div id="lista" class="empty">Carregando...</div>
+  </section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+let auth=null;
+
+const rotuloTipo={
+  POLICIAMENTO_MOTORIZADO:'Motorizado',
+  POLICIAMENTO_MONTADO:'Montado',
+  POLICIAMENTO_OPERACOES:'Operações',
+  POLICIAMENTO_COMUNITARIO:'Comunitário'
+};
+const rotuloContexto={
+  ROTINA:'Rotina',EVENTO:'Evento',VISITA_TECNICA:'Visita técnica',
+  ACAO_SOCIAL:'Ação social',REPRESENTACAO_INSTITUCIONAL:'Representação institucional',OUTRO:'Outro'
+};
+
+function n(id){const v=Number($(id).value||0);return Number.isFinite(v)&&v>=0?Math.trunc(v):0}
+function texto(id){const v=String($(id).value||'').trim();return v||null}
+function lista(v){return String(v||'').split(/[\n,;]+/).map(x=>x.trim()).filter(Boolean)}
+function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function mostrarStatus(msg,tipo=''){const el=$('status');el.textContent=msg;el.className='status'+(tipo?' '+tipo:'')}
+function atualizarMontado(){$('blocoSolipedes').hidden=$('tipoPoliciamento').value!=='POLICIAMENTO_MONTADO'}
+function autorizado(){
+  const sigla=String(auth?.contexto?.sigla||auth?.perfil?.unidades?.sigla||'').toUpperCase();
+  const perfil=String(auth?.perfil?.perfil||'').toUpperCase();
+  return sigla==='CAVALARIA'&&['ADMIN','ESTATISTICA','OPERADOR'].includes(perfil)&&auth?.temModulo?.('PRODUTIVIDADE_CAVALARIA');
+}
+function hojeLocal(){
+  const d=new Date(),off=d.getTimezoneOffset(),local=new Date(d.getTime()-off*60000);
+  return local.toISOString().slice(0,10);
+}
+function resetar(){
+  $('form').reset();
+  $('dataServico').value=hojeLocal();
+  ['abordagensPessoas','abordagensMotos','abordagensCarros','ropsProduzidos','veiculosRemovidos','foragidosPresos','armasApreendidas'].forEach(id=>$(id).value=0);
+  atualizarMontado();
+  mostrarStatus('Aguardando preenchimento.');
+}
+async function carregarRecentes(){
+  const client=auth.client;
+  const r=await client.from('cavalaria_servicos_produtividade')
+    .select('id,data_servico,hora_inicio,tipo_policiamento,contexto_atividade,localidade,abordagens_pessoas,abordagens_motos,abordagens_carros,rops_produzidos,veiculos_removidos,foragidos_presos,armas_apreendidas')
+    .eq('unidade_id',auth.contexto.unidade_id)
+    .order('data_servico',{ascending:false})
+    .order('criado_em',{ascending:false})
+    .limit(15);
+  if(r.error){$('lista').className='status erro';$('lista').textContent='Não foi possível carregar os registros: '+r.error.message;return}
+  const a=r.data||[];
+  if(!a.length){$('lista').className='empty';$('lista').textContent='Nenhum serviço registrado ainda.';return}
+  $('lista').className='tablewrap';
+  $('lista').innerHTML='<table><thead><tr><th>Data</th><th>Policiamento</th><th>Contexto</th><th>Local</th><th>Pessoas</th><th>Motos</th><th>Carros</th><th>ROPs</th><th>Remov.</th><th>Forag.</th><th>Armas</th></tr></thead><tbody>'+
+    a.map(x=>'<tr><td>'+esc(new Date(x.data_servico+'T12:00:00').toLocaleDateString('pt-BR'))+'</td><td><span class="pill">'+esc(rotuloTipo[x.tipo_policiamento]||x.tipo_policiamento)+'</span></td><td>'+esc(rotuloContexto[x.contexto_atividade]||x.contexto_atividade)+'</td><td>'+esc(x.localidade)+'</td><td>'+x.abordagens_pessoas+'</td><td>'+x.abordagens_motos+'</td><td>'+x.abordagens_carros+'</td><td>'+x.rops_produzidos+'</td><td>'+x.veiculos_removidos+'</td><td>'+x.foragidos_presos+'</td><td>'+x.armas_apreendidas+'</td></tr>').join('')+
+    '</tbody></table>';
+}
+$('tipoPoliciamento').addEventListener('change',atualizarMontado);
+$('limpar').addEventListener('click',()=>{if(confirm('Limpar os campos deste lançamento?'))resetar()});
+$('form').addEventListener('submit',async e=>{
+  e.preventDefault();
+  if(!autorizado()){mostrarStatus('Esta função está disponível somente para a Cavalaria.','erro');return}
+  const b=$('salvar');b.disabled=true;mostrarStatus('Salvando produtividade...');
+  try{
+    const payload={
+      unidade_id:auth.contexto.unidade_id,
+      data_servico:$('dataServico').value,
+      hora_inicio:texto('horaInicio'),
+      hora_fim:texto('horaFim'),
+      tipo_policiamento:$('tipoPoliciamento').value,
+      contexto_atividade:$('contextoAtividade').value,
+      localidade:String($('localidade').value||'').trim(),
+      bairro:texto('bairro'),
+      endereco:texto('endereco'),
+      numero_documento:texto('numeroDocumento'),
+      comandante:texto('comandante'),
+      guarnicao:lista($('guarnicao').value),
+      solipedes:$('tipoPoliciamento').value==='POLICIAMENTO_MONTADO'?lista($('solipedes').value):[],
+      viaturas:lista($('viaturas').value),
+      abordagens_pessoas:n('abordagensPessoas'),
+      abordagens_motos:n('abordagensMotos'),
+      abordagens_carros:n('abordagensCarros'),
+      rops_produzidos:n('ropsProduzidos'),
+      veiculos_removidos:n('veiculosRemovidos'),
+      foragidos_presos:n('foragidosPresos'),
+      armas_apreendidas:n('armasApreendidas'),
+      observacoes:texto('observacoes')
+    };
+    if(!payload.data_servico||!payload.localidade)throw new Error('Informe a data e o local/atividade.');
+    const r=await auth.client.from('cavalaria_servicos_produtividade').insert([payload]).select('id').single();
+    if(r.error)throw r.error;
+    mostrarStatus('Produtividade registrada com sucesso.','ok');
+    resetar();
+    mostrarStatus('Produtividade registrada com sucesso.','ok');
+    await carregarRecentes();
+  }catch(err){
+    console.error(err);
+    mostrarStatus('Não foi possível salvar: '+(err.message||err),'erro');
+  }finally{b.disabled=false}
+});
+
+(async()=>{
+  try{
+    auth=window.SistemaAuth?.client&&window.SistemaAuth?.user?window.SistemaAuth:await window.SistemaAuth?.ready;
+    if(!auth)return;
+    if(!autorizado()){location.replace('index.html?erro=sem-permissao');return}
+    $('loading').style.display='none';
+    resetar();
+    await carregarRecentes();
+  }catch(e){
+    console.error(e);$('loading').style.display='none';mostrarStatus('Falha ao carregar a página: '+(e.message||e),'erro');
+  }
+})();
+</script>
+</body>
+</html>
