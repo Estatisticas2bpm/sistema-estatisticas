@@ -161,7 +161,153 @@ async function buildGiro(){
   },80);
 }
 
-async function build(){if(ehGiroRel())return buildGiro();$('document').innerHTML='<div class="notice">Consultando banco de dados...</div>';const periodo=periodoRelatorio(ini.value,fim.value);document.title='SIE-CPC - '+unidadeRel().sigla+' - '+periodo.arquivo+' - '+escopoTerritorial();let cr=comparisonRange(),res=await Promise.all([db.rpc('obter_dados_dashboard',{data_inicio:ini.value,data_fim:fim.value}),db.rpc('obter_dados_dashboard',{data_inicio:cr[0],data_fim:cr[1]}),db.rpc('obter_acoes_preventivas',{data_inicio:ini.value,data_fim:fim.value}),db.rpc('obter_tcos_dashboard',{data_inicio:ini.value,data_fim:fim.value}),db.rpc('obter_tcos_dashboard',{data_inicio:cr[0],data_fim:cr[1]})]);if(res[0].error){$('document').innerHTML='<div class="notice">Erro: '+E(res[0].error.message)+'</div>';return}let d=filtrarTerritorio(res[0].data||[]),old=filtrarTerritorio(res[1].data||[]),actions=res[2].data||[],tcos=filtrarTerritorio(res[3].data||[]),tcosOld=filtrarTerritorio(res[4].data||[]),docs=docsComTco(d,tcos),occ=rank(d,x=>x.ocorrencia||x.crime),hoods=rank(d,'bairro'),hoodOld=Object.fromEntries(rank(old,'bairro')),cmds=rank(d,'comandante'),days=['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'],shifts=['MADRUGADA','MANHÃ','TARDE','NOITE'];
+function nomeCipturRel(){
+  return 'Companhia Independente de Policiamento de Trânsito Urbano e Rodoviário - CIPTUR';
+}
+
+function pageCiptur(title,body){
+  const periodo=periodoRelatorio(ini.value,fim.value);
+  return `<section class="page"><div class="internal-head">${periodo.titulo}<br>${E(nomeCipturRel()).toUpperCase()}</div>${title?`<h2 class="title">${title}</h2>`:''}${body}<div class="footer"></div></section>`;
+}
+
+function chaveRelCiptur(v){
+  return S(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
+}
+
+function nomeNaturezaRelCiptur(v){
+  const original=S(v),k=chaveRelCiptur(original);
+  if(k.includes('MARIA DA PENHA')||k.includes('VIOLENCIA DOMESTICA'))return 'MARIA DA PENHA / VIOLÊNCIA DOMÉSTICA';
+  return original;
+}
+
+function naturezasRelCiptur(x){
+  let lista=[];
+  if(x&&x.ocorrencia)lista.push(x.ocorrencia);
+  if(Array.isArray(x&&x.naturezas_itens))x.naturezas_itens.forEach(n=>lista.push(typeof n==='string'?n:(n&&n.nome)||(n&&n.tipo)||''));
+  const unicas=[];
+  lista.map(nomeNaturezaRelCiptur).filter(v=>v&&!ehNaoInformadoRel(v)).forEach(v=>{if(!unicas.includes(v))unicas.push(v)});
+  return unicas;
+}
+
+function rankNaturezasRelCiptur(registros,limit=999){
+  const m={};
+  registros.forEach(o=>naturezasRelCiptur(o).forEach(n=>m[n]=(m[n]||0)+1));
+  return Object.entries(m).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])).slice(0,limit);
+}
+
+function grupamentoOperacionalRel(x){
+  const texto=String((x&&x.observacao_final)||''),marcador='[[PESSOAS_ENVOLVIDAS]]',pos=texto.lastIndexOf(marcador);
+  if(pos<0)return '';
+  try{return chaveRelCiptur(JSON.parse(texto.slice(pos+marcador.length)).grupamento_atendimento||'')}catch(_){return ''}
+}
+
+function ehTorRel(x){return grupamentoOperacionalRel(x)==='TOR'}
+
+async function buildCiptur(){
+  $('document').innerHTML='<div class="notice">Consultando ocorrências, autos de infração, remoções e produtividade do TOR...</div>';
+  const periodo=periodoRelatorio(ini.value,fim.value),cr=comparisonRange();
+  document.title='SIE-CPC - CIPTUR - '+periodo.arquivo;
+  const aiCampos='id,data_infracao,codigo_infracao,descricao_snapshot,gravidade_snapshot,pontos_snapshot,valor_snapshot,valor_texto_snapshot,houve_remocao,tipo_veiculo_removido,agente_autuador_id,agente_codigo_snapshot,agente_nome_snapshot';
+  const unidadeId=window.SistemaAuth?.contexto?.unidade_id||window.SistemaAuth?.perfil?.unidade_id||window.SistemaAuth?.perfil?.unidades?.id||'';
+  let aiAtual=db.from('ciptur_autos_infracao').select(aiCampos).gte('data_infracao',ini.value).lte('data_infracao',fim.value);
+  let aiAnterior=db.from('ciptur_autos_infracao').select(aiCampos).gte('data_infracao',cr[0]).lte('data_infracao',cr[1]);
+  if(unidadeId){aiAtual=aiAtual.eq('unidade_id',unidadeId);aiAnterior=aiAnterior.eq('unidade_id',unidadeId)}
+  const res=await Promise.all([
+    db.rpc('obter_dados_dashboard',{data_inicio:ini.value,data_fim:fim.value}),
+    db.rpc('obter_dados_dashboard',{data_inicio:cr[0],data_fim:cr[1]}),
+    db.rpc('obter_tcos_dashboard',{data_inicio:ini.value,data_fim:fim.value}),
+    db.rpc('obter_tcos_dashboard',{data_inicio:cr[0],data_fim:cr[1]}),
+    aiAtual,aiAnterior
+  ]);
+  const erro=res.find(x=>x&&x.error)?.error;
+  if(erro){$('document').innerHTML='<div class="notice">Erro ao gerar relatório da CIPTUR: '+E(erro.message)+'</div>';return}
+  const d=res[0].data||[],old=res[1].data||[],tcos=res[2].data||[],tcosOld=res[3].data||[],autos=res[4].data||[],autosOld=res[5].data||[];
+  const docs=docsComTco(d,tcos),oldDocs=Object.fromEntries(docsComTco(old,tcosOld));
+  const occ=rankNaturezasRelCiptur(d),hoods=rank(d,'bairro'),hoodOld=Object.fromEntries(rank(old,'bairro')),cmds=rank(d,'comandante');
+  const days=['DOMINGO','SEGUNDA-FEIRA','TERÇA-FEIRA','QUARTA-FEIRA','QUINTA-FEIRA','SEXTA-FEIRA','SÁBADO'],shifts=['MADRUGADA','MANHÃ','TARDE','NOITE'];
+  const dayTotals=days.map((_,i)=>d.filter(x=>new Date(x.data_ocorrencia+'T12:00:00').getDay()===i).length);
+  const shiftTotals=shifts.map(t=>d.filter(x=>S(x.turno)===t).length);
+  const tor=d.filter(ehTorRel),torOld=old.filter(ehTorRel),torOcc=rankNaturezasRelCiptur(tor,15);
+  const ar=totaisCategoriasArmasRel(d),oldAr=totaisCategoriasArmasRel(old),torAr=totaisCategoriasArmasRel(tor);
+  const weapons=detalhesArmasRel(d),ammo=detalhesMunicoesRel(d),entInc=incidenciaEntorpecentes(d),entMat=materiaisEntorpecentes(d),white=spec(d.map(x=>x.arma_branca).filter(Boolean).join(';'));
+  const removidos=autos.filter(x=>x.houve_remocao),removidosOld=autosOld.filter(x=>x.houve_remocao);
+  const percentualRemocao=autos.length?(removidos.length*100/autos.length).toFixed(1).replace('.',',')+'%':'0%';
+  const aiRank=lista=>{
+    const m={};
+    lista.forEach(x=>{
+      const k=S(x.codigo_infracao)||'NÃO INFORMADO';
+      if(!m[k])m[k]={codigo:k,descricao:S(x.descricao_snapshot),gravidade:S(x.gravidade_snapshot),qtd:0};
+      m[k].qtd++;
+    });
+    return Object.values(m).sort((a,b)=>b.qtd-a.qtd||a.codigo.localeCompare(b.codigo));
+  };
+  const aiAtualRank=aiRank(autos),aiOldMap=Object.fromEntries(aiRank(autosOld).map(x=>[x.codigo,x.qtd]));
+  const agentes=rankListaRel(autos,x=>x.agente_nome_snapshot||x.agente_codigo_snapshot),agentesOld=Object.fromEntries(rankListaRel(autosOld,x=>x.agente_nome_snapshot||x.agente_codigo_snapshot));
+  const aiDias=days.map((n,i)=>[n,autos.filter(x=>new Date(x.data_infracao+'T12:00:00').getDay()===i).length]);
+  const remTipos=rankListaRel(removidos,x=>x.tipo_veiculo_removido||'NÃO INFORMADO');
+  const cover=`<section class="page cover"><div class="cover-top"><img src="brasao-pmrr.png"><div>ESTADO DE RORAIMA<br>POLÍCIA MILITAR DE RORAIMA<br>COMANDO DE POLICIAMENTO DA CAPITAL - CPC<br>${E(nomeCipturRel()).toUpperCase()}<br>“Amazônia: Patrimônio dos Brasileiros”</div><img class="cover-brand-ciptur" src="${logoCipturPdf}" alt="Brasão da CIPTUR"></div><div class="cover-title"><h1>RELATÓRIO DE PRODUTIVIDADE OPERACIONAL - CIPTUR</h1><h2>${periodo.titulo}</h2><h3>OCORRÊNCIAS, FISCALIZAÇÃO DE TRÂNSITO, REMOÇÕES E TOR</h3></div><div class="cover-bottom">BOA VISTA - RR<br><br>${periodo.anos}</div></section>`;
+  const toc=[
+    ['1. DOCUMENTAÇÕES E OCORRÊNCIAS REGISTRADAS',3],
+    ['2. ANÁLISE TERRITORIAL E TEMPORAL DAS OCORRÊNCIAS',4],
+    ['3. FISCALIZAÇÃO DE TRÂNSITO — AUTOS DE INFRAÇÃO',5],
+    ['4. REMOÇÕES DE VEÍCULOS',7],
+    ['5. PRODUTIVIDADE DO TOR',8],
+    ['6. RESULTADOS OPERACIONAIS E APREENSÕES',9],
+    ['7. OCORRÊNCIAS POR COMANDANTE',10],
+    ['8. COMPARATIVO GERAL DE PRODUTIVIDADE DA CIPTUR',11]
+  ];
+  const summary=pageCiptur('SUMÁRIO',`<ul class="toc">${toc.map(x=>`<li><span>${x[0]}</span><span class="dots"></span><span>${x[1]}</span></li>`).join('')}</ul>`);
+  const docsRows=docs.map(x=>`<tr><td>${E(x[0])}</td><td>${x[1]}</td></tr>`);
+  const occRows=occ.slice(0,25).map((x,i)=>{const g=d.filter(y=>naturezasRelCiptur(y).includes(x[0]));return`<tr><td>${i+1}</td><td>${E(x[0])}</td><td>${x[1]}</td><td>${E(rank(g,'bairro',3).map(z=>z[0]).join(' / '))}</td></tr>`});
+  const p3=pageCiptur('1. DOCUMENTAÇÕES E OCORRÊNCIAS REGISTRADAS',`<h3 class="subtitle">DOCUMENTOS PRODUZIDOS</h3>${table(['DOCUMENTO','QUANTIDADE'],docsRows,`<tr class="total"><td>TOTAL</td><td>${d.length+tcos.length}</td></tr>`)}<h3 class="subtitle">PRINCIPAIS TIPOS DE OCORRÊNCIA</h3>${table(['ITEM','OCORRÊNCIA','FREQUÊNCIA','BAIRROS RECORRENTES'],occRows)}<p class="source">Fonte: Sistema Integrado de Estatística do CPC - SIE-CPC / CIPTUR.</p>`);
+  const p4=pageCiptur('2. ANÁLISE TERRITORIAL E TEMPORAL DAS OCORRÊNCIAS',`<div class="two"><div><h3 class="subtitle">OCORRÊNCIAS POR DIA DA SEMANA</h3><div class="chart"><canvas id="cipturChartDiasOcc"></canvas></div></div><div><h3 class="subtitle">OCORRÊNCIAS POR TURNO</h3><div class="chart"><canvas id="cipturChartTurnosOcc"></canvas></div></div></div><h3 class="subtitle">BAIRROS COM MAIS OCORRÊNCIAS</h3>${table(['ORDEM','BAIRRO','ATUAL','COMPARADO','VARIAÇÃO'],hoods.slice(0,15).map((x,i)=>`<tr><td>${i+1}</td><td>${E(x[0])}</td><td>${x[1]}</td><td>${hoodOld[x[0]]||0}</td><td>${variance(x[1],hoodOld[x[0]]||0)}</td></tr>`))}<h3 class="subtitle">LOGRADOUROS COM MAIS OCORRÊNCIAS</h3>${table(['ORDEM','LOGRADOURO','FREQUÊNCIA'],rank(d,'endereco',15).map((x,i)=>`<tr><td>${i+1}</td><td>${E(x[0])}</td><td>${x[1]}</td></tr>`))}`);
+  const p5=pageCiptur('3. FISCALIZAÇÃO DE TRÂNSITO — AUTOS DE INFRAÇÃO',`<div class="kpis-rel"><div class="kpi-rel"><b>${autos.length}</b><span>TOTAL DE A.I.</span></div><div class="kpi-rel"><b>${aiAtualRank.length}</b><span>INFRAÇÕES DISTINTAS</span></div><div class="kpi-rel"><b>${agentes.length}</b><span>AGENTES IDENTIFICADOS</span></div><div class="kpi-rel"><b>${removidos.length}</b><span>AUTOS COM REMOÇÃO</span></div><div class="kpi-rel"><b>${variance(autos.length,autosOld.length)}</b><span>VARIAÇÃO DOS A.I.</span></div></div><h3 class="subtitle">PRINCIPAIS INFRAÇÕES</h3>${table(['ORDEM','CÓDIGO','DESCRIÇÃO','GRAVIDADE','ATUAL','COMPARADO','VARIAÇÃO'],aiAtualRank.slice(0,20).map((x,i)=>`<tr><td>${i+1}</td><td>${E(x.codigo)}</td><td>${E(x.descricao)}</td><td>${E(x.gravidade)}</td><td>${x.qtd}</td><td>${aiOldMap[x.codigo]||0}</td><td>${variance(x.qtd,aiOldMap[x.codigo]||0)}</td></tr>`))}<p class="source">Fonte: módulo de Autos de Infração da CIPTUR.</p>`);
+    const p5b=pageCiptur('',`<div class="two"><div><h3 class="subtitle">A.I. POR DIA DA SEMANA</h3><div class="chart"><canvas id="cipturChartAiDias"></canvas></div></div><div><h3 class="subtitle">AGENTES AUTUADORES</h3>${table(['ORDEM','AGENTE','ATUAL','COMPARADO'],agentes.slice(0,20).map((x,i)=>`<tr><td>${i+1}</td><td>${E(x[0])}</td><td>${x[1]}</td><td>${agentesOld[x[0]]||0}</td></tr>`))}</div></div><div class="note-rel">Os registros de A.I. armazenam data, infração, gravidade, remoção e agente. Não há campos próprios de horário, bairro ou logradouro no módulo atual; por isso esses indicadores não são apresentados.</div>`);
+  const p6=pageCiptur('4. REMOÇÕES DE VEÍCULOS',`<div class="kpis-rel"><div class="kpi-rel"><b>${removidos.length}</b><span>VEÍCULOS REMOVIDOS</span></div><div class="kpi-rel"><b>${removidosOld.length}</b><span>PERÍODO COMPARADO</span></div><div class="kpi-rel"><b>${variance(removidos.length,removidosOld.length)}</b><span>VARIAÇÃO</span></div><div class="kpi-rel"><b>${percentualRemocao}</b><span>A.I. COM REMOÇÃO</span></div><div class="kpi-rel"><b>${autos.length-removidos.length}</b><span>A.I. SEM REMOÇÃO</span></div></div><h3 class="subtitle">VEÍCULOS REMOVIDOS POR TIPO</h3>${table(['TIPO DE VEÍCULO','QUANTIDADE'],remTipos.map(x=>`<tr><td>${E(x[0])}</td><td>${x[1]}</td></tr>`),`<tr class="total"><td>TOTAL</td><td>${removidos.length}</td></tr>`)}<h3 class="subtitle">INFRAÇÕES QUE RESULTARAM EM REMOÇÃO</h3>${table(['CÓDIGO','DESCRIÇÃO','REMOÇÕES'],aiRank(removidos).map(x=>`<tr><td>${E(x.codigo)}</td><td>${E(x.descricao)}</td><td>${x.qtd}</td></tr>`))}<div class="note-rel">A remoção é vinculada ao respectivo Auto de Infração. O módulo atual não armazena local ou horário da remoção, portanto não são apresentados mapas ou rankings territoriais de remoções.</div>`);
+  const torRows=[
+    ['OCORRÊNCIAS ATENDIDAS PELO TOR',tor.length,torOld.length],
+    ['CONDUÇÕES',sum(tor,'conducoes_operacionais'),sum(torOld,'conducoes_operacionais')],
+    ['PRISÕES',sum(tor,'numero_prisoes'),sum(torOld,'numero_prisoes')],
+    ['VEÍCULOS RECUPERADOS',sum(tor,'veiculos_recuperados'),sum(torOld,'veiculos_recuperados')],
+    ['FORAGIDOS CAPTURADOS',sum(tor,'foragidos'),sum(torOld,'foragidos')],
+    ['ARMAS DE FOGO',torAr.fogo,totaisCategoriasArmasRel(torOld).fogo],
+    ['SIMULACROS',torAr.simulacro,totaisCategoriasArmasRel(torOld).simulacro],
+    ['MUNIÇÕES',totalEstruturadoOuLegado(tor,'municoes_itens','quantidade_municoes'),totalEstruturadoOuLegado(torOld,'municoes_itens','quantidade_municoes')],
+    ['OCORRÊNCIAS COM ENTORPECENTES',tor.filter(temEntorpecente).length,torOld.filter(temEntorpecente).length]
+  ];
+  const p7=pageCiptur('5. PRODUTIVIDADE DO TOR — TÁTICO OSTENSIVO RODOVIÁRIO',`<div class="note-rel">O TOR é identificado exclusivamente pelo marcador estruturado de grupamento existente nas ocorrências da CIPTUR.</div><h3 class="subtitle">RESULTADOS DO TOR</h3>${table(['INDICADOR','ATUAL','COMPARADO','VARIAÇÃO'],torRows.map(x=>`<tr><td>${x[0]}</td><td>${x[1]}</td><td>${x[2]}</td><td>${variance(x[1],x[2])}</td></tr>`))}<h3 class="subtitle">PRINCIPAIS OCORRÊNCIAS DO TOR</h3>${table(['ORDEM','OCORRÊNCIA','QUANTIDADE'],torOcc.map((x,i)=>`<tr><td>${i+1}</td><td>${E(x[0])}</td><td>${x[1]}</td></tr>`))}<h3 class="subtitle">BAIRROS DAS OCORRÊNCIAS DO TOR</h3>${table(['ORDEM','BAIRRO','QUANTIDADE'],rank(tor,'bairro',15).map((x,i)=>`<tr><td>${i+1}</td><td>${E(x[0])}</td><td>${x[1]}</td></tr>`))}`);
+  const resultados=[['OCORRÊNCIAS REGISTRADAS',d.length],['BOLETINS DE OCORRÊNCIA',docs.find(x=>x[0]==='BO')?.[1]||0],['TCO PRODUZIDOS',tcos.length],['CONDUÇÕES',sum(d,'conducoes_operacionais')],['PRISÕES',sum(d,'numero_prisoes')],['FORAGIDOS CAPTURADOS',sum(d,'foragidos')],['VEÍCULOS RECUPERADOS',sum(d,'veiculos_recuperados')],['ARMAS DE FOGO APREENDIDAS',ar.fogo],['SIMULACROS',ar.simulacro],['MUNIÇÕES',totalEstruturadoOuLegado(d,'municoes_itens','quantidade_municoes')],['ARMAS BRANCAS',sum(d,'quantidade_arma_branca')],['OCORRÊNCIAS COM ENTORPECENTES',d.filter(temEntorpecente).length]];
+  const p8=pageCiptur('6. RESULTADOS OPERACIONAIS E APREENSÕES',`<h3 class="subtitle">RESUMO DOS RESULTADOS OPERACIONAIS</h3>${table(['ESPECIFICAÇÃO','QUANTIDADE'],resultados.map(x=>`<tr><td>${x[0]}</td><td>${x[1]}</td></tr>`))}<div class="two"><div><h3 class="subtitle">ARMAS DE FOGO / SIMULACROS</h3>${table(['ESPECIFICAÇÃO','QUANTIDADE'],weapons.map(x=>`<tr><td>${E(x[0])}</td><td>${x[1]}</td></tr>`),`<tr class="total"><td>TOTAL</td><td>${ar.fogo+ar.simulacro+ar.legado}</td></tr>`)}<h3 class="subtitle">MUNIÇÕES</h3>${table(['ESPECIFICAÇÃO','QUANTIDADE'],ammo.map(x=>`<tr><td>${E(x[0])}</td><td>${x[1]}</td></tr>`))}</div><div><h3 class="subtitle">ENTORPECENTES — INCIDÊNCIA</h3>${table(['TIPO','OCORRÊNCIAS'],entInc.map(x=>`<tr><td>${E(x[0])}</td><td>${x[1]}</td></tr>`))}<h3 class="subtitle">ENTORPECENTES — MATERIAIS</h3>${table(['TIPO','APRESENTAÇÃO','QUANTIDADE'],entMat.map(x=>`<tr><td>${E(x[0])}</td><td>${E(x[1])}</td><td>${x[2]}</td></tr>`))}<h3 class="subtitle">ARMAS BRANCAS</h3>${table(['ESPECIFICAÇÃO','QUANTIDADE'],white.map(x=>`<tr><td>${E(x[0])}</td><td>${x[1]}</td></tr>`))}</div></div>`);
+  const p9=pageCiptur('7. OCORRÊNCIAS POR COMANDANTE',`<h3 class="subtitle">PRODUTIVIDADE DAS GUARNIÇÕES</h3>${table(['ORDEM','COMANDANTE','OCORRÊNCIAS','CONDUÇÕES','PRISÕES','VEÍCULOS','FORAGIDOS','DROGAS'],cmds.slice(0,30).map((x,i)=>{const g=d.filter(y=>S(y.comandante)===x[0]);return`<tr><td>${i+1}</td><td>${E(x[0])}</td><td>${x[1]}</td><td>${sum(g,'conducoes_operacionais')}</td><td>${sum(g,'numero_prisoes')}</td><td>${sum(g,'veiculos_recuperados')}</td><td>${sum(g,'foragidos')}</td><td>${g.filter(temEntorpecente).length}</td></tr>`}))}<p class="source">Fonte: comandante informado em cada ocorrência registrada pela CIPTUR.</p>`);
+  const product=[
+    ['OCORRÊNCIAS',d.length,old.length],
+    ['BOLETINS DE OCORRÊNCIA',docs.find(x=>x[0]==='BO')?.[1]||0,oldDocs.BO||0],
+    ['TCO',docs.find(x=>x[0]==='TCO')?.[1]||0,oldDocs.TCO||0],
+    ['AUTOS DE INFRAÇÃO',autos.length,autosOld.length],
+    ['VEÍCULOS REMOVIDOS',removidos.length,removidosOld.length],
+    ['OCORRÊNCIAS DO TOR',tor.length,torOld.length],
+    ['CONDUÇÕES',sum(d,'conducoes_operacionais'),sum(old,'conducoes_operacionais')],
+    ['PRISÕES',sum(d,'numero_prisoes'),sum(old,'numero_prisoes')],
+    ['VEÍCULOS RECUPERADOS',sum(d,'veiculos_recuperados'),sum(old,'veiculos_recuperados')],
+    ['ARMAS DE FOGO APREENDIDAS',ar.fogo,oldAr.fogo],
+    ['SIMULACROS',ar.simulacro,oldAr.simulacro],
+    ['OCORRÊNCIAS COM ENTORPECENTES',d.filter(temEntorpecente).length,old.filter(temEntorpecente).length],
+    ['FORAGIDOS CAPTURADOS',sum(d,'foragidos'),sum(old,'foragidos')]
+  ];
+  const p10=pageCiptur('8. COMPARATIVO GERAL DE PRODUTIVIDADE DA CIPTUR',`<h3 class="subtitle">PERÍODO ATUAL X PERÍODO COMPARADO</h3>${table(['INDICADOR','PERÍODO ATUAL','PERÍODO COMPARADO','VARIAÇÃO'],product.map(x=>`<tr><td>${x[0]}</td><td>${x[1]}</td><td>${x[2]}</td><td>${variance(x[1],x[2])}</td></tr>`))}<div class="signature">Boa Vista/RR, ${new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'})}.<br><br><br><b>RESPONSÁVEL PELO RELATÓRIO</b><br>Graduação / Nome de Guerra<br>Auxiliar da SIE-CPC / CIPTUR</div><p class="source">Fonte: Sistema Integrado de Estatística do CPC - SIE-CPC / CIPTUR.</p>`);
+  $('document').innerHTML=cover+summary+p3+p4+p5+p5b+p6+p7+p8+p9+p10;
+  const pages=[...document.querySelectorAll('.page')],total=pages.length;
+  pages.forEach((p,i)=>{const ft=p.querySelector('.footer');if(ft)ft.textContent='Página '+(i+1)+' de '+total});
+  chartObjs.forEach(x=>x.destroy());chartObjs=[];
+  setTimeout(()=>{
+    const bar=(id,labels,values,title,color='#16a6bd')=>{const el=$(id);if(!el)return;chartObjs.push(new Chart(el,{type:'bar',data:{labels,datasets:[{label:title,data:values,backgroundColor:color}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,ticks:{precision:0}}},plugins:{legend:{display:false},title:{display:true,text:title}}}}))};
+    bar('cipturChartDiasOcc',days,dayTotals,'Ocorrências por Dia','#2563eb');
+    bar('cipturChartTurnosOcc',shifts,shiftTotals,'Ocorrências por Turno','#16a6bd');
+    bar('cipturChartAiDias',aiDias.map(x=>x[0]),aiDias.map(x=>x[1]),'Autos de Infração por Dia','#d97706');
+  },80);
+}
+
+async function build(){if(ehGiroRel())return buildGiro();if(ehCipturRel())return buildCiptur();$('document').innerHTML='<div class="notice">Consultando banco de dados...</div>';const periodo=periodoRelatorio(ini.value,fim.value);document.title='SIE-CPC - '+unidadeRel().sigla+' - '+periodo.arquivo+' - '+escopoTerritorial();let cr=comparisonRange(),res=await Promise.all([db.rpc('obter_dados_dashboard',{data_inicio:ini.value,data_fim:fim.value}),db.rpc('obter_dados_dashboard',{data_inicio:cr[0],data_fim:cr[1]}),db.rpc('obter_acoes_preventivas',{data_inicio:ini.value,data_fim:fim.value}),db.rpc('obter_tcos_dashboard',{data_inicio:ini.value,data_fim:fim.value}),db.rpc('obter_tcos_dashboard',{data_inicio:cr[0],data_fim:cr[1]})]);if(res[0].error){$('document').innerHTML='<div class="notice">Erro: '+E(res[0].error.message)+'</div>';return}let d=filtrarTerritorio(res[0].data||[]),old=filtrarTerritorio(res[1].data||[]),actions=res[2].data||[],tcos=filtrarTerritorio(res[3].data||[]),tcosOld=filtrarTerritorio(res[4].data||[]),docs=docsComTco(d,tcos),occ=rank(d,x=>x.ocorrencia||x.crime),hoods=rank(d,'bairro'),hoodOld=Object.fromEntries(rank(old,'bairro')),cmds=rank(d,'comandante'),days=['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'],shifts=['MADRUGADA','MANHÃ','TARDE','NOITE'];
 let marcaCapa=ehCipturRel()?'<img class="cover-brand-ciptur" src="'+logoCipturPdf+'" alt="Brasão da CIPTUR">':'<div class="cover-brand">SIE-CPC</div>';
 let cover=`<section class="page cover"><div class="cover-top"><img src="brasao-pmrr.png"><div>ESTADO DE RORAIMA<br>POLÍCIA MILITAR DE RORAIMA<br>COMANDO DE POLICIAMENTO DA CAPITAL - CPC<br>${E(unidadeRel().nome).toUpperCase()}<br>“Amazônia: Patrimônio dos Brasileiros”</div>${marcaCapa}</div><div class="cover-title"><h1>RELATÓRIO DE ANÁLISE DE DADOS ESTATÍSTICOS</h1><h2>${periodo.titulo}</h2><h3>${escopoTerritorial()}</h3></div><div class="cover-bottom">BOA VISTA - RR<br><br>${periodo.anos}</div></section>`;
 
@@ -193,7 +339,7 @@ async function iniciarRelatorio(){
   companhia.value=q.get('companhia')||'';
   sisc.onchange=()=>{companhia.value=sisc.value==='SISC 4'?'1ª CIA':sisc.value==='SISC 5'?'2ª CIA':sisc.value==='SISC 6'?'3ª CIA':''};
   companhia.onchange=()=>{sisc.value=companhia.value==='1ª CIA'?'SISC 4':companhia.value==='2ª CIA'?'SISC 5':companhia.value==='3ª CIA'?'SISC 6':''};
-  if(ehGiroRel()){
+  if(ehGiroRel()||ehCipturRel()){
     $('siscWrap').hidden=true;$('companhiaWrap').hidden=true;
     sisc.value='';companhia.value='';
   }
