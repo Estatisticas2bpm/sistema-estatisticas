@@ -87,6 +87,7 @@ for each row execute function public.atualizar_data_modificacao();
 alter table public.cavalaria_servicos_produtividade enable row level security;
 
 revoke all on public.cavalaria_servicos_produtividade from anon;
+revoke all on public.cavalaria_servicos_produtividade from authenticated;
 grant select,insert,update,delete on public.cavalaria_servicos_produtividade to authenticated;
 
 drop policy if exists cavalaria_servicos_select_escopo on public.cavalaria_servicos_produtividade;
