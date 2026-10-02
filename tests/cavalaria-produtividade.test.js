@@ -27,6 +27,7 @@ assert.match(index,/data-module="PRODUTIVIDADE_CAVALARIA"/);
 assert.match(migration,/create table if not exists public\.cavalaria_servicos_produtividade/i);
 assert.match(migration,/enable row level security/i);
 assert.match(migration,/upper\(u\.sigla\) = 'CAVALARIA'/i);
+assert.match(migration,/revoke all on public\.cavalaria_servicos_produtividade from authenticated/i);
 assert.match(migration,/grant select,insert,update,delete on public\.cavalaria_servicos_produtividade to authenticated/i);
 assert.doesNotMatch(migration,/grant .* to anon/i);
 
