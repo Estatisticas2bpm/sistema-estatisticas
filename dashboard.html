@@ -5,8 +5,43 @@
 <body><div class="loading" id="loading">Carregando dados estatísticos...</div><header><div class="head"><div><h1>Dashboard Completo</h1><p>Análise estatística operacional da unidade ativa</p></div><div><a href="#" data-permission="planilha" data-planilha-unidade hidden>▦ Google Planilhas</a> <a href="index.html">← Página inicial</a></div></div></header><main>
 <section class="panel"><div class="presets"><button data-period="hoje">Hoje</button><button data-period="semana">Semana atual</button><button data-period="mes">Mês atual</button><button data-period="trimestre">Trimestre</button><button data-period="semestre">Semestre</button><button data-period="ano">Ano</button></div><div class="filters">
 <label>Data inicial<input id="ini" type="date"></label><label>Data final<input id="fim" type="date"></label><label>Comparar com<select id="comparar"><option value="anterior">Período anterior</option><option value="ano">Mesmo período do ano anterior</option><option value="nenhum">Sem comparação</option></select></label><label>AISC<select id="aisc"><option value="">Todas</option></select></label><label>SISC<select id="sisc"><option value="">Todas</option></select></label><label>Setor<select id="setor"><option value="">Todos</option></select></label><label>Companhia<select id="companhia"><option value="">Todas</option><option value="1ª CIA">1ª Companhia</option><option value="2ª CIA">2ª Companhia</option><option value="3ª CIA">3ª Companhia</option></select></label><label>Situação<select id="status"><option value="">Todas</option><option>ATENDIDA</option><option>DEMANDA REPRIMIDA</option></select></label><label>Ocorrência<input id="ocorrencia" placeholder="Todas"></label><label>Subtipo<input id="subtipo" placeholder="Todos"></label><label>Bairro<input id="bairro" placeholder="Todos"></label><label>Logradouro<input id="logradouro" placeholder="Todos"></label><label>Comandante<input id="comandante" placeholder="Todos"></label><label>Viatura<input id="vtr" placeholder="Todas"></label><label>Turno<select id="turno"><option value="">Todos</option><option>MADRUGADA</option><option>MANHÃ</option><option>TARDE</option><option>NOITE</option></select></label><label>Documento / classificação<select id="documento"><option value="">Todos</option><option>BO</option><option>TCO</option><option>ROP</option><option value="TS">TÁTICO SETORIAL</option><option value="AME">AME</option></select></label></div><div class="actions"><button class="btn" id="aplicar">Atualizar dashboard</button><button class="btn green" id="gerarPdf">Gerar Relatório PDF</button></div></section>
-<nav id="navCiptur" class="module-nav" hidden aria-label="Módulos do painel CIPTUR"><a href="#secVisaoGeral">Visão geral</a><a href="#secCipturTransito">Fiscalização · A.I. e remoções</a><a href="#secCipturTor">TOR</a><a href="#secProdutividade">Produtividade</a><a href="autos-infracao.html">Cadastrar A.I.</a></nav><nav id="navGiro" class="module-nav" hidden aria-label="Módulos do painel GIRO"><a href="#secVisaoGeral">Visão geral</a><a href="#secGiroAbordagens">Abordagens</a><a href="giro-abordagem.html?v=20261001-geocode2" target="_blank" rel="noopener">Registro mobile ↗</a><a href="#secProdutividade">Produtividade</a><a href="#secApreensoes">Apreensões</a><a href="#secComandantes">Comandantes</a></nav>
-<section class="cards" id="secVisaoGeral"><div class="card"><small>Total de ocorrências</small><strong id="kTotal">0</strong><em id="vTotal"></em></div><div class="card teal"><small>Ocorrências atendidas</small><strong id="kAtendidas">0</strong></div><div class="card red"><small>Demandas reprimidas</small><strong id="kReprimidas">0</strong></div><div class="card steel"><small>Documentos produzidos</small><strong id="kDocumentos">0</strong></div><div class="card steel"><small>Conduções</small><strong id="kConduzidos">0</strong><em>inclui compatibilidade com registros legados</em></div></section><section class="section" id="secGiroAbordagens" hidden>
+<nav id="navCiptur" class="module-nav" hidden aria-label="Módulos do painel CIPTUR"><a href="#secVisaoGeral">Visão geral</a><a href="#secCipturTransito">Fiscalização · A.I. e remoções</a><a href="#secCipturTor">TOR</a><a href="#secProdutividade">Produtividade</a><a href="autos-infracao.html">Cadastrar A.I.</a></nav><nav id="navGiro" class="module-nav" hidden aria-label="Módulos do painel GIRO"><a href="#secVisaoGeral">Visão geral</a><a href="#secGiroAbordagens">Abordagens</a><a href="giro-abordagem.html?v=20261001-geocode2" target="_blank" rel="noopener">Registro mobile ↗</a><a href="#secProdutividade">Produtividade</a><a href="#secApreensoes">Apreensões</a><a href="#secComandantes">Comandantes</a></nav><nav id="navCavalaria" class="module-nav" hidden aria-label="Módulos do painel Cavalaria"><a href="#secVisaoGeral">Visão geral</a><a href="#secCavalariaProdutividade">Produtividade operacional</a><a href="#secProdutividade">Resultados de ocorrências</a><a href="#secComandantes">Comandantes</a><a href="cavalaria-produtividade.html">Registrar produtividade</a></nav>
+<section class="cards" id="secVisaoGeral"><div class="card"><small>Total de ocorrências</small><strong id="kTotal">0</strong><em id="vTotal"></em></div><div class="card teal"><small>Ocorrências atendidas</small><strong id="kAtendidas">0</strong></div><div class="card red"><small>Demandas reprimidas</small><strong id="kReprimidas">0</strong></div><div class="card steel"><small>Documentos produzidos</small><strong id="kDocumentos">0</strong></div><div class="card steel"><small>Conduções</small><strong id="kConduzidos">0</strong><em>inclui compatibilidade com registros legados</em></div></section><section class="section" id="secCavalariaProdutividade" hidden>
+  <span class="module-tag">Produtividade operacional · Cavalaria</span>
+  <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap">
+    <div><h2>Serviços e produtividade da Cavalaria</h2><p class="sub">Indicadores extraídos dos registros de policiamento, eventos, operações, ações comunitárias e abordagens. BOs permanecem contabilizados separadamente.</p></div>
+    <a class="btn" href="cavalaria-produtividade.html" style="text-decoration:none">Registrar produtividade</a>
+  </div>
+  <div class="cards">
+    <div class="card"><small>Serviços registrados</small><strong id="cavServicos">0</strong><em id="cavServicosVariacao"></em></div>
+    <div class="card teal"><small>Pessoas abordadas</small><strong id="cavPessoas">0</strong><em>total informado nos serviços</em></div>
+    <div class="card green"><small>Policiamento montado</small><strong id="cavMontado">0</strong></div>
+    <div class="card steel"><small>Policiamento motorizado</small><strong id="cavMotorizado">0</strong></div>
+    <div class="card amber"><small>Policiamento em operações</small><strong id="cavOperacoes">0</strong></div>
+    <div class="card teal"><small>Policiamento comunitário</small><strong id="cavComunitario">0</strong></div>
+    <div class="card steel"><small>Eventos</small><strong id="cavEventos">0</strong></div>
+    <div class="card green"><small>ROPs produzidos</small><strong id="cavRops">0</strong></div>
+  </div>
+  <div class="cards">
+    <div class="card amber"><small>Motos abordadas</small><strong id="cavMotos">0</strong></div>
+    <div class="card steel"><small>Carros abordados</small><strong id="cavCarros">0</strong></div>
+    <div class="card teal"><small>Veículos removidos</small><strong id="cavRemovidos">0</strong></div>
+    <div class="card green"><small>Foragidos presos</small><strong id="cavForagidos">0</strong></div>
+    <div class="card red"><small>Armas apreendidas</small><strong id="cavArmas">0</strong></div>
+  </div>
+  <div class="grid2">
+    <div><h3 style="margin:0 0 8px;color:var(--navy)">Modalidades de policiamento</h3><div class="chartbox"><canvas id="chartCavModalidades"></canvas></div></div>
+    <div><h3 style="margin:0 0 8px;color:var(--navy)">Contexto das atividades</h3><div class="chartbox"><canvas id="chartCavContextos"></canvas></div></div>
+  </div>
+  <div style="margin-top:18px"><h3 style="margin:0 0 8px;color:var(--navy)">Evolução dos serviços no período</h3><div class="chartbox"><canvas id="chartCavEvolucao"></canvas></div></div>
+  <div class="grid3" style="margin-top:18px">
+    <div><h3 style="margin:0 0 8px;color:var(--navy)">Locais / instituições mais atendidos</h3><div class="tablewrap"><table><thead><tr><th>#</th><th>Local</th><th>Serviços</th></tr></thead><tbody id="tabCavLocais"></tbody></table></div></div>
+    <div><h3 style="margin:0 0 8px;color:var(--navy)">Solípedes mais empregados</h3><div class="tablewrap"><table><thead><tr><th>#</th><th>Solípede</th><th>Empregos</th></tr></thead><tbody id="tabCavSolipedes"></tbody></table></div></div>
+    <div><h3 style="margin:0 0 8px;color:var(--navy)">Viaturas mais empregadas</h3><div class="tablewrap"><table><thead><tr><th>#</th><th>Viatura</th><th>Empregos</th></tr></thead><tbody id="tabCavViaturas"></tbody></table></div></div>
+  </div>
+  <p class="sub" style="margin-top:12px">A produtividade considera o período selecionado no topo. Os demais filtros territoriais permanecem aplicados às ocorrências policiais, não aos registros de serviço.</p>
+</section>
+<section class="section" id="secGiroAbordagens" hidden>
   <span class="module-tag">Produtividade preventiva · GIRO</span>
   <h2>Abordagens de Rua</h2>
   <p class="sub">Produtividade preventiva registrada pelas equipes de patrulhamento. Abordagens permanecem separadas de ocorrências policiais.</p>
@@ -109,12 +144,13 @@
 <section class="section" id="secComandantes"><h2>Ocorrências por Comandante de Viatura</h2><p class="sub">Ranking completo e indicadores associados</p><div class="tablewrap"><table><thead><tr><th>#</th><th>Comandante</th><th>Ocorrências</th><th>Armas de fogo</th><th>Simulacros</th><th>Não classificadas (legado)</th><th>Veículos</th><th>Foragidos/cautelares</th><th>Ocorr. c/ drogas</th></tr></thead><tbody id="tabComandantes"></tbody></table></div></section>
 <section class="section"><h2>Comparativo de Produtividade</h2><p class="sub">Período atual versus período selecionado para comparação</p><div class="tablewrap"><table><thead><tr><th>Indicador</th><th>Atual</th><th>Comparado</th><th>Diferença</th><th>Variação</th></tr></thead><tbody id="tabComparativo"></tbody></table></div></section>
 <dialog id="drillDialog" class="drill-dialog"><div class="drill-head"><div><h3 id="drillTitulo">Detalhamento</h3><p id="drillSubtitulo"></p></div><button type="button" id="drillFechar" class="drill-close" aria-label="Fechar">×</button></div><div class="drill-body"><div class="drill-tools"><span id="drillContagem" class="drill-count"></span><a id="drillAbrirLista" class="drill-open-list" href="consulta.html">Abrir esta lista em Ocorrências →</a></div><div class="drill-table"><table><thead><tr><th>Data</th><th>Referência</th><th>Ocorrência</th><th>Bairro</th><th>Comandante</th><th>Ação</th></tr></thead><tbody id="drillTabela"></tbody></table></div></div></dialog></main><script>
-const db=supabase.createClient('https://jppmhhukujigxupgskdk.supabase.co','sb_publishable_ZVnU35i2x9zwppQqYg7UYw_mzaT43aG');const CORES={navy:'#0B2239',blue:'#1F5A8A',steel:'#496B86',teal:'#2F7278',green:'#39705A',amber:'#B7791F',red:'#A63D40',purple:'#665C83',gray:'#667085',light:'#C8D1DA'};let atual=[],anterior=[],tcosAtual=[],tcosAnterior=[],autosCipturAtual=[],autosCipturAnterior=[],abordagensGiroAtual=[],abordagensGiroAnterior=[],charts={},drillActions=new Map(),drillSeq=0,catalogoTerritorial=null;const $=id=>document.getElementById(id),num=v=>Number(v)||0,norm=v=>(v||'NÃO INFORMADO').toString().trim(),esc=v=>norm(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const db=supabase.createClient('https://jppmhhukujigxupgskdk.supabase.co','sb_publishable_ZVnU35i2x9zwppQqYg7UYw_mzaT43aG');const CORES={navy:'#0B2239',blue:'#1F5A8A',steel:'#496B86',teal:'#2F7278',green:'#39705A',amber:'#B7791F',red:'#A63D40',purple:'#665C83',gray:'#667085',light:'#C8D1DA'};let atual=[],anterior=[],tcosAtual=[],tcosAnterior=[],autosCipturAtual=[],autosCipturAnterior=[],abordagensGiroAtual=[],abordagensGiroAnterior=[],servicosCavalariaAtual=[],servicosCavalariaAnterior=[],charts={},drillActions=new Map(),drillSeq=0,catalogoTerritorial=null;const $=id=>document.getElementById(id),num=v=>Number(v)||0,norm=v=>(v||'NÃO INFORMADO').toString().trim(),esc=v=>norm(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function normalizarBairro(v){let k=chaveOcorrencia(v),m={'AIRTON ROCHA':'DR AIRTON ROCHA','DOUTOR AIRTON ROCHA':'DR AIRTON ROCHA','DR AIRTON ROCHA':'DR AIRTON ROCHA','DOUTOR SILVIO BOTELHO':'DR SILVIO BOTELHO','SILVIO BOTELHO':'DR SILVIO BOTELHO','DR SILVIO BOTELHO':'DR SILVIO BOTELHO','DOUTOR SILVIO LEITE':'DR SILVIO LEITE','SILVIO LEITE':'DR SILVIO LEITE','DR SILVIO LEITE':'DR SILVIO LEITE','GOVERNADOR AQUILINO MOTA DUARTE':'GOV AQUILINO MOTA DUARTE','GOV AQUILINO MOTA DUARTE':'GOV AQUILINO MOTA DUARTE','JARDIM EQUATORIAL':'EQUATORIAL','PROFESSORA ARACELI SOUTO MAIOR':'ARACELI','PSICULTURA':'PISCICULTURA'};return m[k]||norm(v)}function normalizarNacionalidade(v){let k=chaveOcorrencia(v);if(['BR','BR - BRASILEIRA','BR — BRASILEIRA','BRASILEIRA','BRASILEIRO'].includes(k))return 'BR — Brasileira';if(['VE','VE - VENEZUELANA','VE — VENEZUELANA','VENEZUELANA','VENEZUELANO'].includes(k))return 'VE — Venezuelana';if(k==='NI'||k==='N'||k==='NA'||k==='NAO INFORMADO')return 'NI';return norm(v)}function normalizarSexo(v){let k=chaveOcorrencia(v);if(k==='M'||k==='MASCULINO')return 'M';if(k==='F'||k==='FEMININO')return 'F';if(k==='NI'||k==='N'||k==='NA'||k==='NAO INFORMADO'||k==='NÃO INFORMADO')return 'NI';return 'OUTRO'}function corSexo(v){return v==='M'?CORES.blue:v==='F'?CORES.purple:v==='NI'?CORES.gray:CORES.amber}function corDocumento(v){let k=chaveOcorrencia(v);return k==='BO'?CORES.blue:k==='TS'?CORES.teal:k==='AME'?CORES.green:k==='TCO'?CORES.amber:k==='ROP'?CORES.steel:CORES.gray}function classeVariacao(nome,a,b){let k=chaveOcorrencia(nome),crime=k==='TOTAL DE OCORRENCIAS'||k==='CLASSIFICACAO AME'||k.includes('MARIA DA PENHA')||k.includes('VIOLENCIA DOMESTICA');if(a===b)return 'neutral-var';if(crime)return a>b?'crit-up':'crit-down';return a>b?'prod-up':'prod-down'}function ehNaoInformado(v){let k=String(v??'').trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();return !k||['NI','N/I','N','NA','NAO INFORMADO','NÃO INFORMADO'].includes(k)}function rank(a,c,limit=999){let m={};a.forEach(x=>{let bruto=typeof c==='function'?c(x):x[c];if(ehNaoInformado(bruto))return;let k=String(bruto).trim();m[k]=(m[k]||0)+1});return Object.entries(m).sort((x,y)=>y[1]-x[1]||x[0].localeCompare(y[0])).slice(0,limit)}function soma(a,c){return a.reduce((s,x)=>s+num(x[c]),0)}function pred(a,c){return rank(a,c,1)[0]?.[0]||'NÃO INFORMADO'}function variacao(a,b){if(!b)return a?'Novo':'0%';let v=(a-b)*100/b;return (v>0?'+':'')+v.toFixed(1)+'%'}function cls(a,b){return a>b?'up':a<b?'down':''}function fmt(d){let y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dia=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${dia}`}
 function periodoComparado(){let a=new Date(ini.value+'T12:00:00'),b=new Date(fim.value+'T12:00:00');if(comparar.value==='ano'){a.setFullYear(a.getFullYear()-1);b.setFullYear(b.getFullYear()-1)}else{let dias=Math.round((b-a)/864e5)+1;b=new Date(a.getTime()-864e5);a=new Date(b.getTime()-(dias-1)*864e5)}return[fmt(a),fmt(b)]}
 function siglaUnidadeAtiva(){return String(window.SistemaAuth?.contexto?.sigla||window.SistemaAuth?.perfil?.unidades?.sigla||'').toUpperCase()}
 function ehCiptur(){return siglaUnidadeAtiva()==='CIPTUR'}
 function ehGiro(){return siglaUnidadeAtiva()==='GIRO'}
+function ehCavalaria(){return siglaUnidadeAtiva()==='CAVALARIA'}
 function configurarModuloGiro(){
   const ativo=ehGiro();
   document.body.classList.toggle('modo-giro',ativo);
@@ -134,6 +170,25 @@ function configurarModuloGiro(){
   if($('documento')){
     $('documento').innerHTML='<option value="">Todos</option><option>BO</option><option>TCO</option><option>ROP</option>';
     const lbl=$('documento').closest('label');if(lbl)lbl.childNodes[0].textContent='Documento';
+  }
+}
+function configurarModuloCavalaria(){
+  const ativo=ehCavalaria();
+  if($('navCavalaria'))$('navCavalaria').hidden=!ativo;
+  if($('secCavalariaProdutividade'))$('secCavalariaProdutividade').hidden=!ativo;
+  if(ativo){
+    if($('navCiptur'))$('navCiptur').hidden=true;
+    if($('navGiro'))$('navGiro').hidden=true;
+    if($('secCipturTransito'))$('secCipturTransito').hidden=true;
+    if($('secCipturTor'))$('secCipturTor').hidden=true;
+    if($('secGiroAbordagens'))$('secGiroAbordagens').hidden=true;
+    const h=document.querySelector('header h1'),p=document.querySelector('header .head p');
+    if(h)h.textContent='Dashboard Completo — Cavalaria';
+    if(p)p.textContent='Serviços, policiamento montado, eventos, operações, abordagens e resultados operacionais da Cavalaria';
+    if($('documento')){
+      $('documento').innerHTML='<option value="">Todos</option><option>BO</option><option>TCO</option><option>ROP</option>';
+      const lbl=$('documento').closest('label');if(lbl)lbl.childNodes[0].textContent='Documento';
+    }
   }
 }
 function podeCorrigirLocaisGiro(){
@@ -276,6 +331,48 @@ function renderGiroAbordagens(){
   $('giroCorrecaoLocalAcoes').hidden=!podeCorrigir;
   if(podeCorrigir)$('giroCorrigirLocais').textContent='Corrigir '+pendentes+' local(is) pendente(s)';
 }
+function rankListaCavalaria(lista,campo){
+  const m={};(lista||[]).forEach(x=>{const a=Array.isArray(x?.[campo])?x[campo]:[];a.forEach(v=>{const k=String(v||'').trim();if(k)m[k]=(m[k]||0)+1})});
+  return Object.entries(m).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],'pt-BR')).slice(0,10);
+}
+function renderCavalaria(){
+  if(!ehCavalaria())return;
+  const a=servicosCavalariaAtual||[],p=servicosCavalariaAnterior||[];
+  const tipos={POLICIAMENTO_MOTORIZADO:'Motorizado',POLICIAMENTO_MONTADO:'Montado',POLICIAMENTO_OPERACOES:'Operações',POLICIAMENTO_COMUNITARIO:'Comunitário'};
+  const contextos={ROTINA:'Rotina',EVENTO:'Evento / grande evento',VISITA_TECNICA:'Visita técnica / escola',ACAO_SOCIAL:'Ação social',REPRESENTACAO_INSTITUCIONAL:'Representação institucional',OUTRO:'Outro'};
+  const contarTipo=t=>a.filter(x=>x.tipo_policiamento===t).length;
+  const contarCtx=t=>a.filter(x=>x.contexto_atividade===t).length;
+  $('cavServicos').textContent=a.length;
+  $('cavServicosVariacao').textContent=comparar.value==='nenhum'?'':variacao(a.length,p.length)+' em relação ao comparado';
+  $('cavPessoas').textContent=soma(a,'abordagens_pessoas');
+  $('cavMontado').textContent=contarTipo('POLICIAMENTO_MONTADO');
+  $('cavMotorizado').textContent=contarTipo('POLICIAMENTO_MOTORIZADO');
+  $('cavOperacoes').textContent=contarTipo('POLICIAMENTO_OPERACOES');
+  $('cavComunitario').textContent=contarTipo('POLICIAMENTO_COMUNITARIO');
+  $('cavEventos').textContent=contarCtx('EVENTO');
+  $('cavRops').textContent=soma(a,'rops_produzidos');
+  $('cavMotos').textContent=soma(a,'abordagens_motos');
+  $('cavCarros').textContent=soma(a,'abordagens_carros');
+  $('cavRemovidos').textContent=soma(a,'veiculos_removidos');
+  $('cavForagidos').textContent=soma(a,'foragidos_presos');
+  $('cavArmas').textContent=soma(a,'armas_apreendidas');
+
+  const tipoItens=Object.entries(tipos);
+  chart('chartCavModalidades','doughnut',tipoItens.map(x=>x[1]),tipoItens.map(x=>contarTipo(x[0])),'Serviços',[CORES.steel,CORES.green,CORES.amber,CORES.teal]);
+  const ctxItens=Object.entries(contextos);
+  chart('chartCavContextos','doughnut',ctxItens.map(x=>x[1]),ctxItens.map(x=>contarCtx(x[0])),'Atividades',[CORES.blue,CORES.amber,CORES.teal,CORES.green,CORES.purple,CORES.gray]);
+
+  const dias={};a.forEach(x=>{const k=String(x.data_servico||'').slice(0,10);if(k)dias[k]=(dias[k]||0)+1});
+  const ord=Object.entries(dias).sort((x,y)=>x[0].localeCompare(y[0]));
+  chart('chartCavEvolucao','line',ord.map(x=>{const z=x[0].split('-');return z[2]+'/'+z[1]}),ord.map(x=>x[1]),'Serviços',CORES.green);
+
+  const locais=rank(a,x=>x.localidade,10);
+  rows('tabCavLocais',locais.map((x,i)=>'<tr><td class="rank">'+(i+1)+'º</td><td>'+esc(x[0])+'</td><td>'+x[1]+'</td></tr>').join(''));
+  const sols=rankListaCavalaria(a,'solipedes');
+  rows('tabCavSolipedes',sols.map((x,i)=>'<tr><td class="rank">'+(i+1)+'º</td><td>'+esc(x[0])+'</td><td>'+x[1]+'</td></tr>').join(''));
+  const vtrs=rankListaCavalaria(a,'viaturas');
+  rows('tabCavViaturas',vtrs.map((x,i)=>'<tr><td class="rank">'+(i+1)+'º</td><td>'+esc(x[0])+'</td><td>'+x[1]+'</td></tr>').join(''));
+}
 function renderCiptur(){
   if(!ehCiptur())return;
   const a=autosCipturAtual||[],p=autosCipturAnterior||[];
@@ -315,7 +412,7 @@ function renderCiptur(){
     return '<tr><td class="rank">'+(i+1)+'º</td><td><b>'+esc(x.codigo)+'</b></td><td style="white-space:normal;min-width:320px">'+esc(x.descricao)+'</td><td>'+x.qtd+'</td><td>'+ant+'</td><td class="'+cls(x.qtd,ant)+'">'+variacao(x.qtd,ant)+'</td><td>'+esc(valor)+'</td></tr>';
   }).join(''));
 }
-function render(){drillActions.clear();drillSeq=0;let a=filtrar(atual),p=filtrar(anterior),ta=filtrarTcos(tcosAtual),tp=filtrarTcos(tcosAnterior);renderCiptur();renderCipturTor(a);renderGiroAbordagens();let at=a.filter(x=>x.status_atendimento!=='DEMANDA REPRIMIDA'),rep=a.filter(x=>x.status_atendimento==='DEMANDA REPRIMIDA');kTotal.textContent=a.length;kAtendidas.textContent=at.length;kReprimidas.textContent=rep.length;kDocumentos.textContent=a.length+ta.length;kConduzidos.textContent=soma(a,'conducoes_operacionais');vTotal.textContent=comparar.value==='nenhum'?'':`${variacao(a.length,p.length)} em relação ao comparado`;vincularCardDrill('kTotal','Todas as ocorrências do período',a);vincularCardDrill('kAtendidas','Ocorrências atendidas',at);vincularCardDrill('kReprimidas','Demandas reprimidas',rep);vincularCardDrill('kDocumentos','Documentos produzidos',documentosPeriodo(a,ta),{preservarDuplicados:true,subtitulo:'BOs, TCOs e demais documentos que compõem este indicador.'});vincularCardDrill('kConduzidos','Ocorrências com conduções',a.filter(x=>num(x.conducoes_operacionais)>0),{subtitulo:'Ocorrências que registraram uma ou mais conduções.'});
+function render(){drillActions.clear();drillSeq=0;let a=filtrar(atual),p=filtrar(anterior),ta=filtrarTcos(tcosAtual),tp=filtrarTcos(tcosAnterior);renderCiptur();renderCipturTor(a);renderGiroAbordagens();renderCavalaria();let at=a.filter(x=>x.status_atendimento!=='DEMANDA REPRIMIDA'),rep=a.filter(x=>x.status_atendimento==='DEMANDA REPRIMIDA');kTotal.textContent=a.length;kAtendidas.textContent=at.length;kReprimidas.textContent=rep.length;kDocumentos.textContent=a.length+ta.length;kConduzidos.textContent=soma(a,'conducoes_operacionais');vTotal.textContent=comparar.value==='nenhum'?'':`${variacao(a.length,p.length)} em relação ao comparado`;vincularCardDrill('kTotal','Todas as ocorrências do período',a);vincularCardDrill('kAtendidas','Ocorrências atendidas',at);vincularCardDrill('kReprimidas','Demandas reprimidas',rep);vincularCardDrill('kDocumentos','Documentos produzidos',documentosPeriodo(a,ta),{preservarDuplicados:true,subtitulo:'BOs, TCOs e demais documentos que compõem este indicador.'});vincularCardDrill('kConduzidos','Ocorrências com conduções',a.filter(x=>num(x.conducoes_operacionais)>0),{subtitulo:'Ocorrências que registraram uma ou mais conduções.'});
 let docs=docsComTco(a,ta),docsP=Object.fromEntries(docsComTco(p,tp));let docsLista=documentosPeriodo(a,ta);function listaDoc(tipo){return tipo==='TCO'?ta.map(t=>({...t,_doc:'TCO',id:t.ocorrencia_id||t.id})):a.filter(o=>norm(o.tipo_registro)===tipo).map(o=>({...o,_doc:tipo}))}rows('tabDocs',docs.map(x=>`<tr><td>${esc(x[0])}</td><td>${drillNumero(x[1],'Documentos '+x[0],listaDoc(x[0]),{preservarDuplicados:true})}</td><td>${docsP[x[0]]||0}</td><td class="${classeVariacao('Documentos produzidos',x[1],docsP[x[0]]||0)}">${variacao(x[1],docsP[x[0]]||0)}</td></tr>`).join(''));chart('chartDocs','doughnut',docs.map(x=>x[0]),docs.map(x=>x[1]),'Documentos',docs.map(x=>corDocumento(x[0])),idx=>abrirDetalhes('Documentos '+docs[idx][0],listaDoc(docs[idx][0]),{preservarDuplicados:true}));
 let ocorr=rankNaturezas(a,15);rows('tabOcorrencias',ocorr.map((x,i)=>{let g=a.filter(y=>naturezasOcorrencia(y).includes(x[0])),bs=rank(g,x=>normalizarBairro(x.bairro),3).map(z=>z[0]).join(' / '),idades=listaPessoas(g,'infrator').map(y=>num(y.idade)).filter(Boolean);return `<tr><td class="rank">${i+1}º</td><td>${esc(x[0])}</td><td>${drillNumero(x[1],x[0],g)}</td><td>${esc(bs)}</td><td>${idades.length?Math.min(...idades)+' a '+Math.max(...idades)+' anos':'NI'}</td></tr>`}).join(''));let ocorrTop=ocorr.slice(0,10);chart('chartOcorrencias','bar',ocorrTop.map(x=>x[0]),ocorrTop.map(x=>x[1]),'Ocorrências',CORES.blue,idx=>{let nome=ocorrTop[idx][0];abrirDetalhes(nome,a.filter(y=>naturezasOcorrencia(y).includes(nome)))});
 let bs=rank(a,x=>normalizarBairro(x.bairro),999),bp=Object.fromEntries(rank(p,x=>normalizarBairro(x.bairro)));rows('tabBairros',bs.map((x,i)=>{let g=a.filter(y=>normalizarBairro(y.bairro)===x[0]);return `<tr><td class="rank">${i+1}º</td><td>${esc(x[0])}</td><td>${drillNumero(x[1],'Ocorrências no bairro '+x[0],g)}</td><td>${a.length?(x[1]*100/a.length).toFixed(1):0}%</td><td>${bp[x[0]]||0}</td><td class="${cls(x[1],bp[x[0]]||0)}">${variacao(x[1],bp[x[0]]||0)}</td></tr>`}).join(''));let bairrosTop=bs.slice(0,12);chart('chartBairros','bar',bairrosTop.map(x=>x[0]),bairrosTop.map(x=>x[1]),'Bairros',CORES.teal,idx=>{let nome=bairrosTop[idx][0];abrirDetalhes('Ocorrências no bairro '+nome,a.filter(y=>normalizarBairro(y.bairro)===nome))});
@@ -335,7 +432,7 @@ rows('tabComparativo',comparativos.join(''));loading.style.display='none'}
 function dadosPessoaInformados(n,s,i){return [n,s,i].some(v=>!ehNaoInformado(v))}function listaPessoas(a,prefix){let chave=prefix==='vitima'?'vitimas':'infratores',lista=[];a.forEach(x=>{let n=x[prefix+'_nacionalidade'],sx=x[prefix+'_sexo'],i=x[prefix+'_idade'];if(dadosPessoaInformados(n,sx,i))lista.push({nacionalidade:n,sexo:sx,idade:i});let texto=String(x.observacao_final||''),marca='[[PESSOAS_ENVOLVIDAS]]',pos=texto.indexOf(marca);if(pos>=0)try{let dados=JSON.parse(texto.slice(pos+marca.length));lista.push(...(dados[chave]||[]).filter(pessoa=>dadosPessoaInformados(pessoa.nacionalidade,pessoa.sexo,pessoa.idade)))}catch(_){}});return lista}
 function perfil(a,prefix,chartId,box){let pessoas=listaPessoas(a,prefix),nacs=rank(pessoas,x=>normalizarNacionalidade(x.nacionalidade),20),sex=rank(pessoas,x=>normalizarSexo(x.sexo),8),idades=pessoas.map(x=>num(x.idade)).filter(Boolean),faltNac=pessoas.filter(x=>ehNaoInformado(x.nacionalidade)).length,faltSexo=pessoas.filter(x=>ehNaoInformado(x.sexo)).length,faltIdade=pessoas.filter(x=>ehNaoInformado(x.idade)).length;chart(chartId,'doughnut',sex.map(x=>x[0]),sex.map(x=>x[1]),'Sexo',sex.map(x=>corSexo(x[0])));let linhas=nacs.map(x=>`<tr><td>${esc(x[0])}</td><td>${x[1]}</td></tr>`).join('');$(box).innerHTML=`<table><tr><th>Nacionalidade</th><th>Quantidade</th></tr>${linhas||'<tr><td colspan="2">Sem nacionalidade informada</td></tr>'}<tr><th>Faixa etária</th><td>${idades.length?Math.min(...idades)+' a '+Math.max(...idades)+' anos':'Sem idade informada'}</td></tr><tr><th>Pessoas identificadas</th><td>${pessoas.length}</td></tr><tr><th>Campos pendentes</th><td>Nacionalidade: ${faltNac} · Sexo: ${faltSexo} · Idade: ${faltIdade}</td></tr></table>`}
 async function carregar(){loading.style.display='grid';let calls=[db.rpc('obter_dados_dashboard_territorial',{data_inicio:ini.value,data_fim:fim.value}),db.rpc('obter_tcos_dashboard_territorial',{data_inicio:ini.value,data_fim:fim.value})],temComparacao=comparar.value!=='nenhum',pc=temComparacao?periodoComparado():null;if(temComparacao)calls.push(db.rpc('obter_dados_dashboard_territorial',{data_inicio:pc[0],data_fim:pc[1]}),db.rpc('obter_tcos_dashboard_territorial',{data_inicio:pc[0],data_fim:pc[1]}));let r=await Promise.all(calls);if(r[0].error){loading.textContent='Erro ao carregar: '+r[0].error.message;return}if(r[1].error){loading.textContent='Erro ao carregar TCOs: '+r[1].error.message;return}atual=r[0].data||[];tcosAtual=r[1].data||[];anterior=temComparacao?(r[2].data||[]):[];tcosAnterior=temComparacao?(r[3].data||[]):[];
-  autosCipturAtual=[];autosCipturAnterior=[];abordagensGiroAtual=[];abordagensGiroAnterior=[];
+  autosCipturAtual=[];autosCipturAnterior=[];abordagensGiroAtual=[];abordagensGiroAnterior=[];servicosCavalariaAtual=[];servicosCavalariaAnterior=[];
   if(ehGiro()){
     const fimAtual=fim.value+'T23:59:59.999-04:00';
     let gCalls=[db.from('giro_abordagens').select('id,registrado_em,tipo_abordagem,pessoas,quantidade_pessoas,latitude,longitude,endereco,bairro,municipio').gte('registrado_em',ini.value+'T00:00:00-04:00').lte('registrado_em',fimAtual)];
@@ -344,6 +441,14 @@ async function carregar(){loading.style.display='grid';let calls=[db.rpc('obter_
     if(gr[0].error){loading.textContent='Erro ao carregar abordagens: '+gr[0].error.message;return}
     abordagensGiroAtual=gr[0].data||[];
     abordagensGiroAnterior=temComparacao?(gr[1].data||[]):[];
+  }
+  if(ehCavalaria()){
+    let cCalls=[db.from('cavalaria_servicos_produtividade').select('id,data_servico,hora_inicio,hora_fim,tipo_policiamento,contexto_atividade,localidade,bairro,endereco,numero_documento,comandante,guarnicao,solipedes,viaturas,abordagens_pessoas,abordagens_motos,abordagens_carros,rops_produzidos,veiculos_removidos,foragidos_presos,armas_apreendidas').gte('data_servico',ini.value).lte('data_servico',fim.value)];
+    if(temComparacao)cCalls.push(db.from('cavalaria_servicos_produtividade').select('id,data_servico,hora_inicio,hora_fim,tipo_policiamento,contexto_atividade,localidade,bairro,endereco,numero_documento,comandante,guarnicao,solipedes,viaturas,abordagens_pessoas,abordagens_motos,abordagens_carros,rops_produzidos,veiculos_removidos,foragidos_presos,armas_apreendidas').gte('data_servico',pc[0]).lte('data_servico',pc[1]));
+    const cr=await Promise.all(cCalls);
+    if(cr[0].error){loading.textContent='Erro ao carregar produtividade da Cavalaria: '+cr[0].error.message;return}
+    servicosCavalariaAtual=cr[0].data||[];
+    servicosCavalariaAnterior=temComparacao?(cr[1].data||[]):[];
   }
   if(ehCiptur()){
     let aiCalls=[db.from('ciptur_autos_infracao').select('id,data_infracao,codigo_infracao,descricao_snapshot,gravidade_snapshot,pontos_snapshot,valor_snapshot,valor_texto_snapshot,houve_remocao,tipo_veiculo_removido').gte('data_infracao',ini.value).lte('data_infracao',fim.value)];
@@ -420,5 +525,5 @@ document.querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>{let h=new D
 aplicar.onclick=carregar;filtroTipoSubtracao.onchange=render;aisc.onchange=()=>{sisc.value='';setor.value='';popularTerritorio();render()};sisc.onchange=()=>{setor.value='';popularTerritorio();render()};setor.onchange=render;
 gerarPdf.onclick=()=>location.href='relatorio.html?v=20261002-ciptur-relatorio1&ini='+ini.value+'&fim='+fim.value+'&comparar='+comparar.value+'&sisc='+encodeURIComponent(sisc.value)+'&companhia='+encodeURIComponent(companhia.value);
 let h=new Date();ini.value=fmt(new Date(h.getFullYear(),h.getMonth(),1));fim.value=fmt(h);
-(async()=>{if(window.SistemaAuth?.ready)await window.SistemaAuth.ready;prepararFiltrosAbordagemGiro();configurarModuloCiptur();configurarModuloGiro();let tr=await db.rpc('obter_catalogo_territorial_cpc');if(!tr.error){catalogoTerritorial=tr.data||{};popularTerritorio()}else console.error('Falha ao carregar matriz territorial:',tr.error);carregar()})();
+(async()=>{if(window.SistemaAuth?.ready)await window.SistemaAuth.ready;prepararFiltrosAbordagemGiro();configurarModuloCiptur();configurarModuloGiro();configurarModuloCavalaria();let tr=await db.rpc('obter_catalogo_territorial_cpc');if(!tr.error){catalogoTerritorial=tr.data||{};popularTerritorio()}else console.error('Falha ao carregar matriz territorial:',tr.error);carregar()})();
 </script></body></html>
