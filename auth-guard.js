@@ -40,7 +40,24 @@
 
   function normalizarPerfil(v){return String(v||'').trim().toUpperCase();}
   function normalizarModulo(v){return String(v||'').trim().toUpperCase();}
-  function formatarSiglaUnidade(v){const s=String(v||'').trim();const m=s.match(/^(\d+)BPM$/i);return m?m[1]+'º BPM':s;}
+  function formatarSiglaUnidade(v){const s=String(v||'').trim(),m=s.match(/^(\d+)BPM$/i);if(m)return m[1]+'º BPM';const mapa={FORCA_TATICA:'FORÇA TÁTICA'};return mapa[s.toUpperCase()]||s;}
+  function ordenarUnidadesHierarquia(lista){
+    const itens=[...(lista||[])],ids=new Set(itens.map(u=>String(u.id))),porPai=new Map();
+    itens.forEach(u=>{const k=u.parent_id&&ids.has(String(u.parent_id))?String(u.parent_id):'';if(!porPai.has(k))porPai.set(k,[]);porPai.get(k).push(u);});
+    const ordenar=a=>a.sort((x,y)=>formatarSiglaUnidade(x.sigla).localeCompare(formatarSiglaUnidade(y.sigla),'pt-BR',{numeric:true}));
+    const saida=[];
+    const visitar=(u,nivel)=>{saida.push({...u,_nivel:nivel});ordenar(porPai.get(String(u.id))||[]).forEach(f=>visitar(f,nivel+1));};
+    ordenar(porPai.get('')||[]).forEach(u=>visitar(u,0));
+    return saida;
+  }
+  function rotuloUnidade(u,lista=[]){
+    const sigla=formatarSiglaUnidade(u?.sigla),nome=String(u?.nome||'').trim();
+    const temFilhos=(lista||[]).some(x=>String(x.parent_id||'')===String(u?.id||''));
+    const prefixo=u?._nivel>0?'↳ '.repeat(Math.min(u._nivel,2)):'':'';
+    const nomeNorm=nome.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
+    const siglaNorm=String(sigla||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
+    return prefixo+sigla+(nome&&nomeNorm!==siglaNorm?' — '+nome:'')+(temFilhos?' · CONSOLIDADO':'');
+  }
 
   function pode(perfil,permissao){
     if(!permissao)return true;
@@ -159,7 +176,7 @@
 
     const r=await client.rpc('listar_unidades_contexto_admin');
     if(r.error){console.error('Não foi possível carregar as unidades para o modo administrador:',r.error);return;}
-    const unidades=r.data||[];
+    const unidades=ordenarUnidadesHierarquia(r.data||[]);
     if(!unidades.length)return;
 
     badge.dataset.adminSelector='1';
@@ -176,11 +193,11 @@
 
     const select=document.createElement('select');
     select.setAttribute('aria-label','Unidade de trabalho do administrador');
-    select.style.cssText='width:auto;max-width:min(62vw,310px);border:1px solid #d1dbe4;border-radius:6px;padding:3px 24px 3px 7px;background:#fff;color:#17324a;font:800 10px Inter,Segoe UI,Arial,sans-serif;cursor:pointer';
+    select.style.cssText='width:auto;max-width:min(72vw,520px);border:1px solid #d1dbe4;border-radius:6px;padding:3px 24px 3px 7px;background:#fff;color:#17324a;font:800 10px Inter,Segoe UI,Arial,sans-serif;cursor:pointer';
     unidades.forEach(u=>{
       const op=document.createElement('option');
       op.value=u.id;
-      op.textContent=formatarSiglaUnidade(u.sigla)+(u.nome&&u.nome!==u.sigla?' — '+u.nome:'');
+      op.textContent=rotuloUnidade(u,unidades);
       select.appendChild(op);
     });
     select.value=contextoAtual.unidade_id;
@@ -189,7 +206,7 @@
     detalhe.setAttribute('aria-live','polite');
     detalhe.style.cssText='position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0';
     detalhe.textContent=contextoAtual?.somente_leitura_operacional
-      ? 'Contexto de comando: consulta consolidada. Cadastro e alterações operacionais ficam bloqueados.'
+      ? 'Contexto consolidado: consulta dos descendentes. Cadastro e alterações operacionais ficam bloqueados.'
       : 'Os registros e filtros usam esta unidade como contexto. Sua unidade principal não é alterada.';
 
     select.addEventListener('change',async()=>{

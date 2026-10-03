@@ -43,7 +43,7 @@ const uuidValido = (v: unknown) =>
 async function unidadePorId(unidadeId?: string | null) {
   if (!unidadeId) return null;
   const { data, error } = await admin.from("unidades")
-    .select("id,sigla,nome,ativo")
+    .select("id,sigla,nome,ativo,aceita_registro_operacional,agrega_descendentes")
     .eq("id", unidadeId)
     .maybeSingle();
   if (error) throw error;
@@ -56,6 +56,7 @@ async function validarUnidadeAtiva(unidadeId: unknown) {
   const unidade = await unidadePorId(id);
   if (!unidade) throw new Error("A unidade selecionada não existe.");
   if (unidade.ativo !== true) throw new Error("A unidade selecionada não está ativa.");
+  if (unidade.aceita_registro_operacional !== true) throw new Error("Selecione uma unidade operacional. CPC e BOPE são contextos consolidados somente leitura.");
   return unidade;
 }
 
@@ -99,14 +100,14 @@ async function perfisComUnidades() {
     admin.from("perfis_usuarios")
       .select("user_id,nome,nome_guerra,posto_graduacao,matricula,email,perfil,unidade_id,ativo,senha_temporaria,criado_em")
       .order("nome"),
-    admin.from("unidades").select("id,sigla,nome,ativo").order("sigla"),
+    admin.from("unidades").select("id,sigla,nome,ativo,aceita_registro_operacional,agrega_descendentes").order("sigla"),
   ]);
   if (usersError) throw usersError;
   if (unitsError) throw unitsError;
   const mapa = new Map((todasUnidades || []).map((u: any) => [u.id, u]));
   return {
     users: (users || []).map((u: any) => ({ ...u, unidades: u.unidade_id ? mapa.get(u.unidade_id) || null : null })),
-    units: (todasUnidades || []).filter((u: any) => u.ativo === true),
+    units: (todasUnidades || []).filter((u: any) => u.ativo === true && u.aceita_registro_operacional === true),
   };
 }
 
