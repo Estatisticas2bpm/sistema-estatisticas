@@ -5,7 +5,7 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const read = p => fs.readFileSync(path.join(root, p), 'utf8');
 
-const migration = read('supabase/migrations/20261003173000_fase3w_hierarquia_bope_nomenclatura.sql');
+const migration = read('supabase/migrations/20261003174429_fase3w_hierarquia_bope_nomenclatura.sql');
 const guard = read('auth-guard.js');
 const index = read('index.html');
 const painel = read('dashboard-cpc.html');
