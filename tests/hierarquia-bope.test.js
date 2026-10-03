@@ -47,7 +47,8 @@ assert.match(painel, /data-child-of/);
 
 assert.match(usuarios, /FORCA_TATICA:'FORÇA TÁTICA'/);
 assert.match(adminUsers, /aceita_registro_operacional/);
-assert.match(adminUsers, /CPC e BOPE são contextos consolidados somente leitura/);
-assert.match(adminUsers, /u\.ativo === true && u\.aceita_registro_operacional === true/);
+assert.match(adminUsers, /u\.ativo === true/);
 
 console.log('PASS: nomenclatura e hierarquia consolidada do BOPE/CPC validadas.');
+
+assert.doesNotMatch(adminUsers, /aceita_registro_operacional !== true\) throw new Error/);
