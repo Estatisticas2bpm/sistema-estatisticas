@@ -9,8 +9,8 @@ const dash=ler('dashboard.html');
 const cfg=ler('auth-config.js');
 const index=ler('index.html');
 const mig=ler(path.join('supabase','migrations','20260929195925_fase3q_autos_infracao_ciptur.sql'));
-const migAgentes=ler(path.join('supabase','migrations','20261001131500_fase3t_agentes_autuadores_ciptur.sql'));
-const migAgentesDados=ler(path.join('supabase','migrations','20261001132000_fase3t_b_importar_agentes_transito_pmrr.sql'));
+const migAgentes=ler(path.join('supabase','migrations','20261001125309_fase3t_agentes_autuadores_ciptur.sql'));
+const migAgentesDados=ler(path.join('supabase','migrations','20261001125343_fase3t_b_importar_agentes_transito_pmrr.sql'));
 
 assert.match(cfg,/"autos-infracao\.html":"cadastro"/);
 assert.match(cfg,/"autos-infracao\.html":"AUTOS_INFRACAO"/);

@@ -1,0 +1,37 @@
+name: Validacao SIE-CPC
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Executar testes de contrato
+        shell: bash
+        run: |
+          set -euo pipefail
+          for teste in tests/*.test.js; do
+            echo "TEST $teste"
+            node "$teste"
+          done
+
+      - name: Validar scripts embutidos nas paginas
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t paginas < <(find . -maxdepth 1 -type f -name '*.html' -print | sort)
+          node tests/check-html-scripts.js "${paginas[@]}"

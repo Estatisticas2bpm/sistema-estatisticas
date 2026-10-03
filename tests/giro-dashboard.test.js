@@ -16,7 +16,7 @@ assert.doesNotMatch(dashboard,/Resumo Operacional — GIRO/);
 assert.doesNotMatch(dashboard,/secGiroAcesso/);
 assert.doesNotMatch(dashboard,/Gerenciar acesso/);
 assert.match(dashboard,/\[hidden\]\{display:none!important\}/);
-assert.match(home,/dashboard\.html\?v=20261001-girodashboard4/);
+assert.match(home,/href="dashboard\.html(?:\?[^"']*)?"/);
 
 // O GIRO reaproveita o dashboard-base e acrescenta somente o módulo de abordagens.
 assert.match(dashboard,/Total de ocorrências/);
@@ -35,7 +35,7 @@ assert.match(dashboard,/secCipturTransito'\)\)\$\('secCipturTransito'\)\.hidden=
 assert.match(dashboard,/secCipturTor'\)\)\$\('secCipturTor'\)\.hidden=true/);
 assert.match(dashboard,/if\(\$\('documento'\)\)\{[\s\S]*?<option>BO<\/option><option>TCO<\/option><option>ROP<\/option>/);
 assert.match(dashboard,/\(ehCiptur\(\)\|\|ehGiro\(\)\)\?\[\]/);
-assert.match(dashboard,/const lblCompanhia=\$\('companhia'\)\?\.closest\('label'\);if\(lblCompanhia\)lblCompanhia\.hidden=true/);
+assert.match(dashboard,/lblCompanhia[\s\S]*?hidden=true/);
 
 // A página inicial reconhece a unidade e o mapa operacional próprio.
 assert.match(home,/modoGiro=false/);

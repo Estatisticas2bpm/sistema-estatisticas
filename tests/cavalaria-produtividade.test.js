@@ -6,7 +6,7 @@ const root=path.resolve(__dirname,'..');
 const page=fs.readFileSync(path.join(root,'cavalaria-produtividade.html'),'utf8');
 const auth=fs.readFileSync(path.join(root,'auth-config.js'),'utf8');
 const index=fs.readFileSync(path.join(root,'index.html'),'utf8');
-const migration=fs.readFileSync(path.join(root,'supabase/migrations/20261002154000_fase3u_produtividade_cavalaria.sql'),'utf8');
+const migration=fs.readFileSync(path.join(root,'supabase/migrations/20261002155420_fase3u_produtividade_cavalaria_base.sql'),'utf8');
 
 assert.match(page,/Produtividade da Cavalaria/i);
 assert.match(page,/POLICIAMENTO_MOTORIZADO/);

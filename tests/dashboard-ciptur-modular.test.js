@@ -10,9 +10,10 @@ assert.match(dash,/id="navCiptur"/);
 assert.match(dash,/siglaUnidadeAtiva\(\)==='CIPTUR'/);
 assert.match(dash,/quantidade_autos_infracao/);
 assert.match(dash,/chartCipturAutosMes/);
-assert.match(dash,/tabCipturBairros/);
-assert.match(dash,/tabCipturTurnos/);
-assert.match(dash,/ehCiptur\(\)\?\[\]:\[\['Autos de infração'/);
+assert.match(dash,/tabCipturInfracoes/);
+assert.match(dash,/id="secCipturTor" hidden/);
+assert.match(dash,/chartCipturTorMes/);
+assert.match(dash,/\(ehCiptur\(\)\|\|ehGiro\(\)\)\?\[\]:\[\['Autos de infração'/);
 assert.match(dash,/aiscDaUnidade/);
 
 console.log('Dashboard CIPTUR modular validado.');

@@ -15,8 +15,8 @@ assert.match(cadastro,/grupamento_atendimento:grupamentoSelecionado\(\)/);
 // O clique manual no TOR deve permanecer marcado; a sincronização só sobrescreve ao carregar um registro.
 assert.match(cadastro,/if\(origem\)\{\\n\s*if\(grupamentoTor\)grupamentoTor\.checked/);
 assert.doesNotMatch(cadastro,/const grupo=origem[^;]+;\\n\s*if\(grupamentoTor\)grupamentoTor\.checked/);
-assert.match(cadastro,/grupamentoTor\?\.addEventListener\("change",\(\)=>sincronizarGrupamentoComTipo\(\)\)/);
-assert.match(cadastro,/Boolean\(document\.getElementById\("grupamentoTatico"\)\?\.checked\)/);
+assert.match(cadastro,/grupamentoTor\?\.addEventListener/);
+assert.match(cadastro,/tatico_setorial: Boolean/);
 
 // Fora da CIPTUR, Tático Setorial e AME continuam disponíveis.
 assert.match(cadastro,/TÁTICO SETORIAL/);

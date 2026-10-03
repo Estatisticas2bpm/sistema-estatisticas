@@ -50,7 +50,7 @@ assert.doesNotMatch(giro,/VTR AME/);
 assert.doesNotMatch(giro,/PR6/);
 assert.doesNotMatch(giro,/PROGRAMAS DE PREVENÇÃO À CRIMINALIDADE/);
 
-assert.match(report,/if\(ehGiroRel\(\)\)\{[\s\S]*?siscWrap[\s\S]*?companhiaWrap/);
-assert.match(dashboard,/relatorio\.html\?v=20261001-girorel2/);
+assert.match(report,/if\(ehGiroRel\(\)\|\|ehCipturRel\(\)\)\{[\s\S]*?siscWrap[\s\S]*?companhiaWrap/);
+assert.match(dashboard,/relatorio\.html\?v=[^&"']+/);
 
 console.log('GIRO: relatório estatístico específico validado.');

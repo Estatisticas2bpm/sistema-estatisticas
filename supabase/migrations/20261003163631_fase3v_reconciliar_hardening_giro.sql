@@ -1,5 +1,12 @@
-drop policy if exists "auth_unidades_select_giro_abordagem" on public.unidades;
-create policy "auth_unidades_select_giro_abordagem"
+-- Reconcilia hardening do fluxo GIRO que já estava ativo no banco,
+-- consolidando as três correções históricas em uma migration oficial.
+
+grant select, insert, update
+on public.giro_acessos_abordagem
+to service_role;
+
+drop policy if exists auth_unidades_select_giro_abordagem on public.unidades;
+create policy auth_unidades_select_giro_abordagem
 on public.unidades
 for select
 to authenticated
@@ -102,3 +109,21 @@ $$;
 revoke all on function public.registrar_abordagem_giro(text,jsonb,double precision,double precision,real,text,text,text) from public;
 revoke all on function public.registrar_abordagem_giro(text,jsonb,double precision,double precision,real,text,text,text) from anon;
 grant execute on function public.registrar_abordagem_giro(text,jsonb,double precision,double precision,real,text,text,text) to authenticated;
+
+grant update (endereco, bairro, municipio)
+on public.giro_abordagens
+to authenticated;
+
+drop policy if exists giro_abordagens_update_local_estatistica on public.giro_abordagens;
+create policy giro_abordagens_update_local_estatistica
+on public.giro_abordagens
+for update
+to authenticated
+using (
+  unidade_id = private.unidade_atual()
+  and private.perfil_atual() in ('ADMIN','ESTATISTICA')
+)
+with check (
+  unidade_id = private.unidade_atual()
+  and private.perfil_atual() in ('ADMIN','ESTATISTICA')
+);

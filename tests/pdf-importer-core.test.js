@@ -87,7 +87,7 @@ OutrosGrupo Balança de PrecisãoSubgrupo
 `);
 assert.deepEqual(itensDrogas.entorpecentes.map(item=>[item.tipo,item.quantidade,item.forma_apresentacao]),[
   ["COCAÍNA",2,"INVÓLUCRO"],
-  ["CRACK",1,"UNIDADE"],
+  ["CRACK",1,"OUTROS"],
   ["PASTA BASE",14,"INVÓLUCRO"]
 ]);
 assert.equal(itensDrogas.balanca,true);

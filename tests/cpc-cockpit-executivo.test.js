@@ -11,6 +11,7 @@ const migrations = fs.readdirSync(path.join(raiz, 'supabase', 'migrations'))
 
 assert.equal(migrations.length, 1, 'deve existir uma única migration da Fase 3L');
 const sql = ler(path.join('supabase', 'migrations', migrations[0]));
+const territorial = ler(path.join('supabase', 'migrations', '20260928230846_fase3m_c_painel_cpc_territorial.sql'));
 
 assert.match(index, /Panorama Operacional do CPC/);
 assert.match(index, /id="cpcUnidadesPanel"/);
@@ -30,13 +31,14 @@ assert.match(painel, /id="bairro"/);
 assert.match(painel, /id="sisc"/);
 assert.match(painel, /id="companhia"/);
 assert.match(painel, /id="turno"/);
-assert.match(painel, /obter_painel_cpc_filtrado/);
+assert.match(painel, /obter_painel_cpc_territorial/);
 assert.match(painel, /Principais bairros/);
 assert.match(painel, /Leitura executiva do período/);
 
 assert.match(sql, /create or replace function public\.obter_home_cpc/i);
 assert.match(sql, /create or replace function public\.obter_mapa_cpc/i);
 assert.match(sql, /create or replace function public\.obter_painel_cpc_filtrado/i);
+assert.match(territorial, /create or replace function public\.obter_painel_cpc_territorial/i);
 assert.match(sql, /private\.unidade_atual\(\)/i);
 assert.match(sql, /u\.tipo='COMANDO'/i);
 assert.match(sql, /join descendentes d on d\.id=o\.unidade_id/i);
