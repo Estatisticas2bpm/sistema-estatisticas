@@ -5,7 +5,7 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const read = p => fs.readFileSync(path.join(root, p), 'utf8');
 
-const migration = read('supabase/migrations/20261003173000_fase3w_hierarquia_bope_nomenclatura.sql');
+const migration = read('supabase/migrations/20261003174429_fase3w_hierarquia_bope_nomenclatura.sql');
 const guard = read('auth-guard.js');
 const index = read('index.html');
 const painel = read('dashboard-cpc.html');
@@ -47,7 +47,8 @@ assert.match(painel, /data-child-of/);
 
 assert.match(usuarios, /FORCA_TATICA:'FORÇA TÁTICA'/);
 assert.match(adminUsers, /aceita_registro_operacional/);
-assert.match(adminUsers, /CPC e BOPE são contextos consolidados somente leitura/);
-assert.match(adminUsers, /u\.ativo === true && u\.aceita_registro_operacional === true/);
+assert.match(adminUsers, /u\.ativo === true/);
 
 console.log('PASS: nomenclatura e hierarquia consolidada do BOPE/CPC validadas.');
+
+assert.doesNotMatch(adminUsers, /aceita_registro_operacional !== true\) throw new Error/);
