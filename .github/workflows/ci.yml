@@ -29,6 +29,16 @@ jobs:
             node "$teste"
           done
 
+      - name: Validar JavaScript externo
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t scripts < <(find . -maxdepth 1 -type f -name '*.js' -print | sort)
+          for script in "${scripts[@]}"; do
+            echo "CHECK $script"
+            node --check "$script"
+          done
+
       - name: Validar scripts embutidos nas paginas
         shell: bash
         run: |

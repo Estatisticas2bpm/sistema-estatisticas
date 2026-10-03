@@ -53,7 +53,7 @@
   function rotuloUnidade(u,lista=[]){
     const sigla=formatarSiglaUnidade(u?.sigla),nome=String(u?.nome||'').trim();
     const temFilhos=(lista||[]).some(x=>String(x.parent_id||'')===String(u?.id||''));
-    const prefixo=u?._nivel>0?'↳ '.repeat(Math.min(u._nivel,2)):'':'';
+    const prefixo=u?._nivel>0?'↳ '.repeat(Math.min(u._nivel,2)):'';
     const nomeNorm=nome.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
     const siglaNorm=String(sigla||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
     return prefixo+sigla+(nome&&nomeNorm!==siglaNorm?' — '+nome:'')+(temFilhos?' · CONSOLIDADO':'');
