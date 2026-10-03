@@ -35,7 +35,7 @@ assert.match(edge, /A unidade selecionada não está ativa/);
 assert.match(edge, /await validarUnidadeAtiva\(unidadeId\)/);
 assert.match(edge, /await validarUnidadeAtiva\(alvo\.unidade_id\)/);
 assert.match(edge, /perfilCaller\.unidades\?\.ativo !== true/);
-assert.match(edge, /\.filter\(\(u: any\) => u\.ativo === true && u\.aceita_registro_operacional === true\)/);
+assert.match(edge, /\.filter\(\(u: any\) => u\.ativo === true\)/);
 
 assert.doesNotMatch(usuarios, /prompt\(['"]ID da unidade/i);
 assert.match(usuarios, /id="modalEditar"/);
