@@ -56,7 +56,6 @@ async function validarUnidadeAtiva(unidadeId: unknown) {
   const unidade = await unidadePorId(id);
   if (!unidade) throw new Error("A unidade selecionada não existe.");
   if (unidade.ativo !== true) throw new Error("A unidade selecionada não está ativa.");
-  if (unidade.aceita_registro_operacional !== true) throw new Error("Selecione uma unidade operacional. CPC e BOPE são contextos consolidados somente leitura.");
   return unidade;
 }
 
@@ -107,7 +106,7 @@ async function perfisComUnidades() {
   const mapa = new Map((todasUnidades || []).map((u: any) => [u.id, u]));
   return {
     users: (users || []).map((u: any) => ({ ...u, unidades: u.unidade_id ? mapa.get(u.unidade_id) || null : null })),
-    units: (todasUnidades || []).filter((u: any) => u.ativo === true && u.aceita_registro_operacional === true),
+    units: (todasUnidades || []).filter((u: any) => u.ativo === true),
   };
 }
 
