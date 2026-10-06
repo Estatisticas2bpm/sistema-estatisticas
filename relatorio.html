@@ -52,6 +52,67 @@ function escopoTerritorial(){return [sisc.value,companhia.options[companhia.sele
 function filtrarTerritorio(base){return base.filter(x=>(!sisc.value||x.sisc===sisc.value)&&(!companhia.value||x.companhia===companhia.value))}
 function page(title,body){const periodo=periodoRelatorio(ini.value,fim.value);return`<section class="page"><div class="internal-head">${periodo.titulo}<br>${escopoTerritorial()}<br>${E(unidadeRel().nome).toUpperCase()}</div>${title?`<h2 class="title">${title}</h2>`:''}${body}<div class="footer"></div></section>`}
 function spec(text){let parts=S(text).split(/[;,]/).map(x=>x.trim()).filter(Boolean),m={};parts.forEach(x=>m[x]=(m[x]||0)+1);return Object.entries(m).sort((a,b)=>b[1]-a[1])}
+function chaveEstatisticaRel(v){return S(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[—–-]+/g,' ').replace(/[^A-Z0-9ºª ]+/g,' ').replace(/\s+/g,' ').trim()}
+function normalizarNacionalidadeRel(v){
+  if(ehNaoInformadoRel(v))return 'NÃO INFORMADA';
+  const original=S(v),k=chaveEstatisticaRel(original);
+  if(/^(BR|BRA)( |$)/.test(k)||k.includes('BRASIL'))return 'BR — BRASILEIRA';
+  if(/^(VE|VEN)( |$)/.test(k)||k.includes('VENEZUEL'))return 'VE — VENEZUELANA';
+  if(/^(GY|GUI)( |$)/.test(k)||k.includes('GUYANA')||k.includes('GUIANA'))return 'GY — GUIANENSE';
+  if(/^(SR)( |$)/.test(k)||k.includes('SURINAME'))return 'SR — SURINAME';
+  if(/^(CU)( |$)/.test(k)||k.includes('CUBA'))return 'CU — CUBANA';
+  return original.toUpperCase();
+}
+function normalizarSexoRel(v){
+  if(ehNaoInformadoRel(v))return 'NÃO INFORMADO';
+  const k=chaveEstatisticaRel(v);
+  if(['M','MASC','MASCULINO','HOMEM'].includes(k))return 'M';
+  if(['F','FEM','FEMININO','MULHER'].includes(k))return 'F';
+  if(['O','OUTRO','OUTROS'].includes(k))return 'OUTRO';
+  return S(v).toUpperCase();
+}
+function tipoArmaBrancaRel(v){
+  const k=chaveEstatisticaRel(v);
+  if(!k)return 'NÃO ESPECIFICADA';
+  if(k.includes('FACAO'))return 'FACÃO';
+  if(k.includes('CANIVETE'))return 'CANIVETE';
+  if(k.includes('CUTELO'))return 'CUTELO';
+  if(k.includes('PUNHAL'))return 'PUNHAL';
+  if(k.includes('MACHADO'))return 'MACHADO';
+  if(k.includes('FOICE'))return 'FOICE';
+  if(k.includes('ESTILETE'))return 'ESTILETE';
+  if(k.includes('TESOURA'))return 'TESOURA';
+  if(k.includes('SOCO INGLES')||k.includes('SOQUEIRA'))return 'SOCO INGLÊS';
+  if(k.includes('FACA')||(k.includes('ARMA BRANCA')&&k.includes('CABO')))return 'FACA';
+  if(k.includes('ARMA BRANCA'))return 'NÃO ESPECIFICADA';
+  return 'NÃO ESPECIFICADA';
+}
+function quantidadeArmaBrancaRel(o){
+  const q=N(o?.quantidade_arma_branca);if(q>0)return q;
+  const k=chaveEstatisticaRel(o?.arma_branca);if(!k)return 0;
+  let m=k.match(/(?:QUANTIDADE|QTD)\s*(\d{1,2})\b/)||k.match(/\b(\d{1,2})\s+UNIDADES?\b/);
+  if(m)return Number(m[1])||0;
+  if(/\b(DUAS|DOIS)\b/.test(k))return 2;
+  if(/\b(TRES)\b/.test(k))return 3;
+  if(/\b(QUATRO)\b/.test(k))return 4;
+  return 1;
+}
+function armasBrancasAgrupadasRel(registros){
+  const m={};(registros||[]).forEach(o=>{const q=quantidadeArmaBrancaRel(o);if(q<=0)return;const tipo=tipoArmaBrancaRel(o.arma_branca);m[tipo]=(m[tipo]||0)+q});
+  const itens=Object.entries(m).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],'pt-BR'));
+  return{itens,total:itens.reduce((s,x)=>s+x[1],0)};
+}
+function chaveComandanteRel(v){return chaveEstatisticaRel(v).replace(/\b(1|2|3)\s+SGT\b/g,'$1º SGT')}
+function rotuloComandanteRel(v){return S(v).replace(/\s+/g,' ').trim().toUpperCase()}
+function comandantesAgrupadosRel(registros){
+  const m=new Map();
+  (registros||[]).forEach(o=>{if(ehNaoInformadoRel(o.comandante))return;const chave=chaveComandanteRel(o.comandante);if(!chave)return;let item=m.get(chave);if(!item){item={nome:rotuloComandanteRel(o.comandante),registros:[],rotulos:{}};m.set(chave,item)}item.registros.push(o);const r=rotuloComandanteRel(o.comandante);item.rotulos[r]=(item.rotulos[r]||0)+1});
+  return[...m.values()].map(x=>{x.nome=Object.entries(x.rotulos).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],'pt-BR'))[0]?.[0]||x.nome;return x}).sort((a,b)=>b.registros.length-a.registros.length||a.nome.localeCompare(b.nome,'pt-BR'));
+}
+function metricasComandanteRel(g){
+  const ar=totaisCategoriasArmasRel(g);
+  return{ocorrencias:g.length,armas_fogo:ar.fogo,simulacros:ar.simulacro,legado:ar.legado,municoes:totalEstruturadoOuLegado(g,'municoes_itens','quantidade_municoes'),veiculos:sum(g,'veiculos_recuperados'),foragidos_descumprimento:sum(g,'foragidos')+g.filter(y=>S(y.ocorrencia).toUpperCase().includes('DESCUMPRIMENTO')).length,entorpecentes:g.filter(temEntorpecente).length};
+}
 function formaVisualEntorpecente(item){let v=String(item?.forma_apresentacao||item?.forma||item?.unidade||'').trim();if(!v)return '';let k=S(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();if(k==='G'||k==='KG'||k.includes('GRAMA')||k.includes('QUILOGRAMA')||k.includes('MILIGRAMA'))return '';return v}
 function tipoEntorpecente(item){return S(item?.tipo)||'TIPO NÃO INFORMADO'}
 function tiposEntorpecentesOcorrencia(o){let tipos=new Set(),itens=Array.isArray(o.entorpecentes_itens)?o.entorpecentes_itens:[];itens.forEach(i=>{if(N(i.quantidade)>0)tipos.add(tipoEntorpecente(i))});[['MACONHA','maconha'],['COCAÍNA','cocaina'],['PASTA BASE','pasta_base'],['CRACK','crack'],['SKANK','skank']].forEach(([tipo,c])=>{if(N(o[c])>0)tipos.add(tipo)});if(!tipos.size&&S(o.entorpecentes)==='SIM')tipos.add('TIPO NÃO INFORMADO');return[...tipos]}
@@ -64,7 +125,7 @@ function detalhesArmasRel(registros){let m={};registros.forEach(o=>{let itens=Ar
 function detalhesMunicoesRel(registros){let m={};registros.forEach(o=>{let itens=Array.isArray(o.municoes_itens)?o.municoes_itens:[];if(itens.length)itens.forEach(i=>{let k=i.calibre?'Calibre '+S(i.calibre):'Calibre não informado';m[k]=(m[k]||0)+N(i.quantidade)});else if(N(o.quantidade_municoes)>0){let k=S(o.municoes)||'Calibre não informado';m[k]=(m[k]||0)+N(o.quantidade_municoes)}});return Object.entries(m).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1])}
 function ocorrenciaComArmasOuMunicoes(o){return totalEstruturadoOuLegado([o],'armas_itens','quantidade_armas')+totalEstruturadoOuLegado([o],'municoes_itens','quantidade_municoes')>0}
 function docsComTco(registros,tcos){let m=Object.fromEntries(rank(registros,'tipo_registro'));m.TCO=(m.TCO||0)+tcos.length;return Object.entries(m).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]))}
-function pessoaRelTemDado(p){return [p?.nacionalidade,p?.sexo,p?.idade].some(v=>!ehNaoInformadoRel(v))}function pessoasRelatorio(d,prefix){let chave=prefix==='vitima'?'vitimas':'infratores',lista=[];d.forEach(x=>{let principal={nacionalidade:x[prefix+'_nacionalidade'],sexo:x[prefix+'_sexo'],idade:x[prefix+'_idade']};if(pessoaRelTemDado(principal))lista.push(principal);let texto=String(x.observacao_final||''),marca='[[PESSOAS_ENVOLVIDAS]]',pos=texto.indexOf(marca);if(pos>=0)try{let dados=JSON.parse(texto.slice(pos+marca.length));lista.push(...(dados[chave]||[]).filter(pessoaRelTemDado))}catch(_){}});return lista}function comboRows(d,prefix,status){let m={},pessoas=pessoasRelatorio(d,prefix);pessoas.forEach(p=>{let c=ehNaoInformadoRel(p.nacionalidade)?'NÃO INFORMADA':S(p.nacionalidade),sx=ehNaoInformadoRel(p.sexo)?'NÃO INFORMADO':S(p.sexo),k=c+'|'+sx;m[k]=(m[k]||0)+1});let rows=Object.entries(m).sort((a,b)=>b[1]-a[1]).map((x,i)=>{let[c,sx]=x[0].split('|');return`<tr><td>${i+1}</td><td>${status}</td><td>${E(c)}</td><td>${E(sx)}</td><td>${x[1]}</td></tr>`});return{rows,total:pessoas.length}}
+function pessoaRelTemDado(p){return [p?.nacionalidade,p?.sexo,p?.idade].some(v=>!ehNaoInformadoRel(v))}function pessoasRelatorio(d,prefix){let chave=prefix==='vitima'?'vitimas':'infratores',lista=[];d.forEach(x=>{let principal={nacionalidade:x[prefix+'_nacionalidade'],sexo:x[prefix+'_sexo'],idade:x[prefix+'_idade']};if(pessoaRelTemDado(principal))lista.push(principal);let texto=String(x.observacao_final||''),marca='[[PESSOAS_ENVOLVIDAS]]',pos=texto.indexOf(marca);if(pos>=0)try{let dados=JSON.parse(texto.slice(pos+marca.length));lista.push(...(dados[chave]||[]).filter(pessoaRelTemDado))}catch(_){}});return lista}function comboRows(d,prefix,status){let m={},pessoas=pessoasRelatorio(d,prefix);pessoas.forEach(p=>{let c=normalizarNacionalidadeRel(p.nacionalidade),sx=normalizarSexoRel(p.sexo),k=c+'|'+sx;m[k]=(m[k]||0)+1});let rows=Object.entries(m).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],'pt-BR')).map((x,i)=>{let[c,sx]=x[0].split('|');return`<tr><td>${i+1}</td><td>${status}</td><td>${E(c)}</td><td>${E(sx)}</td><td>${x[1]}</td></tr>`});return{rows,total:pessoas.length}}
 
 
 function tipoAbordagemRel(v){return v==='A_PE'?'A PÉ':v==='MOTO'?'MOTOCICLETA':v==='VEICULO'?'VEÍCULO':S(v)||'NI'}
@@ -320,7 +381,7 @@ async function buildCiptur(){
   },80);
 }
 
-async function build(){if(ehGiroRel())return buildGiro();if(ehCipturRel())return buildCiptur();$('document').innerHTML='<div class="notice">Consultando banco de dados...</div>';const periodo=periodoRelatorio(ini.value,fim.value);document.title='SIE-CPC - '+unidadeRel().sigla+' - '+periodo.arquivo+' - '+escopoTerritorial();let cr=comparisonRange(),res=await Promise.all([db.rpc('obter_dados_dashboard',{data_inicio:ini.value,data_fim:fim.value}),db.rpc('obter_dados_dashboard',{data_inicio:cr[0],data_fim:cr[1]}),eh2BpmRel()?Promise.resolve({data:[],error:null}):db.rpc('obter_acoes_preventivas',{data_inicio:ini.value,data_fim:fim.value}),db.rpc('obter_tcos_dashboard',{data_inicio:ini.value,data_fim:fim.value}),db.rpc('obter_tcos_dashboard',{data_inicio:cr[0],data_fim:cr[1]})]);if(res[0].error){$('document').innerHTML='<div class="notice">Erro: '+E(res[0].error.message)+'</div>';return}let d=filtrarTerritorio(res[0].data||[]),old=filtrarTerritorio(res[1].data||[]),actions=res[2].data||[],tcos=filtrarTerritorio(res[3].data||[]),tcosOld=filtrarTerritorio(res[4].data||[]),docs=docsComTco(d,tcos),occ=rank(d,x=>x.ocorrencia||x.crime),hoods=rank(d,'bairro'),hoodOld=Object.fromEntries(rank(old,'bairro')),cmds=rank(d,'comandante'),days=['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'],shifts=['MADRUGADA','MANHÃ','TARDE','NOITE'];
+async function build(){if(ehGiroRel())return buildGiro();if(ehCipturRel())return buildCiptur();$('document').innerHTML='<div class="notice">Consultando banco de dados...</div>';const periodo=periodoRelatorio(ini.value,fim.value);document.title='SIE-CPC - '+unidadeRel().sigla+' - '+periodo.arquivo+' - '+escopoTerritorial();let cr=comparisonRange(),res=await Promise.all([db.rpc('obter_dados_dashboard',{data_inicio:ini.value,data_fim:fim.value}),db.rpc('obter_dados_dashboard',{data_inicio:cr[0],data_fim:cr[1]}),eh2BpmRel()?Promise.resolve({data:[],error:null}):db.rpc('obter_acoes_preventivas',{data_inicio:ini.value,data_fim:fim.value}),db.rpc('obter_tcos_dashboard',{data_inicio:ini.value,data_fim:fim.value}),db.rpc('obter_tcos_dashboard',{data_inicio:cr[0],data_fim:cr[1]})]);if(res[0].error){$('document').innerHTML='<div class="notice">Erro: '+E(res[0].error.message)+'</div>';return}let d=filtrarTerritorio(res[0].data||[]),old=filtrarTerritorio(res[1].data||[]),actions=res[2].data||[],tcos=filtrarTerritorio(res[3].data||[]),tcosOld=filtrarTerritorio(res[4].data||[]),docs=docsComTco(d,tcos),occ=rank(d,x=>x.ocorrencia||x.crime),hoods=rank(d,'bairro'),hoodOld=Object.fromEntries(rank(old,'bairro')),days=['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'],shifts=['MADRUGADA','MANHÃ','TARDE','NOITE'];
 let marcaCapa=ehCipturRel()?'<img class="cover-brand-ciptur" src="'+logoCipturPdf+'" alt="Brasão da CIPTUR">':eh2BpmRel()?'<img src="'+logo2BpmPdf+'" alt="Brasão do 2º BPM">':'<div class="cover-brand">SIE-CPC</div>';
 let cover=`<section class="page cover"><div class="cover-top"><img src="brasao-pmrr.png"><div>ESTADO DE RORAIMA<br>POLÍCIA MILITAR DE RORAIMA<br>COMANDO DE POLICIAMENTO DA CAPITAL - CPC<br>${E(unidadeRel().nome).toUpperCase()}<br>“Amazônia: Patrimônio dos Brasileiros”</div>${marcaCapa}</div><div class="cover-title"><h1>RELATÓRIO DE ANÁLISE DE DADOS ESTATÍSTICOS</h1><h2>${periodo.titulo}</h2><h3>${escopoTerritorial()}</h3></div><div class="cover-bottom">BOA VISTA - RR<br><br>${periodo.anos}</div></section>`;
 
@@ -337,8 +398,13 @@ let p5=page('',`<h3 class="subtitle">GRÁFICO DOS PRINCIPAIS BAIRROS</h3><div cl
 let inf=comboRows(d,'infrator','Infrator'),vit=comboRows(d,'vitima','Vítima');let p7=page('',`<h3 class="subtitle">INFORMAÇÕES SOBRE O NÚMERO DE INFRATORES POR NACIONALIDADE</h3>${table(['ITEM','STATUS','PAÍS DE ORIGEM','SEXO','FREQUÊNCIA'],inf.rows,`<tr class="total"><td colspan="4">TOTAL</td><td>${inf.total}</td></tr>`)}<h3 class="subtitle">INFORMAÇÕES SOBRE O NÚMERO DE VÍTIMAS POR NACIONALIDADE</h3>${table(['ITEM','STATUS','PAÍS DE ORIGEM','SEXO','FREQUÊNCIA'],vit.rows,`<tr class="total"><td colspan="4">TOTAL</td><td>${vit.total}</td></tr>`)}`);
 let acts=[['CONDUÇÕES',sum(d,'conducoes_operacionais')],['ORIENTAÇÕES',sum(d,'orientacoes')],['FORAGIDOS CAPTURADOS (MANDADO DE PRISÃO)',sum(d,'foragidos')],['INFRATORES EM DESCUMPRIMENTO DE CAUTELARES',d.filter(x=>S(x.ocorrencia).includes('DESCUMPRIMENTO')).length],['OCORRÊNCIAS COM ARMAS / SIMULACROS / MUNIÇÕES',d.filter(ocorrenciaComArmasOuMunicoes).length],['OCORRÊNCIAS COM APREENSÕES DE DROGAS',d.filter(temEntorpecente).length],['OCORRÊNCIAS COM VEÍCULOS RECUPERADOS',d.filter(x=>N(x.veiculos_recuperados)>0).length],['VEÍCULOS COM RESTRIÇÃO APREENDIDOS',sum(d,'veiculos_restricao')],['OCORRÊNCIAS DO TÁTICO SETORIAL - ÁREA OESTE',d.filter(x=>x.tatico_setorial===true).length]];let weapons=detalhesArmasRel(d),ammo=detalhesMunicoesRel(d),entInc=incidenciaEntorpecentes(d),entMat=materiaisEntorpecentes(d);let p8=page('3. INFORMAÇÕES GERAIS SOBRE ATUAÇÕES DA UNIDADE',`<h3 class="subtitle">RESUMO DAS ATUAÇÕES DA UNIDADE</h3>${table(['ESPECIFICAÇÃO','QUANTIDADE'],acts.map(x=>`<tr><td>${x[0]}</td><td>${x[1]}</td></tr>`))}<h3 class="subtitle">APREENSÕES DE ARMAS DE FOGO / FABRICAÇÃO CASEIRA / SIMULACROS / CARREGADORES</h3>${table(['ESPECIFICAÇÃO','QUANTIDADE'],weapons.map(x=>`<tr><td>${E(x[0])}</td><td>${x[1]}</td></tr>`),`<tr class="total"><td>TOTAL</td><td>${totalEstruturadoOuLegado(d,'armas_itens','quantidade_armas')}</td></tr>`)}<h3 class="subtitle">APREENSÕES DE MUNIÇÕES</h3>${table(['ESPECIFICAÇÃO','QUANTIDADE'],ammo.map(x=>`<tr><td>${E(x[0])}</td><td>${x[1]}</td></tr>`),`<tr class="total"><td>TOTAL</td><td>${totalEstruturadoOuLegado(d,'municoes_itens','quantidade_municoes')}</td></tr>`)}`);
 let pEnt=page('',`<h3 class="subtitle">ENTORPECENTES — INCIDÊNCIA POR OCORRÊNCIA</h3>${table(['TIPO','OCORRÊNCIAS'],entInc.map(x=>`<tr><td>${E(x[0])}</td><td>${x[1]}</td></tr>`),`<tr class="total"><td>TOTAL DE OCORRÊNCIAS COM ENTORPECENTES</td><td>${d.filter(temEntorpecente).length}</td></tr>`)}<h3 class="subtitle">ENTORPECENTES — MATERIAIS REGISTRADOS POR APRESENTAÇÃO</h3>${table(['TIPO','FORMA DE APRESENTAÇÃO','QUANTIDADE'],entMat.map(x=>`<tr><td>${E(x[0])}</td><td>${E(x[1])}</td><td>${x[2]}</td></tr>`))}<p class="source">A quantidade física é apresentada somente pela forma visual registrada na ocorrência; não são utilizados pesos ou medidas.</p>`);
-let white=spec(d.map(x=>x.arma_branca).filter(Boolean).join(';'));let p9=page('',`<h3 class="subtitle">APREENSÕES DE ARMA BRANCA</h3>${table(['ESPECIFICAÇÃO','QUANTIDADE'],white.map(x=>`<tr><td>${E(x[0])}</td><td>${x[1]}</td></tr>`),`<tr class="total"><td>TOTAL</td><td>${sum(d,'quantidade_arma_branca')}</td></tr>`)}<h3 class="subtitle">AUTO DE INFRAÇÃO DE TRÂNSITO / AUTO DE REMOÇÃO</h3>${table(['ESPECIFICAÇÃO','QUANTIDADE'],[["INFRAÇÃO DE TRÂNSITO",sum(d,'quantidade_autos_infracao')],["AUTO DE REMOÇÃO",d.filter(x=>S(x.auto_infracao).includes('REMO')).length]].map(x=>`<tr><td>${x[0]}</td><td>${x[1]}</td></tr>`),`<tr class="total"><td>TOTAL</td><td>${sum(d,'quantidade_autos_infracao')}</td></tr>`)}<h3 class="subtitle">AUTO DE RESISTÊNCIA</h3>${table(['ESPECIFICAÇÃO','QUANTIDADE'],[['AUTO DE RESISTÊNCIA',d.filter(x=>S(x.auto_resistencia)==='SIM').length]].map(x=>`<tr><td>${x[0]}</td><td>${x[1]}</td></tr>`))}<h3 class="subtitle">OCORRÊNCIAS POR COMANDANTES DE VIATURAS</h3>`);
-let cmdRows=cmds.map((x,i)=>{let g=d.filter(y=>S(y.comandante)===x[0]),ar=totaisCategoriasArmasRel(g);return`<tr><td>${i+1}</td><td>${E(x[0])}</td><td>${x[1]}</td><td>${ar.fogo}</td><td>${ar.simulacro}</td><td>${ar.legado}</td><td>${totalEstruturadoOuLegado(g,'municoes_itens','quantidade_municoes')}</td><td>${sum(g,'veiculos_recuperados')}</td><td>${sum(g,'foragidos')+g.filter(y=>S(y.ocorrencia).includes('DESCUMPRIMENTO')).length}</td><td>${g.filter(temEntorpecente).length}</td></tr>`}),cmdChunks=[];for(let i=0;i<cmdRows.length;i+=27)cmdChunks.push(cmdRows.slice(i,i+27));let cmdPages=cmdChunks.map((chunk,i)=>page('',`<h3 class="subtitle">OCORRÊNCIAS POR COMANDANTES DE VIATURAS ${i?'(CONTINUAÇÃO)':''}</h3>${table(['ITEM','CMT. DE VTR.','OCORRÊNCIAS','ARMAS DE FOGO','SIMULACROS','NÃO CLASSIF. (LEGADO)','MUNIÇÕES','VEÍCULOS','FORAGIDOS/DESCUMPRIMENTO','ENTORPECENTES'],chunk,i===cmdChunks.length-1?(()=>{let ar=totaisCategoriasArmasRel(d);return`<tr class="total"><td colspan="2">TOTAL</td><td>${d.length}</td><td>${ar.fogo}</td><td>${ar.simulacro}</td><td>${ar.legado}</td><td>${totalEstruturadoOuLegado(d,'municoes_itens','quantidade_municoes')}</td><td>${sum(d,'veiculos_recuperados')}</td><td>${sum(d,'foragidos')}</td><td>${d.filter(temEntorpecente).length}</td></tr>`})():'')}`)).join('');
+let white=armasBrancasAgrupadasRel(d);let p9=page('',`<h3 class="subtitle">APREENSÕES DE ARMA BRANCA</h3>${table(['ESPECIFICAÇÃO','QUANTIDADE'],white.itens.map(x=>`<tr><td>${E(x[0])}</td><td>${x[1]}</td></tr>`),`<tr class="total"><td>TOTAL</td><td>${white.total}</td></tr>`)}<h3 class="subtitle">AUTO DE INFRAÇÃO DE TRÂNSITO / AUTO DE REMOÇÃO</h3>${table(['ESPECIFICAÇÃO','QUANTIDADE'],[["INFRAÇÃO DE TRÂNSITO",sum(d,'quantidade_autos_infracao')],["AUTO DE REMOÇÃO",d.filter(x=>S(x.auto_infracao).includes('REMO')).length]].map(x=>`<tr><td>${x[0]}</td><td>${x[1]}</td></tr>`),`<tr class="total"><td>TOTAL</td><td>${sum(d,'quantidade_autos_infracao')}</td></tr>`)}<h3 class="subtitle">AUTO DE RESISTÊNCIA</h3>${table(['ESPECIFICAÇÃO','QUANTIDADE'],[['AUTO DE RESISTÊNCIA',d.filter(x=>S(x.auto_resistencia)==='SIM').length]].map(x=>`<tr><td>${x[0]}</td><td>${x[1]}</td></tr>`))}`);
+let cmdData=comandantesAgrupadosRel(d).map(x=>({nome:x.nome,...metricasComandanteRel(x.registros)}));
+let cmdDefs=[['ocorrencias','OCORRÊNCIAS',true],['armas_fogo','ARMAS DE FOGO'],['simulacros','SIMULACROS'],['legado','NÃO CLASSIF. (LEGADO)'],['municoes','MUNIÇÕES'],['veiculos','VEÍCULOS'],['foragidos_descumprimento','FORAGIDOS/DESCUMPRIMENTO'],['entorpecentes','ENTORPECENTES']].filter(x=>x[2]||cmdData.some(r=>N(r[x[0]])>0));
+let cmdHeaders=['ITEM','CMT. DE VTR.'].concat(cmdDefs.map(x=>x[1]));
+let cmdRows=cmdData.map((r,i)=>`<tr><td>${i+1}</td><td>${E(r.nome)}</td>${cmdDefs.map(x=>'<td>'+N(r[x[0]])+'</td>').join('')}</tr>`),cmdChunks=[];for(let i=0;i<cmdRows.length;i+=27)cmdChunks.push(cmdRows.slice(i,i+27));
+let cmdTotais=Object.fromEntries(cmdDefs.map(x=>[x[0],cmdData.reduce((s,r)=>s+N(r[x[0]]),0)]));
+let cmdPages=cmdChunks.map((chunk,i)=>page('',`<h3 class="subtitle">OCORRÊNCIAS POR COMANDANTES DE VIATURAS ${i?'(CONTINUAÇÃO)':''}</h3>${table(cmdHeaders,chunk,i===cmdChunks.length-1?`<tr class="total"><td colspan="2">TOTAL COM CMT. IDENTIFICADO</td>${cmdDefs.map(x=>'<td>'+cmdTotais[x[0]]+'</td>').join('')}</tr>`:'')}`)).join('');
 let actionPage='',annexes='';
 if(!semProgramasPrevencao){
   let actionRank=rank(actions,'tipo_acao');
