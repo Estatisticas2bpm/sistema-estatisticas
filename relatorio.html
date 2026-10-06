@@ -58,7 +58,7 @@ function normalizarNacionalidadeRel(v){
   const original=S(v),k=chaveEstatisticaRel(original);
   if(/^(BR|BRA)( |$)/.test(k)||k.includes('BRASIL'))return 'BR — BRASILEIRA';
   if(/^(VE|VEN)( |$)/.test(k)||k.includes('VENEZUEL'))return 'VE — VENEZUELANA';
-  if(/^(GY)( |$)/.test(k)||k.includes('GUYANA')||k.includes('GUIANA'))return 'GY — GUIANENSE';
+  if(/^(GY|GUI)( |$)/.test(k)||k.includes('GUYANA')||k.includes('GUIANA'))return 'GY — GUIANENSE';
   if(/^(SR)( |$)/.test(k)||k.includes('SURINAME'))return 'SR — SURINAME';
   if(/^(CU)( |$)/.test(k)||k.includes('CUBA'))return 'CU — CUBANA';
   return original.toUpperCase();
@@ -91,7 +91,7 @@ function quantidadeArmaBrancaRel(o){
   const q=N(o?.quantidade_arma_branca);if(q>0)return q;
   const k=chaveEstatisticaRel(o?.arma_branca);if(!k)return 0;
   let m=k.match(/(?:QUANTIDADE|QTD)\s*(\d{1,2})\b/)||k.match(/\b(\d{1,2})\s+UNIDADES?\b/);
-  if(m&&N(m[1])>0)return N(m[1]);
+  if(m)return Number(m[1])||0;
   if(/\b(DUAS|DOIS)\b/.test(k))return 2;
   if(/\b(TRES)\b/.test(k))return 3;
   if(/\b(QUATRO)\b/.test(k))return 4;
