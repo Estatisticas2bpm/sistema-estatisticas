@@ -14,6 +14,8 @@
     const siglaCadastro=String(sessaoCadastro?.contexto?.sigla||sessaoCadastro?.perfil?.unidades?.sigla||'').toUpperCase();
     const ehCipturCadastro=siglaCadastro==='CIPTUR';
     const ehGiroCadastro=siglaCadastro==='GIRO';
+    const unidadesBopeSemGrupamento=new Set(['CANIL','FORCA_TATICA','CHOQUE','GATE']);
+    const ehUnidadeBopeCadastro=unidadesBopeSemGrupamento.has(siglaCadastro);
     const resposta=await fetch('cadastro-base.html?v=20261001-torfix1',{cache:'no-store'});
     if(!resposta.ok) throw new Error('Falha ao carregar a base do cadastro.');
     let html=await resposta.text();
@@ -32,9 +34,12 @@
 
     // Tipo de documento visível = BO. O grupamento operacional varia conforme a unidade.
     // CIPTUR usa somente TOR. GIRO não possui subgrupamento especializado neste cadastro.
+    // As unidades operacionais do BOPE (CANIL, FORÇA TÁTICA, CHOQUE e GATE) também não usam Tático Setorial/AME.
     const blocoGrupamento=ehGiroCadastro
       ? ''
-      : (ehCipturCadastro
+      : ehUnidadeBopeCadastro
+        ? ''
+        : (ehCipturCadastro
         ? '<div class="campo duplo"><label>Guarnição especializada</label><div class="selecao-grupamento" style="display:flex;gap:10px;flex-wrap:wrap"><label class="resultado-opcao" style="min-width:280px"><input id="grupamentoTor" type="checkbox"> TOR — TÁTICO OSTENSIVO RODOVIÁRIO</label></div><span class="nota">Marque TOR somente quando o BO tiver sido atendido pelo Tático Ostensivo Rodoviário.</span></div>'
         : '<div class="campo duplo"><label>Guarnição especializada</label><div class="selecao-grupamento" style="display:flex;gap:10px;flex-wrap:wrap"><label class="resultado-opcao" style="min-width:190px"><input id="grupamentoTatico" type="checkbox"> TÁTICO SETORIAL</label><label class="resultado-opcao" style="min-width:190px"><input id="grupamentoAme" type="checkbox"> AME</label></div><span class="nota">Marque somente quando o BO tiver sido atendido por um desses grupamentos. As opções são exclusivas.</span></div>');
     html=html.replace(
