@@ -58,7 +58,7 @@ function atualizarSumarioRelatorio(){document.querySelectorAll('[data-toc-target
 function controlesImpressaoRelatorio(){return['sistemaUnidadeAtiva','sistemaUsuarioSessao','sistemaAvisoAcesso'].map(id=>document.getElementById(id)).filter(Boolean)}
 function prepararImpressaoRelatorio(){controlesImpressaoRelatorio().forEach(el=>{if(!el.dataset.printDisplay)el.dataset.printDisplay=el.style.display||'__EMPTY__';el.style.setProperty('display','none','important')});document.body.classList.add('imprimindo-relatorio')}
 function restaurarImpressaoRelatorio(){controlesImpressaoRelatorio().forEach(el=>{const v=el.dataset.printDisplay;if(v==='__EMPTY__')el.style.removeProperty('display');else if(v)el.style.display=v;delete el.dataset.printDisplay});document.body.classList.remove('imprimindo-relatorio')}
-function imprimirRelatorio(){prepararImpressaoRelatorio();requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()))}
+function imprimirRelatorio(){finalizarLayoutRelatorio();prepararImpressaoRelatorio();requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()))}
 window.addEventListener('beforeprint',prepararImpressaoRelatorio);window.addEventListener('afterprint',restaurarImpressaoRelatorio);
 function marcarSecoesRelatorio(){
   const regras=[
