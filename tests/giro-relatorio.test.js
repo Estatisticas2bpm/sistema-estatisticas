@@ -16,7 +16,7 @@ assert.match(report,/if\(ehGiroRel\(\)\)return buildGiro\(\)/);
 assert.match(report,/window\.SistemaAuth\?\.contexto/);
 assert.match(report,/Grupamento Independente de Intervenção Rápida Ostensiva - GIRO/);
 assert.match(report,/const arquivo=\x60\$\{titulo\} - \$\{unidadeRel\(\)\.sigla\}\x60/);
-assert.match(report,/#sistemaUsuarioSessao\{display:none!important\}/);
+assert.match(report,/\.toolbar[^{}]*,#sistemaUsuarioSessao[^{}]*,#sistemaUnidadeAtiva[^{}]*,#sistemaAvisoAcesso\{display:none!important\}/);
 
 assert.match(giro,/giro_abordagens/);
 assert.match(giro,/T00:00:00-04:00/);
