@@ -5,7 +5,7 @@ const path=require('node:path');
 const root=path.resolve(__dirname,'..');
 const relatorio=fs.readFileSync(path.join(root,'relatorio.html'),'utf8');
 
-assert.match(relatorio,/function eh2BpmRel\(\)\{return String\(unidadeRel\(\)\.sigla\|\|'')\.toUpperCase\(\)==='2º BPM'\}/);
+assert.ok(relatorio.includes("function eh2BpmRel(){return String(unidadeRel().sigla||'').toUpperCase()==='2º BPM'}"));
 assert.match(relatorio,/const logo2BpmPdf='logo-2bpm-novo\.png';/);
 assert.match(relatorio,/eh2BpmRel\(\)\?'<img src="'\+logo2BpmPdf\+'".*Brasão do 2º BPM/);
 
