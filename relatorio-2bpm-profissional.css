@@ -1,0 +1,71 @@
+/* Relatório profissional exclusivo do 2º BPM */
+#document.r2-document{width:210mm;margin:18px auto}
+.r2-page{position:relative;width:210mm;height:297mm;background:#fff;margin:0 0 12px;padding:20mm 14mm 16mm;box-shadow:0 4px 20px #0002;color:#111;overflow:visible}
+.r2-page *{box-sizing:border-box}
+.r2-page-cover{padding:17mm 16mm 20mm}
+.r2-header{position:absolute;top:7mm;left:14mm;right:14mm;text-align:center;font-size:8.7pt;font-weight:700;line-height:1.28;border-bottom:.25mm solid #9aa3ad;padding-bottom:3mm}
+.r2-footer{position:absolute;left:14mm;right:14mm;bottom:6mm;text-align:center;font-size:8pt}
+.r2-cover-top{display:grid;grid-template-columns:28mm 1fr 28mm;gap:8mm;align-items:start;text-align:center;font-weight:700;font-size:12pt;line-height:1.45}
+.r2-cover-top img{width:25mm;height:25mm;object-fit:contain;justify-self:center}
+.r2-cover-title{margin-top:76mm;text-align:center}
+.r2-cover-title h1{font-size:18pt;margin:0 0 8mm;line-height:1.2}
+.r2-cover-title h2{font-size:15pt;margin:0;line-height:1.3}
+.r2-cover-bottom{position:absolute;bottom:22mm;left:0;right:0;text-align:center;font-size:11pt;font-weight:700;line-height:1.6}
+.r2-title{font-size:13pt;font-weight:800;text-transform:uppercase;margin:0 0 4mm;line-height:1.2}
+.r2-section{font-size:11pt;font-weight:800;text-align:center;background:#169bb4;color:#fff;padding:2.2mm 2.5mm;margin:3.5mm 0 2mm;line-height:1.2}
+.r2-subsection{font-size:10.5pt;font-weight:800;text-align:center;margin:3.2mm 0 1.8mm;line-height:1.2}
+.r2-note{font-size:8pt;line-height:1.35;background:#eef8fa;border-left:1mm solid #169bb4;padding:2.4mm 3mm;margin:2.5mm 0}
+.r2-source{font-size:7.7pt;text-align:center;margin:1.5mm 0 2.5mm;line-height:1.25}
+.r2-table{width:100%;border-collapse:collapse;table-layout:fixed;margin:1.4mm 0 2.5mm;font-size:8.7pt}
+.r2-table th,.r2-table td{border:.22mm solid #9db7c4;padding:1.55mm 1.5mm;vertical-align:middle;overflow-wrap:anywhere;line-height:1.18}
+.r2-table th{background:#169bb4;color:#fff;text-align:center;font-size:8.2pt;font-weight:800}
+.r2-table td.num,.r2-table th.num{text-align:center}
+.r2-table tr.total td{background:#e8f4f7;font-weight:800}
+.r2-table.r2-tight{font-size:8.2pt}
+.r2-table.r2-tight th,.r2-table.r2-tight td{padding:1.15mm 1.2mm}
+.r2-table.r2-mini{font-size:7.9pt}
+.r2-table.r2-mini th,.r2-table.r2-mini td{padding:1mm 1.05mm}
+.r2-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:4mm}
+.r2-grid-2.align-start{align-items:start}
+.r2-chart{display:block;width:100%;height:72mm;object-fit:contain;margin:0 auto 2mm}
+.r2-chart-large{height:78mm}
+.r2-chart-row{display:grid;grid-template-columns:1fr 1fr;gap:5mm;align-items:start}
+.r2-chart-card{min-width:0}
+.r2-chart-card .r2-chart{height:66mm}
+.r2-toc{list-style:none;margin:0;padding:0;font-size:9.4pt}
+.r2-toc li{display:flex;align-items:flex-end;gap:2mm;margin:1.7mm 0;line-height:1.15}
+.r2-toc .dots{flex:1;border-bottom:.2mm dotted #777;transform:translateY(-1mm)}
+.r2-toc .page-no{min-width:9mm;text-align:right;font-weight:700}
+.r2-commander-table{font-size:8.1pt}
+.r2-commander-table th,.r2-commander-table td{padding:1.2mm 1.1mm}
+.r2-commander-table th:nth-child(1),.r2-commander-table td:nth-child(1){width:7%;text-align:center}
+.r2-commander-table th:nth-child(2),.r2-commander-table td:nth-child(2){width:29%}
+.r2-commander-table th:nth-child(3),.r2-commander-table td:nth-child(3){width:12%;text-align:center}
+.r2-commander-table th:nth-child(4),.r2-commander-table td:nth-child(4){width:52%}
+.r2-commander-table td:nth-child(4){font-size:7.9pt;line-height:1.1}
+.r2-signature{text-align:center;margin-top:8mm;font-size:9.5pt;line-height:1.35}
+.r2-signature strong{font-size:10pt}
+.r2-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:2.5mm;margin:2mm 0 3mm}
+.r2-kpi{border:.25mm solid #9db7c4;background:#f8fbfc;border-radius:2mm;padding:2.5mm;text-align:center}
+.r2-kpi b{display:block;font-size:15pt;color:#0b5064;margin-bottom:.8mm}
+.r2-kpi span{font-size:7.7pt;font-weight:700}
+.r2-muted{color:#59636e}
+.r2-nowrap{white-space:nowrap}
+.r2-center{text-align:center}
+.r2-page[data-layout="dense"] .r2-table th,.r2-page[data-layout="dense"] .r2-table td{padding:1.05mm 1mm}
+.r2-page[data-layout="dense"] .r2-section{margin-top:2.8mm}
+
+@media(max-width:850px){
+  #document.r2-document{width:100%;margin:0}
+  .r2-page{width:100%;height:auto;min-height:297mm}
+}
+@media print{
+  @page{size:A4 portrait;margin:0}
+  html,body{margin:0!important;padding:0!important;background:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body>*:not(#document){display:none!important}
+  #document.r2-document{display:block!important;width:210mm!important;margin:0!important;padding:0!important}
+  #document.r2-document .r2-page{display:block!important;width:210mm!important;height:297mm!important;margin:0!important;box-shadow:none!important;break-after:page!important;page-break-after:always!important}
+  #document.r2-document .r2-page:last-child{break-after:auto!important;page-break-after:auto!important}
+  #document.r2-document .r2-table tr{break-inside:avoid!important;page-break-inside:avoid!important}
+  #document.r2-document img{break-inside:avoid!important;page-break-inside:avoid!important}
+}
