@@ -1,0 +1,330 @@
+:root {
+  --print-blue: #0d395f;
+  --print-blue-2: #126f8b;
+  --print-cyan: #168eaa;
+  --print-border: #8aa6b5;
+  --print-soft: #edf5f8;
+  --print-text: #142333;
+}
+
+#relatorioPrint[hidden] {
+  display: none !important;
+}
+
+#relatorioPrint {
+  width: 210mm;
+  margin: 18px auto;
+  color: var(--print-text);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 10pt;
+}
+
+#relatorioPrint .print-page {
+  box-sizing: border-box;
+  width: 210mm;
+  height: 297mm;
+  margin: 0 0 12px;
+  padding: 8mm 16mm 6mm;
+  display: grid;
+  grid-template-rows: 18mm minmax(0, 1fr) 9mm;
+  background: #fff;
+  box-shadow: 0 4px 20px #0002;
+  break-after: page;
+  page-break-after: always;
+}
+
+#relatorioPrint .print-page:last-child {
+  break-after: auto;
+  page-break-after: auto;
+}
+
+#relatorioPrint .print-page--cover {
+  padding: 16mm 18mm 6mm;
+  grid-template-rows: minmax(0, 1fr) 9mm;
+}
+
+#relatorioPrint .print-page__header {
+  border-bottom: 0.25mm solid #7c8d9b;
+  padding: 0 2mm 3mm;
+  text-align: center;
+  font-size: 8.6pt;
+  line-height: 1.35;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+#relatorioPrint .print-page__content {
+  min-height: 0;
+  padding-top: 5mm;
+}
+
+#relatorioPrint .print-page__footer {
+  align-self: end;
+  padding-top: 2mm;
+  border-top: 0.2mm solid #c6d0d7;
+  text-align: center;
+  font-size: 8pt;
+  line-height: 1.2;
+  color: #33495d;
+}
+
+#relatorioPrint .print-cover {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+
+#relatorioPrint .print-cover__institution {
+  display: grid;
+  grid-template-columns: 27mm 1fr 27mm;
+  gap: 5mm;
+  align-items: start;
+  text-align: center;
+  font-size: 10.5pt;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+#relatorioPrint .print-cover__institution img {
+  width: 24mm;
+  height: 24mm;
+  object-fit: contain;
+  justify-self: center;
+}
+
+#relatorioPrint .print-cover__title {
+  align-self: center;
+  text-align: center;
+  margin-top: 30mm;
+}
+
+#relatorioPrint .print-cover__title h1 {
+  margin: 0 0 8mm;
+  font-size: 16pt;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+
+#relatorioPrint .print-cover__title h2 {
+  margin: 0;
+  font-size: 14pt;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+#relatorioPrint .print-cover__scope {
+  margin: 5mm 0 0;
+  font-size: 11pt;
+  text-transform: uppercase;
+}
+
+#relatorioPrint .print-cover__place {
+  text-align: center;
+  font-size: 10.5pt;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+#relatorioPrint .print-section-title {
+  margin: 0 0 4mm;
+  color: var(--print-blue);
+  font-size: 13.5pt;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+
+#relatorioPrint .print-subtitle {
+  margin: 0 0 2.4mm;
+  padding: 2.1mm 2.6mm;
+  background: var(--print-cyan);
+  color: #fff;
+  font-size: 10pt;
+  line-height: 1.2;
+  font-weight: 700;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+#relatorioPrint .print-block {
+  margin: 0 0 4mm;
+}
+
+#relatorioPrint .print-block--chart {
+  margin-bottom: 7mm;
+  text-align: center;
+}
+
+#relatorioPrint .print-chart {
+  display: block;
+  width: 128mm;
+  height: 82mm;
+  margin: 2mm auto 1.5mm;
+  object-fit: contain;
+}
+
+#relatorioPrint .print-chart-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6mm;
+  align-items: start;
+}
+
+#relatorioPrint .print-chart-grid .print-chart {
+  width: 78mm;
+  height: 55mm;
+  margin: 1.5mm auto 1mm;
+}
+
+#relatorioPrint .print-chart-panel {
+  min-width: 0;
+}
+
+#relatorioPrint .print-source {
+  margin: 1.5mm 0 0;
+  text-align: center;
+  color: #465868;
+  font-size: 8pt;
+  line-height: 1.25;
+}
+
+#relatorioPrint .print-note {
+  margin: 0 0 4mm;
+  padding: 2.5mm 3mm;
+  border-left: 1mm solid var(--print-cyan);
+  background: var(--print-soft);
+  font-size: 9.3pt;
+  line-height: 1.35;
+}
+
+#relatorioPrint table {
+  width: 100%;
+  margin: 0 0 3mm;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 8.8pt;
+  line-height: 1.2;
+}
+
+#relatorioPrint th,
+#relatorioPrint td {
+  border: 0.25mm solid var(--print-border);
+  padding: 1.45mm 1.7mm;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+#relatorioPrint th {
+  background: var(--print-blue-2);
+  color: #fff;
+  padding-right: 1mm;
+  padding-left: 1mm;
+  overflow-wrap: normal;
+  word-break: normal;
+  font-size: 8.2pt;
+  font-weight: 700;
+  text-align: center;
+  vertical-align: middle;
+}
+
+#relatorioPrint td[data-align="center"] {
+  text-align: center;
+}
+
+#relatorioPrint tr.print-total td {
+  background: var(--print-soft);
+  font-weight: 700;
+}
+
+#relatorioPrint .print-commanders {
+  font-size: 8.6pt;
+}
+
+#relatorioPrint .print-commanders th,
+#relatorioPrint .print-commanders td {
+  padding-top: 1.4mm;
+  padding-bottom: 1.4mm;
+}
+
+#relatorioPrint .print-commanders td:last-child {
+  font-size: 8.25pt;
+  line-height: 1.15;
+}
+
+#relatorioPrint .print-toc {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 9.6pt;
+  line-height: 1.25;
+}
+
+#relatorioPrint .print-toc li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 2mm;
+  align-items: end;
+  margin: 0 0 2.7mm;
+}
+
+#relatorioPrint .print-toc__dots {
+  min-width: 12mm;
+  border-bottom: 0.25mm dotted #65798a;
+}
+
+#relatorioPrint .print-signature {
+  margin-top: 10mm;
+  text-align: center;
+  font-size: 9.5pt;
+  line-height: 1.55;
+}
+
+#relatorioPrint .print-signature__space {
+  height: 12mm;
+}
+
+#relatorioPrint .print-empty {
+  text-align: center;
+  color: #5e6d7a;
+  font-style: italic;
+}
+
+@media (max-width: 850px) {
+  #relatorioPrint {
+    width: 100%;
+    margin: 0;
+    overflow-x: auto;
+  }
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  html,
+  body.relatorio-print-2bpm {
+    width: 210mm;
+    margin: 0;
+    padding: 0;
+    background: #fff;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body.relatorio-print-2bpm > *:not(#relatorioPrint) {
+    display: none !important;
+  }
+
+  body.relatorio-print-2bpm #relatorioPrint {
+    display: block !important;
+    width: 210mm;
+    margin: 0;
+  }
+
+  #relatorioPrint .print-page {
+    margin: 0;
+    box-shadow: none;
+  }
+}
