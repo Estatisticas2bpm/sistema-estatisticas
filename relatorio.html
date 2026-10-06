@@ -60,6 +60,83 @@ function prepararImpressaoRelatorio(){controlesImpressaoRelatorio().forEach(el=>
 function restaurarImpressaoRelatorio(){controlesImpressaoRelatorio().forEach(el=>{const v=el.dataset.printDisplay;if(v==='__EMPTY__')el.style.removeProperty('display');else if(v)el.style.display=v;delete el.dataset.printDisplay});document.body.classList.remove('imprimindo-relatorio')}
 function imprimirRelatorio(){prepararImpressaoRelatorio();requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()))}
 window.addEventListener('beforeprint',prepararImpressaoRelatorio);window.addEventListener('afterprint',restaurarImpressaoRelatorio);
+function marcarSecoesRelatorio(){
+  const regras=[
+    ['DOCUMENTAÇÕES EMITIDAS PELA UNIDADE','docs occ-class'],
+    ['CLASSIFICAÇÃO DAS OCORRÊNCIAS','occ-class'],
+    ['GRÁFICO DAS PRINCIPAIS OCORRÊNCIAS','occ-chart hoods'],
+    ['VOLUME DE OCORRÊNCIAS / PRINCIPAIS BAIRROS','hoods'],
+    ['GRÁFICO DOS PRINCIPAIS BAIRROS','hood-chart'],
+    ['GRÁFICO DE OCORRÊNCIAS POR DIAS DA SEMANA','time-charts'],
+    ['RUAS E AVENIDAS COM PREDOMINÂNCIAS','streets'],
+    ['INFORMAÇÕES SOBRE O NÚMERO DE INFRATORES','people'],
+    ['INFORMAÇÕES GERAIS SOBRE ATUAÇÕES DA UNIDADE','results'],
+    ['APREENSÕES DE ARMA BRANCA','white'],
+    ['OCORRÊNCIAS POR COMANDANTES DE VIATURAS','commanders'],
+    ['RESULTADOS DE PROGRAMAS DE PREVENÇÃO À CRIMINALIDADE','prevention'],
+    ['MÍDIAS DE DADOS ESTATÍSTICOS DE PRODUTIVIDADE','final']
+  ];
+  document.querySelectorAll('.page').forEach(p=>{
+    const txt=(p.textContent||'').toUpperCase(),keys=[];
+    regras.forEach(([busca,key])=>{if(txt.includes(busca))key.split(' ').forEach(k=>{if(!keys.includes(k))keys.push(k)})});
+    if(keys.length)p.dataset.section=keys.join(' ');
+  });
+}
+function ajustarTabelaComandantesRelatorio(){
+  document.querySelectorAll('table').forEach(t=>{
+    const cab=[...t.querySelectorAll('thead th')].map(x=>(x.textContent||'').trim().toUpperCase());
+    if(!cab.includes('COMANDANTE')||!cab.includes('OCORRÊNCIAS'))return;
+    t.classList.add('cmd-table');
+    const nomes={'ARMAS DE FOGO':'ARMAS','NÃO CLASSIF. (LEGADO)':'LEGADO','FORAGIDOS/DESCUMPRIMENTO':'FORAG./DESC.','ENTORPECENTES':'DROGAS'};
+    [...t.querySelectorAll('thead th')].forEach(th=>{const k=(th.textContent||'').trim().toUpperCase();if(nomes[k])th.textContent=nomes[k]});
+  });
+}
+function limiteConteudoPaginaRelatorio(pagina){
+  const rodape=pagina.querySelector('.footer');
+  return (rodape?rodape.getBoundingClientRect().top:pagina.getBoundingClientRect().bottom)-10;
+}
+function paginaEstouraRelatorio(pagina){
+  const limite=limiteConteudoPaginaRelatorio(pagina);
+  return [...pagina.children].filter(el=>!el.classList.contains('footer')&&!el.classList.contains('internal-head')).some(el=>el.getBoundingClientRect().bottom>limite+1);
+}
+function tituloContinuacaoTabelaRelatorio(tabela){
+  let el=tabela.previousElementSibling;
+  while(el&&!el.matches('h2,h3'))el=el.previousElementSibling;
+  return ((el&&el.textContent)||'TABELA').replace(/\s+-\s+CONTINUAÇÃO.*$/i,'').trim();
+}
+function novaPaginaContinuacaoTabelaRelatorio(origem,tabela,movidas){
+  const clone=tabela.cloneNode(false);
+  if(tabela.tHead)clone.appendChild(tabela.tHead.cloneNode(true));
+  const tb=document.createElement('tbody');movidas.forEach(r=>tb.appendChild(r));clone.appendChild(tb);
+  const sec=origem.dataset.section||'';
+  const corpo='<h3 class="subtitle">'+E(tituloContinuacaoTabelaRelatorio(tabela))+' - CONTINUAÇÃO</h3>'+clone.outerHTML;
+  const tpl=document.createElement('template');tpl.innerHTML=page('',corpo,sec).trim();
+  return tpl.content.firstElementChild;
+}
+function paginarRelatorio2Bpm(){
+  if(!eh2BpmRel())return;
+  const fila=[...document.querySelectorAll('.page.page-2bpm')];let seguranca=0;
+  while(fila.length&&seguranca++<120){
+    const pagina=fila.shift();
+    pagina.style.height='297mm';pagina.style.maxHeight='297mm';pagina.style.overflow='hidden';
+    if(!paginaEstouraRelatorio(pagina))continue;
+    const tabelas=[...pagina.querySelectorAll('table')].reverse();
+    const tabela=tabelas.find(t=>t.tBodies[0]&&t.tBodies[0].rows.length>1&&t.getBoundingClientRect().bottom>limiteConteudoPaginaRelatorio(pagina));
+    if(!tabela)continue;
+    const tbody=tabela.tBodies[0],movidas=[];
+    while(paginaEstouraRelatorio(pagina)&&tbody.rows.length>1){movidas.unshift(tbody.lastElementChild);tbody.lastElementChild.remove()}
+    if(!movidas.length)continue;
+    const nova=novaPaginaContinuacaoTabelaRelatorio(pagina,tabela,movidas);
+    pagina.insertAdjacentElement('afterend',nova);fila.unshift(nova);
+  }
+}
+function numerarPaginasRelatorio(){
+  const paginas=[...document.querySelectorAll('.page')],total=paginas.length;
+  paginas.forEach((p,i)=>{const f=p.querySelector('.footer');if(f)f.textContent='Página '+(i+1)+' de '+total});
+}
+function finalizarLayoutRelatorio(){
+  marcarSecoesRelatorio();ajustarTabelaComandantesRelatorio();paginarRelatorio2Bpm();marcarSecoesRelatorio();atualizarSumarioRelatorio();numerarPaginasRelatorio();
+}
 function spec(text){let parts=S(text).split(/[;,]/).map(x=>x.trim()).filter(Boolean),m={};parts.forEach(x=>m[x]=(m[x]||0)+1);return Object.entries(m).sort((a,b)=>b[1]-a[1])}
 function chaveEstatisticaRel(v){return S(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[—–-]+/g,' ').replace(/[^A-Z0-9ºª ]+/g,' ').replace(/\s+/g,' ').trim()}
 function normalizarNacionalidadeRel(v){
