@@ -80,7 +80,7 @@ assert.equal(comandantes[1].registros.length,2);
 assert.ok(relatorio.includes("cmdData.some(r=>N(r[x[0]])>0)"),'Colunas zeradas devem ser ocultadas.');
 assert.ok(relatorio.includes('TOTAL COM CMT. IDENTIFICADO'),'Total de comandantes deve ser explícito.');
 assert.ok(relatorio.includes("sum(g,'foragidos')+g.filter(y=>S(y.ocorrencia).toUpperCase().includes('DESCUMPRIMENTO')).length"),'Métrica de foragidos/descumprimento deve usar a mesma regra nas linhas.');
-assert.ok(relatorio.includes("eh2BpmRel()?'':'<h3>'+E(escopoTerritorial())+'</h3>'"),'A capa do 2º BPM não deve exibir o escopo “Todas”.');
+assert.ok(relatorio.includes("escopoTerritorialVisivel()?'<h3>'+E(escopoTerritorialVisivel())+'</h3>':''"),'A capa do 2º BPM não deve exibir o escopo “Todas”.');
 assert.ok(relatorio.includes("if(c==='NÃO INFORMADA'||!['M','F'].includes(sx))return;"),'Nacionalidades sem sexo M/F não devem entrar na estatística.');
 assert.ok(relatorio.includes("for(let i=0;i<cmdRows.length;i+=20)"),'A lista de comandantes deve ser paginada de forma mais legível.');
 
