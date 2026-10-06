@@ -440,14 +440,37 @@ async function buildCiptur(){
   },80);
 }
 
-async function build(){if(ehGiroRel())return buildGiro();if(ehCipturRel())return buildCiptur();$('document').innerHTML='<div class="notice">Consultando banco de dados...</div>';const periodo=periodoRelatorio(ini.value,fim.value);document.title='SIE-CPC - '+unidadeRel().sigla+' - '+periodo.arquivo+' - '+escopoTerritorial();let cr=comparisonRange(),res=await Promise.all([db.rpc('obter_dados_dashboard',{data_inicio:ini.value,data_fim:fim.value}),db.rpc('obter_dados_dashboard',{data_inicio:cr[0],data_fim:cr[1]}),eh2BpmRel()?Promise.resolve({data:[],error:null}):db.rpc('obter_acoes_preventivas',{data_inicio:ini.value,data_fim:fim.value}),db.rpc('obter_tcos_dashboard',{data_inicio:ini.value,data_fim:fim.value}),db.rpc('obter_tcos_dashboard',{data_inicio:cr[0],data_fim:cr[1]})]);if(res[0].error){$('document').innerHTML='<div class="notice">Erro: '+E(res[0].error.message)+'</div>';return}let d=filtrarTerritorio(res[0].data||[]),old=filtrarTerritorio(res[1].data||[]),actions=res[2].data||[],tcos=filtrarTerritorio(res[3].data||[]),tcosOld=filtrarTerritorio(res[4].data||[]),docs=docsRelatorioGenerico(d,tcos),occ=rankNaturezasRel(d),hoods=rank(d,'bairro'),hoodOld=Object.fromEntries(rank(old,'bairro')),days=['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'],shifts=['MADRUGADA','MANHÃ','TARDE','NOITE'];
+async function build(){if(ehGiroRel())return buildGiro();if(ehCipturRel())return buildCiptur();$('document').innerHTML='<div class="notice">Consultando banco de dados...</div>';const periodo=periodoRelatorio(ini.value,fim.value),escopoArquivo=escopoTerritorialSelecionado();document.title='SIE-CPC - '+unidadeRel().sigla+' - '+periodo.arquivo+(escopoArquivo?' - '+escopoArquivo:'');let cr=comparisonRange(),res=await Promise.all([db.rpc('obter_dados_dashboard',{data_inicio:ini.value,data_fim:fim.value}),db.rpc('obter_dados_dashboard',{data_inicio:cr[0],data_fim:cr[1]}),eh2BpmRel()?Promise.resolve({data:[],error:null}):db.rpc('obter_acoes_preventivas',{data_inicio:ini.value,data_fim:fim.value}),db.rpc('obter_tcos_dashboard',{data_inicio:ini.value,data_fim:fim.value}),db.rpc('obter_tcos_dashboard',{data_inicio:cr[0],data_fim:cr[1]})]);if(res[0].error){$('document').innerHTML='<div class="notice">Erro: '+E(res[0].error.message)+'</div>';return}let d=filtrarTerritorio(res[0].data||[]),old=filtrarTerritorio(res[1].data||[]),actions=res[2].data||[],tcos=filtrarTerritorio(res[3].data||[]),tcosOld=filtrarTerritorio(res[4].data||[]),docs=docsRelatorioGenerico(d,tcos),occ=rankNaturezasRel(d),hoods=rank(d,'bairro'),hoodOld=Object.fromEntries(rank(old,'bairro')),days=['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'],shifts=['MADRUGADA','MANHÃ','TARDE','NOITE'];
 let marcaCapa=ehCipturRel()?'<img class="cover-brand-ciptur" src="'+logoCipturPdf+'" alt="Brasão da CIPTUR">':eh2BpmRel()?'<img src="'+logo2BpmPdf+'" alt="Brasão do 2º BPM">':'<div class="cover-brand">SIE-CPC</div>';
-let cover=`<section class="page cover"><div class="cover-top"><img src="brasao-pmrr.png"><div>ESTADO DE RORAIMA<br>POLÍCIA MILITAR DE RORAIMA<br>COMANDO DE POLICIAMENTO DA CAPITAL - CPC<br>${E(unidadeRel().nome).toUpperCase()}<br>“Amazônia: Patrimônio dos Brasileiros”</div>${marcaCapa}</div><div class="cover-title"><h1>RELATÓRIO DE ANÁLISE DE DADOS ESTATÍSTICOS</h1><h2>${periodo.titulo}</h2>${eh2BpmRel()?'':'<h3>'+E(escopoTerritorial())+'</h3>'}</div><div class="cover-bottom">BOA VISTA - RR<br><br>${periodo.anos}</div></section>`;
+let cover=`<section class="page cover"><div class="cover-top"><img src="brasao-pmrr.png"><div>ESTADO DE RORAIMA<br>POLÍCIA MILITAR DE RORAIMA<br>COMANDO DE POLICIAMENTO DA CAPITAL - CPC<br>${E(unidadeRel().nome).toUpperCase()}<br>“Amazônia: Patrimônio dos Brasileiros”</div>${marcaCapa}</div><div class="cover-title"><h1>RELATÓRIO DE ANÁLISE DE DADOS ESTATÍSTICOS</h1><h2>${periodo.titulo}</h2>${escopoTerritorialVisivel()?'<h3>'+E(escopoTerritorialVisivel())+'</h3>':''}</div><div class="cover-bottom">BOA VISTA - RR<br><br>${periodo.anos}</div></section>`;
 
 const semProgramasPrevencao=eh2BpmRel();
-let toc=['1. DOCUMENTAÇÕES EMITIDAS PELA UNIDADE (ROP, BO E TCO)','Volume de Documentos Produzidos','2. PRINCIPAIS TIPOS DE OCORRÊNCIAS NA UNIDADE OPERACIONAL','Classificação das Ocorrências','Gráfico das Principais Ocorrências','Volume das Ocorrências por Bairro','Gráfico dos Principais Bairros','Quadro Comparativo de Ocorrências por Dias da Semana/Turno','Gráfico de Ocorrências por Turnos','Gráfico de Ocorrências por Dias da Semana','Ruas e Avenidas com Predominâncias de Ocorrências','Informações sobre o Número de Infratores por Nacionalidade','Informações sobre o Número de Vítimas por Nacionalidade','3. INFORMAÇÕES GERAIS SOBRE ATUAÇÕES DA UNIDADE','Resumo das Atuações da Unidade','Apreensões de Armas, Simulacros e Carregadores','Apreensões de Munições','Apreensões de Arma Branca','Infração de Trânsito / Auto de Remoção','Auto de Resistência','Ocorrências por Comandantes de Viaturas'];
-if(!semProgramasPrevencao) toc.push('4. RESULTADOS DE PROGRAMAS DE PREVENÇÃO À CRIMINALIDADE','Visitas Comunitárias, Solidárias, Palestras e Anexos');
-toc.push((semProgramasPrevencao?'4. ':'5. ')+'MÍDIAS DE DADOS ESTATÍSTICOS DE PRODUTIVIDADE','Publicação e Comparativo de Produtividade');let summary=page('SUMÁRIO',`<ul class="toc">${toc.map((x,i)=>`<li><span>${x}</span><span class="dots"></span><span>${Math.min(15,3+Math.floor(i/2))}</span></li>`).join('')}</ul>`);
+let toc=[
+['1. DOCUMENTAÇÕES EMITIDAS PELA UNIDADE (ROP, BO E TCO)','docs'],
+['Volume de Documentos Produzidos','docs'],
+['2. PRINCIPAIS TIPOS DE OCORRÊNCIAS NA UNIDADE OPERACIONAL','occ-class'],
+['Classificação das Ocorrências','occ-class'],
+['Gráfico das Principais Ocorrências','occ-chart'],
+['Volume das Ocorrências por Bairro','hoods'],
+['Gráfico dos Principais Bairros','hood-chart'],
+['Quadro Comparativo de Ocorrências por Dias da Semana/Turno','hood-chart'],
+['Gráfico de Ocorrências por Turnos','time-charts'],
+['Gráfico de Ocorrências por Dias da Semana','time-charts'],
+['Ruas e Avenidas com Predominâncias de Ocorrências','streets'],
+['Informações sobre o Número de Infratores por Nacionalidade','people'],
+['Informações sobre o Número de Vítimas por Nacionalidade','people'],
+['3. INFORMAÇÕES GERAIS SOBRE ATUAÇÕES DA UNIDADE','results'],
+['Resumo das Atuações da Unidade','results'],
+['Apreensões de Armas, Simulacros e Carregadores','results'],
+['Apreensões de Munições','results'],
+['Apreensões de Arma Branca','white'],
+['Infração de Trânsito / Auto de Remoção','white'],
+['Auto de Resistência','white'],
+['Ocorrências por Comandantes de Viaturas','commanders']
+];
+if(!semProgramasPrevencao)toc.push(['4. RESULTADOS DE PROGRAMAS DE PREVENÇÃO À CRIMINALIDADE','prevention'],['Visitas Comunitárias, Solidárias, Palestras e Anexos','prevention']);
+toc.push([(semProgramasPrevencao?'4. ':'5. ')+'MÍDIAS DE DADOS ESTATÍSTICOS DE PRODUTIVIDADE','final'],['Publicação e Comparativo de Produtividade','final']);
+let summary=page('SUMÁRIO',`<ul class="toc">${toc.map(x=>`<li><span>${x[0]}</span><span class="dots"></span><span data-toc-target="${x[1]}">-</span></li>`).join('')}</ul>`,'summary');
 let docsRows=docs.map(x=>`<tr><td>${E(x[0])}</td><td>${x[1]}</td></tr>`),docsTotal=`<tr class="total"><td>TOTAL</td><td>${d.length+tcos.length}</td></tr>`;let occRows=occ.map((x,i)=>{let g=d.filter(y=>naturezaPrincipalRel(y)===x[0]),ages=g.map(y=>N(y.infrator_idade)).filter(Boolean);return`<tr><td>${i+1}</td><td>${E(x[0])}</td><td>${x[1]}</td><td>${E(rank(g,'bairro',3).map(z=>z[0]).join(' / '))}</td><td>${ages.length?Math.min(...ages)+' a '+Math.max(...ages)+' anos':'NI'}</td></tr>`});
 let p3=page('1. DOCUMENTAÇÕES EMITIDAS PELA UNIDADE (ROP, BO, TCO, AUTO DE INFRAÇÃO E ETC)',`<h3 class="subtitle">DOCUMENTOS PRODUZIDOS</h3>${table(['DOCUMENTO','QUANTIDADE'],docsRows,docsTotal)}<h2 class="title">2. PRINCIPAIS TIPOS DE OCORRÊNCIAS NA UNIDADE OPERACIONAL</h2><h3 class="subtitle">CLASSIFICAÇÃO DAS OCORRÊNCIAS</h3>${table(['ITEM','DESCRIÇÃO','FREQUÊNCIA','BAIRROS RECORRENTES','FAIXA ETÁRIA DO INFRATOR'],occRows)}<p class="source">Fonte: Sistema Interno de Banco de Dados - SIE-CPC / ${E(unidadeRel().sigla)}. NI - Não Identificado.</p>`);
 
