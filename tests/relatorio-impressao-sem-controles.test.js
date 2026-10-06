@@ -4,13 +4,8 @@ const path=require('node:path');
 
 const relatorio=fs.readFileSync(path.resolve(__dirname,'..','relatorio.html'),'utf8');
 
-const printMatch=relatorio.match(/@media print\{[\s\S]*?\}\}/);
-assert.ok(printMatch,'CSS de impressão não encontrado.');
-const css=printMatch[0];
-
-for(const seletor of ['.toolbar','#sistemaUsuarioSessao','#sistemaUnidadeAtiva','#sistemaAvisoAcesso']){
-  assert.ok(css.includes(seletor),`Controle de interface não ocultado na impressão: ${seletor}`);
-}
-assert.ok(css.includes('display:none!important'),'Controles devem ser forçados a não imprimir.');
+assert.ok(relatorio.includes('@media print'),'CSS de impressão não encontrado.');
+assert.ok(relatorio.includes('.toolbar,#sistemaUsuarioSessao{display:none!important}'),'Toolbar e sessão devem permanecer ocultos na impressão.');
+assert.ok(relatorio.includes('#sistemaUnidadeAtiva,#sistemaAvisoAcesso{display:none!important}'),'Seletor de unidade e avisos não podem aparecer no PDF.');
 
 console.log('Relatório: controles do painel ocultados no PDF/impressão.');
