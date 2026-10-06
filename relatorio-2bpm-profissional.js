@@ -107,7 +107,7 @@
     const shiftTotals=shifts.map(t=>d.filter(x=>S(x.turno)===t).length);
     const matrix=days.map((day,di)=>{const vals=shifts.map(t=>d.filter(x=>new Date(x.data_ocorrencia+'T12:00').getDay()===di&&S(x.turno)===t).length);return[di+1,day,...vals,vals.reduce((a,b)=>a+b,0)]});
 
-    const occTop=topComOutros(occ,20,'OUTRAS OCORRÊNCIAS');
+    const occTop=topComOutros(occ,15,'OUTRAS OCORRÊNCIAS');
     const occRows=occTop.rows.map((x,i)=>{
       const nomes=x[0]==='OUTRAS OCORRÊNCIAS'?occTop.restNames:new Set([x[0]]);
       const g=d.filter(y=>nomes.has(naturezaPrincipalRel(y))),ages=g.map(y=>num(y.infrator_idade)).filter(Boolean);
@@ -119,7 +119,7 @@
     const hoodRows=hoodTop.map((x,i)=>[i+1,x[0],x[1],hoodOld[x[0]]||0,variance(x[1],hoodOld[x[0]]||0)]);
     if(hoodOther>0)hoodRows.push([hoodRows.length+1,'OUTROS BAIRROS',hoodOther,hoodOldOther,variance(hoodOther,hoodOldOther)]);
 
-    const streets=rank(d,'endereco',20).map((x,i)=>{const g=d.filter(y=>S(y.endereco)===x[0]);return[i+1,x[0],x[1],rank(g,'turno',1)[0]?.[0]||'NI',rank(g,y=>naturezaPrincipalRel(y),2).map(z=>z[0]).join(' / ')||'NI']});
+    const streets=rank(d,'endereco',15).map((x,i)=>{const g=d.filter(y=>S(y.endereco)===x[0]);return[i+1,x[0],x[1],rank(g,'turno',1)[0]?.[0]||'NI',rank(g,y=>naturezaPrincipalRel(y),2).map(z=>z[0]).join(' / ')||'NI']});
     const inf=nacionalidades(d,'infrator','Infrator'),vit=nacionalidades(d,'vitima','Vítima');
     const acts=[
       ['CONDUÇÕES',sum(d,'conducoes_operacionais')],['ORIENTAÇÕES',sum(d,'orientacoes')],['FORAGIDOS CAPTURADOS (MANDADO DE PRISÃO)',sum(d,'foragidos')],
@@ -132,7 +132,7 @@
     const oldWhite=armasBrancasAgrupadasRel(old);
 
     const cmdData=comandantesAgrupadosRel(d).map(x=>({nome:x.nome,...metricasComandanteRel(x.registros)}));
-    const cmdChunks=distribuir(cmdData,34);
+    const cmdChunks=distribuir(cmdData,26);
 
     const chartOccData=topComOutros(occ,9,'OUTRAS');
     const chartHoodData=topComOutros(hoods,9,'OUTROS');
@@ -150,7 +150,7 @@
       table(['DOCUMENTO / INDICADOR','QUANTIDADE'],docs.map(x=>[docNome(x[0]),x[1]]),{cls:'r2-tight',widths:['76%','24%']})+
       '<div class="r2-note">AME e Tático Setorial são classificações operacionais das ocorrências e podem se sobrepor aos boletins. Por isso, não devem ser somados entre si para formar um total documental.</div>'+
       '<h1 class="r2-title" style="margin-top:4mm">2. PRINCIPAIS TIPOS DE OCORRÊNCIAS NA UNIDADE OPERACIONAL</h1>'+
-      '<h2 class="r2-section">CLASSIFICAÇÃO DAS OCORRÊNCIAS - TOP 20</h2>'+
+      '<h2 class="r2-section">CLASSIFICAÇÃO DAS OCORRÊNCIAS - TOP 15</h2>'+
       table(['ITEM','DESCRIÇÃO','FREQ.','BAIRROS RECORRENTES','FAIXA ETÁRIA'],occRows,{cls:'r2-mini',widths:['6%','35%','10%','32%','17%']})+
       '<p class="r2-source">As demais naturezas foram consolidadas em “OUTRAS OCORRÊNCIAS”. Fonte: SIE-CPC / 2º BPM.</p>'
     });
@@ -172,15 +172,15 @@
     bodyPages.push({key:'streets',layout:'dense',html:
       '<h2 class="r2-section">RUAS E AVENIDAS COM PREDOMINÂNCIA DE OCORRÊNCIAS</h2>'+
       table(['ORDEM','RUA / AVENIDA','FREQ.','TURNO','OCORRÊNCIAS PREDOMINANTES'],streets,{cls:'r2-mini',widths:['7%','30%','10%','15%','38%']})+
-      '<p class="r2-source">Ranking limitado aos 20 logradouros com maior frequência no período. Fonte: SIE-CPC / 2º BPM.</p>'
-    });
-
-    bodyPages.push({key:'people',layout:'dense',html:
+      '<p class="r2-source">Ranking limitado aos 15 logradouros com maior frequência no período. Fonte: SIE-CPC / 2º BPM.</p>'+
       '<div class="r2-grid-2 align-start"><div><h2 class="r2-section">INFRATORES POR NACIONALIDADE</h2>'+
       table(['ITEM','PAÍS DE ORIGEM','SEXO','FREQ.'],inf.rows.map(r=>[r[0],r[2],r[3],r[4]]),{cls:'r2-mini',widths:['10%','52%','16%','22%'],total:['','TOTAL','',inf.total]})+
       '</div><div><h2 class="r2-section">VÍTIMAS POR NACIONALIDADE</h2>'+
-      table(['ITEM','PAÍS DE ORIGEM','SEXO','FREQ.'],vit.rows.map(r=>[r[0],r[2],r[3],r[4]]),{cls:'r2-mini',widths:['10%','52%','16%','22%'],total:['','TOTAL','',vit.total]})+'</div></div>'+
-      '<h1 class="r2-title" style="margin-top:3mm">3. INFORMAÇÕES GERAIS SOBRE ATUAÇÕES DA UNIDADE</h1>'+
+      table(['ITEM','PAÍS DE ORIGEM','SEXO','FREQ.'],vit.rows.map(r=>[r[0],r[2],r[3],r[4]]),{cls:'r2-mini',widths:['10%','52%','16%','22%'],total:['','TOTAL','',vit.total]})+'</div></div>'
+    });
+
+    bodyPages.push({key:'results',layout:'dense',html:
+      '<h1 class="r2-title">3. INFORMAÇÕES GERAIS SOBRE ATUAÇÕES DA UNIDADE</h1>'+
       '<h2 class="r2-section">RESUMO DAS ATUAÇÕES DA UNIDADE</h2>'+table(['ESPECIFICAÇÃO','QUANTIDADE'],acts,{cls:'r2-mini',widths:['78%','22%']})+
       '<div class="r2-grid-2 align-start"><div><h2 class="r2-section">ARMAS / SIMULACROS / CARREGADORES</h2>'+
       table(['ESPECIFICAÇÃO','QUANTIDADE'],weapons.map(x=>[x[0],x[1]]),{cls:'r2-mini',widths:['72%','28%'],total:['TOTAL',totalEstruturadoOuLegado(d,'armas_itens','quantidade_armas')]})+
@@ -189,6 +189,7 @@
     });
 
     bodyPages.push({key:'drugs',layout:'dense',html:
+      '<div class="r2-kpis"><div class="r2-kpi"><b>'+d.filter(temEntorpecente).length+'</b><span>OCORRÊNCIAS COM DROGAS</span></div><div class="r2-kpi"><b>'+white.total+'</b><span>ARMAS BRANCAS</span></div><div class="r2-kpi"><b>'+ammoTotal+'</b><span>MUNIÇÕES</span></div><div class="r2-kpi"><b>'+totalEstruturadoOuLegado(d,'armas_itens','quantidade_armas')+'</b><span>ARMAS / SIMULACROS</span></div></div>'+
       '<div class="r2-grid-2 align-start"><div><h2 class="r2-section">ENTORPECENTES - INCIDÊNCIA POR OCORRÊNCIA</h2>'+
       table(['TIPO','OCORRÊNCIAS'],entInc.map(x=>[x[0],x[1]]),{cls:'r2-mini',widths:['70%','30%'],total:['TOTAL',d.filter(temEntorpecente).length]})+
       '<h2 class="r2-section">APREENSÕES DE ARMA BRANCA</h2>'+table(['TIPO','QUANTIDADE'],white.itens.map(x=>[x[0],x[1]]),{cls:'r2-mini',widths:['70%','30%'],total:['TOTAL',white.total]})+
@@ -239,11 +240,11 @@
     if(!keyPage['commanders']&&keyPage['commanders-cont'])keyPage['commanders']=keyPage['commanders-cont'];
     const toc=[
       ['1. DOCUMENTAÇÕES EMITIDAS PELA UNIDADE','docs'],['Documentos e indicadores operacionais','docs'],
-      ['2. PRINCIPAIS TIPOS DE OCORRÊNCIAS NA UNIDADE OPERACIONAL','docs'],['Classificação das ocorrências - Top 20','docs'],
+      ['2. PRINCIPAIS TIPOS DE OCORRÊNCIAS NA UNIDADE OPERACIONAL','docs'],['Classificação das ocorrências - Top 15','docs'],
       ['Gráfico das principais ocorrências','occ-chart'],['Volume das ocorrências / principais bairros','occ-chart'],
       ['Gráfico dos principais bairros','hood-chart'],['Quadro por dias da semana / turno','hood-chart'],['Gráficos por dia e turno','hood-chart'],
-      ['Ruas e avenidas com predominância de ocorrências','streets'],['Infratores e vítimas por nacionalidade','people'],
-      ['3. INFORMAÇÕES GERAIS SOBRE ATUAÇÕES DA UNIDADE','people'],['Armas e munições','people'],['Entorpecentes e armas brancas','drugs'],
+      ['Ruas e avenidas com predominância de ocorrências','streets'],['Infratores e vítimas por nacionalidade','streets'],
+      ['3. INFORMAÇÕES GERAIS SOBRE ATUAÇÕES DA UNIDADE','results'],['Armas e munições','results'],['Entorpecentes e armas brancas','drugs'],
       ['Ocorrências por comandantes de viaturas','commanders'],['4. MÍDIAS DE DADOS ESTATÍSTICOS DE PRODUTIVIDADE','final']
     ];
 
