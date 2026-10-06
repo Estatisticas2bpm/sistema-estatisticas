@@ -7,8 +7,8 @@ const dashboard=fs.readFileSync(path.join(root,'dashboard.html'),'utf8');
 const logo=fs.readFileSync(path.join(root,'assets/logos/giro-brasao.svg'),'utf8');
 
 const a=report.indexOf('async function buildGiro()');
-const b=report.indexOf('async function build(){',a);
-assert.ok(a>=0&&b>a,'buildGiro deve existir antes do relatório genérico');
+const b=report.indexOf('async function buildCiptur()',a);
+assert.ok(a>=0&&b>a,'buildGiro deve permanecer isolado do renderer da CIPTUR e do relatório genérico');
 const giro=report.slice(a,b);
 
 assert.match(report,/function ehGiroRel\(\)/);

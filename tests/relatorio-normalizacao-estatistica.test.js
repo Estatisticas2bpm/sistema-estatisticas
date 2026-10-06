@@ -5,6 +5,7 @@ const vm=require('node:vm');
 
 const root=path.resolve(__dirname,'..');
 const relatorio=fs.readFileSync(path.join(root,'relatorio.html'),'utf8');
+const printRenderer=fs.readFileSync(path.join(root,'relatorio-print.js'),'utf8');
 
 const inicio=relatorio.indexOf('function chaveEstatisticaRel');
 const fim=relatorio.indexOf('function formaVisualEntorpecente');
@@ -77,12 +78,41 @@ assert.equal(comandantes.length,2);
 assert.equal(comandantes[0].registros.length,3);
 assert.equal(comandantes[1].registros.length,2);
 
-assert.ok(relatorio.includes("cmdData.some(r=>N(r[x[0]])>0)"),'Colunas zeradas devem ser ocultadas.');
-assert.ok(relatorio.includes('TOTAL COM CMT. IDENTIFICADO'),'Total de comandantes deve ser explícito.');
+const resumoInicio=relatorio.indexOf('function resumoResultadosComandanteRel');
+const resumoFim=relatorio.indexOf('function criarModeloRelatorio2Bpm',resumoInicio);
+assert.ok(resumoInicio>=0&&resumoFim>resumoInicio,'Resumo estruturado dos resultados do comandante não encontrado.');
+const resumoContexto={N:contexto.N};
+vm.createContext(resumoContexto);
+vm.runInContext(relatorio.slice(resumoInicio,resumoFim),resumoContexto);
+const resumoComResultados=resumoContexto.resumoResultadosComandanteRel({
+  armas_fogo:1,simulacros:0,legado:0,municoes:16,veiculos:1,
+  foragidos_descumprimento:9,entorpecentes:6
+});
+assert.equal(resumoComResultados,'Armas: 1 · Munições: 16 · Veículos: 1 · Forag./Desc.: 9 · Drogas: 6');
+assert.ok(!resumoComResultados.includes('Simulacros'),'Métricas zeradas não devem aparecer no resumo do comandante.');
+assert.ok(!resumoComResultados.includes('Legado'),'Métricas zeradas não devem aparecer no resumo do comandante.');
+assert.equal(resumoContexto.resumoResultadosComandanteRel({}), '—','Comandante sem resultado operacional deve usar travessão.');
+
+assert.ok(relatorio.includes('const commanderRows=commanders.map'),'Modelo do 2º BPM deve fornecer todos os comandantes ao compositor, sem chunks fixos.');
+assert.ok(printRenderer.includes("headers:['ITEM','COMANDANTE','OCORRÊNCIAS','RESULTADOS OPERACIONAIS']"),'Renderer deve usar o resumo compacto de resultados dos comandantes.');
+assert.ok(printRenderer.includes('TOTAL COM CMT. IDENTIFICADO'),'Total de comandantes deve ser explícito na última parte da tabela.');
 assert.ok(relatorio.includes("sum(g,'foragidos')+g.filter(y=>S(y.ocorrencia).toUpperCase().includes('DESCUMPRIMENTO')).length"),'Métrica de foragidos/descumprimento deve usar a mesma regra nas linhas.');
-assert.ok(relatorio.includes("escopoTerritorialVisivel()?'<h3>'+E(escopoTerritorialVisivel())+'</h3>':''"),'A capa do 2º BPM não deve exibir o escopo “Todas”.');
+
+const escopoInicio=relatorio.indexOf('function escopoTerritorialSelecionado');
+const escopoFim=relatorio.indexOf('function escopoTerritorial()',escopoInicio);
+assert.ok(escopoInicio>=0&&escopoFim>escopoInicio,'Função de escopo territorial selecionado não encontrada.');
+const escopoContexto={
+  sisc:{value:''},
+  companhia:{value:'',selectedIndex:0,options:[{text:'Todas'},{text:'1ª Companhia'}]}
+};
+vm.createContext(escopoContexto);
+vm.runInContext(relatorio.slice(escopoInicio,escopoFim),escopoContexto);
+assert.equal(escopoContexto.escopoTerritorialSelecionado(),'','Opção vazia “Todas” não pode virar rótulo na capa do 2º BPM.');
+escopoContexto.companhia.value='1ª CIA';escopoContexto.companhia.selectedIndex=1;
+assert.equal(escopoContexto.escopoTerritorialSelecionado(),'1ª Companhia','Filtro territorial real deve continuar visível.');
+assert.ok(relatorio.includes('scopeLabel:escopoTerritorialSelecionado()'),'Modelo do 2º BPM deve receber apenas o filtro territorial efetivamente selecionado.');
+assert.ok(printRenderer.includes("!value(this.meta.scopeLabel).trim()&&/\\bTODAS?\\b/i"),'Validação física deve rejeitar “Todas” quando não existe filtro.');
 assert.ok(relatorio.includes("if(c==='NÃO INFORMADA'||!['M','F'].includes(sx))return;"),'Nacionalidades sem sexo M/F não devem entrar na estatística.');
-assert.ok(relatorio.includes("for(let i=0;i<cmdRows.length;i+=20)"),'A lista de comandantes deve ser paginada de forma mais legível.');
 
 const drugInicio=relatorio.indexOf('function normalizarTipoEntorpecenteRel');
 const drugFim=relatorio.indexOf('function totalEstruturadoOuLegado');
