@@ -216,7 +216,7 @@ function armasBrancasAgrupadasRel(registros){
   const itens=Object.entries(m).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],'pt-BR'));
   return{itens,total:itens.reduce((s,x)=>s+x[1],0)};
 }
-function chaveComandanteRel(v){return chaveEstatisticaRel(v).replace(/\b([123])º?\s*SGT\b/g,'$1 SGT').replace(/\bSARGENTO\b/g,'SGT').replace(/\bCABO\b/g,'CB').replace(/\bSOLDADO\b/g,'SD').replace(/\s+/g,' ').trim()}
+function chaveComandanteRel(v){return chaveEstatisticaRel(v).replace(/\bPM\b/g,' ').replace(/\b([123])º?\s*SGT\b/g,'$1 SGT').replace(/\bSARGENTO\b/g,'SGT').replace(/\bCABO\b/g,'CB').replace(/\bSOLDADO\b/g,'SD').replace(/\s+/g,' ').trim()}
 function rotuloComandanteRel(v){return S(v).replace(/\s+/g,' ').trim().toUpperCase().replace(/\bSARGENTO\b/g,'SGT').replace(/\bCABO\b/g,'CB').replace(/\bSOLDADO\b/g,'SD')}
 function comandantesAgrupadosRel(registros){
   const m=new Map();
