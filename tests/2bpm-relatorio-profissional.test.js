@@ -17,10 +17,12 @@ assert.ok(js.includes("scopeLabel()"));
 assert.ok(!js.includes("TODAS AS SISC E COMPANHIAS"),'Renderer profissional não pode possuir fallback “Todas”.');
 assert.ok(!js.includes("Todas</"),'Renderer profissional não pode imprimir “Todas”.');
 
-assert.ok(js.includes("topComOutros(occ,20,'OUTRAS OCORRÊNCIAS')"),'Principais ocorrências devem usar Top 20 + outras.');
+assert.ok(js.includes("topComOutros(occ,15,'OUTRAS OCORRÊNCIAS')"),'Principais ocorrências devem usar Top 15 + outras.');
 assert.ok(js.includes("topComOutros(hoods,9,'OUTROS')"),'Gráfico de bairros deve ser resumido.');
-assert.ok(js.includes("distribuir(cmdData,34)"),'Comandantes devem ser distribuídos de forma balanceada, sem blocos fixos de 20.');
+assert.ok(js.includes("distribuir(cmdData,26)"),'Comandantes devem ser distribuídos de forma balanceada, sem blocos fixos de 20.');
 assert.ok(js.includes("RESULTADOS OPERACIONAIS"),'Quadro de comandantes deve usar coluna consolidada.');
+assert.ok(js.includes("rank(d,'endereco',15)"),'Logradouros devem usar Top 15 para evitar quebra de página.');
+assert.ok(js.includes("r2-kpis"),'Página de apreensões deve aproveitar melhor a área com indicadores-resumo.');
 assert.ok(js.includes("return p.join(' · ')||'—';"),'Indicadores zerados não devem poluir a linha do comandante.');
 
 assert.ok(js.includes("chart.toBase64Image"),'Gráficos do PDF devem ser transformados em imagens estáticas.');
