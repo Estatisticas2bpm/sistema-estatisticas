@@ -27,6 +27,7 @@ assert.equal(contexto.normalizarNacionalidadeRel('brasileiro'),'BR — BRASILEIR
 assert.equal(contexto.normalizarNacionalidadeRel('VE'),'VE — VENEZUELANA');
 assert.equal(contexto.normalizarNacionalidadeRel('VE - Venezuelana'),'VE — VENEZUELANA');
 assert.equal(contexto.normalizarNacionalidadeRel('venezuelano'),'VE — VENEZUELANA');
+assert.equal(contexto.normalizarNacionalidadeRel('GUI'),'GY — GUIANENSE');
 
 assert.equal(contexto.normalizarSexoRel('Masculino'),'M');
 assert.equal(contexto.normalizarSexoRel('feminino'),'F');
@@ -44,14 +45,14 @@ const agrupadas=contexto.armasBrancasAgrupadasRel([
   {arma_branca:'faca de açougueiro',quantidade_arma_branca:1},
   {arma_branca:'Facão',quantidade_arma_branca:1},
   {arma_branca:'CUTELOS Quantidade 2',quantidade_arma_branca:2},
-  {arma_branca:'00 Unidades',quantidade_arma_branca:1}
+  {arma_branca:'00 Unidades',quantidade_arma_branca:0}
 ]);
 const mapa=Object.fromEntries(agrupadas.itens);
 assert.equal(mapa.FACA,3);
 assert.equal(mapa['FACÃO'],1);
 assert.equal(mapa.CUTELO,2);
-assert.equal(mapa['NÃO ESPECIFICADA'],1);
-assert.equal(agrupadas.total,7);
+assert.equal(mapa['NÃO ESPECIFICADA'],undefined);
+assert.equal(agrupadas.total,6);
 
 const comandantes=contexto.comandantesAgrupadosRel([
   {comandante:'SGT PM SILVA'},
