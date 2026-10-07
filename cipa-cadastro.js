@@ -63,9 +63,13 @@
     }
     const hem=bruto.match(/[^\n]{0,100}\d{1,3}(?:[.,]\d+)?(?:\s*[°º][^\n]{0,55})?[NS][^\n]{0,120}\d{1,3}(?:[.,]\d+)?(?:\s*[°º][^\n]{0,55})?[EWO][^\n]{0,60}/i);
     if(hem){const p=parseCoordenadas(hem[0]);if(p)return{texto:hem[0].replace(/\s+/g,' ').trim(),lat:p.lat,lon:p.lon,origem:'coordenada hemisférica'}}
-    for(const linha of linhas){
-      const p=parseCoordenadas(linha);
-      if(p)return{texto:linha.replace(/\s+/g,' ').trim(),lat:p.lat,lon:p.lon,origem:'par geográfico válido'};
+    for(let i=0;i<linhas.length;i++){
+      const trecho=linhas.slice(i,i+3).join(' ').replace(/\s+/g,' ').trim();
+      const hemisferios=/\d[^\n]{0,55}[NS][^\n]{0,90}\d[^\n]{0,55}[EWO]/i.test(trecho);
+      const decimal=/-?\d{1,2}[.,]\d{4,}\s*[,;/]\s*-?\d{1,3}[.,]\d{4,}/.test(trecho);
+      if(!hemisferios&&!decimal)continue;
+      const p=parseCoordenadas(trecho);
+      if(p)return{texto:trecho,lat:p.lat,lon:p.lon,origem:'par geográfico válido'};
     }
     return null;
   }
