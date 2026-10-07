@@ -101,7 +101,7 @@
       ['art_dec_6514','Art. Dec. 6.514/08','text'],['outra_legislacao','Outra legislação','text'],['descricao_infracao','Descrição da infração','textarea','cipa-span4']
     ]},
     embargos:{box:'cipaEmbargos',titulo:'Termos de Embargo / Interdição',botao:'+ Adicionar Termo',campos:[
-      ['numero','Nº do Termo','text'],['data_embargo','Data','date'],['auto_infracao_originario','Auto de Infração originário','text'],['area_embargada_ha','Área (ha)','number'],['descricao','Descrição','textarea','cipa-span4']
+      ['numero','Nº do Termo','text'],['data_embargo','Data','date'],['auto_infracao_originario','Auto de Infração originário','text'],['area_embargada_ha','Área vinculada (ha)','number'],['descricao','Fundamento legal (Art. Decreto 6.514/08) e descrição','textarea','cipa-span4']
     ]},
     notificacoes:{box:'cipaNotificacoes',titulo:'Autos de Notificação',botao:'+ Adicionar Notificação',campos:[
       ['numero','Nº da Notificação','text'],['data_notificacao','Data','date'],['hora_notificacao','Hora','time'],['autuado','Autuado','text'],['data_limite','Data limite','date'],['fiscal_ambiental','Fiscal ambiental','text'],['descricao','Descrição','textarea','cipa-span4']
