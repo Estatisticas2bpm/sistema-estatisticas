@@ -82,7 +82,7 @@
       );
       html=html.replace(
         '      if (!bairroDigitado && bairroAlterado) return mostrarErroCampo("bairro","Informe o bairro da ocorrência. Se o Google Maps não identificar corretamente, preencha o campo manualmente.");',
-        '      const cipaTemCoordenadas=Boolean(document.getElementById("latitude").value&&document.getElementById("longitude").value);\n      if (!bairroDigitado && bairroAlterado && !cipaTemCoordenadas) return mostrarErroCampo("bairro","Informe o bairro da ocorrência urbana ou forneça coordenadas geográficas válidas para a ocorrência rural.");'
+        '      const cipaCoordenadasDigitadas=document.getElementById("cipaLocalCoordenadas")?.value.trim()||"";\n      if(cipaCoordenadasDigitadas&&!window.CipaCadastro?.parseCoordenadas?.(cipaCoordenadasDigitadas)) return mostrarErroCampo("cipaLocalCoordenadas","Revise as coordenadas geográficas. O formato informado não foi reconhecido.");\n      const cipaTemCoordenadas=Boolean(document.getElementById("latitude").value&&document.getElementById("longitude").value);\n      if (!bairroDigitado && bairroAlterado && !cipaTemCoordenadas) return mostrarErroCampo("bairro","Informe o bairro da ocorrência urbana ou forneça coordenadas geográficas válidas para a ocorrência rural.");'
       );
       html=html.replace(
         '      if ((!enderecoAtual || !document.getElementById("latitude").value || !document.getElementById("longitude").value) && enderecoFoiAlterado) return mostrarErroCampo("enderecoGoogle","O endereço foi alterado. Pesquise e selecione uma sugestão do Google Maps antes de salvar.");',
@@ -102,7 +102,7 @@
       );
       html=html.replace(
         '</body>',
-        '<script src="cipa-cadastro.js?v=20261007-5"><\/script></body>'
+        '<script src="cipa-cadastro.js?v=20261007-6"><\/script></body>'
       );
     }
 
