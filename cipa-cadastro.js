@@ -56,6 +56,12 @@
   }
   function coordenadasDoTexto(texto){
     const bruto=String(texto||''),linhas=bruto.split(/\r?\n/);
+    const latNome=bruto.match(/\bLAT(?:ITUDE)?\s*[:=]?\s*(-?\d{1,2}[.,]\d{3,})/i);
+    const lonNome=bruto.match(/\b(?:LON(?:GITUDE)?|LONG)\s*[:=]?\s*(-?\d{1,3}[.,]\d{3,})/i);
+    if(latNome&&lonNome){
+      const lat=coordNumero(latNome[1]),lon=coordNumero(lonNome[1]);
+      if(coordNoEstado(lat,lon))return{texto:latNome[1]+', '+lonNome[1],lat,lon,origem:'latitude e longitude identificadas'};
+    }
     for(const linha of linhas){
       if(/COORD|LATITUDE|LONGITUDE|\bGPS\b|LOCALIZA[ÇC][ÃA]O|GEOGR[ÁA]FIC/i.test(linha)){
         const p=parseCoordenadas(linha);if(p)return{texto:linha.trim(),lat:p.lat,lon:p.lon,origem:'texto identificado'};
@@ -214,7 +220,17 @@
 
   window.addEventListener('sie:pdf-texto-extraido',evento=>{
     const texto=evento?.detail?.texto;
-    if(texto)extrairCipa(texto);
+    if(!texto)return;
+    const haviaCoordenada=Boolean(coordCampo()?.value.trim());
+    extrairCipa(texto);
+    const info=evento.detail||{};
+    if(!haviaCoordenada&&info.origem==='ocr'&&coordCampo()?.value.trim()){
+      const status=$('cipaStatusCoordenadas');
+      if(status){
+        status.textContent='Coordenada sugerida pelo OCR ('+(info.metodo||'imagem')+', página '+info.pagina+'). Confira com o PPE antes de salvar.';
+        status.style.color='#9a5b0b';
+      }
+    }
   });
 
   const idEdicaoCipa=new URLSearchParams(location.search).get('id');if(idEdicaoCipa)carregar(idEdicaoCipa);
