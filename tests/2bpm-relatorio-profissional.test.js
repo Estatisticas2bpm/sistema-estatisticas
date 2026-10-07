@@ -24,6 +24,14 @@ assert.ok(js.includes("RESULTADOS OPERACIONAIS"),'Quadro de comandantes deve usa
 assert.ok(js.includes("rank(d,'endereco',15)"),'Logradouros devem usar Top 15 para evitar quebra de página.');
 assert.ok(js.includes("r2-kpis"),'Página de apreensões deve aproveitar melhor a área com indicadores-resumo.');
 assert.ok(js.includes("return p.join(' · ')||'—';"),'Indicadores zerados não devem poluir a linha do comandante.');
+assert.ok(js.includes("resultadoTotalComandantes(cmdData)"),'Total dos comandantes também deve ocultar indicadores zerados.');
+assert.ok(js.includes("comandantesNaPaginaResultados"),'Períodos curtos devem poder incorporar comandantes à página de atuações.');
+assert.ok(js.includes("if(temDetalhesApreensao)"),'Página de apreensões só deve existir quando houver dados relevantes.');
+assert.ok(js.includes("if(weapons.length)blocosArmasMunicoes.push"),'Bloco de armas vazio não deve ser exibido.');
+assert.ok(js.includes("if(ammo.length)blocosArmasMunicoes.push"),'Bloco de munições vazio não deve ser exibido.');
+assert.ok(!js.includes("AME e Tático Setorial são classificações operacionais"),'Nota explicativa de AME/Tático não deve aparecer no relatório executivo.');
+assert.ok(!js.includes("A coluna “Resultados operacionais” exibe somente indicadores maiores que zero"),'Nota explicativa dos comandantes não deve aparecer.');
+assert.ok(!js.includes("A quantidade física considera a forma visual registrada"),'Nota metodológica de entorpecentes não deve aparecer.');
 
 assert.ok(js.includes("chart.toBase64Image"),'Gráficos do PDF devem ser transformados em imagens estáticas.');
 assert.ok(js.includes("animation:false"),'Gráficos devem estar estáveis antes da impressão.');

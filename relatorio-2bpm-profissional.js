@@ -57,6 +57,17 @@
     if(num(r.entorpecentes))p.push('Drogas: '+num(r.entorpecentes));
     return p.join(' · ')||'—';
   }
+  function resultadoTotalComandantes(lista){
+    return resultadoComandante({
+      armas_fogo:lista.reduce((s,r)=>s+num(r.armas_fogo),0),
+      simulacros:lista.reduce((s,r)=>s+num(r.simulacros),0),
+      legado:lista.reduce((s,r)=>s+num(r.legado),0),
+      municoes:lista.reduce((s,r)=>s+num(r.municoes),0),
+      veiculos:lista.reduce((s,r)=>s+num(r.veiculos),0),
+      foragidos_descumprimento:lista.reduce((s,r)=>s+num(r.foragidos_descumprimento),0),
+      entorpecentes:lista.reduce((s,r)=>s+num(r.entorpecentes),0)
+    });
+  }
   async function chartImage(config,w=1100,he=620){
     const box=document.createElement('div');box.style.cssText='position:fixed;left:-20000px;top:0;width:'+w+'px;height:'+he+'px;background:#fff;z-index:-1';
     const canvas=document.createElement('canvas');canvas.width=w;canvas.height=he;box.appendChild(canvas);document.body.appendChild(box);
@@ -130,9 +141,13 @@
     ];
     const weapons=detalhesArmasRel(d),ammo=detalhesMunicoesRel(d),ammoTotal=ammo.reduce((s,x)=>s+num(x[1]),0),entInc=incidenciaEntorpecentes(d),entMat=materiaisEntorpecentes(d),white=armasBrancasAgrupadasRel(d);
     const oldWhite=armasBrancasAgrupadasRel(old);
+    const qtdArmas=totalEstruturadoOuLegado(d,'armas_itens','quantidade_armas');
+    const qtdAutos=sum(d,'quantidade_autos_infracao'),qtdRemocoes=d.filter(x=>S(x.auto_infracao).includes('REMO')).length,qtdResistencia=d.filter(x=>S(x.auto_resistencia)==='SIM').length;
+    const temDetalhesApreensao=entInc.length>0||entMat.length>0||white.total>0||qtdAutos>0||qtdRemocoes>0||qtdResistencia>0;
 
     const cmdData=comandantesAgrupadosRel(d).map(x=>({nome:x.nome,...metricasComandanteRel(x.registros)}));
     const cmdChunks=distribuir(cmdData,26);
+    const comandantesNaPaginaResultados=cmdData.length>0&&cmdData.length<=10&&!temDetalhesApreensao;
 
     const chartOccData=topComOutros(occ,9,'OUTRAS');
     const chartHoodData=topComOutros(hoods,9,'OUTROS');
@@ -148,16 +163,14 @@
       '<h1 class="r2-title">1. DOCUMENTAÇÕES EMITIDAS PELA UNIDADE</h1>'+
       '<h2 class="r2-section">DOCUMENTOS E INDICADORES OPERACIONAIS</h2>'+
       table(['DOCUMENTO / INDICADOR','QUANTIDADE'],docs.map(x=>[docNome(x[0]),x[1]]),{cls:'r2-tight',widths:['76%','24%']})+
-      '<div class="r2-note">AME e Tático Setorial são classificações operacionais das ocorrências e podem se sobrepor aos boletins. Por isso, não devem ser somados entre si para formar um total documental.</div>'+
+
       '<h1 class="r2-title" style="margin-top:4mm">2. PRINCIPAIS TIPOS DE OCORRÊNCIAS NA UNIDADE OPERACIONAL</h1>'+
       '<h2 class="r2-section">CLASSIFICAÇÃO DAS OCORRÊNCIAS - TOP 15</h2>'+
-      table(['ITEM','DESCRIÇÃO','FREQ.','BAIRROS RECORRENTES','FAIXA ETÁRIA'],occRows,{cls:'r2-mini',widths:['6%','35%','10%','32%','17%']})+
-      '<p class="r2-source">As demais naturezas foram consolidadas em “OUTRAS OCORRÊNCIAS”. Fonte: SIE-CPC / 2º BPM.</p>'
+      table(['ITEM','DESCRIÇÃO','FREQ.','BAIRROS RECORRENTES','FAIXA ETÁRIA'],occRows,{cls:'r2-mini',widths:['6%','35%','10%','32%','17%']})
     });
 
     bodyPages.push({key:'occ-chart',layout:'dense',html:
       '<h2 class="r2-section">GRÁFICO DAS PRINCIPAIS OCORRÊNCIAS</h2><img class="r2-chart r2-chart-large" src="'+imgOcc+'" alt="Gráfico das principais ocorrências">'+
-      '<p class="r2-source">Top 9 naturezas e demais ocorrências consolidadas. Fonte: SIE-CPC / 2º BPM.</p>'+
       '<h2 class="r2-section">VOLUME DE OCORRÊNCIAS / PRINCIPAIS BAIRROS</h2>'+
       table(['ORDEM','BAIRRO','ATUAL','COMPARADO','VARIAÇÃO'],hoodRows,{cls:'r2-mini',widths:['8%','42%','16%','17%','17%'],total:['TOTAL GERAL','',d.length,old.length,variance(d.length,old.length)]})
     });
@@ -172,44 +185,54 @@
     bodyPages.push({key:'streets',layout:'dense',html:
       '<h2 class="r2-section">RUAS E AVENIDAS COM PREDOMINÂNCIA DE OCORRÊNCIAS</h2>'+
       table(['ORDEM','RUA / AVENIDA','FREQ.','TURNO','OCORRÊNCIAS PREDOMINANTES'],streets,{cls:'r2-mini',widths:['7%','30%','10%','15%','38%']})+
-      '<p class="r2-source">Ranking limitado aos 15 logradouros com maior frequência no período. Fonte: SIE-CPC / 2º BPM.</p>'+
       '<div class="r2-grid-2 align-start"><div><h2 class="r2-section">INFRATORES POR NACIONALIDADE</h2>'+
       table(['ITEM','PAÍS DE ORIGEM','SEXO','FREQ.'],inf.rows.map(r=>[r[0],r[2],r[3],r[4]]),{cls:'r2-mini',widths:['10%','52%','16%','22%'],total:['','TOTAL','',inf.total]})+
       '</div><div><h2 class="r2-section">VÍTIMAS POR NACIONALIDADE</h2>'+
       table(['ITEM','PAÍS DE ORIGEM','SEXO','FREQ.'],vit.rows.map(r=>[r[0],r[2],r[3],r[4]]),{cls:'r2-mini',widths:['10%','52%','16%','22%'],total:['','TOTAL','',vit.total]})+'</div></div>'
     });
 
-    bodyPages.push({key:'results',layout:'dense',html:
+    const blocosArmasMunicoes=[];
+    if(weapons.length)blocosArmasMunicoes.push('<div><h2 class="r2-section">ARMAS / SIMULACROS / CARREGADORES</h2>'+table(['ESPECIFICAÇÃO','QUANTIDADE'],weapons.map(x=>[x[0],x[1]]),{cls:'r2-mini',widths:['72%','28%'],total:['TOTAL',qtdArmas]})+'</div>');
+    if(ammo.length)blocosArmasMunicoes.push('<div><h2 class="r2-section">MUNIÇÕES APREENDIDAS</h2>'+table(['CALIBRE','QUANTIDADE'],ammo.map(x=>[x[0],x[1]]),{cls:'r2-mini',widths:['68%','32%'],total:['TOTAL',ammoTotal]})+'</div>');
+
+    let resultsHtml=
       '<h1 class="r2-title">3. INFORMAÇÕES GERAIS SOBRE ATUAÇÕES DA UNIDADE</h1>'+
       '<h2 class="r2-section">RESUMO DAS ATUAÇÕES DA UNIDADE</h2>'+table(['ESPECIFICAÇÃO','QUANTIDADE'],acts,{cls:'r2-mini',widths:['78%','22%']})+
-      '<div class="r2-grid-2 align-start"><div><h2 class="r2-section">ARMAS / SIMULACROS / CARREGADORES</h2>'+
-      table(['ESPECIFICAÇÃO','QUANTIDADE'],weapons.map(x=>[x[0],x[1]]),{cls:'r2-mini',widths:['72%','28%'],total:['TOTAL',totalEstruturadoOuLegado(d,'armas_itens','quantidade_armas')]})+
-      '</div><div><h2 class="r2-section">MUNIÇÕES APREENDIDAS</h2>'+
-      table(['CALIBRE','QUANTIDADE'],ammo.map(x=>[x[0],x[1]]),{cls:'r2-mini',widths:['68%','32%'],total:['TOTAL',ammoTotal]})+'</div></div>'
-    });
+      (blocosArmasMunicoes.length?'<div class="r2-grid-2 align-start">'+blocosArmasMunicoes.join('')+'</div>':'');
 
-    bodyPages.push({key:'drugs',layout:'dense',html:
-      '<div class="r2-kpis"><div class="r2-kpi"><b>'+d.filter(temEntorpecente).length+'</b><span>OCORRÊNCIAS COM DROGAS</span></div><div class="r2-kpi"><b>'+white.total+'</b><span>ARMAS BRANCAS</span></div><div class="r2-kpi"><b>'+ammoTotal+'</b><span>MUNIÇÕES</span></div><div class="r2-kpi"><b>'+totalEstruturadoOuLegado(d,'armas_itens','quantidade_armas')+'</b><span>ARMAS / SIMULACROS</span></div></div>'+
-      '<div class="r2-grid-2 align-start"><div><h2 class="r2-section">ENTORPECENTES - INCIDÊNCIA POR OCORRÊNCIA</h2>'+
-      table(['TIPO','OCORRÊNCIAS'],entInc.map(x=>[x[0],x[1]]),{cls:'r2-mini',widths:['70%','30%'],total:['TOTAL',d.filter(temEntorpecente).length]})+
-      '<h2 class="r2-section">APREENSÕES DE ARMA BRANCA</h2>'+table(['TIPO','QUANTIDADE'],white.itens.map(x=>[x[0],x[1]]),{cls:'r2-mini',widths:['70%','30%'],total:['TOTAL',white.total]})+
-      '<h2 class="r2-section">TRÂNSITO / RESISTÊNCIA</h2>'+table(['INDICADOR','QUANTIDADE'],[
-        ['INFRAÇÕES DE TRÂNSITO',sum(d,'quantidade_autos_infracao')],
-        ['AUTOS DE REMOÇÃO',d.filter(x=>S(x.auto_infracao).includes('REMO')).length],
-        ['AUTOS DE RESISTÊNCIA',d.filter(x=>S(x.auto_resistencia)==='SIM').length]
-      ],{cls:'r2-mini',widths:['72%','28%']})+
-      '</div><div><h2 class="r2-section">ENTORPECENTES - MATERIAIS REGISTRADOS</h2>'+
-      table(['TIPO','APRESENTAÇÃO','QTD.'],entMat.map(x=>[x[0],x[1],x[2]]),{cls:'r2-mini',widths:['31%','47%','22%']})+
-      '<p class="r2-source">A quantidade física considera a forma visual registrada na ocorrência, sem conversão para peso ou medida.</p></div></div>'
-    });
+    if(comandantesNaPaginaResultados){
+      const rows=cmdData.map((r,i)=>[i+1,r.nome,r.ocorrencias,resultadoComandante(r)]);
+      resultsHtml+='<h2 class="r2-section">OCORRÊNCIAS POR COMANDANTES DE VIATURAS</h2>'+
+        table(['ITEM','COMANDANTE','OCORRÊNCIAS','RESULTADOS OPERACIONAIS'],rows,{cls:'r2-commander-table',widths:['7%','29%','12%','52%'],total:['','TOTAL COM CMT. IDENTIFICADO',cmdData.reduce((s,r)=>s+num(r.ocorrencias),0),resultadoTotalComandantes(cmdData)]});
+    }
+    bodyPages.push({key:'results',layout:'dense',html:resultsHtml});
 
-    cmdChunks.forEach((chunk,idx)=>{
+    if(temDetalhesApreensao){
+      const cards=[
+        [d.filter(temEntorpecente).length,'OCORRÊNCIAS COM DROGAS'],
+        [white.total,'ARMAS BRANCAS'],
+        [ammoTotal,'MUNIÇÕES'],
+        [qtdArmas,'ARMAS / SIMULACROS']
+      ].filter(x=>x[0]>0);
+      const esquerda=[];
+      if(entInc.length)esquerda.push('<h2 class="r2-section">ENTORPECENTES - INCIDÊNCIA POR OCORRÊNCIA</h2>'+table(['TIPO','OCORRÊNCIAS'],entInc.map(x=>[x[0],x[1]]),{cls:'r2-mini',widths:['70%','30%'],total:['TOTAL',d.filter(temEntorpecente).length]}));
+      if(white.total)esquerda.push('<h2 class="r2-section">APREENSÕES DE ARMA BRANCA</h2>'+table(['TIPO','QUANTIDADE'],white.itens.map(x=>[x[0],x[1]]),{cls:'r2-mini',widths:['70%','30%'],total:['TOTAL',white.total]}));
+      if(qtdAutos||qtdRemocoes||qtdResistencia)esquerda.push('<h2 class="r2-section">TRÂNSITO / RESISTÊNCIA</h2>'+table(['INDICADOR','QUANTIDADE'],[
+        ['INFRAÇÕES DE TRÂNSITO',qtdAutos],['AUTOS DE REMOÇÃO',qtdRemocoes],['AUTOS DE RESISTÊNCIA',qtdResistencia]
+      ].filter(x=>x[1]>0),{cls:'r2-mini',widths:['72%','28%']}));
+      const direita=entMat.length?'<div><h2 class="r2-section">ENTORPECENTES - MATERIAIS REGISTRADOS</h2>'+table(['TIPO','APRESENTAÇÃO','QTD.'],entMat.map(x=>[x[0],x[1],x[2]]),{cls:'r2-mini',widths:['31%','47%','22%']})+'</div>':'';
+      bodyPages.push({key:'drugs',layout:'dense',html:
+        (cards.length?'<div class="r2-kpis">'+cards.map(x=>'<div class="r2-kpi"><b>'+x[0]+'</b><span>'+x[1]+'</span></div>').join('')+'</div>':'')+
+        '<div class="r2-grid-2 align-start"><div>'+esquerda.join('')+'</div>'+direita+'</div>'
+      });
+    }
+
+    if(cmdData.length&&!comandantesNaPaginaResultados)cmdChunks.forEach((chunk,idx)=>{
       const first=idx===0,totalFinal=idx===cmdChunks.length-1;
       const rows=chunk.map((r,i)=>[cmdChunks.slice(0,idx).reduce((s,x)=>s+x.length,0)+i+1,r.nome,r.ocorrencias,resultadoComandante(r)]);
-      const totals=totalFinal?['','TOTAL COM CMT. IDENTIFICADO',cmdData.reduce((s,r)=>s+num(r.ocorrencias),0),'Armas: '+cmdData.reduce((s,r)=>s+num(r.armas_fogo),0)+' · Simulacros: '+cmdData.reduce((s,r)=>s+num(r.simulacros),0)+' · Munições: '+cmdData.reduce((s,r)=>s+num(r.municoes),0)+' · Veículos: '+cmdData.reduce((s,r)=>s+num(r.veiculos),0)+' · Forag./Desc.: '+cmdData.reduce((s,r)=>s+num(r.foragidos_descumprimento),0)+' · Drogas: '+cmdData.reduce((s,r)=>s+num(r.entorpecentes),0)]:null;
+      const totals=totalFinal?['','TOTAL COM CMT. IDENTIFICADO',cmdData.reduce((s,r)=>s+num(r.ocorrencias),0),resultadoTotalComandantes(cmdData)]:null;
       bodyPages.push({key:first?'commanders':'commanders-cont',layout:'dense',html:
         '<h2 class="r2-section">OCORRÊNCIAS POR COMANDANTES DE VIATURAS'+(first?'':' - CONTINUAÇÃO')+'</h2>'+
-        (first?'<div class="r2-note">A coluna “Resultados operacionais” exibe somente indicadores maiores que zero, eliminando colunas vazias e tornando o quadro mais legível.</div>':'')+
         table(['ITEM','COMANDANTE','OCORRÊNCIAS','RESULTADOS OPERACIONAIS'],rows,{cls:'r2-commander-table',widths:['7%','29%','12%','52%'],total:totals})
       });
     });
@@ -244,8 +267,11 @@
       ['Gráfico das principais ocorrências','occ-chart'],['Volume das ocorrências / principais bairros','occ-chart'],
       ['Gráfico dos principais bairros','hood-chart'],['Quadro por dias da semana / turno','hood-chart'],['Gráficos por dia e turno','hood-chart'],
       ['Ruas e avenidas com predominância de ocorrências','streets'],['Infratores e vítimas por nacionalidade','streets'],
-      ['3. INFORMAÇÕES GERAIS SOBRE ATUAÇÕES DA UNIDADE','results'],['Armas e munições','results'],['Entorpecentes e armas brancas','drugs'],
-      ['Ocorrências por comandantes de viaturas','commanders'],['4. MÍDIAS DE DADOS ESTATÍSTICOS DE PRODUTIVIDADE','final']
+      ['3. INFORMAÇÕES GERAIS SOBRE ATUAÇÕES DA UNIDADE','results'],
+      ...(blocosArmasMunicoes.length?[['Armas e munições','results']]:[]),
+      ...(temDetalhesApreensao?[['Entorpecentes, arma branca, trânsito e resistência','drugs']]:[]),
+      ...(cmdData.length?[['Ocorrências por comandantes de viaturas',comandantesNaPaginaResultados?'results':'commanders']]:[]),
+      ['4. MÍDIAS DE DADOS ESTATÍSTICOS DE PRODUTIVIDADE','final']
     ];
 
     const htmlPages=[];
