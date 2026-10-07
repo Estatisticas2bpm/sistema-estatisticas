@@ -1,5 +1,6 @@
-(function(){
-  const sigla=String(window.SistemaAuth?.contexto?.sigla||window.SistemaAuth?.perfil?.unidades?.sigla||'').toUpperCase();
+(async function(){
+  const sessaoCipa=window.SistemaAuth?.ready?await window.SistemaAuth.ready:window.SistemaAuth;
+  const sigla=String(sessaoCipa?.contexto?.sigla||sessaoCipa?.perfil?.unidades?.sigla||'').toUpperCase();
   if(sigla!=='CIPA')return;
 
   const $=id=>document.getElementById(id);
