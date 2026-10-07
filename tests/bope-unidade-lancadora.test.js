@@ -3,7 +3,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const root=path.resolve(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
-const migration=read('supabase/migrations/20261007165000_bope_unidade_lancadora_origem_operacional.sql');
+const migration=read('supabase/migrations/20261007170559_bope_unidade_lancadora_origem_operacional.sql');
 const cadastro=read('cadastro.html');
 const dashboard=read('dashboard.html');
 const relatorio=read('relatorio.html');
