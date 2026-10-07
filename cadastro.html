@@ -69,6 +69,26 @@
 
     if(ehCipaCadastro){
       html=html.replace(
+        '<h2>3. Local da ocorrência</h2>',
+        '<h2>3. Local da ocorrência — CIPA</h2>'
+      );
+      html=html.replace(
+        '<div class="grade">\n          <div class="campo triplo">\n            <label for="endereco">Endereço</label>',
+        '<div class="grade">\n          <div class="campo"><label for="cipaAreaTipo">Tipo de área *</label><select id="cipaAreaTipo"><option value="">Selecione</option><option>URBANA</option><option>RURAL</option></select><span class="nota">Informe se o fato ocorreu em área urbana ou rural.</span></div>\n          <div class="campo triplo"><label for="cipaLocalCoordenadas">Coordenadas geográficas</label><input id="cipaLocalCoordenadas" type="text" autocomplete="off" placeholder="Ex.: 2°21 30 N / 61°44 15 W ou 2.358333, -61.737500"><small id="cipaStatusCoordenadas" style="color:#64748b">Em área rural, informe ou confirme as coordenadas do PPE. Em área urbana, você pode usar o endereço normalmente.</small></div>\n          <div class="campo triplo">\n            <label for="endereco">Endereço urbano (quando houver)</label>'
+      );
+      html=html.replace(
+        'Pesquise e selecione um endereço real de Boa Vista/RR.',
+        'Para ocorrência urbana, pesquise e selecione o endereço. Para ocorrência rural, as coordenadas geográficas substituem rua, número e bairro.'
+      );
+      html=html.replace(
+        '      if (!bairroDigitado && bairroAlterado) return mostrarErroCampo("bairro","Informe o bairro da ocorrência. Se o Google Maps não identificar corretamente, preencha o campo manualmente.");',
+        '      const cipaTemCoordenadas=Boolean(document.getElementById("latitude").value&&document.getElementById("longitude").value);\n      if (!bairroDigitado && bairroAlterado && !cipaTemCoordenadas) return mostrarErroCampo("bairro","Informe o bairro da ocorrência urbana ou forneça coordenadas geográficas válidas para a ocorrência rural.");'
+      );
+      html=html.replace(
+        '      if ((!enderecoAtual || !document.getElementById("latitude").value || !document.getElementById("longitude").value) && enderecoFoiAlterado) return mostrarErroCampo("enderecoGoogle","O endereço foi alterado. Pesquise e selecione uma sugestão do Google Maps antes de salvar.");',
+        '      if ((!enderecoAtual || !document.getElementById("latitude").value || !document.getElementById("longitude").value) && enderecoFoiAlterado && !cipaTemCoordenadas) return mostrarErroCampo("cipaLocalCoordenadas","Informe coordenadas geográficas válidas ou selecione um endereço urbano no Google Maps antes de salvar.");'
+      );
+      html=html.replace(
         '        let error = null;',
         '        let error = null;\n        let ocorrenciaSalvaId = idEdicao || null;'
       );
@@ -82,7 +102,7 @@
       );
       html=html.replace(
         '</body>',
-        '<script src="cipa-cadastro.js?v=20261007-4"><\/script></body>'
+        '<script src="cipa-cadastro.js?v=20261007-5"><\/script></body>'
       );
     }
 
