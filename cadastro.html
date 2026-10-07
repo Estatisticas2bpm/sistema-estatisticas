@@ -81,6 +81,14 @@
         'Para ocorrência urbana, pesquise e selecione o endereço. Para ocorrência rural, as coordenadas geográficas substituem rua, número e bairro.'
       );
       html=html.replace(
+        'placeholder="Digite uma rua ou avenida de Boa Vista/RR"',
+        'placeholder="Digite rua, avenida ou localidade em Roraima"'
+      );
+      html=html.replace(
+        'locationRestriction: {north:3.15,south:2.55,east:-60.35,west:-61.05}',
+        'locationRestriction: {north:5.3,south:-1.7,east:-58.8,west:-64.9}'
+      );
+      html=html.replace(
         '      if (!bairroDigitado && bairroAlterado) return mostrarErroCampo("bairro","Informe o bairro da ocorrência. Se o Google Maps não identificar corretamente, preencha o campo manualmente.");',
         '      const cipaCoordenadasDigitadas=document.getElementById("cipaLocalCoordenadas")?.value.trim()||"";\n      if(cipaCoordenadasDigitadas&&!window.CipaCadastro?.parseCoordenadas?.(cipaCoordenadasDigitadas)) return mostrarErroCampo("cipaLocalCoordenadas","Revise as coordenadas geográficas. O formato informado não foi reconhecido.");\n      const cipaTemCoordenadas=Boolean(document.getElementById("latitude").value&&document.getElementById("longitude").value);\n      if (!bairroDigitado && bairroAlterado && !cipaTemCoordenadas) return mostrarErroCampo("bairro","Informe o bairro da ocorrência urbana ou forneça coordenadas geográficas válidas para a ocorrência rural.");'
       );
