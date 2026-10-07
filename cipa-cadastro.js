@@ -55,14 +55,18 @@
     return p;
   }
   function coordenadasDoTexto(texto){
-    const linhas=String(texto||'').split(/\r?\n/);
+    const bruto=String(texto||''),linhas=bruto.split(/\r?\n/);
     for(const linha of linhas){
-      if(/COORD|LATITUDE|LONGITUDE|\bGPS\b/i.test(linha)){
-        const p=parseCoordenadas(linha);if(p)return{texto:linha.trim(),lat:p.lat,lon:p.lon};
+      if(/COORD|LATITUDE|LONGITUDE|\bGPS\b|LOCALIZA[ÇC][ÃA]O|GEOGR[ÁA]FIC/i.test(linha)){
+        const p=parseCoordenadas(linha);if(p)return{texto:linha.trim(),lat:p.lat,lon:p.lon,origem:'texto identificado'};
       }
     }
-    const hem=String(texto||'').match(/[^\n]{0,80}\d{1,3}(?:[.,]\d+)?(?:\s*[°º][^\n]{0,45})?[NS][^\n]{0,100}\d{1,3}(?:[.,]\d+)?(?:\s*[°º][^\n]{0,45})?[EWO][^\n]{0,40}/i);
-    if(hem){const p=parseCoordenadas(hem[0]);if(p)return{texto:hem[0].replace(/\s+/g,' ').trim(),lat:p.lat,lon:p.lon}}
+    const hem=bruto.match(/[^\n]{0,100}\d{1,3}(?:[.,]\d+)?(?:\s*[°º][^\n]{0,55})?[NS][^\n]{0,120}\d{1,3}(?:[.,]\d+)?(?:\s*[°º][^\n]{0,55})?[EWO][^\n]{0,60}/i);
+    if(hem){const p=parseCoordenadas(hem[0]);if(p)return{texto:hem[0].replace(/\s+/g,' ').trim(),lat:p.lat,lon:p.lon,origem:'coordenada hemisférica'}}
+    for(const linha of linhas){
+      const p=parseCoordenadas(linha);
+      if(p)return{texto:linha.replace(/\s+/g,' ').trim(),lat:p.lat,lon:p.lon,origem:'par geográfico válido'};
+    }
     return null;
   }
   const style=document.createElement('style');
@@ -192,7 +196,7 @@
     const local=texto.match(/Tipo do Local:\s*([^\n]+)/i);if(local)$('cipaAreaTipo').value=/RURAL/i.test(local[1])?'RURAL':/URBAN/i.test(local[1])?'URBANA':'';
     const om=texto.match(/(ORDEM DE (?:MISS[ÃA]O|SERVI[ÇC]O)[^\n]{0,180})/i);if(om)$('cipaDocumentoOrigem').value=om[1].replace(/\s+/g,' ').trim();
     const origem=/OPERA[ÇC][ÃA]O BIOMA|\bBIOMA\b/i.test(texto)?'BIOMA':/\bCICC\b/i.test(texto)?'CICC':om?/MISS[ÃA]O/i.test(om[1])?'ORDEM DE MISSÃO':'ORDEM DE SERVIÇO':'';if(origem)$('cipaOrigem').value=origem;
-    const coord=coordenadasDoTexto(texto);if(coord&&coordCampo()){coordCampo().value=coord.texto;sincronizarCoordenadasLocal()}
+    const coord=coordenadasDoTexto(texto);if(coord&&coordCampo()&&!coordCampo().value.trim()){coordCampo().value=coord.texto;sincronizarCoordenadasLocal()}
 
     const autos=[];for(const m of texto.matchAll(/AUTO DE INFRA[ÇC][ÃA]O\s*(?:N[º°]|Nº)?\s*[:]?\s*(\d{4,})/gi)){
       const b=blocoAte(texto,m[0],['AUTO DE INFRAÇÃO Nº','TERMO DE EMBARGO/INTERDIÇÃO Nº']);
@@ -223,5 +227,5 @@
   });
 
   const idEdicaoCipa=new URLSearchParams(location.search).get('id');if(idEdicaoCipa)carregar(idEdicaoCipa);
-  window.CipaCadastro={salvar,carregar,estado,extrairCipa,parseCoordenadas,sincronizarCoordenadasLocal};
+  window.CipaCadastro={salvar,carregar,estado,extrairCipa,parseCoordenadas,coordenadasDoTexto,sincronizarCoordenadasLocal};
 })();
