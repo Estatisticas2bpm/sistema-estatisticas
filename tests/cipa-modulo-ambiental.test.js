@@ -55,7 +55,7 @@ assert.match(cipaCadastro,/par geográfico válido/);
 assert.match(cipaCadastro,/coordenadasDoTexto/);
 assert.match(cipaCadastro,/function parseCoordenadas/);
 assert.match(cipaCadastro,/function sincronizarCoordenadasLocal/);
-assert.match(cipaCadastro,/parseCoordenadas,sincronizarCoordenadasLocal/);
+assert.match(cipaCadastro,/parseCoordenadas,coordenadasDoTexto,sincronizarCoordenadasLocal/);
 assert.match(cadastroBase,/Coordenadas do PPE identificadas/);
 assert.match(cipaCadastro,/latitude'\)\.value=p\.lat\.toFixed/);
 assert.match(cipaCadastro,/longitude'\)\.value=p\.lon\.toFixed/);
