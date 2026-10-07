@@ -57,6 +57,17 @@
     if(num(r.entorpecentes))p.push('Drogas: '+num(r.entorpecentes));
     return p.join(' · ')||'—';
   }
+  function resultadoTotalComandantes(lista){
+    return resultadoComandante({
+      armas_fogo:lista.reduce((s,r)=>s+num(r.armas_fogo),0),
+      simulacros:lista.reduce((s,r)=>s+num(r.simulacros),0),
+      legado:lista.reduce((s,r)=>s+num(r.legado),0),
+      municoes:lista.reduce((s,r)=>s+num(r.municoes),0),
+      veiculos:lista.reduce((s,r)=>s+num(r.veiculos),0),
+      foragidos_descumprimento:lista.reduce((s,r)=>s+num(r.foragidos_descumprimento),0),
+      entorpecentes:lista.reduce((s,r)=>s+num(r.entorpecentes),0)
+    });
+  }
   async function chartImage(config,w=1100,he=620){
     const box=document.createElement('div');box.style.cssText='position:fixed;left:-20000px;top:0;width:'+w+'px;height:'+he+'px;background:#fff;z-index:-1';
     const canvas=document.createElement('canvas');canvas.width=w;canvas.height=he;box.appendChild(canvas);document.body.appendChild(box);
@@ -130,9 +141,13 @@
     ];
     const weapons=detalhesArmasRel(d),ammo=detalhesMunicoesRel(d),ammoTotal=ammo.reduce((s,x)=>s+num(x[1]),0),entInc=incidenciaEntorpecentes(d),entMat=materiaisEntorpecentes(d),white=armasBrancasAgrupadasRel(d);
     const oldWhite=armasBrancasAgrupadasRel(old);
+    const qtdArmas=totalEstruturadoOuLegado(d,'armas_itens','quantidade_armas');
+    const qtdAutos=sum(d,'quantidade_autos_infracao'),qtdRemocoes=d.filter(x=>S(x.auto_infracao).includes('REMO')).length,qtdResistencia=d.filter(x=>S(x.auto_resistencia)==='SIM').length;
+    const temDetalhesApreensao=entInc.length>0||entMat.length>0||white.total>0||qtdAutos>0||qtdRemocoes>0||qtdResistencia>0;
 
     const cmdData=comandantesAgrupadosRel(d).map(x=>({nome:x.nome,...metricasComandanteRel(x.registros)}));
     const cmdChunks=distribuir(cmdData,26);
+    const comandantesNaPaginaResultados=cmdData.length>0&&cmdData.length<=10&&!temDetalhesApreensao;
 
     const chartOccData=topComOutros(occ,9,'OUTRAS');
     const chartHoodData=topComOutros(hoods,9,'OUTROS');
@@ -148,16 +163,14 @@
       '<h1 class="r2-title">1. DOCUMENTAÇÕES EMITIDAS PELA UNIDADE</h1>'+
       '<h2 class="r2-section">DOCUMENTOS E INDICADORES OPERACIONAIS</h2>'+
       table(['DOCUMENTO / INDICADOR','QUANTIDADE'],docs.map(x=>[docNome(x[0]),x[1]]),{cls:'r2-tight',widths:['76%','24%']})+
-      '<div class="r2-note">AME e Tático Setorial são classificações operacionais das ocorrências e podem se sobrepor aos boletins. Por isso, não devem ser somados entre si para formar um total documental.</div>'+
+
       '<h1 class="r2-title" style="margin-top:4mm">2. PRINCIPAIS TIPOS DE OCORRÊNCIAS NA UNIDADE OPERACIONAL</h1>'+
       '<h2 class="r2-section">CLASSIFICAÇÃO DAS OCORRÊNCIAS - TOP 15</h2>'+
-      table(['ITEM','DESCRIÇÃO','FREQ.','BAIRROS RECORRENTES','FAIXA ETÁRIA'],occRows,{cls:'r2-mini',widths:['6%','35%','10%','32%','17%']})+
-      '<p class="r2-source">As demais naturezas foram consolidadas em “OUTRAS OCORRÊNCIAS”. Fonte: SIE-CPC / 2º BPM.</p>'
+      table(['ITEM','DESCRIÇÃO','FREQ.','BAIRROS RECORRENTES','FAIXA ETÁRIA'],occRows,{cls:'r2-mini',widths:['6%','35%','10%','32%','17%']})
     });
 
     bodyPages.push({key:'occ-chart',layout:'dense',html:
       '<h2 class="r2-section">GRÁFICO DAS PRINCIPAIS OCORRÊNCIAS</h2><img class="r2-chart r2-chart-large" src="'+imgOcc+'" alt="Gráfico das principais ocorrências">'+
-      '<p class="r2-source">Top 9 naturezas e demais ocorrências consolidadas. Fonte: SIE-CPC / 2º BPM.</p>'+
       '<h2 class="r2-section">VOLUME DE OCORRÊNCIAS / PRINCIPAIS BAIRROS</h2>'+
       table(['ORDEM','BAIRRO','ATUAL','COMPARADO','VARIAÇÃO'],hoodRows,{cls:'r2-mini',widths:['8%','42%','16%','17%','17%'],total:['TOTAL GERAL','',d.length,old.length,variance(d.length,old.length)]})
     });
@@ -172,7 +185,6 @@
     bodyPages.push({key:'streets',layout:'dense',html:
       '<h2 class="r2-section">RUAS E AVENIDAS COM PREDOMINÂNCIA DE OCORRÊNCIAS</h2>'+
       table(['ORDEM','RUA / AVENIDA','FREQ.','TURNO','OCORRÊNCIAS PREDOMINANTES'],streets,{cls:'r2-mini',widths:['7%','30%','10%','15%','38%']})+
-      '<p class="r2-source">Ranking limitado aos 15 logradouros com maior frequência no período. Fonte: SIE-CPC / 2º BPM.</p>'+
       '<div class="r2-grid-2 align-start"><div><h2 class="r2-section">INFRATORES POR NACIONALIDADE</h2>'+
       table(['ITEM','PAÍS DE ORIGEM','SEXO','FREQ.'],inf.rows.map(r=>[r[0],r[2],r[3],r[4]]),{cls:'r2-mini',widths:['10%','52%','16%','22%'],total:['','TOTAL','',inf.total]})+
       '</div><div><h2 class="r2-section">VÍTIMAS POR NACIONALIDADE</h2>'+
@@ -199,8 +211,7 @@
         ['AUTOS DE RESISTÊNCIA',d.filter(x=>S(x.auto_resistencia)==='SIM').length]
       ],{cls:'r2-mini',widths:['72%','28%']})+
       '</div><div><h2 class="r2-section">ENTORPECENTES - MATERIAIS REGISTRADOS</h2>'+
-      table(['TIPO','APRESENTAÇÃO','QTD.'],entMat.map(x=>[x[0],x[1],x[2]]),{cls:'r2-mini',widths:['31%','47%','22%']})+
-      '<p class="r2-source">A quantidade física considera a forma visual registrada na ocorrência, sem conversão para peso ou medida.</p></div></div>'
+      table(['TIPO','APRESENTAÇÃO','QTD.'],entMat.map(x=>[x[0],x[1],x[2]]),{cls:'r2-mini',widths:['31%','47%','22%']})+'</div></div>'
     });
 
     cmdChunks.forEach((chunk,idx)=>{
