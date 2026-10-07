@@ -13,6 +13,9 @@ assert.match(base,/cabecalho do mapa situacional/);
 assert.match(base,/fotoInicial\?0:ehMapa\?1/);
 assert.match(base,/cipaLocalCoordenadas/);
 assert.match(cipa,/Coordenada sugerida pelo OCR/);
+assert.match(cipa,/const datasPpe=/);
+assert.match(cipa,/data_registro_inicio:datasPpe\.inicio/);
+assert.match(cipa,/data_registro_fim:datasPpe\.fim/);
 
 // Executa a transformação real emitida pelo wrapper, não apenas um regex de contrato.
 const anchor="        '        const dados = extrairDadosOcorrenciaPdf(texto);\\n";
