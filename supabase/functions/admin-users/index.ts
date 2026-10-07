@@ -508,12 +508,17 @@ Deno.serve(async (req: Request) => {
     if (action === "reset_password") {
       const password = limpar(body.password);
       if (password.length < 8) throw new Error("A nova senha temporária deve ter pelo menos 8 caracteres.");
+      const sessionsAntes = await snapshotSessoes();
+      const idsAlvo = sessionsAntes
+        .filter((s: any) => String(s.user_id) === targetId && !(targetId === caller.id && String(s.session_id) === callerSessionId) && s.revogada !== true)
+        .map((s: any) => String(s.session_id));
       const { error: authError } = await admin.auth.admin.updateUserById(targetId, { password });
       if (authError) throw authError;
       const { error } = await admin.from("perfis_usuarios").update({ senha_temporaria: true, atualizado_em: new Date().toISOString() }).eq("user_id", targetId);
       if (error) throw error;
-      await log(caller.id, "REDEFINIU_SENHA", "usuario", targetId);
-      return resposta({ ok: true });
+      const revogadas = await revogarSessoes(idsAlvo, caller.id, "ADMIN_REDEFINIU_SENHA");
+      await log(caller.id, "REDEFINIU_SENHA", "usuario", targetId, { sessoes_revogadas: revogadas });
+      return resposta({ ok: true, sessoes_revogadas: revogadas });
     }
 
     if (action === "deactivate") {
