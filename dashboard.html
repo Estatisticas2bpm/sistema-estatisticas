@@ -506,7 +506,6 @@ async function carregar(){loading.style.display='grid';let calls=[db.rpc('obter_
     const atuais=await Promise.all(pares.map(x=>db.from(x[0]).select(x[2]).gte(x[1],ini.value).lte(x[1],fim.value)));
     if(atuais.some(x=>x.error)){loading.textContent='Erro ao carregar módulo CIPA: '+atuais.find(x=>x.error).error.message;return}
     [cipaAutosAtual,cipaNotificacoesAtual,cipaFaunaAtual,cipaEducacaoAtual]=atuais.map(x=>x.data||[]);
-    const idsAtuais=new Set(a=>a);
     let tq=await db.from('cipa_tcos_ambientais').select('id,ocorrencia_id,crime,numero_processo_jecrim,localidade');if(tq.error){loading.textContent='Erro ao carregar TCO ambiental: '+tq.error.message;return}
     const ocorrIds=new Set(atual.map(x=>x.id));cipaTcosAmbientaisAtual=(tq.data||[]).filter(x=>ocorrIds.has(x.ocorrencia_id));
     if(temComparacao){
