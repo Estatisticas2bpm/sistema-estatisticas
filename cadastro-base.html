@@ -1921,6 +1921,7 @@
       try {
         if (arquivo.type && arquivo.type !== "application/pdf") throw new Error("Selecione um arquivo PDF.");
         const texto = await lerTextoPdfLocal(arquivo);
+        window.dispatchEvent(new CustomEvent("sie:pdf-texto-extraido",{detail:{texto,arquivoNome:arquivo.name}}));
         if (texto.trim().length < 150) throw new Error("Não foi possível encontrar texto suficiente. O PDF pode estar digitalizado como imagem.");
         const dados = extrairDadosOcorrenciaPdf(texto);
         if (!dados.numeroBo && !dados.data && !dados.historico) throw new Error("O documento não corresponde ao modelo de ocorrência reconhecido pelo sistema.");
