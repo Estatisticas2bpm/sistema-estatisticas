@@ -1318,6 +1318,7 @@
     let importacaoPdfPendente = false;
     const PDFJS_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@5.7.284/build/pdf.min.mjs";
     const PDFJS_WORKER_URL = "https://cdn.jsdelivr.net/npm/pdfjs-dist@5.7.284/build/pdf.worker.min.mjs";
+    const TESSERACT_URL = "https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.esm.min.js";
 
     function textoComparavel(valor) {
       return String(valor || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9]+/g, " ").trim().toUpperCase();
@@ -1842,6 +1843,54 @@
         if (bytes.buffer.byteLength) bytes.fill(0);
       }
     }
+    async function lerCoordenadasCipaPorOcr(arquivo, lerDocumentoCompleto = false) {
+      const campoCoordenadas = document.getElementById("cipaLocalCoordenadas");
+      if (!campoCoordenadas) return {texto:"",encontrou:false,pagina:null};
+      if (campoCoordenadas.value.trim() && document.getElementById("latitude").value && document.getElementById("longitude").value) {
+        return {texto:"",encontrou:true,pagina:null};
+      }
+
+      const pdfjsLib = await import(PDFJS_URL);
+      const {createWorker} = await import(TESSERACT_URL);
+      pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL;
+      const bytes = new Uint8Array(await arquivo.arrayBuffer());
+      const documento = await pdfjsLib.getDocument({data:bytes}).promise;
+      const textos = [];
+      let worker = null;
+      try {
+        worker = await createWorker("eng");
+        for (let numero = 1; numero <= documento.numPages; numero++) {
+          statusImportacaoPdf.textContent = "Coordenada não encontrada no texto. Verificando imagens do PPE (" + numero + "/" + documento.numPages + ")...";
+          const pagina = await documento.getPage(numero);
+          const viewport = pagina.getViewport({scale:1.6});
+          const canvas = document.createElement("canvas");
+          const contexto = canvas.getContext("2d",{willReadFrequently:true});
+          canvas.width = Math.ceil(viewport.width);
+          canvas.height = Math.ceil(viewport.height);
+          await pagina.render({canvasContext:contexto,viewport}).promise;
+          const resultado = await worker.recognize(canvas);
+          const textoOcr = String(resultado?.data?.text || "").trim();
+          if (textoOcr) {
+            textos.push("[OCR PÁGINA " + numero + "]\n" + textoOcr);
+            window.dispatchEvent(new CustomEvent("sie:pdf-texto-extraido",{detail:{texto:textoOcr,arquivoNome:arquivo.name,origem:"ocr",pagina:numero}}));
+          }
+          canvas.width = 1;
+          canvas.height = 1;
+          const encontrou = Boolean(campoCoordenadas.value.trim() && document.getElementById("latitude").value && document.getElementById("longitude").value);
+          if (encontrou && !lerDocumentoCompleto) return {texto:textos.join("\n"),encontrou:true,pagina:numero};
+        }
+        return {
+          texto:textos.join("\n"),
+          encontrou:Boolean(campoCoordenadas.value.trim() && document.getElementById("latitude").value && document.getElementById("longitude").value),
+          pagina:null
+        };
+      } finally {
+        if (worker) await worker.terminate();
+        await documento.destroy();
+        if (bytes.buffer.byteLength) bytes.fill(0);
+      }
+    }
+
     async function preencherRascunhoPdf(dados) {
       if (!catalogos.tipos.length) await carregarCatalogos();
       limparIndicadoresPdf();
@@ -1929,9 +1978,23 @@
       statusImportacaoPdf.textContent = "Lendo o PDF localmente. Nenhum arquivo está sendo enviado...";
       try {
         if (arquivo.type && arquivo.type !== "application/pdf") throw new Error("Selecione um arquivo PDF.");
-        const texto = await lerTextoPdfLocal(arquivo);
-        window.dispatchEvent(new CustomEvent("sie:pdf-texto-extraido",{detail:{texto,arquivoNome:arquivo.name}}));
-        if (texto.trim().length < 150) throw new Error("Não foi possível encontrar texto suficiente. O PDF pode estar digitalizado como imagem.");
+        let texto = await lerTextoPdfLocal(arquivo);
+        window.dispatchEvent(new CustomEvent("sie:pdf-texto-extraido",{detail:{texto,arquivoNome:arquivo.name,origem:"texto"}}));
+        const campoCoordenadasCipa = document.getElementById("cipaLocalCoordenadas");
+        let coordenadaOcrPagina = null;
+        if (campoCoordenadasCipa && (!campoCoordenadasCipa.value.trim() || texto.trim().length < 150)) {
+          try {
+            const ocr = await lerCoordenadasCipaPorOcr(arquivo, texto.trim().length < 150);
+            coordenadaOcrPagina = ocr.encontrou ? ocr.pagina : null;
+            if (ocr.texto && texto.trim().length < 150) {
+              texto = [texto,ocr.texto].filter(Boolean).join("\n");
+              window.dispatchEvent(new CustomEvent("sie:pdf-texto-extraido",{detail:{texto:ocr.texto,arquivoNome:arquivo.name,origem:"ocr-documento"}}));
+            }
+          } catch (erroOcr) {
+            console.warn("Não foi possível concluir a leitura OCR das coordenadas da CIPA.",erroOcr);
+          }
+        }
+        if (texto.trim().length < 150) throw new Error("Não foi possível encontrar texto suficiente no PPE, mesmo após a leitura das páginas como imagem.");
         const dados = extrairDadosOcorrenciaPdf(texto);
         if (!dados.numeroBo && !dados.data && !dados.historico) throw new Error("O documento não corresponde ao modelo de ocorrência reconhecido pelo sistema.");
         if (!catalogos.tipos.length) await carregarCatalogos();
@@ -1951,7 +2014,9 @@
         const comandanteInfo = dados.comandante.valor || dados.comandante.sugestao ? `${dados.comandante.valor || dados.comandante.sugestao} (${Math.round(dados.comandante.score*100)}%, ${dados.comandante.origem || "associação"})` : dados.comandante.ambiguo ? "mais de um candidato semelhante; escolha manualmente" : "não identificado com segurança";
         const localInfo = dados.localEntrega.valor || dados.localEntrega.sugestao ? `${dados.localEntrega.valor || dados.localEntrega.sugestao} (${Math.round(dados.localEntrega.score*100)}%)` : "não identificado com segurança";
         statusImportacaoPdf.className = "status-importacao sucesso";
-        statusImportacaoPdf.innerHTML = `<strong>Rascunho preenchido.</strong> ${totalPessoas} pessoa(s) e ${totalItens} item(ns) operacional(is) identificados. Confira todos os campos antes de salvar.<br><strong>Comandante:</strong> ${escaparHtml(comandanteInfo)}.<br><strong>Local de entrega:</strong> ${escaparHtml(localInfo)}.<br><strong>Endereço informado no PDF:</strong> ${escaparHtml(dados.enderecoReferencia || "não identificado")}.<br><strong>Mapa:</strong> ${enderecoPreparado.confirmado ? "associação automática realizada; confira o resultado e o número" : enderecoPreparado.preparado ? "pesquisa preparada; clique na lupa e selecione o endereço correto" : "endereço não identificado; pesquise manualmente"}.<br><strong>Pendente de conferência:</strong> ${escaparHtml(pendencias.join(", ") || "somente a revisão geral")}. O PDF já foi descartado da memória.`;
+        const coordenadasCipa = document.getElementById("cipaLocalCoordenadas")?.value.trim() || "";
+        const coordenadasInfo = campoCoordenadasCipa ? (coordenadasCipa ? coordenadaOcrPagina ? "identificadas em imagem/OCR na página " + coordenadaOcrPagina : "identificadas no conteúdo do PPE" : "não identificadas automaticamente; conferir manualmente") : null;
+        statusImportacaoPdf.innerHTML = `<strong>Rascunho preenchido.</strong> ${totalPessoas} pessoa(s) e ${totalItens} item(ns) operacional(is) identificados. Confira todos os campos antes de salvar.<br><strong>Comandante:</strong> ${escaparHtml(comandanteInfo)}.<br><strong>Local de entrega:</strong> ${escaparHtml(localInfo)}.${coordenadasInfo ? "<br><strong>Coordenadas CIPA:</strong> " + escaparHtml(coordenadasInfo) + "." : ""}<br><strong>Endereço informado no PDF:</strong> ${escaparHtml(dados.enderecoReferencia || "não identificado")}.<br><strong>Mapa:</strong> ${enderecoPreparado.confirmado ? "associação automática realizada; confira o resultado e o número" : enderecoPreparado.preparado ? "pesquisa preparada; clique na lupa e selecione o endereço correto" : "endereço não identificado; pesquise manualmente"}.<br><strong>Pendente de conferência:</strong> ${escaparHtml(pendencias.join(", ") || "somente a revisão geral")}. O PDF já foi descartado da memória.`;
         formulario.scrollIntoView({behavior:"smooth",block:"start"});
       } catch (erro) {
         console.error(erro);
