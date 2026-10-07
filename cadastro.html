@@ -14,6 +14,7 @@
     const siglaCadastro=String(sessaoCadastro?.contexto?.sigla||sessaoCadastro?.perfil?.unidades?.sigla||'').toUpperCase();
     const ehCipturCadastro=siglaCadastro==='CIPTUR';
     const ehGiroCadastro=siglaCadastro==='GIRO';
+    const ehCipaCadastro=siglaCadastro==='CIPA';
     const unidadesBopeSemGrupamento=new Set(['CANIL','FORCA_TATICA','CHOQUE','GATE']);
     const ehUnidadeBopeCadastro=unidadesBopeSemGrupamento.has(siglaCadastro);
     const ehBopeCadastro=siglaCadastro==='BOPE';
@@ -36,7 +37,7 @@
     // Tipo de documento visível = BO. O grupamento operacional varia conforme a unidade.
     // CIPTUR usa somente TOR. GIRO não possui subgrupamento especializado neste cadastro.
     // As unidades operacionais do BOPE (CANIL, FORÇA TÁTICA, CHOQUE e GATE) também não usam Tático Setorial/AME.
-    const blocoGrupamento=ehGiroCadastro
+    const blocoGrupamento=(ehGiroCadastro||ehCipaCadastro)
       ? ''
       : (ehUnidadeBopeCadastro||ehBopeCadastro)
         ? ''
@@ -63,6 +64,25 @@
       html=html.replace(
         'tipo_registro: document.getElementById("tipoRegistro").value || "BO",',
         'tipo_registro: document.getElementById("tipoRegistro").value || "BO",\n          subunidade_operacional_id: document.getElementById("subunidadeOperacional")?.value || null,'
+      );
+    }
+
+    if(ehCipaCadastro){
+      html=html.replace(
+        '        let error = null;',
+        '        let error = null;\n        let ocorrenciaSalvaId = idEdicao || null;'
+      );
+      html=html.replace(
+        '          const resposta = await banco.from("ocorrencias").insert([registro]);\n          error = resposta.error;',
+        '          const resposta = await banco.from("ocorrencias").insert([registro]).select("id").single();\n          error = resposta.error;\n          if (!error) ocorrenciaSalvaId = resposta.data?.id || null;'
+      );
+      html=html.replace(
+        '        if (idEdicao) {\n          importacaoPdfPendente = false;',
+        '        if (window.CipaCadastro?.salvar) await window.CipaCadastro.salvar(ocorrenciaSalvaId);\n\n        if (idEdicao) {\n          importacaoPdfPendente = false;'
+      );
+      html=html.replace(
+        '</body>',
+        '<script src="cipa-cadastro.js?v=20261007-1"><\\/script></body>'
       );
     }
 
