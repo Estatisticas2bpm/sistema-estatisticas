@@ -40,6 +40,44 @@ async function usuarioDaRequisicao(req: Request) {
 const uuidValido = (v: unknown) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(limpar(v));
 
+function sessionIdDaRequisicao(req: Request) {
+  try {
+    const h = req.headers.get("Authorization") || "";
+    const token = h.replace(/^Bearer\s+/i, "").trim();
+    const payload = token.split(".")[1] || "";
+    const normalizado = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const pad = normalizado + "=".repeat((4 - (normalizado.length % 4 || 4)) % 4);
+    const json = JSON.parse(atob(pad));
+    const sessionId = limpar(json?.session_id);
+    return uuidValido(sessionId) ? sessionId : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+async function snapshotSessoes() {
+  const { data, error } = await admin.rpc("admin_sessoes_snapshot");
+  if (error) throw error;
+  return data || [];
+}
+
+async function revogarSessoes(ids: string[], actorId: string, motivo: string) {
+  if (!ids.length) return 0;
+  const sessoes = await snapshotSessoes();
+  const porId = new Map((sessoes || []).map((s: any) => [String(s.session_id), s]));
+  const linhas = ids.map(id => porId.get(String(id))).filter((s: any) => s && s.revogada !== true).map((s: any) => ({
+    session_id: s.session_id,
+    user_id: s.user_id,
+    revogado_por: actorId,
+    motivo,
+    revogado_em: new Date().toISOString(),
+  }));
+  if (!linhas.length) return 0;
+  const { error } = await admin.from("sessoes_revogadas").upsert(linhas, { onConflict: "session_id" });
+  if (error) throw error;
+  return linhas.length;
+}
+
 async function unidadePorId(unidadeId?: string | null) {
   if (!unidadeId) return null;
   const { data, error } = await admin.from("unidades")
@@ -141,6 +179,15 @@ Deno.serve(async (req: Request) => {
   try {
     const caller = await usuarioDaRequisicao(req);
     if (!caller) return resposta({ error: "Sessão inválida ou expirada." }, 401);
+    const callerSessionId = sessionIdDaRequisicao(req);
+    if (!callerSessionId) return resposta({ error: "Sessão sem identificador válido." }, 401);
+    const { data: sessaoValida, error: sessaoValidaError } = await admin.rpc("admin_validar_sessao", {
+      p_user_id: caller.id,
+      p_session_id: callerSessionId,
+    });
+    if (sessaoValidaError || sessaoValida !== true) {
+      return resposta({ error: "Sessão revogada ou expirada." }, 401);
+    }
 
     const body = await req.json().catch(() => ({}));
     const action = limpar(body.action);
@@ -324,6 +371,54 @@ Deno.serve(async (req: Request) => {
 
     if (action === "list") {
       return resposta(await perfisComUnidades());
+    }
+
+    if (action === "sessions_list") {
+      const sessions = await snapshotSessoes();
+      const ativas = sessions.filter((s: any) => s.revogada !== true);
+      return resposta({
+        sessions: sessions.map((s: any) => ({ ...s, atual: String(s.session_id) === callerSessionId })),
+        stats: {
+          sessoes_abertas: ativas.length,
+          usuarios_online: new Set(ativas.filter((s: any) => s.online === true).map((s: any) => s.user_id)).size,
+          sessoes_online: ativas.filter((s: any) => s.online === true).length,
+        },
+        current_session_id: callerSessionId,
+      });
+    }
+
+    if (action === "session_revoke") {
+      const sessionId = limpar(body.session_id);
+      if (!uuidValido(sessionId)) throw new Error("Sessão inválida.");
+      if (sessionId === callerSessionId) throw new Error("Use o botão Sair para encerrar a sessão atual.");
+      const sessions = await snapshotSessoes();
+      const alvo = sessions.find((s: any) => String(s.session_id) === sessionId);
+      if (!alvo) throw new Error("Sessão não encontrada ou já encerrada.");
+      const quantidade = await revogarSessoes([sessionId], caller.id, "ADMIN_ENCERROU_SESSAO");
+      await log(caller.id, "REVOGOU_SESSAO", "sessao", sessionId, { user_id: alvo.user_id });
+      return resposta({ ok: true, revoked: quantidade });
+    }
+
+    if (action === "sessions_revoke_others_self") {
+      const sessions = await snapshotSessoes();
+      const ids = sessions
+        .filter((s: any) => String(s.user_id) === caller.id && String(s.session_id) !== callerSessionId && s.revogada !== true)
+        .map((s: any) => String(s.session_id));
+      const quantidade = await revogarSessoes(ids, caller.id, "USUARIO_ENCERROU_OUTRAS_SESSOES");
+      await log(caller.id, "REVOGOU_OUTRAS_SESSOES", "usuario", caller.id, { quantidade });
+      return resposta({ ok: true, revoked: quantidade });
+    }
+
+    if (action === "sessions_revoke_user") {
+      const targetUserId = limpar(body.user_id);
+      if (!uuidValido(targetUserId)) throw new Error("Usuário inválido.");
+      const sessions = await snapshotSessoes();
+      const ids = sessions
+        .filter((s: any) => String(s.user_id) === targetUserId && !(targetUserId === caller.id && String(s.session_id) === callerSessionId) && s.revogada !== true)
+        .map((s: any) => String(s.session_id));
+      const quantidade = await revogarSessoes(ids, caller.id, "ADMIN_ENCERROU_SESSOES_USUARIO");
+      await log(caller.id, "REVOGOU_SESSOES_USUARIO", "usuario", targetUserId, { quantidade });
+      return resposta({ ok: true, revoked: quantidade });
     }
 
     if (action === "create") {
