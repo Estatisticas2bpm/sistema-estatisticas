@@ -16,6 +16,7 @@
     const ehGiroCadastro=siglaCadastro==='GIRO';
     const unidadesBopeSemGrupamento=new Set(['CANIL','FORCA_TATICA','CHOQUE','GATE']);
     const ehUnidadeBopeCadastro=unidadesBopeSemGrupamento.has(siglaCadastro);
+    const ehBopeCadastro=siglaCadastro==='BOPE';
     const resposta=await fetch('cadastro-base.html?v=20261001-torfix1',{cache:'no-store'});
     if(!resposta.ok) throw new Error('Falha ao carregar a base do cadastro.');
     let html=await resposta.text();
@@ -37,15 +38,33 @@
     // As unidades operacionais do BOPE (CANIL, FORÇA TÁTICA, CHOQUE e GATE) também não usam Tático Setorial/AME.
     const blocoGrupamento=ehGiroCadastro
       ? ''
-      : ehUnidadeBopeCadastro
+      : (ehUnidadeBopeCadastro||ehBopeCadastro)
         ? ''
         : (ehCipturCadastro
         ? '<div class="campo duplo"><label>Guarnição especializada</label><div class="selecao-grupamento" style="display:flex;gap:10px;flex-wrap:wrap"><label class="resultado-opcao" style="min-width:280px"><input id="grupamentoTor" type="checkbox"> TOR — TÁTICO OSTENSIVO RODOVIÁRIO</label></div><span class="nota">Marque TOR somente quando o BO tiver sido atendido pelo Tático Ostensivo Rodoviário.</span></div>'
         : '<div class="campo duplo"><label>Guarnição especializada</label><div class="selecao-grupamento" style="display:flex;gap:10px;flex-wrap:wrap"><label class="resultado-opcao" style="min-width:190px"><input id="grupamentoTatico" type="checkbox"> TÁTICO SETORIAL</label><label class="resultado-opcao" style="min-width:190px"><input id="grupamentoAme" type="checkbox"> AME</label></div><span class="nota">Marque somente quando o BO tiver sido atendido por um desses grupamentos. As opções são exclusivas.</span></div>');
+    const blocoOrigemBope=ehBopeCadastro
+      ? '<div class="campo duplo"><label for="subunidadeOperacional">Unidade operacional do BOPE *</label><select id="subunidadeOperacional" name="subunidadeOperacional" required><option value="">Selecione a unidade responsável</option></select><span class="nota">Informe qual unidade executou a ocorrência: Força Tática, Choque, Canil ou GATE.</span></div>'
+      : '';
     html=html.replace(
       /<div class="campo">\s*<label for="tipoRegistro">Tipo \*<\/label>\s*<select id="tipoRegistro" name="tipoRegistro" required>[\s\S]*?<\/select>\s*<\/div>/,
-      '<div class="campo"><label>Tipo de documento</label><input id="tipoDocumentoExibicao" type="text" value="BO" readonly aria-label="Tipo de documento"><select id="tipoRegistro" name="tipoRegistro" required hidden><option value="BO" selected>BO</option><option value="ROP">ROP</option><option value="TCO">TCO</option><option value="NI">NI</option></select><span class="nota">Nos novos registros, toda ocorrência operacional é registrada por Boletim de Ocorrência (BO).</span></div>'+blocoGrupamento
+      '<div class="campo"><label>Tipo de documento</label><input id="tipoDocumentoExibicao" type="text" value="BO" readonly aria-label="Tipo de documento"><select id="tipoRegistro" name="tipoRegistro" required hidden><option value="BO" selected>BO</option><option value="ROP">ROP</option><option value="TCO">TCO</option><option value="NI">NI</option></select><span class="nota">Nos novos registros, toda ocorrência operacional é registrada por Boletim de Ocorrência (BO).</span></div>'+blocoOrigemBope+blocoGrupamento
     );
+
+    if(ehBopeCadastro){
+      html=html.replace(
+        '    sincronizarGrupamentoComTipo();',
+        '    sincronizarGrupamentoComTipo();\n    const subunidadeOperacional=document.getElementById("subunidadeOperacional");\n    let subunidadeOperacionalPendente=null;\n    async function carregarSubunidadesBope(){const r=await banco.rpc("listar_subunidades_operacionais_bope");if(r.error){console.error(r.error);return;}const nomes={FORCA_TATICA:"FORÇA TÁTICA",CHOQUE:"CHOQUE",CANIL:"CANIL",GATE:"GATE"};(r.data||[]).forEach(u=>{const o=document.createElement("option");o.value=u.id;o.textContent=nomes[u.sigla]||u.nome;subunidadeOperacional.appendChild(o)});if(subunidadeOperacionalPendente)subunidadeOperacional.value=subunidadeOperacionalPendente;}\n    carregarSubunidadesBope();'
+      );
+      html=html.replace(
+        '      Object.keys(mapa).forEach(k => definirCampo(mapa[k],x[k]));',
+        '      Object.keys(mapa).forEach(k => definirCampo(mapa[k],x[k]));\n      subunidadeOperacionalPendente=x.subunidade_operacional_id||null;\n      definirCampo("subunidadeOperacional",subunidadeOperacionalPendente);'
+      );
+      html=html.replace(
+        'tipo_registro: document.getElementById("tipoRegistro").value || "BO",',
+        'tipo_registro: document.getElementById("tipoRegistro").value || "BO",\n          subunidade_operacional_id: document.getElementById("subunidadeOperacional")?.value || null,'
+      );
+    }
 
     // Os atalhos rápidos de local de entrega agora são carregados do Supabase por unidade.
     // A base do cadastro renderiza e gerencia a configuração de até seis atalhos.
