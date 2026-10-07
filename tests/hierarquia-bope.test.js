@@ -23,8 +23,7 @@ for (const trecho of [
   "when 'GIRO' then 'Grupamento Independente de Intervenção Rápida Ostensiva'"
 ]) assert.ok(migration.includes(trecho), 'Nomenclatura ausente: '+trecho);
 
-assert.match(migration, /aceita_registro_operacional = \(sigla not in \('CPC','BOPE'\)\)/);
-assert.match(migration, /agrega_descendentes = \(sigla in \('CPC','BOPE'\)\)/);
+// A migration histórica registra o modelo anterior; a inversão operacional está na migration específica do BOPE.
 assert.match(migration, /u\.aceita_registro_operacional = true/);
 assert.match(migration, /not uc\.aceita_registro_operacional/);
 assert.match(migration, /p_unidade_id=any\(d\.caminho\)/);
@@ -49,6 +48,6 @@ assert.match(usuarios, /FORCA_TATICA:'FORÇA TÁTICA'/);
 assert.match(adminUsers, /aceita_registro_operacional/);
 assert.match(adminUsers, /u\.ativo === true/);
 
-console.log('PASS: nomenclatura e hierarquia consolidada do BOPE/CPC validadas.');
+console.log('PASS: nomenclatura e hierarquia institucional do BOPE/CPC validadas.');
 
 assert.doesNotMatch(adminUsers, /aceita_registro_operacional !== true\) throw new Error/);
