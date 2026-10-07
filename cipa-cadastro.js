@@ -80,8 +80,6 @@
   sec.innerHTML=`
     <h2>10. Dados ambientais — CIPA</h2>
     <div class="grade">
-      <div class="campo"><label for="cipaDataRegistroInicio">Início do registro do PPE</label><input id="cipaDataRegistroInicio" type="datetime-local"></div>
-      <div class="campo"><label for="cipaDataRegistroFim">Fim do registro do PPE</label><input id="cipaDataRegistroFim" type="datetime-local"></div>
       <div class="campo"><label for="cipaOrigem">Origem da atuação</label><input id="cipaOrigem" list="cipaOrigens" placeholder="CICC, BIOMA, Ordem de Missão..."><datalist id="cipaOrigens"><option>CICC</option><option>BIOMA</option><option>ORDEM DE MISSÃO</option><option>ORDEM DE SERVIÇO</option><option>PATRULHAMENTO</option></datalist></div>
       <div class="campo duplo"><label for="cipaDocumentoOrigem">Documento de origem / missão</label><input id="cipaDocumentoOrigem" placeholder="Ordem de Missão, Ordem de Serviço..."></div>
       <div class="campo duplo"><label for="cipaAnexo">Anexo / referência</label><input id="cipaAnexo" placeholder="Mapa, TR, AI, relatório ambiental..."></div>
@@ -145,7 +143,7 @@
   });
 
   function dadosBase(){
-    return {ppe_original:null,data_registro_inicio:$('cipaDataRegistroInicio').value||null,data_registro_fim:$('cipaDataRegistroFim').value||null,area_tipo:$('cipaAreaTipo').value||null,coordenadas_texto:coordCampo()?.value.trim()||null,origem_atuacao:$('cipaOrigem').value.trim()||null,documento_origem:$('cipaDocumentoOrigem').value.trim()||null,anexo_referencia:$('cipaAnexo').value.trim()||null};
+    return {ppe_original:null,area_tipo:$('cipaAreaTipo').value||null,coordenadas_texto:coordCampo()?.value.trim()||null,origem_atuacao:$('cipaOrigem').value.trim()||null,documento_origem:$('cipaDocumentoOrigem').value.trim()||null,anexo_referencia:$('cipaAnexo').value.trim()||null};
   }
   function normalizarLinhas(tipo){
     return estado[tipo].map(x=>Object.fromEntries(Object.entries(x).map(([k,v])=>[k,v===''?null:v]))).filter(x=>Object.values(x).some(v=>v!==null&&v!==false));
@@ -183,7 +181,7 @@
       banco.from('cipa_tcos_ambientais').select('*').eq('ocorrencia_id',ocorrenciaId)
     ];
     const r=await Promise.all(qs);if(r.some(x=>x.error)){console.error('Falha ao carregar módulo CIPA',r.find(x=>x.error)?.error);return}
-    const b=r[0].data||{};$('cipaDataRegistroInicio').value=b.data_registro_inicio?String(b.data_registro_inicio).slice(0,16):'';$('cipaDataRegistroFim').value=b.data_registro_fim?String(b.data_registro_fim).slice(0,16):'';$('cipaAreaTipo').value=b.area_tipo||'';if(coordCampo())coordCampo().value=b.coordenadas_texto||'';sincronizarCoordenadasLocal();$('cipaOrigem').value=b.origem_atuacao||'';$('cipaDocumentoOrigem').value=b.documento_origem||'';$('cipaAnexo').value=b.anexo_referencia||'';
+    const b=r[0].data||{};$('cipaAreaTipo').value=b.area_tipo||'';if(coordCampo())coordCampo().value=b.coordenadas_texto||'';sincronizarCoordenadasLocal();$('cipaOrigem').value=b.origem_atuacao||'';$('cipaDocumentoOrigem').value=b.documento_origem||'';$('cipaAnexo').value=b.anexo_referencia||'';
     ['autos','embargos','notificacoes','fauna','educacao','tdba','tcos'].forEach((k,i)=>{estado[k]=r[i+1].data||[];render(k)});
   }
 
@@ -191,26 +189,15 @@
     const p=texto.indexOf(inicio);if(p<0)return'';let fim=texto.length;proximos.forEach(m=>{const x=texto.indexOf(m,p+inicio.length);if(x>=0&&x<fim)fim=x});return texto.slice(p,fim);
   }
   function extrairCipa(texto){
-    const ri=texto.match(/Data\/Hora In[íi]cio do Registro:\s*(\d{2}\/\d{2}\/\d{4})\s*(\d{2}:\d{2})/i),rf=texto.match(/Data\/Hora Fim:\s*(\d{2}\/\d{2}\/\d{4})\s*(\d{2}:\d{2})/i);
-    if(ri)$('cipaDataRegistroInicio').value=dtLocal(ri[1],ri[2]);if(rf)$('cipaDataRegistroFim').value=dtLocal(rf[1],rf[2]);
     const local=texto.match(/Tipo do Local:\s*([^\n]+)/i);if(local)$('cipaAreaTipo').value=/RURAL/i.test(local[1])?'RURAL':/URBAN/i.test(local[1])?'URBANA':'';
     const om=texto.match(/(ORDEM DE (?:MISS[ÃA]O|SERVI[ÇC]O)[^\n]{0,180})/i);if(om)$('cipaDocumentoOrigem').value=om[1].replace(/\s+/g,' ').trim();
     const origem=/OPERA[ÇC][ÃA]O BIOMA|\bBIOMA\b/i.test(texto)?'BIOMA':/\bCICC\b/i.test(texto)?'CICC':om?/MISS[ÃA]O/i.test(om[1])?'ORDEM DE MISSÃO':'ORDEM DE SERVIÇO':'';if(origem)$('cipaOrigem').value=origem;
     const coord=coordenadasDoTexto(texto);if(coord&&coordCampo()&&!coordCampo().value.trim()){coordCampo().value=coord.texto;sincronizarCoordenadasLocal()}
 
-    const autos=[];for(const m of texto.matchAll(/AUTO DE INFRA[ÇC][ÃA]O\s*(?:N[º°]|Nº)?\s*[:]?\s*(\d{4,})/gi)){
-      const b=blocoAte(texto,m[0],['AUTO DE INFRAÇÃO Nº','TERMO DE EMBARGO/INTERDIÇÃO Nº']);
-      const au=b.match(/\(03\)\s*NOME DO AUTUADO\s*([^\n]+)/i),da=b.match(/DATA DA AUTUA[ÇC][ÃA]O\s*(\d{2}\/\d{2}\/\d{4})/i),ar=b.match(/\(14\)\s*[ÁA]REA\s*([\d.,]+)\s*Hectares/i),vl=b.match(/\(15\)\s*VALOR DA MULTA\s*(R\$\s*[\d.]+,\d{2})/i),desc=b.match(/\(12\)\s*DESCRI[ÇC][ÃA]O DA INFRA[ÇC][ÃA]O\s*([\s\S]*?)(?=\(13\))/i),l=b.match(/Lei Federal\s*9\.605\/98[\s\S]*?Artigo:\s*Art\.\s*([\dA-Za-zº°.-]+)/i),d=b.match(/Decreto Federal\s*6\.514\/08[\s\S]*?Artigo:\s*Art\.\s*([\dA-Za-zº°.-]+)/i);
-      autos.push({numero:m[1],data_autuacao:da?iso(da[1]):'',autuado:au?au[1].trim():'',tipo_sancao:/Multa Simples[\s\S]{0,30}Embargo/i.test(b)?'MULTA E EMBARGO':/Multa Simples/i.test(b)?'MULTA':'',descricao_infracao:desc?desc[1].replace(/\s+/g,' ').trim():'',art_lei_9605:l?l[1]:'',art_dec_6514:d?d[1]:'',valor_multa:vl?money(vl[1]):'',area_embargada_ha:ar?num(ar[1]):'',fiscal_ambiental:''});
-    }
-    const unicos=new Map(autos.map(x=>[x.numero,x]));if(unicos.size){estado.autos=[...unicos.values()];render('autos')}
 
-    const emb=[];for(const m of texto.matchAll(/TERMO DE EMBARGO\/INTERDI[ÇC][ÃA]O\s*(?:N[º°]|Nº)?\s*[:]?\s*(\d{4,})/gi)){
-      const b=blocoAte(texto,m[0],['TERMO DE EMBARGO/INTERDIÇÃO Nº','AUTO DE INFRAÇÃO Nº']);
-      const ai=b.match(/AUTO DE INFRA[ÇC][ÃA]O ORIGIN[ÁA]RIO\s*(\d+)/i),da=b.match(/DATA DA AUTUA[ÇC][ÃA]O\s*(\d{2}\/\d{2}\/\d{4})/i);
-      emb.push({numero:m[1],data_embargo:da?iso(da[1]):'',auto_infracao_originario:ai?ai[1]:'',descricao:'',area_embargada_ha:''});
-    }
-    const ue=new Map(emb.map(x=>[x.numero,x]));if(ue.size){estado.embargos=[...ue.values()];render('embargos')}
+    const documentos=window.CipaExtrator?.extrair(texto);
+    if(documentos?.autos?.length){estado.autos=documentos.autos;render('autos')}
+    if(documentos?.embargos?.length){estado.embargos=documentos.embargos;render('embargos')}
     $('quantAutoInfracao').value=estado.autos.length||'';$('autoInfracao').value=estado.autos.map(x=>x.numero).join('; ');
   }
 
