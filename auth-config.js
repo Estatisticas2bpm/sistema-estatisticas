@@ -7,6 +7,7 @@ window.SISTEMA_AUTH_CONFIG = Object.freeze({
   loginPage: "login.html",
   homePage: "index.html",
   passwordPage: "alterar-senha.html",
+  mfaPage: "mfa.html",
   profilePage: "meu-perfil.html",
   permissions: Object.freeze({
     ADMIN: ["cadastro","consulta","dashboard","auditoria","analise","mapa","tco","relatorio","planilha","acoes","tv","fluxos","usuarios","logs","configuracoes"],
@@ -36,7 +37,8 @@ window.SISTEMA_AUTH_CONFIG = Object.freeze({
     "modo-tv.html":"tv",
     "painel-tv.html":"tv",
     "fluxos.html":"fluxos",
-    "usuarios.html":"usuarios"
+    "usuarios.html":"usuarios",
+    "sessoes.html":"usuarios"
   }),
   pageModules: Object.freeze({
     "acoes.html":"ACOES_SOCIAIS",

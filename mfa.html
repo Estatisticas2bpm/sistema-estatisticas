@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SIE-CPC — Verificação em duas etapas</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:#eef3f8;font:14px Inter,Segoe UI,Arial,sans-serif;color:#172033;display:grid;place-items:center}.card{width:min(430px,92%);background:#fff;border:1px solid #d7e0ea;border-radius:16px;padding:25px;box-shadow:0 10px 34px #071b3320}.card h1{margin:0 0 7px;color:#071b33;font-size:22px}.card p{margin:0 0 20px;color:#66758a;line-height:1.5}.campo{margin-bottom:14px}.campo label{display:block;font-size:12px;font-weight:800;color:#455b70;margin-bottom:5px}.campo input{width:100%;padding:12px;border:1px solid #d7e0ea;border-radius:9px;font:inherit;letter-spacing:4px;text-align:center;font-size:20px}.btn{width:100%;border:0;border-radius:9px;padding:13px;background:#0e4f8a;color:#fff;font-weight:900;cursor:pointer}.btn:disabled{opacity:.55}.msg{display:none;margin-top:13px;padding:10px 12px;border-radius:9px}.msg.ok{display:block;background:#ecfdf3;color:#067647;border:1px solid #abefc6}.msg.erro{display:block;background:#fef3f2;color:#b42318;border:1px solid #fecdca}.link{display:block;text-align:center;margin-top:14px;color:#0e4f8a;font-weight:800;text-decoration:none}
+</style>
+<script src="auth-config.js"></script><script src="auth-guard.js"></script>
+</head>
+<body>
+<section class="card">
+  <h1>Verificação em duas etapas</h1>
+  <p>Digite o código de 6 dígitos do seu aplicativo autenticador para concluir o acesso ao SIE-CPC.</p>
+  <form id="form">
+    <div class="campo"><label>Código do autenticador</label><input id="codigo" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required></div>
+    <button id="verificar" class="btn" type="submit">Verificar e entrar</button>
+    <div id="msg" class="msg"></div>
+  </form>
+  <a class="link" href="meu-perfil.html">Gerenciar segurança da conta</a>
+</section>
+<script>
+const cfg=window.SISTEMA_AUTH_CONFIG,$=id=>document.getElementById(id);let client=null,factorId=null;
+function mensagem(t,c){$('msg').textContent=t;$('msg').className='msg '+c}
+function retorno(){const p=new URLSearchParams(location.search).get('retorno');if(!p)return cfg.homePage;try{const u=new URL(p,location.href);return u.origin===location.origin?(u.pathname.split('/').pop()||cfg.homePage)+u.search:cfg.homePage}catch(_){return cfg.homePage}}
+$('form').addEventListener('submit',async e=>{
+  e.preventDefault();const code=$('codigo').value.trim(),b=$('verificar');if(!/^\d{6}$/.test(code)){mensagem('Informe o código de 6 dígitos.','erro');return}
+  b.disabled=true;b.textContent='Verificando...';
+  try{
+    const challenge=await client.auth.mfa.challenge({factorId});if(challenge.error)throw challenge.error;
+    const verify=await client.auth.mfa.verify({factorId,challengeId:challenge.data.id,code});if(verify.error)throw verify.error;
+    mensagem('Verificação concluída. Abrindo o sistema...','ok');setTimeout(()=>location.replace(retorno()),450);
+  }catch(err){console.error(err);mensagem('Código inválido ou expirado. Gere um novo código e tente novamente.','erro')}
+  finally{b.disabled=false;b.textContent='Verificar e entrar'}
+});
+(async()=>{
+  const auth=await window.SistemaAuth.ready;if(!auth)return;client=auth.client;
+  const aal=await client.auth.mfa.getAuthenticatorAssuranceLevel();
+  if(!aal.error&&aal.data?.currentLevel==='aal2'){location.replace(retorno());return}
+  const fatores=await client.auth.mfa.listFactors();
+  if(fatores.error){mensagem('Não foi possível consultar o segundo fator: '+fatores.error.message,'erro');$('verificar').disabled=true;return}
+  const fator=(fatores.data?.totp||[]).find(x=>x.status==='verified');
+  if(!fator){mensagem('Nenhum autenticador está configurado nesta conta. Ative a verificação em duas etapas no Meu Perfil.','erro');$('verificar').disabled=true;return}
+  factorId=fator.id;$('codigo').focus();
+})();
+</script>
+</body></html>

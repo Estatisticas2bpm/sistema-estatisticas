@@ -11,10 +11,10 @@ header{background:linear-gradient(120deg,#071b33,#0a355f);color:#fff;padding:22p
 main{padding:22px 0 70px}.panel{background:#fff;border:1px solid var(--line);border-radius:15px;padding:20px;margin-bottom:18px;box-shadow:0 6px 22px #071b330c}
 .panel h2{margin:0 0 5px;color:var(--navy)}.sub{margin:0 0 17px;color:var(--muted);line-height:1.45}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
 .campo label{display:block;font-size:12px;font-weight:800;color:#455b70;margin-bottom:5px}.campo input,.campo select{width:100%;padding:11px;border:1px solid var(--line);border-radius:9px;background:#fff;font:inherit}
-.campo input[readonly]{background:#f5f7fa;color:#66758a}.acoes{display:flex;gap:9px;flex-wrap:wrap;margin-top:15px}.btn{border:0;border-radius:9px;padding:10px 13px;background:var(--blue);color:#fff;font-weight:800;cursor:pointer}.btn.green{background:var(--green)}.btn:disabled{opacity:.55;cursor:wait}
+.campo input[readonly]{background:#f5f7fa;color:#66758a}.acoes{display:flex;gap:9px;flex-wrap:wrap;margin-top:15px}.btn{border:0;border-radius:9px;padding:10px 13px;background:var(--blue);color:#fff;font-weight:800;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}.btn.green{background:var(--green)}.btn.red{background:var(--red)}.btn.gray{background:#52677a}.btn:disabled{opacity:.55;cursor:wait}
 .status{display:none;margin:12px 0;padding:10px 12px;border-radius:9px}.status.ok{display:block;background:#ecfdf3;color:#067647;border:1px solid #abefc6}.status.erro{display:block;background:#fef3f2;color:#b42318;border:1px solid #fecdca}.status.info{display:block;background:#eff8ff;color:#175cd3;border:1px solid #b2ddff}
-.aviso{background:#f8fafc;border:1px solid #dce5ed;border-radius:10px;padding:11px 12px;color:#52677a;line-height:1.45;margin-bottom:16px}
-@media(max-width:650px){.grid{grid-template-columns:1fr}.head{align-items:flex-start;flex-direction:column}}
+.aviso{background:#f8fafc;border:1px solid #dce5ed;border-radius:10px;padding:11px 12px;color:#52677a;line-height:1.45;margin-bottom:16px}.security-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.security-card{border:1px solid #dce5ed;border-radius:12px;padding:15px;background:#fbfcfe}.security-card strong{display:block;color:#071b33;margin-bottom:5px}.qrbox{display:none;margin-top:14px;padding:14px;border:1px solid #dce5ed;border-radius:12px;background:#fff}.qrbox img{display:block;width:190px;height:190px;max-width:100%;margin:0 auto 12px}.code-row{display:flex;gap:8px}.code-row input{flex:1;padding:11px;border:1px solid var(--line);border-radius:9px;font:inherit;letter-spacing:3px;text-align:center}.security-state{font-weight:800;color:#52677a}.security-state.ok{color:#067647}
+@media(max-width:650px){.grid,.security-grid{grid-template-columns:1fr}.head{align-items:flex-start;flex-direction:column}.code-row{flex-direction:column}}
 </style>
 <script src="auth-config.js"></script><script src="auth-guard.js"></script>
 </head>
@@ -56,6 +56,27 @@ main{padding:22px 0 70px}.panel{background:#fff;border:1px solid var(--line);bor
     <div id="statusSenha" class="status"></div>
   </form>
 </section>
+
+<section class="panel">
+  <h2>Segurança da conta</h2>
+  <p class="sub">Controle os dispositivos conectados e ative uma segunda etapa de verificação para proteger sua conta mesmo se alguém descobrir sua senha.</p>
+  <div class="security-grid">
+    <div class="security-card">
+      <strong>Dispositivos conectados</strong>
+      <div class="sub" style="margin:0">Encerre todas as outras sessões e mantenha somente este computador.</div>
+      <div class="acoes"><button id="encerrarOutras" class="btn red" type="button">Encerrar outros dispositivos</button><a id="gerenciarSessoes" class="btn gray" href="sessoes.html" hidden>Ver sessões online</a></div>
+      <div id="statusSessoes" class="status"></div>
+    </div>
+    <div class="security-card">
+      <strong>Verificação em duas etapas (2FA)</strong>
+      <div id="mfaEstado" class="security-state">Consultando...</div>
+      <div class="sub" style="margin:7px 0 0">Use um aplicativo autenticador como Google Authenticator, Microsoft Authenticator, Authy ou 1Password.</div>
+      <div class="acoes"><button id="ativarMfa" class="btn" type="button">Ativar 2FA</button></div>
+      <div id="mfaSetup" class="qrbox"><img id="mfaQr" alt="QR Code para ativar autenticação em duas etapas"><div class="campo"><label>Código de 6 dígitos</label><div class="code-row"><input id="mfaCodigo" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="000000"><button id="confirmarMfa" class="btn green" type="button">Confirmar</button></div></div></div>
+      <div id="statusMfa" class="status"></div>
+    </div>
+  </div>
+</section>
 </main>
 <script>
 const cfg=window.SISTEMA_AUTH_CONFIG,$=id=>document.getElementById(id);let client=null,authCtx=null;
@@ -87,13 +108,57 @@ $('formSenha').addEventListener('submit',async e=>{
   try{
     const r=await client.auth.updateUser({password:senha});if(r.error)throw r.error;
     await invocar({action:'password_changed'});
-    e.target.reset();status('statusSenha','Senha alterada com sucesso.','ok');
+    await invocar({action:'sessions_revoke_others_self'}).catch(()=>({revoked:0}));
+    await client.auth.signOut({scope:'others'}).catch(()=>{});
+    e.target.reset();status('statusSenha','Senha alterada com sucesso. As outras sessões da sua conta foram encerradas.','ok');
   }catch(err){console.error(err);status('statusSenha','Não foi possível alterar a senha: '+err.message,'erro')}
   finally{b.disabled=false;b.textContent='Alterar minha senha'}
 });
+let mfaFactorId=null;
+async function carregarSeguranca(){
+  if(authCtx?.perfil?.perfil==='ADMIN')$('gerenciarSessoes').hidden=false;
+  const fatores=await client.auth.mfa.listFactors();
+  if(fatores.error){$('mfaEstado').textContent='Não foi possível consultar o 2FA';status('statusMfa',fatores.error.message,'erro');return}
+  const totp=fatores.data?.totp||[],verificado=totp.find(x=>x.status==='verified');
+  if(verificado){
+    $('mfaEstado').textContent='2FA ATIVO';$('mfaEstado').className='security-state ok';$('ativarMfa').hidden=true;$('mfaSetup').style.display='none';
+  }else{
+    $('mfaEstado').textContent='2FA ainda não ativado';$('mfaEstado').className='security-state';$('ativarMfa').hidden=false;
+  }
+}
+$('encerrarOutras').addEventListener('click',async()=>{
+  if(!confirm('Encerrar todos os outros dispositivos conectados à sua conta e manter somente este computador?'))return;
+  const b=$('encerrarOutras');b.disabled=true;
+  try{
+    const d=await invocar({action:'sessions_revoke_others_self'});
+    const r=await client.auth.signOut({scope:'others'});if(r.error)throw r.error;
+    status('statusSessoes',(d.revoked||0)+' outra(s) sessão(ões) encerrada(s).','ok');
+  }catch(err){console.error(err);status('statusSessoes','Não foi possível encerrar as outras sessões: '+err.message,'erro')}
+  finally{b.disabled=false}
+});
+$('ativarMfa').addEventListener('click',async()=>{
+  const b=$('ativarMfa');b.disabled=true;limpar('statusMfa');
+  try{
+    const r=await client.auth.mfa.enroll({factorType:'totp',friendlyName:'SIE-CPC'});
+    if(r.error)throw r.error;mfaFactorId=r.data.id;$('mfaQr').src=r.data.totp.qr_code;$('mfaSetup').style.display='block';$('mfaCodigo').focus();
+    status('statusMfa','Escaneie o QR Code no aplicativo autenticador e informe o código gerado.','info');
+  }catch(err){console.error(err);status('statusMfa','Não foi possível iniciar o 2FA: '+err.message,'erro');b.disabled=false}
+});
+$('confirmarMfa').addEventListener('click',async()=>{
+  const code=$('mfaCodigo').value.trim(),b=$('confirmarMfa');if(!/^\d{6}$/.test(code)){status('statusMfa','Informe o código de 6 dígitos.','erro');return}
+  if(!mfaFactorId){status('statusMfa','Inicie novamente a configuração do 2FA.','erro');return}
+  b.disabled=true;
+  try{
+    const ch=await client.auth.mfa.challenge({factorId:mfaFactorId});if(ch.error)throw ch.error;
+    const vr=await client.auth.mfa.verify({factorId:mfaFactorId,challengeId:ch.data.id,code});if(vr.error)throw vr.error;
+    status('statusMfa','2FA ativado com sucesso. As outras sessões foram encerradas pelo serviço de autenticação.','ok');
+    await carregarSeguranca();
+  }catch(err){console.error(err);status('statusMfa','Código inválido ou expirado. Tente novamente.','erro')}
+  finally{b.disabled=false}
+});
 (async()=>{
   authCtx=await window.SistemaAuth.ready;if(!authCtx)return;client=authCtx.client;
-  try{await carregarPerfil()}catch(err){console.error(err);status('statusPerfil','Não foi possível carregar o perfil: '+err.message,'erro')}
+  try{await carregarPerfil();await carregarSeguranca()}catch(err){console.error(err);status('statusPerfil','Não foi possível carregar o perfil: '+err.message,'erro')}
 })();
 </script>
 </body></html>
