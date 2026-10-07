@@ -71,6 +71,7 @@
   }
   function render(tipo){
     const d=defs[tipo],box=$(d.box);box.innerHTML=`<div class="cipa-repeater-head"><h3>${d.titulo}</h3><button type="button" class="botao-item" data-add="${tipo}">${d.botao}</button></div><div class="cipa-list">${estado[tipo].map((x,i)=>`<div class="cipa-item" data-tipo="${tipo}" data-i="${i}"><button type="button" class="cipa-remove" data-rm="${tipo}" data-i="${i}">Remover</button><div class="cipa-item-grid">${d.campos.map(c=>campoHtml(c,x[c[0]])).join('')}</div></div>`).join('')||'<p class="lista-vazia">Nenhum registro informado.</p>'}</div>`;
+    if(tipo==='autos'){$('quantAutoInfracao').value=estado.autos.length||'';$('autoInfracao').value=estado.autos.map(x=>x.numero).filter(Boolean).join('; ');}
   }
   function syncItem(el){
     const tipo=el.dataset.tipo,i=Number(el.dataset.i),obj=estado[tipo][i];if(!obj)return;
