@@ -12,7 +12,7 @@ assert.ok(a>=0&&b>a,'buildGiro deve existir antes do relatório genérico');
 const giro=report.slice(a,b);
 
 assert.match(report,/function ehGiroRel\(\)/);
-assert.match(report,/if\(ehGiroRel\(\)\)return buildGiro\(\)/);
+assert.match(report,/if\(ehCipaRel\(\).*?buildRelatorioCipa.*?if\(ehGiroRel\(\)\)return buildGiro\(\)/);
 assert.match(report,/window\.SistemaAuth\?\.contexto/);
 assert.match(report,/Grupamento Independente de Intervenção Rápida Ostensiva - GIRO/);
 assert.match(report,/const arquivo=\x60\$\{titulo\} - \$\{unidadeRel\(\)\.sigla\}\x60/);
@@ -50,7 +50,7 @@ assert.doesNotMatch(giro,/VTR AME/);
 assert.doesNotMatch(giro,/PR6/);
 assert.doesNotMatch(giro,/PROGRAMAS DE PREVENÇÃO À CRIMINALIDADE/);
 
-assert.match(report,/if\(ehGiroRel\(\)\|\|ehCipturRel\(\)\)\{[\s\S]*?siscWrap[\s\S]*?companhiaWrap/);
+assert.match(report,/if\(ehGiroRel\(\)\|\|ehCipturRel\(\)\|\|ehCipaRel\(\)\)\{[\s\S]*?siscWrap[\s\S]*?companhiaWrap/);
 assert.match(dashboard,/relatorio\.html\?v=[^&"']+/);
 
 console.log('GIRO: relatório estatístico específico validado.');
