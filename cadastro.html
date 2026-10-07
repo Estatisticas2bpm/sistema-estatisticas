@@ -68,6 +68,16 @@
     }
 
     if(ehCipaCadastro){
+      // A data operacional exibida para a CIPA é a data da elaboração do PPE,
+      // distinta da data do fato que permanece no texto original do documento.
+      html=html.replace(
+        '<label for="data">Data *</label>',
+        '<label for="data">Data de elaboração do PPE *</label>'
+      );
+      html=html.replace(
+        '        const dados = extrairDadosOcorrenciaPdf(texto);',
+        '        const dados = extrairDadosOcorrenciaPdf(texto);\n        const dataRegistroPpe=texto.match(/Data\\/Hora\\s+(?:In[ií]cio\\s+do\\s+Registro|In[ií]cio\\s+do\\s+Registro:)\\s*:?\\s*(\\d{2}\\/\\d{2}\\/20\\d{2})/i);\n        if(dataRegistroPpe){dados.dataFatoOriginal=dados.data;dados.data=dataIso(dataRegistroPpe[1]);}'
+      );
       html=html.replace(
         '<h2>3. Local da ocorrência</h2>',
         '<h2>3. Local da ocorrência — CIPA</h2>'
