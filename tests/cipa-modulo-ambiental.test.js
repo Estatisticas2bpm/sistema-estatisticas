@@ -8,6 +8,7 @@ const cadastro=read('cadastro.html');
 const cipaCadastro=read('cipa-cadastro.js');
 const cadastroBase=read('cadastro-base.html');
 const dashboard=read('dashboard.html');
+const mapaCriminal=read('mapa-criminal.html');
 const relatorio=read('relatorio.html');
 const relCipa=read('relatorio-cipa.js');
 
@@ -33,6 +34,19 @@ assert.match(cipaCadastro,/TERMO DE EMBARGO/);
 assert.match(cadastroBase,/sie:pdf-texto-extraido/);
 assert.match(cipaCadastro,/addEventListener\('sie:pdf-texto-extraido'/);
 assert.doesNotMatch(cipaCadastro,/window\.lerTextoPdfLocal/);
+
+assert.match(cadastro,/Local da ocorrência — CIPA/);
+assert.match(cadastro,/cipaLocalCoordenadas/);
+assert.match(cadastro,/cipaTemCoordenadas/);
+assert.match(cadastro,/Informe se o local da ocorrência é URBANO ou RURAL/);
+assert.match(cipaCadastro,/function parseCoordenadas/);
+assert.match(cipaCadastro,/function sincronizarCoordenadasLocal/);
+assert.match(cipaCadastro,/latitude'\)\.value=p\.lat\.toFixed/);
+assert.match(cipaCadastro,/longitude'\)\.value=p\.lon\.toFixed/);
+assert.doesNotMatch(cipaCadastro,/id="cipaCoordenadas"/);
+assert.match(mapaCriminal,/lat>=-2&&lat<=6&&lo>=-66&&lo<=-58/);
+assert.match(mapaCriminal,/cipa_coordenadas_texto/);
+assert.match(mapaCriminal,/function localOcorrencia/);
 
 assert.match(dashboard,/Dashboard Ambiental — CIPA/);
 assert.match(dashboard,/Fiscalização e Produtividade Ambiental/);
