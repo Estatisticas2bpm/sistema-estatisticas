@@ -223,5 +223,5 @@
   });
 
   const idEdicaoCipa=new URLSearchParams(location.search).get('id');if(idEdicaoCipa)carregar(idEdicaoCipa);
-  window.CipaCadastro={salvar,carregar,estado,extrairCipa};
+  window.CipaCadastro={salvar,carregar,estado,extrairCipa,parseCoordenadas,sincronizarCoordenadasLocal};
 })();
