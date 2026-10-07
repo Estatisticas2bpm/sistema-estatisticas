@@ -281,6 +281,60 @@
 
   function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
+  function payloadJwt(token){
+    try{
+      const p=String(token||'').split('.')[1]||'',n=p.replace(/-/g,'+').replace(/_/g,'/'),pad=n+'='.repeat((4-(n.length%4||4))%4);
+      return JSON.parse(atob(pad));
+    }catch(_){return {}}
+  }
+  function sessionIdDaSessao(session){return String(payloadJwt(session?.access_token)?.session_id||'').trim();}
+  function erroSessaoRevogada(err){
+    const codigo=String(err?.code||''),msg=String(err?.message||'').toLowerCase();
+    return codigo==='42501'||codigo==='PGRST301'||msg.includes('row-level security')||msg.includes('jwt expired')||msg.includes('sessão revogada');
+  }
+  function urlMfa(){
+    const retorno=pathname&&pathname!==(cfg.mfaPage||'mfa.html')?pathname+location.search:'';
+    const p=new URLSearchParams();if(retorno)p.set('retorno',retorno);
+    return (cfg.mfaPage||'mfa.html')+(p.toString()?'?'+p.toString():'');
+  }
+  async function exigirMfaSeNecessario(client){
+    if(pathname===(cfg.mfaPage||'mfa.html'))return false;
+    const r=await client.auth.mfa.getAuthenticatorAssuranceLevel();
+    if(r.error){console.error('Não foi possível verificar o nível de autenticação:',r.error);return false;}
+    if(r.data?.nextLevel==='aal2'&&r.data?.currentLevel!=='aal2'){
+      location.replace(urlMfa());
+      return true;
+    }
+    return false;
+  }
+  function iniciarPresenca(client,user,session){
+    const sessionId=sessionIdDaSessao(session);
+    if(!sessionId)return;
+    let encerrando=false,emCurso=false;
+    const ping=async()=>{
+      if(encerrando||emCurso||document.visibilityState==='hidden')return;
+      emCurso=true;
+      try{
+        const agora=new Date().toISOString();
+        const r=await client.from('sessoes_presenca').upsert({
+          session_id:sessionId,user_id:user.id,ultimo_sinal:agora,atualizado_em:agora,
+          user_agent:navigator.userAgent||null,pagina:pathname||null
+        },{onConflict:'session_id'});
+        if(r.error&&erroSessaoRevogada(r.error)){
+          encerrando=true;
+          try{await client.auth.signOut({scope:'local'});}catch(_){}
+          location.replace(urlLogin('sessao-revogada'));
+        }else if(r.error){
+          console.warn('Falha temporária ao registrar presença:',r.error.message);
+        }
+      }finally{emCurso=false}
+    };
+    ping();
+    const timer=setInterval(ping,30000);
+    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')ping();});
+    window.addEventListener('pagehide',()=>clearInterval(timer),{once:true});
+  }
+
   async function carregarPerfil(client,user){
     const r=await client.from(cfg.profileTable)
       .select('user_id,nome,nome_guerra,posto_graduacao,matricula,email,perfil,ativo,senha_temporaria,unidade_id')
@@ -328,6 +382,8 @@
         return null;
       }
 
+      if(await exigirMfaSeNecessario(client))return null;
+
       await carregarContextoUnidade(client,perfil);
 
       const pPagina=permissaoDaPagina();
@@ -347,6 +403,7 @@
       }
 
       window.SistemaAuth={enabled:true,client,user,perfil,contexto:contextoAtual,modulos:[...modulos],planilha,pode:(p)=>pode(perfil.perfil,p),temModulo:(m)=>temModulo(modulos,m),ready:null,sair:async()=>{await client.auth.signOut({scope:'local'});location.replace(cfg.loginPage);}};
+      iniciarPresenca(client,user,session);
 
       const aplicar=()=>{aplicarIdentidadeVisual(perfil);aplicarPermissoes(perfil.perfil,modulos,planilha);instalarIdentificacaoSessao(perfil,client);instalarSeletorUnidadeAdmin(perfil,client).catch(e=>console.error('Falha ao instalar seletor administrativo:',e));mostrarAvisoDeAcesso();};
       if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',aplicar,{once:true});
