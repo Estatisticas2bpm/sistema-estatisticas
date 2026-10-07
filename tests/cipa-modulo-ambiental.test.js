@@ -15,6 +15,7 @@ assert.match(cadastro,/ehGiroCadastro\|\|ehCipaCadastro/);
 assert.match(cadastro,/CipaCadastro\?\.salvar/);
 assert.match(cadastro,/cipa-cadastro\.js/);
 
+assert.match(cipaCadastro,/await window\.SistemaAuth\.ready/);
 assert.match(cipaCadastro,/form#formOcorrencia > section/);
 assert.match(cipaCadastro,/Dados ambientais — CIPA/);
 assert.match(cipaCadastro,/Autos de Infração Ambiental/);
