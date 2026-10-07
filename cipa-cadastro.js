@@ -12,7 +12,7 @@
   style.textContent='.cipa-modulo{border:1px solid #a7c7b6!important;background:linear-gradient(180deg,#f6fbf8,#fff)}.cipa-modulo h2{color:#245b43}.cipa-repeater{grid-column:1/-1;border:1px solid #d6e5dc;border-radius:12px;padding:12px;background:#fff}.cipa-repeater-head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:10px}.cipa-repeater-head h3{margin:0;color:#245b43}.cipa-list{display:grid;gap:10px}.cipa-item{border:1px solid #dbe6df;border-radius:10px;padding:10px;background:#fbfdfc}.cipa-item-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.cipa-item-grid label{font-size:11px;font-weight:800;color:#52677a}.cipa-item-grid input,.cipa-item-grid select,.cipa-item-grid textarea{display:block;width:100%;margin-top:4px;border:1px solid #cdd8e5;border-radius:8px;padding:8px;background:#fff}.cipa-item-grid textarea{min-height:64px;resize:vertical}.cipa-span2{grid-column:span 2}.cipa-span4{grid-column:1/-1}.cipa-remove{border:0;background:#a63d40;color:#fff;border-radius:7px;padding:7px 10px;cursor:pointer;float:right}@media(max-width:800px){.cipa-item-grid{grid-template-columns:1fr 1fr}.cipa-span4{grid-column:1/-1}}';
   document.head.appendChild(style);
 
-  const alvo=[...document.querySelectorAll('form#formulario > section')].find(s=>/10\. Outros indicadores/i.test(s.querySelector('h2')?.textContent||''));
+  const alvo=[...document.querySelectorAll('form#formOcorrencia > section')].find(s=>/10\. Outros indicadores/i.test(s.querySelector('h2')?.textContent||''));
   if(!alvo)return;
   const sec=document.createElement('section');
   sec.className='cipa-modulo';
