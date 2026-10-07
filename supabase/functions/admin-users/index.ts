@@ -365,6 +365,19 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    if (action === "sessions_revoke_others_self") {
+      if (!perfilCaller || perfilCaller.ativo !== true || perfilCaller.unidades?.ativo !== true) {
+        return resposta({ error: "Usuário ou unidade principal não autorizado." }, 403);
+      }
+      const sessions = await snapshotSessoes();
+      const ids = sessions
+        .filter((s: any) => String(s.user_id) === caller.id && String(s.session_id) !== callerSessionId && s.revogada !== true)
+        .map((s: any) => String(s.session_id));
+      const quantidade = await revogarSessoes(ids, caller.id, "USUARIO_ENCERROU_OUTRAS_SESSOES");
+      await log(caller.id, "REVOGOU_OUTRAS_SESSOES", "usuario", caller.id, { quantidade });
+      return resposta({ ok: true, revoked: quantidade });
+    }
+
     if (!perfilCaller || perfilCaller.ativo !== true || perfilCaller.perfil !== "ADMIN" || perfilCaller.unidades?.ativo !== true) {
       return resposta({ error: "Somente administradores ativos de uma unidade ativa podem gerenciar usuários." }, 403);
     }
@@ -396,16 +409,6 @@ Deno.serve(async (req: Request) => {
       if (!alvo) throw new Error("Sessão não encontrada ou já encerrada.");
       const quantidade = await revogarSessoes([sessionId], caller.id, "ADMIN_ENCERROU_SESSAO");
       await log(caller.id, "REVOGOU_SESSAO", "sessao", sessionId, { user_id: alvo.user_id });
-      return resposta({ ok: true, revoked: quantidade });
-    }
-
-    if (action === "sessions_revoke_others_self") {
-      const sessions = await snapshotSessoes();
-      const ids = sessions
-        .filter((s: any) => String(s.user_id) === caller.id && String(s.session_id) !== callerSessionId && s.revogada !== true)
-        .map((s: any) => String(s.session_id));
-      const quantidade = await revogarSessoes(ids, caller.id, "USUARIO_ENCERROU_OUTRAS_SESSOES");
-      await log(caller.id, "REVOGOU_OUTRAS_SESSOES", "usuario", caller.id, { quantidade });
       return resposta({ ok: true, revoked: quantidade });
     }
 
