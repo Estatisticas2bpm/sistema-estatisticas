@@ -126,6 +126,12 @@
       '["horaInicial","Informe a hora inicial."],\n        ["ocorrencia","Selecione o Tipo de Ocorrência."]',
       '["horaInicial","Informe a hora inicial."],\n        ["comandante","Informe o comandante da viatura."],\n        ["ocorrencia","Selecione o Tipo de Ocorrência."]'
     );
+    if(ehCipaCadastro){
+      html=html.replace(
+        '["horaInicial","Informe a hora inicial."],\n        ["comandante","Informe o comandante da viatura."],\n        ["ocorrencia","Selecione o Tipo de Ocorrência."]',
+        '["horaInicial","Informe a hora inicial."],\n        ["comandante","Informe o comandante da viatura."],\n        ["cipaAreaTipo","Informe se o local da ocorrência é URBANO ou RURAL."],\n        ["ocorrencia","Selecione o Tipo de Ocorrência."]'
+      );
+    }
 
     // Separação semântica: tipo_registro fica BO e o grupamento é salvo dentro do
     // mesmo JSON estruturado já usado em observacao_final. Tático também mantém o
