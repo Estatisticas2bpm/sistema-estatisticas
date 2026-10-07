@@ -1869,12 +1869,29 @@
           canvas.width = Math.ceil(viewport.width);
           canvas.height = Math.ceil(viewport.height);
           await pagina.render({canvasContext:contexto,viewport}).promise;
-          const resultado = await worker.recognize(canvas);
-          const textoOcr = String(resultado?.data?.text || "").trim();
-          if (textoOcr) {
-            textos.push("[OCR PÁGINA " + numero + "]\n" + textoOcr);
-            window.dispatchEvent(new CustomEvent("sie:pdf-texto-extraido",{detail:{texto:textoOcr,arquivoNome:arquivo.name,origem:"ocr",pagina:numero}}));
+          // Nas fotografias da CIPA, as coordenadas GPS costumam aparecer
+          // em letras pequenas sobrepostas à borda inferior da imagem.
+          const enviarOcr = (conteudo,metodo) => {
+            const txt=String(conteudo||"").trim();
+            if(!txt)return;
+            textos.push("[OCR PÁGINA "+numero+" / "+metodo+"]\n"+txt);
+            window.dispatchEvent(new CustomEvent("sie:pdf-texto-extraido",{detail:{texto:txt,arquivoNome:arquivo.name,origem:"ocr",pagina:numero,metodo}}));
+          };
+          const faixa=document.createElement("canvas");
+          const x=Math.floor(canvas.width*0.32),y=Math.floor(canvas.height*0.62);
+          const cw=Math.floor(canvas.width*0.64),ch=Math.floor(canvas.height*0.19);
+          faixa.width=cw*2;faixa.height=ch*2;
+          const fc=faixa.getContext("2d",{willReadFrequently:true});
+          fc.imageSmoothingEnabled=true;
+          fc.drawImage(canvas,x,y,cw,ch,0,0,faixa.width,faixa.height);
+          const ocrFaixa=await worker.recognize(faixa);
+          enviarOcr(ocrFaixa?.data?.text,"faixa GPS da fotografia");
+          const localAchado=()=>Boolean(campoCoordenadas.value.trim() && document.getElementById("latitude").value && document.getElementById("longitude").value);
+          if(!localAchado()){
+            const resultado=await worker.recognize(canvas);
+            enviarOcr(resultado?.data?.text,"pagina completa");
           }
+          faixa.width=1;faixa.height=1;
           canvas.width = 1;
           canvas.height = 1;
           const encontrou = Boolean(campoCoordenadas.value.trim() && document.getElementById("latitude").value && document.getElementById("longitude").value);
