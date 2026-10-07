@@ -19,10 +19,12 @@
         consultaPeriodo('cipa_autos_infracao','data_autuacao',cr[0],cr[1],'id,ocorrencia_id,numero,data_autuacao,autuado,tipo_sancao,descricao_infracao,art_lei_9605,art_dec_6514,valor_multa,area_embargada_ha,fiscal_ambiental'),
         consultaPeriodo('cipa_autos_notificacao','data_notificacao',ini,fim),
         consultaPeriodo('cipa_fauna','data_registro',ini,fim),
-        consultaPeriodo('cipa_educacao_ambiental','data_acao',ini,fim)
+        consultaPeriodo('cipa_educacao_ambiental','data_acao',ini,fim),
+        consultaPeriodo('cipa_fauna','data_registro',cr[0],cr[1]),
+        consultaPeriodo('cipa_educacao_ambiental','data_acao',cr[0],cr[1])
       ]);
       if(base[0].error)throw base[0].error;if(base[1].error)throw base[1].error;
-      const d=base[0].data||[],old=base[1].data||[],autos=base[2],autosOld=base[3],notifs=base[4],fauna=base[5],edu=base[6];
+      const d=base[0].data||[],old=base[1].data||[],autos=base[2],autosOld=base[3],notifs=base[4],fauna=base[5],edu=base[6],faunaOld=base[7],eduOld=base[8];
       const tq=await db.from('cipa_tcos_ambientais').select('id,ocorrencia_id,crime,numero_processo_jecrim,localidade');
       if(tq.error)throw tq.error;const ids=new Set(d.map(x=>x.id)),idsOld=new Set(old.map(x=>x.id)),tcos=(tq.data||[]).filter(x=>ids.has(x.ocorrencia_id)),tcosOld=(tq.data||[]).filter(x=>idsOld.has(x.ocorrencia_id));
       document.title='SIE-CPC - CIPA - '+periodo.arquivo;
@@ -38,8 +40,8 @@
       const p5=window.page('3. FAUNA, EDUCAÇÃO AMBIENTAL E TCO',`<div class="kpis-rel"><div class="kpi-rel"><b>${soma(fauna,'quantidade')}</b><span>ANIMAIS</span></div><div class="kpi-rel"><b>${fauna.length}</b><span>REGISTROS DE FAUNA</span></div><div class="kpi-rel"><b>${edu.length}</b><span>AÇÕES EDUCATIVAS</span></div><div class="kpi-rel"><b>${soma(edu,'publico_estimado')}</b><span>PÚBLICO ESTIMADO</span></div><div class="kpi-rel"><b>${tcos.length}</b><span>TCO AMBIENTAL</span></div></div><h3 class="subtitle">FAUNA REGISTRADA</h3>${window.table(['ITEM','ESPÉCIE','QUANTIDADE'],fr.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x[0])}</td><td>${x[1]}</td></tr>`))}<h3 class="subtitle">EDUCAÇÃO AMBIENTAL</h3>${window.table(['AÇÃO','LOCAL','PÚBLICO'],edu.map(x=>`<tr><td>${esc(x.acao||'')}</td><td>${esc(x.local_acao||'')}</td><td>${n(x.publico_estimado)}</td></tr>`))}`,'cipa-fauna');
       const prod=[
         ['PPE / BO',d.length,old.length],['AUTOS DE INFRAÇÃO',autos.length,autosOld.length],['VALOR DAS MULTAS',multas,soma(autosOld,'valor_multa')],
-        ['ÁREA EMBARGADA (HA)',area,soma(autosOld,'area_embargada_ha')],['TCO AMBIENTAL',tcos.length,tcosOld.length],['ANIMAIS REGISTRADOS',soma(fauna,'quantidade'),0],
-        ['AÇÕES DE EDUCAÇÃO AMBIENTAL',edu.length,0]
+        ['ÁREA EMBARGADA (HA)',area,soma(autosOld,'area_embargada_ha')],['TCO AMBIENTAL',tcos.length,tcosOld.length],['ANIMAIS REGISTRADOS',soma(fauna,'quantidade'),soma(faunaOld,'quantidade')],
+        ['AÇÕES DE EDUCAÇÃO AMBIENTAL',edu.length,eduOld.length]
       ];
       const p6=window.page('4. COMPARATIVO DE PRODUTIVIDADE DA CIPA',`${window.table(['INDICADOR','PERÍODO ATUAL','PERÍODO COMPARADO','VARIAÇÃO'],prod.map(x=>`<tr><td>${x[0]}</td><td>${x[0].includes('VALOR')?moeda(x[1]):x[1]}</td><td>${x[0].includes('VALOR')?moeda(x[2]):x[2]}</td><td>${varPct(x[1],x[2])}</td></tr>`))}<div class="signature">Boa Vista/RR, ${new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'})}.<br><br><br><b>RESPONSÁVEL PELO RELATÓRIO</b><br>${window.assinaturaResponsavelRelatorio('Auxiliar da SIE-CPC / CIPA')}</div><p class="source">Fonte: Sistema Integrado de Estatística do CPC - SIE-CPC / CIPA.</p>`,'cipa-final');
       q('document').innerHTML=cover+toc+p3+p4+p5+p6;
