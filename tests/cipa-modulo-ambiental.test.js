@@ -6,6 +6,7 @@ const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 
 const cadastro=read('cadastro.html');
 const cipaCadastro=read('cipa-cadastro.js');
+const cadastroBase=read('cadastro-base.html');
 const dashboard=read('dashboard.html');
 const relatorio=read('relatorio.html');
 const relCipa=read('relatorio-cipa.js');
@@ -29,6 +30,9 @@ assert.match(cipaCadastro,/cipa_fauna/);
 assert.match(cipaCadastro,/Data\\\/Hora In/);
 assert.match(cipaCadastro,/AUTO DE INFRA/);
 assert.match(cipaCadastro,/TERMO DE EMBARGO/);
+assert.match(cadastroBase,/sie:pdf-texto-extraido/);
+assert.match(cipaCadastro,/addEventListener\('sie:pdf-texto-extraido'/);
+assert.doesNotMatch(cipaCadastro,/window\.lerTextoPdfLocal/);
 
 assert.match(dashboard,/Dashboard Ambiental — CIPA/);
 assert.match(dashboard,/Fiscalização e Produtividade Ambiental/);
