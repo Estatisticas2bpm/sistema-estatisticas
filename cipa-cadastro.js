@@ -130,6 +130,7 @@
     ]}
   };
   const estado={autos:[],embargos:[],notificacoes:[],fauna:[],educacao:[],tdba:[],tcos:[]};
+  const datasPpe={inicio:null,fim:null};
   function campoHtml(c,v=''){
     const [k,l,t,cls='']=c,val=v??'',step=(k.includes('area_')?'0.0001':k.includes('valor_')?'0.01':'1');
     if(t==='textarea')return `<label class="${cls}">${l}<textarea data-k="${k}">${esc(val)}</textarea></label>`;
@@ -153,7 +154,7 @@
   });
 
   function dadosBase(){
-    return {ppe_original:null,area_tipo:$('cipaAreaTipo').value||null,coordenadas_texto:coordCampo()?.value.trim()||null,origem_atuacao:$('cipaOrigem').value.trim()||null,documento_origem:$('cipaDocumentoOrigem').value.trim()||null,anexo_referencia:$('cipaAnexo').value.trim()||null};
+    return {ppe_original:null,data_registro_inicio:datasPpe.inicio,data_registro_fim:datasPpe.fim,area_tipo:$('cipaAreaTipo').value||null,coordenadas_texto:coordCampo()?.value.trim()||null,origem_atuacao:$('cipaOrigem').value.trim()||null,documento_origem:$('cipaDocumentoOrigem').value.trim()||null,anexo_referencia:$('cipaAnexo').value.trim()||null};
   }
   function normalizarLinhas(tipo){
     return estado[tipo].map(x=>Object.fromEntries(Object.entries(x).map(([k,v])=>[k,v===''?null:v]))).filter(x=>Object.values(x).some(v=>v!==null&&v!==false));
@@ -191,7 +192,7 @@
       banco.from('cipa_tcos_ambientais').select('*').eq('ocorrencia_id',ocorrenciaId)
     ];
     const r=await Promise.all(qs);if(r.some(x=>x.error)){console.error('Falha ao carregar módulo CIPA',r.find(x=>x.error)?.error);return}
-    const b=r[0].data||{};$('cipaAreaTipo').value=b.area_tipo||'';if(coordCampo())coordCampo().value=b.coordenadas_texto||'';sincronizarCoordenadasLocal();$('cipaOrigem').value=b.origem_atuacao||'';$('cipaDocumentoOrigem').value=b.documento_origem||'';$('cipaAnexo').value=b.anexo_referencia||'';
+    const b=r[0].data||{};datasPpe.inicio=b.data_registro_inicio||null;datasPpe.fim=b.data_registro_fim||null;$('cipaAreaTipo').value=b.area_tipo||'';if(coordCampo())coordCampo().value=b.coordenadas_texto||'';sincronizarCoordenadasLocal();$('cipaOrigem').value=b.origem_atuacao||'';$('cipaDocumentoOrigem').value=b.documento_origem||'';$('cipaAnexo').value=b.anexo_referencia||'';
     ['autos','embargos','notificacoes','fauna','educacao','tdba','tcos'].forEach((k,i)=>{estado[k]=r[i+1].data||[];render(k)});
   }
 
@@ -199,6 +200,10 @@
     const p=texto.indexOf(inicio);if(p<0)return'';let fim=texto.length;proximos.forEach(m=>{const x=texto.indexOf(m,p+inicio.length);if(x>=0&&x<fim)fim=x});return texto.slice(p,fim);
   }
   function extrairCipa(texto){
+    const registro=texto.match(/Data\/Hora In[íi]cio do Registro:\s*(\d{2}\/\d{2}\/20\d{2})\s*(\d{2}:\d{2})/i);
+    const encerramento=texto.match(/Data\/Hora Fim:\s*(\d{2}\/\d{2}\/20\d{2})\s*(\d{2}:\d{2})/i);
+    if(registro)datasPpe.inicio=dtLocal(registro[1],registro[2])+':00-04:00';
+    if(encerramento)datasPpe.fim=dtLocal(encerramento[1],encerramento[2])+':00-04:00';
     const local=texto.match(/Tipo do Local:\s*([^\n]+)/i);if(local)$('cipaAreaTipo').value=/RURAL/i.test(local[1])?'RURAL':/URBAN/i.test(local[1])?'URBANA':'';
     const om=texto.match(/(ORDEM DE (?:MISS[ÃA]O|SERVI[ÇC]O)[^\n]{0,180})/i);if(om)$('cipaDocumentoOrigem').value=om[1].replace(/\s+/g,' ').trim();
     const origem=/OPERA[ÇC][ÃA]O BIOMA|\bBIOMA\b/i.test(texto)?'BIOMA':/\bCICC\b/i.test(texto)?'CICC':om?/MISS[ÃA]O/i.test(om[1])?'ORDEM DE MISSÃO':'ORDEM DE SERVIÇO':'';if(origem)$('cipaOrigem').value=origem;
