@@ -9,6 +9,62 @@
   const iso=s=>{const m=String(s||'').match(/(\d{2})\/(\d{2})\/(\d{4})/);return m?`${m[3]}-${m[2]}-${m[1]}`:''};
   const dtLocal=(d,h)=>{const x=iso(d);return x?(x+'T'+String(h||'00:00').slice(0,5)):''};
   const money=s=>{const m=String(s||'').match(/R\$\s*([\d.]+,\d{2})/);return m?num(m[1]):null};
+  const coordCampo=()=>$('cipaLocalCoordenadas')||$('cipaCoordenadas');
+  const coordNumero=v=>Number(String(v??'').trim().replace(',','.'));
+  function coordNoEstado(lat,lon){return Number.isFinite(lat)&&Number.isFinite(lon)&&lat>=-2&&lat<=6&&lon>=-66&&lon<=-58}
+  function coordDms(g,m,s,h){
+    let v=Math.abs(coordNumero(g))+(coordNumero(m)||0)/60+(coordNumero(s)||0)/3600;
+    if(/[SWO]/i.test(h||''))v=-v;
+    return v;
+  }
+  function parseCoordenadas(valor){
+    const bruto=String(valor||'').trim();if(!bruto)return null;
+    const partes=[];
+    const reSufixo=/(\d{1,3}(?:[.,]\d+)?)(?:\s*[°º]\s*(\d{1,2}(?:[.,]\d+)?))?(?:\s*['’′]\s*(\d{1,2}(?:[.,]\d+)?))?\s*(?:["”″])?\s*([NSEWO])/gi;
+    let m;while((m=reSufixo.exec(bruto)))partes.push({v:coordDms(m[1],m[2],m[3],m[4]),h:m[4].toUpperCase()});
+    const rePrefixo=/([NSEWO])\s*(\d{1,3}(?:[.,]\d+)?)(?:\s*[°º]\s*(\d{1,2}(?:[.,]\d+)?))?(?:\s*['’′]\s*(\d{1,2}(?:[.,]\d+)?))?/gi;
+    while(partes.length<2&&(m=rePrefixo.exec(bruto)))partes.push({v:coordDms(m[2],m[3],m[4],m[1]),h:m[1].toUpperCase()});
+    if(partes.length>=2){
+      const lat=partes.find(x=>/[NS]/.test(x.h))?.v,lon=partes.find(x=>/[EWO]/.test(x.h))?.v;
+      if(coordNoEstado(lat,lon))return{lat,lon};
+    }
+    const normal=bruto.replace(/(\d),(\d)/g,'$1.$2');
+    const nums=(normal.match(/-?\d{1,3}(?:\.\d+)?/g)||[]).map(Number).filter(Number.isFinite);
+    for(let i=0;i<nums.length-1;i++){
+      let lat=nums[i],lon=nums[i+1];
+      if(/\bS\b/i.test(bruto)&&lat>0)lat=-lat;
+      if(/\b(?:W|O)\b/i.test(bruto)&&lon>0)lon=-lon;
+      if(coordNoEstado(lat,lon))return{lat,lon};
+    }
+    return null;
+  }
+  function sincronizarCoordenadasLocal(){
+    const campo=coordCampo(),status=$('cipaStatusCoordenadas');if(!campo)return null;
+    const p=parseCoordenadas(campo.value);
+    if(!campo.value.trim()){
+      if(status){status.textContent='Em área rural, informe ou confirme as coordenadas do PPE. Em área urbana, você pode usar o endereço normalmente.';status.style.color='#64748b'}
+      return null;
+    }
+    if(!p){
+      if(status){status.textContent='Coordenadas não reconhecidas. Use graus/minutos/segundos com N/S e W/O, ou latitude/longitude decimal.';status.style.color='#b45309'}
+      return null;
+    }
+    $('latitude').value=p.lat.toFixed(7);$('longitude').value=p.lon.toFixed(7);
+    if(!$('endereco').value)$('enderecoFormatado').value='COORDENADAS '+p.lat.toFixed(6)+', '+p.lon.toFixed(6);
+    if(status){status.textContent='Coordenadas válidas. Este ponto será usado diretamente no mapa criminal.';status.style.color='#166534'}
+    return p;
+  }
+  function coordenadasDoTexto(texto){
+    const linhas=String(texto||'').split(/\r?\n/);
+    for(const linha of linhas){
+      if(/COORD|LATITUDE|LONGITUDE|\bGPS\b/i.test(linha)){
+        const p=parseCoordenadas(linha);if(p)return{texto:linha.trim(),lat:p.lat,lon:p.lon};
+      }
+    }
+    const hem=String(texto||'').match(/[^\n]{0,80}\d{1,3}(?:[.,]\d+)?(?:\s*[°º][^\n]{0,45})?[NS][^\n]{0,100}\d{1,3}(?:[.,]\d+)?(?:\s*[°º][^\n]{0,45})?[EWO][^\n]{0,40}/i);
+    if(hem){const p=parseCoordenadas(hem[0]);if(p)return{texto:hem[0].replace(/\s+/g,' ').trim(),lat:p.lat,lon:p.lon}}
+    return null;
+  }
   const style=document.createElement('style');
   style.textContent='.cipa-modulo{border:1px solid #a7c7b6!important;background:linear-gradient(180deg,#f6fbf8,#fff)}.cipa-modulo h2{color:#245b43}.cipa-repeater{grid-column:1/-1;border:1px solid #d6e5dc;border-radius:12px;padding:12px;background:#fff}.cipa-repeater-head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:10px}.cipa-repeater-head h3{margin:0;color:#245b43}.cipa-list{display:grid;gap:10px}.cipa-item{border:1px solid #dbe6df;border-radius:10px;padding:10px;background:#fbfdfc}.cipa-item-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.cipa-item-grid label{font-size:11px;font-weight:800;color:#52677a}.cipa-item-grid input,.cipa-item-grid select,.cipa-item-grid textarea{display:block;width:100%;margin-top:4px;border:1px solid #cdd8e5;border-radius:8px;padding:8px;background:#fff}.cipa-item-grid textarea{min-height:64px;resize:vertical}.cipa-span2{grid-column:span 2}.cipa-span4{grid-column:1/-1}.cipa-remove{border:0;background:#a63d40;color:#fff;border-radius:7px;padding:7px 10px;cursor:pointer;float:right}@media(max-width:800px){.cipa-item-grid{grid-template-columns:1fr 1fr}.cipa-span4{grid-column:1/-1}}';
   document.head.appendChild(style);
@@ -22,9 +78,7 @@
     <div class="grade">
       <div class="campo"><label for="cipaDataRegistroInicio">Início do registro do PPE</label><input id="cipaDataRegistroInicio" type="datetime-local"></div>
       <div class="campo"><label for="cipaDataRegistroFim">Fim do registro do PPE</label><input id="cipaDataRegistroFim" type="datetime-local"></div>
-      <div class="campo"><label for="cipaAreaTipo">Área</label><select id="cipaAreaTipo"><option value="">Selecione</option><option>URBANA</option><option>RURAL</option></select></div>
       <div class="campo"><label for="cipaOrigem">Origem da atuação</label><input id="cipaOrigem" list="cipaOrigens" placeholder="CICC, BIOMA, Ordem de Missão..."><datalist id="cipaOrigens"><option>CICC</option><option>BIOMA</option><option>ORDEM DE MISSÃO</option><option>ORDEM DE SERVIÇO</option><option>PATRULHAMENTO</option></datalist></div>
-      <div class="campo duplo"><label for="cipaCoordenadas">Coordenadas geográficas</label><input id="cipaCoordenadas" placeholder="Ex.: 2°21'... / 61°44'..."></div>
       <div class="campo duplo"><label for="cipaDocumentoOrigem">Documento de origem / missão</label><input id="cipaDocumentoOrigem" placeholder="Ordem de Missão, Ordem de Serviço..."></div>
       <div class="campo duplo"><label for="cipaAnexo">Anexo / referência</label><input id="cipaAnexo" placeholder="Mapa, TR, AI, relatório ambiental..."></div>
       <div id="cipaAutos" class="cipa-repeater"></div>
@@ -87,7 +141,7 @@
   });
 
   function dadosBase(){
-    return {ppe_original:null,data_registro_inicio:$('cipaDataRegistroInicio').value||null,data_registro_fim:$('cipaDataRegistroFim').value||null,area_tipo:$('cipaAreaTipo').value||null,coordenadas_texto:$('cipaCoordenadas').value.trim()||null,origem_atuacao:$('cipaOrigem').value.trim()||null,documento_origem:$('cipaDocumentoOrigem').value.trim()||null,anexo_referencia:$('cipaAnexo').value.trim()||null};
+    return {ppe_original:null,data_registro_inicio:$('cipaDataRegistroInicio').value||null,data_registro_fim:$('cipaDataRegistroFim').value||null,area_tipo:$('cipaAreaTipo').value||null,coordenadas_texto:coordCampo()?.value.trim()||null,origem_atuacao:$('cipaOrigem').value.trim()||null,documento_origem:$('cipaDocumentoOrigem').value.trim()||null,anexo_referencia:$('cipaAnexo').value.trim()||null};
   }
   function normalizarLinhas(tipo){
     return estado[tipo].map(x=>Object.fromEntries(Object.entries(x).map(([k,v])=>[k,v===''?null:v]))).filter(x=>Object.values(x).some(v=>v!==null&&v!==false));
@@ -125,7 +179,7 @@
       banco.from('cipa_tcos_ambientais').select('*').eq('ocorrencia_id',ocorrenciaId)
     ];
     const r=await Promise.all(qs);if(r.some(x=>x.error)){console.error('Falha ao carregar módulo CIPA',r.find(x=>x.error)?.error);return}
-    const b=r[0].data||{};$('cipaDataRegistroInicio').value=b.data_registro_inicio?String(b.data_registro_inicio).slice(0,16):'';$('cipaDataRegistroFim').value=b.data_registro_fim?String(b.data_registro_fim).slice(0,16):'';$('cipaAreaTipo').value=b.area_tipo||'';$('cipaCoordenadas').value=b.coordenadas_texto||'';$('cipaOrigem').value=b.origem_atuacao||'';$('cipaDocumentoOrigem').value=b.documento_origem||'';$('cipaAnexo').value=b.anexo_referencia||'';
+    const b=r[0].data||{};$('cipaDataRegistroInicio').value=b.data_registro_inicio?String(b.data_registro_inicio).slice(0,16):'';$('cipaDataRegistroFim').value=b.data_registro_fim?String(b.data_registro_fim).slice(0,16):'';$('cipaAreaTipo').value=b.area_tipo||'';if(coordCampo())coordCampo().value=b.coordenadas_texto||'';sincronizarCoordenadasLocal();$('cipaOrigem').value=b.origem_atuacao||'';$('cipaDocumentoOrigem').value=b.documento_origem||'';$('cipaAnexo').value=b.anexo_referencia||'';
     ['autos','embargos','notificacoes','fauna','educacao','tdba','tcos'].forEach((k,i)=>{estado[k]=r[i+1].data||[];render(k)});
   }
 
@@ -138,7 +192,7 @@
     const local=texto.match(/Tipo do Local:\s*([^\n]+)/i);if(local)$('cipaAreaTipo').value=/RURAL/i.test(local[1])?'RURAL':/URBAN/i.test(local[1])?'URBANA':'';
     const om=texto.match(/(ORDEM DE (?:MISS[ÃA]O|SERVI[ÇC]O)[^\n]{0,180})/i);if(om)$('cipaDocumentoOrigem').value=om[1].replace(/\s+/g,' ').trim();
     const origem=/OPERA[ÇC][ÃA]O BIOMA|\bBIOMA\b/i.test(texto)?'BIOMA':/\bCICC\b/i.test(texto)?'CICC':om?/MISS[ÃA]O/i.test(om[1])?'ORDEM DE MISSÃO':'ORDEM DE SERVIÇO':'';if(origem)$('cipaOrigem').value=origem;
-    const coord=texto.match(/\b\d{1,2}[°º][^\n]{0,35}?[NS]\s*[/,;-]\s*\d{1,3}[°º][^\n]{0,35}?[EW]\b/i);if(coord)$('cipaCoordenadas').value=coord[0];
+    const coord=coordenadasDoTexto(texto);if(coord&&coordCampo()){coordCampo().value=coord.texto;sincronizarCoordenadasLocal()}
 
     const autos=[];for(const m of texto.matchAll(/AUTO DE INFRA[ÇC][ÃA]O\s*(?:N[º°]|Nº)?\s*[:]?\s*(\d{4,})/gi)){
       const b=blocoAte(texto,m[0],['AUTO DE INFRAÇÃO Nº','TERMO DE EMBARGO/INTERDIÇÃO Nº']);
@@ -155,6 +209,13 @@
     const ue=new Map(emb.map(x=>[x.numero,x]));if(ue.size){estado.embargos=[...ue.values()];render('embargos')}
     $('quantAutoInfracao').value=estado.autos.length||'';$('autoInfracao').value=estado.autos.map(x=>x.numero).join('; ');
   }
+
+  coordCampo()?.addEventListener('input',sincronizarCoordenadasLocal);
+  coordCampo()?.addEventListener('change',sincronizarCoordenadasLocal);
+  $('cipaAreaTipo')?.addEventListener('change',()=>{
+    const rural=$('cipaAreaTipo').value==='RURAL',status=$('cipaStatusCoordenadas');
+    if(status&&!coordCampo()?.value.trim())status.textContent=rural?'Área rural: informe as coordenadas geográficas para posicionar a ocorrência no mapa.':'Área urbana: informe o endereço ou, se disponível, as coordenadas.';
+  });
 
   window.addEventListener('sie:pdf-texto-extraido',evento=>{
     const texto=evento?.detail?.texto;
