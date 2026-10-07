@@ -5,7 +5,7 @@ const root=path.resolve(__dirname,'..');
 const cadastro=fs.readFileSync(path.join(root,'cadastro.html'),'utf8');
 
 assert.match(cadastro,/const ehGiroCadastro=siglaCadastro==='GIRO'/);
-assert.match(cadastro,/const blocoGrupamento=ehGiroCadastro\s*\? ''/);
+assert.match(cadastro,/const blocoGrupamento=\(ehGiroCadastro\|\|ehCipaCadastro\)\s*\? ''/);
 assert.match(cadastro,/ehCipturCadastro[\s\S]*TOR — TÁTICO OSTENSIVO RODOVIÁRIO/);
 assert.match(cadastro,/TÁTICO SETORIAL/);
 assert.match(cadastro,/AME/);
