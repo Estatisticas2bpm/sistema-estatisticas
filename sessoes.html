@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SIE-CPC — Sessões e Segurança</title>
+<style>
+*{box-sizing:border-box}:root{--navy:#071b33;--blue:#0e4f8a;--green:#13795b;--red:#b42318;--amber:#b54708;--bg:#eef3f8;--line:#d7e0ea;--muted:#66758a}
+body{margin:0;background:var(--bg);font:14px Inter,Segoe UI,Arial,sans-serif;color:#172033}
+header{background:linear-gradient(120deg,#071b33,#0a355f);color:#fff;padding:22px}.head,main{width:min(1250px,94%);margin:auto}.head{display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap}.head h1{margin:0;font-size:24px}.head p{margin:5px 0 0;color:#c9d8e6}.headnav{display:flex;gap:8px;flex-wrap:wrap}.head a{color:#fff;text-decoration:none;border:1px solid #ffffff55;padding:9px 12px;border-radius:9px}
+main{padding:22px 0 70px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}.stat{background:#fff;border:1px solid var(--line);border-radius:15px;padding:18px;box-shadow:0 6px 22px #071b330c}.stat b{display:block;font-size:30px;color:var(--navy);margin-bottom:3px}.stat span{color:var(--muted);font-weight:700}
+.panel{background:#fff;border:1px solid var(--line);border-radius:15px;padding:20px;margin-bottom:18px;box-shadow:0 6px 22px #071b330c}.panel h2{margin:0 0 5px;color:var(--navy)}.sub{margin:0 0 16px;color:var(--muted);line-height:1.45}.acoes{display:flex;gap:9px;flex-wrap:wrap;margin:12px 0 16px}.btn{border:0;border-radius:9px;padding:10px 13px;background:var(--blue);color:#fff;font-weight:800;cursor:pointer}.btn.red{background:var(--red)}.btn.gray{background:#52677a}.btn:disabled{opacity:.55;cursor:wait}
+.status{display:none;margin:12px 0;padding:10px 12px;border-radius:9px}.status.ok{display:block;background:#ecfdf3;color:#067647;border:1px solid #abefc6}.status.erro{display:block;background:#fef3f2;color:#b42318;border:1px solid #fecdca}.status.info{display:block;background:#eff8ff;color:#175cd3;border:1px solid #b2ddff}
+.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:980px}th,td{padding:10px;border-bottom:1px solid #e7edf3;text-align:left;vertical-align:middle}th{background:#f7f9fb;color:#455b70;position:sticky;top:0}.muted{color:var(--muted);font-size:12px}.badge{display:inline-flex;padding:5px 8px;border-radius:999px;font-size:11px;font-weight:900}.online{background:#ecfdf3;color:#067647}.idle{background:#fff7e6;color:#9a3412}.current{background:#eff8ff;color:#175cd3}.role{background:#eef2f7;color:#43566a}.dangerbox{border:1px solid #f4c7c3;background:#fff7f6;border-radius:12px;padding:15px}
+@media(max-width:760px){.stats{grid-template-columns:1fr}.head{align-items:flex-start;flex-direction:column}}
+</style>
+<script src="auth-config.js"></script><script src="auth-guard.js"></script>
+</head>
+<body>
+<header><div class="head"><div><h1>Sessões e segurança</h1><p>Usuários online, dispositivos conectados e encerramento de sessões</p></div><div class="headnav"><a href="usuarios.html">Usuários</a><a href="meu-perfil.html">Meu perfil</a><a href="index.html">← Página inicial</a></div></div></header>
+<main>
+<section class="stats">
+  <div class="stat"><b id="usuariosOnline">—</b><span>usuários online agora</span></div>
+  <div class="stat"><b id="sessoesOnline">—</b><span>sessões online agora</span></div>
+  <div class="stat"><b id="sessoesAbertas">—</b><span>sessões abertas</span></div>
+</section>
+
+<section class="panel">
+  <h2>Minha conta</h2>
+  <p class="sub">Use esta opção se sua senha já foi compartilhada ou se você não reconhece algum computador conectado. Sua sessão atual será mantida.</p>
+  <div class="dangerbox">
+    <strong>Encerrar todos os outros dispositivos</strong>
+    <div class="muted" style="margin-top:5px">Revoga todas as outras sessões da sua conta e mantém somente este computador.</div>
+    <div class="acoes"><button id="encerrarOutras" class="btn red" type="button">Encerrar minhas outras sessões</button></div>
+  </div>
+  <div id="statusMinhaConta" class="status"></div>
+</section>
+
+<section class="panel">
+  <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><div><h2>Sessões abertas</h2><p class="sub" style="margin-bottom:0">“Online” significa atividade no SIE-CPC nos últimos 90 segundos. Sessões sem atividade recente continuam abertas até serem encerradas ou expirarem.</p></div><button id="recarregar" class="btn gray" type="button">Atualizar</button></div>
+  <div id="statusLista" class="status info">Carregando sessões...</div>
+  <div class="tablewrap"><table><thead><tr><th>Status</th><th>Usuário</th><th>Perfil / Unidade</th><th>Dispositivo</th><th>Última atividade</th><th>Início da sessão</th><th>Ação</th></tr></thead><tbody id="tbody"></tbody></table></div>
+</section>
+</main>
+<script>
+const cfg=window.SISTEMA_AUTH_CONFIG,$=id=>document.getElementById(id);let client=null,authCtx=null,sessoes=[],timer=null;
+function status(id,texto,tipo='info'){const e=$(id);e.textContent=texto;e.className='status '+tipo}
+function fmtData(v){if(!v)return 'Sem sinal recente';try{return new Date(v).toLocaleString('pt-BR')}catch(_){return v}}
+function formatarUnidade(v){const s=String(v||'—'),m=s.match(/^(\d+)BPM$/i);return m?m[1]+'º BPM':s}
+function dispositivo(ua){
+  const s=String(ua||'');
+  let navegador='Navegador';
+  if(/Edg\//.test(s))navegador='Edge';else if(/Chrome\//.test(s))navegador='Chrome';else if(/Firefox\//.test(s))navegador='Firefox';else if(/Safari\//.test(s)&&!/Chrome\//.test(s))navegador='Safari';
+  let sistema='Dispositivo';
+  if(/Windows NT/.test(s))sistema='Windows';else if(/Android/.test(s))sistema='Android';else if(/iPhone|iPad/.test(s))sistema='iPhone/iPad';else if(/Mac OS X/.test(s))sistema='macOS';else if(/Linux/.test(s))sistema='Linux';
+  return navegador+' · '+sistema;
+}
+async function invocar(body){const r=await client.functions.invoke(cfg.adminFunction,{body});if(r.error)throw r.error;if(r.data?.error)throw new Error(r.data.error);return r.data}
+function render(d){
+  const lista=(d.sessions||[]).filter(s=>s.revogada!==true);sessoes=lista;
+  $('usuariosOnline').textContent=d.stats?.usuarios_online??0;$('sessoesOnline').textContent=d.stats?.sessoes_online??0;$('sessoesAbertas').textContent=d.stats?.sessoes_abertas??lista.length;
+  const tb=$('tbody');tb.innerHTML='';
+  if(!lista.length){tb.innerHTML='<tr><td colspan="7">Nenhuma sessão aberta.</td></tr>';return}
+  lista.forEach(s=>{
+    const tr=document.createElement('tr');
+    const online=s.online===true;
+    const nome=[s.posto_graduacao,s.nome_guerra||s.nome].filter(Boolean).join(' ')||'Usuário';
+    const ultimo=s.ultimo_sinal||s.auth_atualizado_em||s.auth_refrescado_em;
+    tr.innerHTML='<td><span class="badge '+(online?'online':'idle')+'">'+(online?'ONLINE':'INATIVA')+'</span>'+(s.atual?'<br><span class="badge current" style="margin-top:5px">ESTE COMPUTADOR</span>':'')+'</td>'+
+      '<td><strong>'+esc(nome)+'</strong><div class="muted">'+esc(s.pagina||'')+'</div></td>'+
+      '<td><span class="badge role">'+esc(s.perfil||'—')+'</span><div class="muted" style="margin-top:5px">'+esc(formatarUnidade(s.unidade_sigla))+'</div></td>'+
+      '<td>'+esc(dispositivo(s.user_agent))+'</td><td>'+esc(fmtData(ultimo))+'</td><td>'+esc(fmtData(s.criado_em))+'</td>'+
+      '<td>'+(s.atual?'<span class="muted">Sessão atual</span>':'<button class="btn red" data-revogar="'+esc(s.session_id)+'">Encerrar sessão</button>')+'</td>';
+    tb.appendChild(tr);
+  });
+}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+async function carregar(silencioso=false){
+  if(!silencioso)status('statusLista','Carregando sessões...','info');
+  try{const d=await invocar({action:'sessions_list'});render(d);if(!silencioso)status('statusLista',(d.stats?.sessoes_abertas||0)+' sessão(ões) aberta(s).','info')}
+  catch(e){console.error(e);status('statusLista','Não foi possível carregar as sessões: '+e.message,'erro')}
+}
+$('recarregar').addEventListener('click',()=>carregar());
+$('encerrarOutras').addEventListener('click',async()=>{
+  if(!confirm('Encerrar todos os outros dispositivos conectados à sua conta e manter somente este computador?'))return;
+  const b=$('encerrarOutras');b.disabled=true;
+  try{
+    const d=await invocar({action:'sessions_revoke_others_self'});
+    const r=await client.auth.signOut({scope:'others'});if(r.error)throw r.error;
+    status('statusMinhaConta',(d.revoked||0)+' outra(s) sessão(ões) encerrada(s). Este computador permaneceu conectado.','ok');
+    await carregar(true);
+  }catch(e){console.error(e);status('statusMinhaConta','Não foi possível encerrar as outras sessões: '+e.message,'erro')}
+  finally{b.disabled=false}
+});
+$('tbody').addEventListener('click',async e=>{
+  const b=e.target.closest('button[data-revogar]');if(!b)return;
+  const s=sessoes.find(x=>x.session_id===b.dataset.revogar);if(!s)return;
+  if(!confirm('Encerrar esta sessão de '+(s.nome_guerra||s.nome||'usuário')+'?'))return;
+  b.disabled=true;
+  try{await invocar({action:'session_revoke',session_id:s.session_id});await carregar(true)}
+  catch(err){console.error(err);alert('Não foi possível encerrar a sessão: '+err.message)}
+  finally{b.disabled=false}
+});
+(async()=>{
+  authCtx=await window.SistemaAuth.ready;if(!authCtx)return;client=authCtx.client;
+  if(authCtx.perfil?.perfil!=='ADMIN'){location.replace('index.html?erro=sem-permissao');return}
+  await carregar();
+  timer=setInterval(()=>{if(document.visibilityState==='visible')carregar(true)},15000);
+  window.addEventListener('pagehide',()=>clearInterval(timer),{once:true});
+})();
+</script>
+</body></html>
