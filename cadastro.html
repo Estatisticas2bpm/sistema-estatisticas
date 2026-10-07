@@ -18,7 +18,7 @@
     const unidadesBopeSemGrupamento=new Set(['CANIL','FORCA_TATICA','CHOQUE','GATE']);
     const ehUnidadeBopeCadastro=unidadesBopeSemGrupamento.has(siglaCadastro);
     const ehBopeCadastro=siglaCadastro==='BOPE';
-    const resposta=await fetch('cadastro-base.html?v=20261001-torfix1',{cache:'no-store'});
+    const resposta=await fetch('cadastro-base.html?v=20261007-cipa-data-gps',{cache:'no-store'});
     if(!resposta.ok) throw new Error('Falha ao carregar a base do cadastro.');
     let html=await resposta.text();
 
@@ -120,7 +120,7 @@
       );
       html=html.replace(
         '</body>',
-        '<script src="cipa-extrator.js?v=20261007-1"><\/script><script src="cipa-cadastro.js?v=20261007-10"><\/script></body>'
+        '<script src="cipa-extrator.js?v=20261007-1"><\/script><script src="cipa-cadastro.js?v=20261007-11"><\/script></body>'
       );
     }
 
