@@ -1864,10 +1864,12 @@
         for(let n=1;n<=documento.numPages;n++){
           const p=await documento.getPage(n),t=await p.getTextContent();
           const textoPagina=t.items.map(item=>item.str||"").join(" ");
-          const ehFoto=/levantamento\s+fotogr[aá]fico|constata[çc][ãa]o\s+da\s+degrada[çc][ãa]o|fotografia\s+realizada/i.test(textoPagina);
-          const ehMapa=/mapa\s+situacional|pol[ií]gono|reserva\s+legal/i.test(textoPagina);
+          const fotoInicial=/levantamento\s+fotogr[aá]fico/i.test(textoPagina);
+          const ehFoto=/constata[çc][ãa]o\s+da\s+degrada[çc][ãa]o|fotografia\s+realizada/i.test(textoPagina);
+          const ehMapa=/mapa\s+situacional|pol[ií]gono|reserva\s+legal/i.test(textoPagina)
+            || (n===documento.numPages && textoPagina.length<220);
           const ehForm=textoPagina.length>650;
-          prioridade.push({numero:n,peso:ehFoto?0:ehMapa?1:ehForm?3:2});
+          prioridade.push({numero:n,peso:fotoInicial?0:ehMapa?1:ehFoto?2:ehForm?4:3,ehMapa});
         }
         prioridade.sort((a,b)=>a.peso-b.peso||a.numero-b.numero);
         worker = await createWorker("eng");
@@ -1889,8 +1891,21 @@
             textos.push("[OCR PÁGINA "+numero+" / "+metodo+"]\n"+txt);
             window.dispatchEvent(new CustomEvent("sie:pdf-texto-extraido",{detail:{texto:txt,arquivoNome:arquivo.name,origem:"ocr",pagina:numero,metodo}}));
           };
+          const localAchado=()=>Boolean(campoCoordenadas.value.trim() && document.getElementById("latitude").value && document.getElementById("longitude").value);
+          // Mapas ambientais frequentemente trazem latitude/longitude decimais
+          // em preto no cabeçalho, que é mais legível que a marca d'água da foto.
+          if(prioridade[indice].ehMapa){
+            const topo=document.createElement("canvas");
+            const largura=Math.floor(canvas.width*0.78),altura=Math.floor(canvas.height*0.18);
+            topo.width=largura*2;topo.height=altura*2;
+            topo.getContext("2d").drawImage(canvas,0,0,largura,altura,0,0,topo.width,topo.height);
+            const leituraMapa=await worker.recognize(topo);
+            enviarOcr(leituraMapa?.data?.text,"cabecalho do mapa situacional");
+            topo.width=1;topo.height=1;
+          }
+          if(!localAchado()){
           const faixa=document.createElement("canvas");
-          const x=Math.floor(canvas.width*0.32),y=Math.floor(canvas.height*0.62);
+          const x=Math.floor(canvas.width*0.27),y=Math.floor(canvas.height*0.66);
           const cw=Math.floor(canvas.width*0.64),ch=Math.floor(canvas.height*0.19);
           faixa.width=cw*2;faixa.height=ch*2;
           const fc=faixa.getContext("2d",{willReadFrequently:true});
@@ -1898,12 +1913,12 @@
           fc.drawImage(canvas,x,y,cw,ch,0,0,faixa.width,faixa.height);
           const ocrFaixa=await worker.recognize(faixa);
           enviarOcr(ocrFaixa?.data?.text,"faixa GPS da fotografia");
-          const localAchado=()=>Boolean(campoCoordenadas.value.trim() && document.getElementById("latitude").value && document.getElementById("longitude").value);
+          faixa.width=1;faixa.height=1;
+          }
           if(!localAchado()){
             const resultado=await worker.recognize(canvas);
             enviarOcr(resultado?.data?.text,"pagina completa");
           }
-          faixa.width=1;faixa.height=1;
           canvas.width = 1;
           canvas.height = 1;
           const encontrou = Boolean(campoCoordenadas.value.trim() && document.getElementById("latitude").value && document.getElementById("longitude").value);
@@ -2009,6 +2024,11 @@
       statusImportacaoPdf.textContent = "Lendo o PDF localmente. Nenhum arquivo está sendo enviado...";
       try {
         if (arquivo.type && arquivo.type !== "application/pdf") throw new Error("Selecione um arquivo PDF.");
+        if(document.getElementById("cipaLocalCoordenadas")){
+          document.getElementById("cipaLocalCoordenadas").value="";
+          document.getElementById("latitude").value="";
+          document.getElementById("longitude").value="";
+        }
         let texto = await lerTextoPdfLocal(arquivo);
         window.dispatchEvent(new CustomEvent("sie:pdf-texto-extraido",{detail:{texto,arquivoNome:arquivo.name,origem:"texto"}}));
         const campoCoordenadasCipa = document.getElementById("cipaLocalCoordenadas");
