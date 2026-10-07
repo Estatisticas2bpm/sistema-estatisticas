@@ -1765,6 +1765,14 @@
       const logradouro = String(dados.logradouroPdf || "").replace(/\s+N[º°:]?\s*\d+.*$/i,"").trim();
       const bairro = String(dados.bairroPdf || "").replace(/\s+CEP\s*:?.*$/i,"").trim();
       const pesquisa = [logradouro,bairro,"Boa Vista RR"].filter(Boolean).join(", ");
+      const coordenadaCipa = document.getElementById("cipaLocalCoordenadas");
+      const latitudeCipa = document.getElementById("latitude").value;
+      const longitudeCipa = document.getElementById("longitude").value;
+      if (coordenadaCipa && coordenadaCipa.value.trim() && latitudeCipa && longitudeCipa) {
+        document.getElementById("enderecoAproximado").value = dados.enderecoReferencia || "";
+        document.getElementById("statusEndereco").textContent = "Coordenadas do PPE identificadas. O ponto geográfico da CIPA será usado diretamente no mapa criminal.";
+        return {preparado:true,confirmado:true,score:1,origem:"coordenadas"};
+      }
       document.getElementById("enderecoAproximado").value = pesquisa;
       document.getElementById("enderecoGoogle").value = "";
       document.getElementById("endereco").value = "";
