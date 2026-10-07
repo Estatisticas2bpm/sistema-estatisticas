@@ -20,9 +20,9 @@
   function parseCoordenadas(valor){
     const bruto=String(valor||'').trim();if(!bruto)return null;
     const partes=[];
-    const reSufixo=/(\d{1,3}(?:[.,]\d+)?)(?:\s*[°º]\s*(\d{1,2}(?:[.,]\d+)?))?(?:\s*['’′]\s*(\d{1,2}(?:[.,]\d+)?))?\s*(?:["”″])?\s*([NSEWO])/gi;
+    const reSufixo=/(\d{1,3}(?:[.,]\d+)?)(?:\s*[°º]\s*(\d{1,2}(?:[.,]\d+)?))?(?:\s*(?:['’′]\s*)?(\d{1,2}(?:[.,]\d+)?)\s*(?:["”″])?)?\s*([NSEWO])/gi;
     let m;while((m=reSufixo.exec(bruto)))partes.push({v:coordDms(m[1],m[2],m[3],m[4]),h:m[4].toUpperCase()});
-    const rePrefixo=/([NSEWO])\s*(\d{1,3}(?:[.,]\d+)?)(?:\s*[°º]\s*(\d{1,2}(?:[.,]\d+)?))?(?:\s*['’′]\s*(\d{1,2}(?:[.,]\d+)?))?/gi;
+    const rePrefixo=/([NSEWO])\s*(\d{1,3}(?:[.,]\d+)?)(?:\s*[°º]\s*(\d{1,2}(?:[.,]\d+)?))?(?:\s*(?:['’′]\s*)?(\d{1,2}(?:[.,]\d+)?)\s*(?:["”″])?)?/gi;
     while(partes.length<2&&(m=rePrefixo.exec(bruto)))partes.push({v:coordDms(m[2],m[3],m[4],m[1]),h:m[1].toUpperCase()});
     if(partes.length>=2){
       const lat=partes.find(x=>/[NS]/.test(x.h))?.v,lon=partes.find(x=>/[EWO]/.test(x.h))?.v;
