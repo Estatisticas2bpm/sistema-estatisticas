@@ -156,8 +156,10 @@
     $('quantAutoInfracao').value=estado.autos.length||'';$('autoInfracao').value=estado.autos.map(x=>x.numero).join('; ');
   }
 
-  const originalLer=window.lerTextoPdfLocal;if(typeof originalLer==='function')window.lerTextoPdfLocal=async function(arq){const t=await originalLer(arq);window.__cipaPdfTexto=t;return t};
-  $('arquivoOcorrenciaPdf')?.addEventListener('change',()=>setTimeout(()=>{if(window.__cipaPdfTexto){extrairCipa(window.__cipaPdfTexto);window.__cipaPdfTexto=''}},900));
+  window.addEventListener('sie:pdf-texto-extraido',evento=>{
+    const texto=evento?.detail?.texto;
+    if(texto)extrairCipa(texto);
+  });
 
   const idEdicaoCipa=new URLSearchParams(location.search).get('id');if(idEdicaoCipa)carregar(idEdicaoCipa);
   window.CipaCadastro={salvar,carregar,estado,extrairCipa};
