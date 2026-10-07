@@ -227,7 +227,7 @@
       });
     }
 
-    if(!comandantesNaPaginaResultados)cmdChunks.forEach((chunk,idx)=>{
+    if(cmdData.length&&!comandantesNaPaginaResultados)cmdChunks.forEach((chunk,idx)=>{
       const first=idx===0,totalFinal=idx===cmdChunks.length-1;
       const rows=chunk.map((r,i)=>[cmdChunks.slice(0,idx).reduce((s,x)=>s+x.length,0)+i+1,r.nome,r.ocorrencias,resultadoComandante(r)]);
       const totals=totalFinal?['','TOTAL COM CMT. IDENTIFICADO',cmdData.reduce((s,r)=>s+num(r.ocorrencias),0),resultadoTotalComandantes(cmdData)]:null;
@@ -267,8 +267,11 @@
       ['Gráfico das principais ocorrências','occ-chart'],['Volume das ocorrências / principais bairros','occ-chart'],
       ['Gráfico dos principais bairros','hood-chart'],['Quadro por dias da semana / turno','hood-chart'],['Gráficos por dia e turno','hood-chart'],
       ['Ruas e avenidas com predominância de ocorrências','streets'],['Infratores e vítimas por nacionalidade','streets'],
-      ['3. INFORMAÇÕES GERAIS SOBRE ATUAÇÕES DA UNIDADE','results'],['Armas e munições','results'],['Entorpecentes e armas brancas','drugs'],
-      ['Ocorrências por comandantes de viaturas','commanders'],['4. MÍDIAS DE DADOS ESTATÍSTICOS DE PRODUTIVIDADE','final']
+      ['3. INFORMAÇÕES GERAIS SOBRE ATUAÇÕES DA UNIDADE','results'],
+      ...(blocosArmasMunicoes.length?[['Armas e munições','results']]:[]),
+      ...(temDetalhesApreensao?[['Entorpecentes, arma branca, trânsito e resistência','drugs']]:[]),
+      ...(cmdData.length?[['Ocorrências por comandantes de viaturas',comandantesNaPaginaResultados?'results':'commanders']]:[]),
+      ['4. MÍDIAS DE DADOS ESTATÍSTICOS DE PRODUTIVIDADE','final']
     ];
 
     const htmlPages=[];
