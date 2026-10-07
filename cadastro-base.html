@@ -1859,9 +1859,21 @@
       let worker = null;
       let paginaEncontrada = null;
       try {
+        // Primeiro as páginas de levantamento fotográfico, depois mapas e demais imagens.
+        const prioridade=[];
+        for(let n=1;n<=documento.numPages;n++){
+          const p=await documento.getPage(n),t=await p.getTextContent();
+          const textoPagina=t.items.map(item=>item.str||"").join(" ");
+          const ehFoto=/levantamento\s+fotogr[aá]fico|constata[çc][ãa]o\s+da\s+degrada[çc][ãa]o|fotografia\s+realizada/i.test(textoPagina);
+          const ehMapa=/mapa\s+situacional|pol[ií]gono|reserva\s+legal/i.test(textoPagina);
+          const ehForm=textoPagina.length>650;
+          prioridade.push({numero:n,peso:ehFoto?0:ehMapa?1:ehForm?3:2});
+        }
+        prioridade.sort((a,b)=>a.peso-b.peso||a.numero-b.numero);
         worker = await createWorker("eng");
-        for (let numero = 1; numero <= documento.numPages; numero++) {
-          statusImportacaoPdf.textContent = "Coordenada não encontrada no texto. Verificando imagens do PPE (" + numero + "/" + documento.numPages + ")...";
+        for (let indice = 0; indice < prioridade.length; indice++) {
+          const numero=prioridade[indice].numero;
+          statusImportacaoPdf.textContent = "Procurando coordenadas em fotografias e imagens do PPE (" + (indice+1) + "/" + prioridade.length + ")...";
           const pagina = await documento.getPage(numero);
           const viewport = pagina.getViewport({scale:1.6});
           const canvas = document.createElement("canvas");
