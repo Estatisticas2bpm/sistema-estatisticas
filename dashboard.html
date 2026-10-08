@@ -6,6 +6,7 @@
 <section class="panel"><div class="presets"><button data-period="hoje">Hoje</button><button data-period="semana">Semana atual</button><button data-period="mes">Mês atual</button><button data-period="trimestre">Trimestre</button><button data-period="semestre">Semestre</button><button data-period="ano">Ano</button></div><div class="filters">
 <label>Data inicial<input id="ini" type="date"></label><label id="cipaMunicipioWrap" hidden>Município<input id="cipaMunicipio" placeholder="Todos"></label><label id="cipaAreaWrap" hidden>Área<select id="cipaArea"><option value="">Todas</option><option>URBANA</option><option>RURAL</option></select></label><label id="cipaOrigemWrap" hidden>Origem<input id="cipaOrigemFiltro" placeholder="Todas"></label>
 <label id="cipaTipoInfracaoWrap" hidden>Tipo de infração<input id="cipaTipoInfracao" placeholder="Ex.: desmatamento"></label>
+<label id="cipaDesmatamentoMinWrap" hidden>Desmatamento constatado (ha), mínimo<input id="cipaDesmatamentoMin" type="number" min="0" step="0.0001" placeholder="Qualquer área"></label>
 <label id="cipaSancaoWrap" hidden>Sanção<input id="cipaSancao" placeholder="Ex.: multa, embargo"></label>
 <label id="cipaAnimalWrap" hidden>Animal<input id="cipaAnimal" placeholder="Ex.: galo, jabuti"></label>
 <label id="cipaProcedimentoWrap" hidden>Procedimento<select id="cipaProcedimento"><option value="">Todos</option><option>APREENSÃO</option><option>RESGATE</option><option>RECOLHIMENTO</option><option>SOLTURA</option><option>CONSTATAÇÃO</option><option>OUTRO</option></select></label>
@@ -147,6 +148,7 @@
     <div class="card red"><small>Valor das multas</small><strong id="cipaMultasTotal">R$ 0,00</strong><em id="cipaMultasVar"></em></div>
     <div class="card amber"><small>Área embargada</small><strong id="cipaAreaEmbargada">0 ha</strong><em id="cipaAreaVar"></em></div>
     <div class="card steel"><small>Embargos aplicados</small><strong id="cipaEmbargosTotal">0</strong></div>
+    <div class="card amber"><small>Desmatamento constatado</small><strong id="cipaAreaDesmatada">—</strong><em>Somente áreas explicitamente documentadas; não é a área embargada.</em></div>
     <div class="card green"><small>Autos de Notificação</small><strong id="cipaNotificacoesTotal">0</strong></div>
     <div class="card green"><small>Animais / fauna</small><strong id="cipaFaunaTotal">0</strong></div>
     <div class="card steel"><small>Educação ambiental</small><strong id="cipaEducacaoTotal">0</strong><em id="cipaPublicoTotal">Público: 0</em></div>
@@ -235,7 +237,7 @@ function configurarModuloCipa(){
   const ativo=ehCipa();
   if($('navCipa'))$('navCipa').hidden=!ativo;
   if($('secCipaAmbiental'))$('secCipaAmbiental').hidden=!ativo;
-  ['cipaMunicipioWrap','cipaAreaWrap','cipaOrigemWrap','cipaTipoInfracaoWrap','cipaSancaoWrap','cipaAnimalWrap','cipaProcedimentoWrap','cipaDestinacaoWrap','cipaEmbargoWrap','cipaTcoWrap'].forEach(id=>{if($(id))$(id).hidden=!ativo});
+  ['cipaMunicipioWrap','cipaAreaWrap','cipaOrigemWrap','cipaTipoInfracaoWrap','cipaDesmatamentoMinWrap','cipaSancaoWrap','cipaAnimalWrap','cipaProcedimentoWrap','cipaDestinacaoWrap','cipaEmbargoWrap','cipaTcoWrap'].forEach(id=>{if($(id))$(id).hidden=!ativo});
   if(!ativo)return;
   const h=document.querySelector('header h1'),p=document.querySelector('header .head p');
   if(h)h.textContent='Dashboard Ambiental — CIPA';
@@ -276,10 +278,12 @@ function ehAme(x){if(x&&x.ame===true)return true;const k=v=>String(v||'').normal
   const incluir=(v,busca)=>chaveOcorrencia(v||'').includes(chaveOcorrencia(busca||''));
   const filtAuto=proc('cipaTipoInfracao'),filtSancao=proc('cipaSancao'),filtAnimal=proc('cipaAnimal');
   const filtProcedimento=proc('cipaProcedimento'),filtDestino=proc('cipaDestinacao');
+  const minimo=proc('cipaDesmatamentoMin');
   const possuiAI=autos.some(x=>String(x.ocorrencia_id)===oid&&
     (!filtAuto||incluir(x.tipo_infracao||x.descricao_infracao,filtAuto))&&
-    (!filtSancao||incluir(x.tipo_sancao,filtSancao)));
-  if((filtAuto||filtSancao)&&!possuiAI)return false;
+    (!filtSancao||incluir(x.tipo_sancao,filtSancao))&&
+    (minimo===''||(x.area_desmatada_constatada_ha!==null&&x.area_desmatada_constatada_ha!==undefined&&Number(x.area_desmatada_constatada_ha)>=Number(minimo))));
+  if((filtAuto||filtSancao||minimo!=='')&&!possuiAI)return false;
   const possuiFauna=fauna.some(x=>String(x.ocorrencia_id)===oid&&
     (!filtAnimal||incluir(x.nome_comum+' '+(x.nome_cientifico||''),filtAnimal))&&
     (!filtProcedimento||x.procedimento===filtProcedimento)&&
@@ -504,6 +508,7 @@ function renderCipa(a,p){
       if(tipo==='auto'){
         if(valor('cipaTipoInfracao')&&!contem(x.tipo_infracao||x.descricao_infracao,valor('cipaTipoInfracao')))return false;
         if(valor('cipaSancao')&&!contem(x.tipo_sancao,valor('cipaSancao')))return false;
+        if(valor('cipaDesmatamentoMin')!==''&&(x.area_desmatada_constatada_ha===null||x.area_desmatada_constatada_ha===undefined||num(x.area_desmatada_constatada_ha)<Number(valor('cipaDesmatamentoMin'))))return false;
       }
       if(tipo==='fauna'){
         if(valor('cipaAnimal')&&!contem(x.nome_comum+' '+(x.nome_cientifico||''),valor('cipaAnimal')))return false;
@@ -527,6 +532,8 @@ function renderCipa(a,p){
   $('cipaAreaEmbargada').textContent=ha(area);
   $('cipaAreaVar').textContent=comparar.value==='nenhum'?'':variacao(area,areaAnt);
   $('cipaEmbargosTotal').textContent=embargos.length;
+  const areasDocumentadas=autos.filter(x=>x.area_desmatada_constatada_ha!==null&&x.area_desmatada_constatada_ha!==undefined&&x.area_desmatada_constatada_ha!=='');
+  $('cipaAreaDesmatada').textContent=areasDocumentadas.length?ha(somaCampo(areasDocumentadas,'area_desmatada_constatada_ha')):'—';
   $('cipaNotificacoesTotal').textContent=notificacoes.length;
   $('cipaFaunaTotal').textContent=somaCampo(fauna,'quantidade');
   $('cipaEducacaoTotal').textContent=educacao.length;
@@ -577,7 +584,7 @@ async function carregar(){loading.style.display='grid';let calls=[db.rpc('obter_
   cipaAutosAtual=[];cipaAutosAnterior=[];cipaNotificacoesAtual=[];cipaNotificacoesAnterior=[];cipaFaunaAtual=[];cipaFaunaAnterior=[];cipaEmbargosAtual=[];cipaEmbargosAnterior=[];cipaEducacaoAtual=[];cipaEducacaoAnterior=[];autosCipturAtual=[];autosCipturAnterior=[];abordagensGiroAtual=[];abordagensGiroAnterior=[];servicosCavalariaAtual=[];servicosCavalariaAnterior=[];
   if(ehCipa()){
     const pares=[
-      ['cipa_autos_infracao','data_autuacao','id,ocorrencia_id,numero,data_autuacao,autuado,tipo_sancao,tipo_infracao,descricao_infracao,art_lei_9605,art_dec_6514,valor_multa,area_embargada_ha,fiscal_ambiental'],
+      ['cipa_autos_infracao','data_autuacao','id,ocorrencia_id,numero,data_autuacao,autuado,tipo_sancao,tipo_infracao,descricao_infracao,art_lei_9605,art_dec_6514,valor_multa,area_embargada_ha,area_desmatada_constatada_ha,fiscal_ambiental'],
       ['cipa_autos_notificacao','data_notificacao','id,ocorrencia_id,numero,data_notificacao,autuado,descricao,data_limite,fiscal_ambiental'],
       ['cipa_fauna','data_registro','id,ocorrencia_id,numero_tr,data_registro,procedencia,nome_comum,nome_cientifico,quantidade,procedimento,destinacao'],
       ['cipa_termos_embargo','data_embargo','id,ocorrencia_id,numero,data_embargo,area_embargada_ha,auto_infracao_originario'],
