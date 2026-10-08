@@ -153,6 +153,11 @@
     <div><h3 style="margin:0 0 8px;color:var(--navy)">Principais infrações administrativas</h3><div class="tablewrap"><table><thead><tr><th>#</th><th>Infração</th><th>Autos</th><th>Multas</th><th>Área ha</th></tr></thead><tbody id="tabCipaInfracoes"></tbody></table></div></div>
     <div><h3 style="margin:0 0 8px;color:var(--navy)">Fauna registrada</h3><div class="tablewrap"><table><thead><tr><th>#</th><th>Espécie</th><th>Quantidade</th></tr></thead><tbody id="tabCipaFauna"></tbody></table></div></div>
   </div>
+  <div class="grid2" style="margin-top:18px">
+    <div><h3 style="margin:0 0 8px;color:var(--navy)">Animais por procedimento</h3><div class="tablewrap"><table><thead><tr><th>Procedimento</th><th>Animais</th></tr></thead><tbody id="tabCipaProcedimentos"></tbody></table></div></div>
+    <div><h3 style="margin:0 0 8px;color:var(--navy)">Destinação / custódia</h3><div class="tablewrap"><table><thead><tr><th>Destinação</th><th>Animais</th></tr></thead><tbody id="tabCipaDestinacoes"></tbody></table></div></div>
+  </div>
+  <p class="sub">Procedimento e destinação descrevem os mesmos animais. Não some as duas tabelas para obter o total.</p>
 </section>
 <section class="section"><h2>Documentos Produzidos</h2><p class="sub">BO, TCO, ROP e demais documentos do período</p><div class="grid2"><div class="chartbox"><canvas id="chartDocs"></canvas></div><div class="tablewrap"><table><thead><tr><th>Documento</th><th>Atual</th><th>Comparado</th><th>Variação</th></tr></thead><tbody id="tabDocs"></tbody></table></div></div></section>
 <section class="section"><h2>Principais Ocorrências</h2><p class="sub">Incidência por natureza. Um mesmo BO pode aparecer em mais de uma natureza quando o registro possuir múltiplas classificações.</p><div class="grid2"><div class="chartbox"><canvas id="chartOcorrencias"></canvas></div><div class="tablewrap"><table><thead><tr><th>#</th><th>Ocorrência</th><th>Quantidade</th><th>Bairros recorrentes</th><th>Idade</th></tr></thead><tbody id="tabOcorrencias"></tbody></table></div></div></section>
@@ -466,12 +471,18 @@ function renderCipa(a,p){
   chart('chartCipaMunicipios','bar',mun.map(x=>x[0]),mun.map(x=>x[1]),'PPEs',CORES.green);
   chart('chartCipaArea','doughnut',areas.map(x=>x[0]),areas.map(x=>x[1]),'PPEs',[CORES.green,CORES.amber]);
   chart('chartCipaOrigem','bar',orig.map(x=>x[0]),orig.map(x=>x[1]),'PPEs',CORES.teal);
-  const im={};cipaAutosAtual.forEach(x=>{let k=norm(x.descricao_infracao||('Art. '+(x.art_dec_6514||x.art_lei_9605||'Não informado')));if(!im[k])im[k]={q:0,m:0,a:0};im[k].q++;im[k].m+=num(x.valor_multa);im[k].a+=num(x.area_embargada_ha)});
+  const im={};cipaAutosAtual.forEach(x=>{let k=norm(x.tipo_infracao||x.descricao_infracao||('Art. '+(x.art_dec_6514||x.art_lei_9605||'Não informado')));if(!im[k])im[k]={q:0,m:0,a:0};im[k].q++;im[k].m+=num(x.valor_multa);im[k].a+=num(x.area_embargada_ha)});
   const ir=Object.entries(im).sort((x,y)=>y[1].q-x[1].q).slice(0,15);
   rows('tabCipaInfracoes',ir.map((x,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(x[0])+'</td><td>'+x[1].q+'</td><td>'+moeda(x[1].m)+'</td><td>'+x[1].a.toLocaleString('pt-BR',{maximumFractionDigits:2})+'</td></tr>').join(''));
   const fm={};cipaFaunaAtual.forEach(x=>{let k=norm(x.nome_comum);fm[k]=(fm[k]||0)+num(x.quantidade)});
   const fr=Object.entries(fm).sort((x,y)=>y[1]-x[1]||x[0].localeCompare(y[0])).slice(0,15);
   rows('tabCipaFauna',fr.map((x,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(x[0])+'</td><td>'+x[1]+'</td></tr>').join(''));
+  for(const [campo,tabela] of [['procedimento','tabCipaProcedimentos'],['destinacao','tabCipaDestinacoes']]){
+    const grupos={};
+    cipaFaunaAtual.forEach(x=>{const k=norm(x[campo]||'NÃO INFORMADO');grupos[k]=(grupos[k]||0)+num(x.quantidade)});
+    const valores=Object.entries(grupos).sort((a,b)=>b[1]-a[1]);
+    rows(tabela,valores.map(x=>'<tr><td>'+esc(x[0])+'</td><td>'+x[1]+'</td></tr>').join(''));
+  }
 }
 function render(){drillActions.clear();drillSeq=0;let a=filtrar(atual),p=filtrar(anterior),ta=filtrarTcos(tcosAtual),tp=filtrarTcos(tcosAnterior);renderCiptur();renderCipturTor(a);renderGiroAbordagens();renderCavalaria();renderCipa(a,p);let at=a.filter(x=>x.status_atendimento!=='DEMANDA REPRIMIDA'),rep=a.filter(x=>x.status_atendimento==='DEMANDA REPRIMIDA');kTotal.textContent=a.length;kAtendidas.textContent=at.length;kReprimidas.textContent=rep.length;kDocumentos.textContent=a.length+ta.length;kConduzidos.textContent=soma(a,'conducoes_operacionais');vTotal.textContent=comparar.value==='nenhum'?'':`${variacao(a.length,p.length)} em relação ao comparado`;vincularCardDrill('kTotal','Todas as ocorrências do período',a);vincularCardDrill('kAtendidas','Ocorrências atendidas',at);vincularCardDrill('kReprimidas','Demandas reprimidas',rep);vincularCardDrill('kDocumentos','Documentos produzidos',documentosPeriodo(a,ta),{preservarDuplicados:true,subtitulo:'BOs, TCOs e demais documentos que compõem este indicador.'});vincularCardDrill('kConduzidos','Ocorrências com conduções',a.filter(x=>num(x.conducoes_operacionais)>0),{subtitulo:'Ocorrências que registraram uma ou mais conduções.'});
 let docs=docsComTco(a,ta),docsP=Object.fromEntries(docsComTco(p,tp));let docsLista=documentosPeriodo(a,ta);function listaDoc(tipo){return tipo==='TCO'?ta.map(t=>({...t,_doc:'TCO',id:t.ocorrencia_id||t.id})):a.filter(o=>norm(o.tipo_registro)===tipo).map(o=>({...o,_doc:tipo}))}rows('tabDocs',docs.map(x=>`<tr><td>${esc(x[0])}</td><td>${drillNumero(x[1],'Documentos '+x[0],listaDoc(x[0]),{preservarDuplicados:true})}</td><td>${docsP[x[0]]||0}</td><td class="${classeVariacao('Documentos produzidos',x[1],docsP[x[0]]||0)}">${variacao(x[1],docsP[x[0]]||0)}</td></tr>`).join(''));chart('chartDocs','doughnut',docs.map(x=>x[0]),docs.map(x=>x[1]),'Documentos',docs.map(x=>corDocumento(x[0])),idx=>abrirDetalhes('Documentos '+docs[idx][0],listaDoc(docs[idx][0]),{preservarDuplicados:true}));
@@ -496,9 +507,9 @@ async function carregar(){loading.style.display='grid';let calls=[db.rpc('obter_
   cipaAutosAtual=[];cipaAutosAnterior=[];cipaNotificacoesAtual=[];cipaNotificacoesAnterior=[];cipaFaunaAtual=[];cipaFaunaAnterior=[];cipaEducacaoAtual=[];cipaEducacaoAnterior=[];autosCipturAtual=[];autosCipturAnterior=[];abordagensGiroAtual=[];abordagensGiroAnterior=[];servicosCavalariaAtual=[];servicosCavalariaAnterior=[];
   if(ehCipa()){
     const pares=[
-      ['cipa_autos_infracao','data_autuacao','id,ocorrencia_id,numero,data_autuacao,autuado,tipo_sancao,descricao_infracao,art_lei_9605,art_dec_6514,valor_multa,area_embargada_ha,fiscal_ambiental'],
+      ['cipa_autos_infracao','data_autuacao','id,ocorrencia_id,numero,data_autuacao,autuado,tipo_sancao,tipo_infracao,descricao_infracao,art_lei_9605,art_dec_6514,valor_multa,area_embargada_ha,fiscal_ambiental'],
       ['cipa_autos_notificacao','data_notificacao','id,ocorrencia_id,numero,data_notificacao,autuado,descricao,data_limite,fiscal_ambiental'],
-      ['cipa_fauna','data_registro','id,ocorrencia_id,numero_tr,data_registro,procedencia,nome_comum,nome_cientifico,quantidade'],
+      ['cipa_fauna','data_registro','id,ocorrencia_id,numero_tr,data_registro,procedencia,nome_comum,nome_cientifico,quantidade,procedimento,destinacao'],
       ['cipa_educacao_ambiental','data_acao','id,ocorrencia_id,data_acao,publico_estimado,acao,local_acao']
     ];
     const atuais=await Promise.all(pares.map(x=>db.from(x[0]).select(x[2]).gte(x[1],ini.value).lte(x[1],fim.value)));
