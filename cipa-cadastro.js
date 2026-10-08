@@ -90,10 +90,9 @@
   sec.innerHTML=`
     <h2>10. Dados ambientais — CIPA</h2>
     <div class="grade">
-      <div class="campo"><label for="cipaOrigem">Origem do acionamento / operação</label><input id="cipaOrigem" list="cipaOrigens" placeholder="Ex.: BIOMA, CICC, PATRULHAMENTO"><datalist id="cipaOrigens"><option value="CICC">Centro Integrado de Comando e Controle</option><option value="BIOMA">Operação Bioma</option><option value="PATRULHAMENTO">Patrulhamento</option><option value="ORDEM DE MISSÃO">Ordem de Missão</option><option value="ORDEM DE SERVIÇO">Ordem de Serviço</option></datalist></div>
-      <div class="campo"><label for="cipaTipoOrdem">Tipo do documento que determinou a missão</label><select id="cipaTipoOrdem"><option value="">Não informado</option><option>ORDEM DE MISSÃO</option><option>ORDEM DE SERVIÇO</option><option>OUTRO DOCUMENTO</option></select></div>
-      <div class="campo"><label for="cipaNumeroOrdem">Número da ordem / documento</label><input id="cipaNumeroOrdem" placeholder="Ex.: 34/2026 ou 21201323"></div>
-      <div class="campo cipa-span4"><label for="cipaDocumentoOrigem">Referência completa do documento da missão</label><textarea id="cipaDocumentoOrigem" rows="2" spellcheck="false" placeholder="Ex.: ORDEM DE MISSÃO DA PMRR Nº 42/2026PMRR/QCG/CPC/CIPA/P2P3A"></textarea><span class="nota">Identificação completa conforme o PPE, sem cortar o número ou as siglas do documento.</span></div>
+      <div class="campo duplo"><label for="cipaOrigem">Origem do acionamento / operação</label><select id="cipaOrigem"><option value="">Selecione</option><option value="CICC">CICC — Centro Integrado de Comando e Controle</option><option value="BIOMA">Operação Bioma</option><option value="PATRULHAMENTO">Patrulhamento</option><option value="ORDEM DE MISSÃO">Ordem de Missão</option><option value="ORDEM DE SERVIÇO">Ordem de Serviço</option></select></div>
+      <div class="campo duplo"><label for="cipaTipoOrdem">Tipo do documento que determinou a missão</label><select id="cipaTipoOrdem"><option value="">Não informado</option><option>ORDEM DE MISSÃO</option><option>ORDEM DE SERVIÇO</option><option>OUTRO DOCUMENTO</option></select></div>
+      <div class="campo cipa-span4"><label for="cipaDocumentoOrigem">Identificação completa do documento da missão</label><textarea id="cipaDocumentoOrigem" rows="2" spellcheck="false" placeholder="Ex.: ORDEM DE MISSÃO DA PMRR Nº 42/2026PMRR/QCG/CPC/CIPA/P2P3A"></textarea><span class="nota">Informe a referência completa como aparece no PPE. O número da ordem será identificado automaticamente.</span></div>
       <div class="campo duplo"><label for="cipaAnexo">Anexo / referência</label><input id="cipaAnexo" placeholder="Mapa, TR, AI, relatório ambiental..."></div>
       <div id="cipaAutos" class="cipa-repeater"></div>
       <div id="cipaEmbargos" class="cipa-repeater"></div>
@@ -155,14 +154,17 @@
     const rm=e.target.closest('[data-rm]');if(rm){estado[rm.dataset.rm].splice(Number(rm.dataset.i),1);render(rm.dataset.rm)}
   });
 
-  function referenciaDocumento(){
-    const ref=$('cipaDocumentoOrigem').value.trim();
-    const tipo=$('cipaTipoOrdem').value.trim();
-    const numero=$('cipaNumeroOrdem').value.trim();
-    return ref||([tipo,numero?'Nº '+numero:''].filter(Boolean).join(' ')||null);
+  function dadosDocumentoMissao(){
+    const referencia=$('cipaDocumentoOrigem').value.trim();
+    const identificado=referencia?window.CipaRegrasPpe?.documentoDaMissao(referencia):null;
+    return {
+      tipo_documento_origem:$('cipaTipoOrdem').value||identificado?.tipo||null,
+      numero_documento_origem:identificado?.numero||null,
+      documento_origem:referencia||null
+    };
   }
   function dadosBase(){
-    return {ppe_original:null,data_registro_inicio:datasPpe.inicio,data_registro_fim:datasPpe.fim,area_tipo:$('cipaAreaTipo').value||null,coordenadas_texto:coordCampo()?.value.trim()||null,origem_atuacao:$('cipaOrigem').value.trim()||null,tipo_documento_origem:$('cipaTipoOrdem').value||null,numero_documento_origem:$('cipaNumeroOrdem').value.trim()||null,documento_origem:referenciaDocumento(),anexo_referencia:$('cipaAnexo').value.trim()||null};
+    return {ppe_original:null,data_registro_inicio:datasPpe.inicio,data_registro_fim:datasPpe.fim,area_tipo:$('cipaAreaTipo').value||null,coordenadas_texto:coordCampo()?.value.trim()||null,origem_atuacao:$('cipaOrigem').value||null,...dadosDocumentoMissao(),anexo_referencia:$('cipaAnexo').value.trim()||null};
   }
   function normalizarLinhas(tipo){
     return estado[tipo].map(x=>Object.fromEntries(Object.entries(x).map(([k,v])=>[k,v===''?null:v]))).filter(x=>Object.values(x).some(v=>v!==null&&v!==false));
@@ -200,7 +202,7 @@
       banco.from('cipa_tcos_ambientais').select('*').eq('ocorrencia_id',ocorrenciaId)
     ];
     const r=await Promise.all(qs);if(r.some(x=>x.error)){console.error('Falha ao carregar módulo CIPA',r.find(x=>x.error)?.error);return}
-    const b=r[0].data||{};datasPpe.inicio=b.data_registro_inicio||null;datasPpe.fim=b.data_registro_fim||null;$('cipaAreaTipo').value=b.area_tipo||'';if(coordCampo())coordCampo().value=b.coordenadas_texto||'';sincronizarCoordenadasLocal();$('cipaOrigem').value=b.origem_atuacao||'';$('cipaDocumentoOrigem').value=b.documento_origem||'';const ordemSalva=window.CipaRegrasPpe?.documentoDaMissao(b.documento_origem||'')||{};$('cipaTipoOrdem').value=b.tipo_documento_origem||ordemSalva.tipo||'';$('cipaNumeroOrdem').value=b.numero_documento_origem||ordemSalva.numero||'';$('cipaAnexo').value=b.anexo_referencia||'';
+    const b=r[0].data||{};datasPpe.inicio=b.data_registro_inicio||null;datasPpe.fim=b.data_registro_fim||null;$('cipaAreaTipo').value=b.area_tipo||'';if(coordCampo())coordCampo().value=b.coordenadas_texto||'';sincronizarCoordenadasLocal();const origemSalva=b.origem_atuacao||'';if(origemSalva&&![...$('cipaOrigem').options].some(o=>o.value===origemSalva)){$('cipaOrigem').add(new Option(origemSalva,origemSalva))}$('cipaOrigem').value=origemSalva;$('cipaDocumentoOrigem').value=b.documento_origem||'';const ordemSalva=window.CipaRegrasPpe?.documentoDaMissao(b.documento_origem||'')||{};$('cipaTipoOrdem').value=b.tipo_documento_origem||ordemSalva.tipo||'';$('cipaAnexo').value=b.anexo_referencia||'';
     ['autos','embargos','notificacoes','fauna','educacao','tdba','tcos'].forEach((k,i)=>{estado[k]=r[i+1].data||[];render(k)});
   }
 
@@ -216,8 +218,7 @@
     const regras=window.CipaRegrasPpe?.extrair(texto)||{};
     if(regras.documento?.referencia&&!$('cipaDocumentoOrigem').value.trim())$('cipaDocumentoOrigem').value=regras.documento.referencia;
     if(regras.documento?.tipo&&!$('cipaTipoOrdem').value)$('cipaTipoOrdem').value=regras.documento.tipo;
-    if(regras.documento?.numero&&!$('cipaNumeroOrdem').value)$('cipaNumeroOrdem').value=regras.documento.numero;
-    if(regras.origem&&!$('cipaOrigem').value.trim())$('cipaOrigem').value=regras.origem;
+    if(regras.origem&&!$('cipaOrigem').value)$('cipaOrigem').value=regras.origem;
     const coord=coordenadasDoTexto(texto);if(coord&&coordCampo()&&!coordCampo().value.trim()){coordCampo().value=coord.texto;sincronizarCoordenadasLocal()}
 
 
