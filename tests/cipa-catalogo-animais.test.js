@@ -47,6 +47,7 @@ assert.equal(normalizar(' Tracajá  '),normalizar('TRACAJA'));
 assert.equal(normalizar(' ONÇA-PINTADA '),normalizar('onça-pintada'));
 assert.equal(normalizar(' Galo  doméstico '),normalizar('galo domestico'));
 
-const seed=(sql.match(/,\s*'INICIAL'\)/g)||[]).length;
+const seedSql=sql.slice(sql.indexOf('insert into public.cipa_catalogo_animais'));
+const seed=(seedSql.match(/,\s*'INICIAL'\)/g)||[]).length;
 assert.equal(seed,50,'esperados 50 animais no catálogo inicial');
 console.log('PASS: catálogo 50 animais, RLS, busca com acentos, vínculo fauna, campo científico e inclusão +.');
