@@ -106,7 +106,7 @@
         <div class="cipa-fauna-novo-grade">
           <label>Nome popular *<input id="cipaFaunaNovoNome" maxlength="100" placeholder="Ex.: Jabuti-tinga"></label>
           <label>Nome científico<input id="cipaFaunaNovoCientifico" maxlength="120" placeholder="Ex.: Chelonoidis denticulatus"></label>
-          <label>Grupo<select id="cipaFaunaNovoGrupo"><option>AVES</option><option>MAMÍFEROS</option><option>RÉPTEIS</option><option>PEIXES</option><option>ANFÍBIOS</option><option>OUTROS</option></select></label>
+          <label>Grupo<select id="cipaFaunaNovoGrupo"><option value="">Selecione</option><option>AVES</option><option>MAMÍFEROS</option><option>RÉPTEIS</option><option>PEIXES</option><option>ANFÍBIOS</option><option>OUTROS</option></select></label>
         </div>
         <div class="cipa-fauna-acoes"><button type="button" class="botao-item" data-fauna-salvar>Adicionar ao catálogo</button><button type="button" class="botao-item" data-fauna-fechar>Cancelar</button></div>
         <p id="cipaFaunaNovoStatus" role="status"></p>
@@ -167,7 +167,7 @@
     const atual=estado.fauna[indice];
     $('cipaFaunaNovoNome').value=atual?.nome_comum||'';
     $('cipaFaunaNovoCientifico').value='';
-    $('cipaFaunaNovoGrupo').value='AVES';
+    $('cipaFaunaNovoGrupo').value='';
     $('cipaFaunaNovoStatus').textContent='';
     $('cipaFaunaNovoPainel').hidden=false;
     $('cipaFaunaNovoNome').focus();
@@ -177,6 +177,7 @@
     const nome=$('cipaFaunaNovoNome').value.trim(),cientifico=$('cipaFaunaNovoCientifico').value.trim();
     const status=$('cipaFaunaNovoStatus');
     if(nome.length<2){status.textContent='Informe o nome popular do animal.';return}
+    if(!$('cipaFaunaNovoGrupo').value){status.textContent='Selecione o grupo do animal.';return}
     if(animalPorNome(nome)){status.textContent='Esse animal já existe na lista. Selecione-o pelo nome popular.';return}
     const botao=sec.querySelector('[data-fauna-salvar]');
     botao.disabled=true;status.textContent='Cadastrando no catálogo...';
@@ -226,7 +227,7 @@
     const novo=e.target.closest('[data-fauna-novo]');if(novo){abrirCadastroAnimal(Number(novo.closest('.cipa-item').dataset.i));return}
     if(e.target.closest('[data-fauna-fechar]')){fecharCadastroAnimal();return}
     if(e.target.closest('[data-fauna-salvar]')){await cadastrarAnimal();return}
-    const add=e.target.closest('[data-add]');if(add){estado[add.dataset.add].push({});render(add.dataset.add);return}
+    const add=e.target.closest('[data-add]');if(add){estado[add.dataset.add].push(add.dataset.add==='fauna'?{quantidade:1}:{});render(add.dataset.add);return}
     const rm=e.target.closest('[data-rm]');if(rm){estado[rm.dataset.rm].splice(Number(rm.dataset.i),1);render(rm.dataset.rm)}
   });
   carregarCatalogoFauna();
