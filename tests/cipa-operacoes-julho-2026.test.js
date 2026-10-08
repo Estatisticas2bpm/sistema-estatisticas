@@ -42,7 +42,16 @@ assert.equal(os.tipo,'ORDEM DE SERVIÇO');
 assert.equal(os.numero,'21201323/2026');
 assert.match(cipa,/Origem do acionamento \/ operação/);
 assert.match(cipa,/cipaTipoOrdem/);
-assert.match(cipa,/cipaNumeroOrdem/);
+assert.doesNotMatch(cipa,/id="cipaNumeroOrdem"/);
+assert.doesNotMatch(cipa,/\$('cipaNumeroOrdem')/);
+assert.match(cipa,/<select id="cipaOrigem"/);
+assert.match(cipa,/CICC — Centro Integrado de Comando e Controle/);
+assert.match(cipa,/value="BIOMA">Operação Bioma/);
+assert.match(cipa,/<textarea id="cipaDocumentoOrigem"/);
+assert.match(cipa,/numero_documento_origem:identificado\?\.numero\|\|null/);
+assert.match(cipa,/function dadosDocumentoMissao/);
+assert.match(cipa,/tipo_documento_origem/);
+assert.match(cipa,/documento_origem:referencia\|\|null/);
 
 // A coluna de referência completa deve preservar toda a identificação do PPE.
 const exemploLiteral='ORDEM DE MISSÃO DA PMRR Nº 42/2026PMRR/QCG/CPC/CIPA/P2P3A';
