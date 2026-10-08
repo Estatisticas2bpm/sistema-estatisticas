@@ -6,7 +6,17 @@
   const soma=(a,k)=>a.reduce((s,x)=>s+n(x[k]),0);
   const varPct=(a,b)=>!b?(a?'NOVO':'0%'):(((a-b)/b)*100).toFixed(1).replace('.',',')+'%';
   async function consultaPeriodo(tabela,campo,inicio,fim,select='*'){
-    const db=window.SistemaAuth.client;const r=await db.from(tabela).select(select).gte(campo,inicio).lte(campo,fim);if(r.error)throw r.error;return r.data||[];
+    const db=window.SistemaAuth.client,linhas=[],passo=1000;
+    for(let offset=0;;offset+=passo){
+      const r=await db.from(tabela).select(select).gte(campo,inicio).lte(campo,fim)
+        .order('id',{ascending:true}).range(offset,offset+passo-1);
+      if(r.error)throw r.error;
+      const lote=r.data||[];
+      linhas.push(...lote);
+      if(lote.length<passo)break;
+      if(offset>200000)throw Error('Período muito amplo para emitir em uma única consulta.');
+    }
+    return linhas;
   }
   window.buildRelatorioCipa=async function(){
     const db=window.SistemaAuth.client,ini=q('ini').value,fim=q('fim').value,cr=window.comparisonRange(),periodo=window.periodoRelatorio(ini,fim),u=window.unidadeRel();
