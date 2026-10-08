@@ -95,6 +95,9 @@
       <div class="campo duplo"><label for="cipaTipoOrdem">Tipo do documento que determinou a missão</label><select id="cipaTipoOrdem"><option value="">Não informado</option><option>ORDEM DE MISSÃO</option><option>ORDEM DE SERVIÇO</option><option>OUTRO DOCUMENTO</option></select></div>
       <div class="campo cipa-span4"><label for="cipaDocumentoOrigem">Identificação completa do documento da missão</label><textarea id="cipaDocumentoOrigem" rows="2" spellcheck="false" placeholder="Ex.: ORDEM DE MISSÃO DA PMRR Nº 42/2026PMRR/QCG/CPC/CIPA/P2P3A"></textarea><span class="nota">Informe a referência completa como aparece no PPE. O número da ordem será identificado automaticamente.</span></div>
       <div class="campo duplo"><label for="cipaAnexo">Anexo / referência</label><input id="cipaAnexo" placeholder="Mapa, TR, AI, relatório ambiental..."></div>
+      <div class="campo"><label for="cipaTemTco">Teve TCO?</label><select id="cipaTemTco"><option value="NAO">Não</option><option value="SIM">Sim</option></select></div>
+      <div class="campo" id="cipaNumeroTcoWrap" hidden><label for="cipaNumeroTco">Número do TCO *</label><input id="cipaNumeroTco" type="text" maxlength="32" placeholder="Ex.: 00000096/2026" autocomplete="off"></div>
+      <p class="cipa-span4 cipa-tco-nota" id="cipaTcoNota" role="status">Se houver TCO, informe somente o número. O vínculo será feito no cadastro geral de TCOs.</p>
       <div id="cipaAutos" class="cipa-repeater"></div>
       <div id="cipaEmbargos" class="cipa-repeater"></div>
       <div id="cipaNotificacoes" class="cipa-repeater"></div>
@@ -146,6 +149,29 @@
       ['numero_tdba','TDBA','text'],['auto_infracao','Auto de Infração','text'],['tipo','Tipo','text'],['quantidade','Quantidade','number'],['apreensao','Apreensão','text','cipa-span2'],['valor_bens','Valor dos bens (R$)','number'],['depositario_fiel','Depositário fiel','text'],['caracteristicas','Características','textarea','cipa-span4']
     ]}
   };
+  // O TCO da CIPA utiliza a tabela public.tcos e o mesmo procedimento geral
+  // dos batalhões; não usa cipa_tcos_ambientais.
+  function atualizarCampoTco(){
+    const tem=$('cipaTemTco')?.value==='SIM',wrap=$('cipaNumeroTcoWrap');
+    if(wrap)wrap.hidden=!tem;
+    if($('cipaNumeroTco'))$('cipaNumeroTco').required=tem;
+  }
+  function numeroTcoDoPpe(texto){
+    const trecho=String(texto||'');
+    const m=trecho.match(/\bTCO\s*(?:N[º°o.]*(?:\s*[:=])?|N[ÚU]MERO\s*[:=]?)\s*(\d{1,9}\s*\/\s*20\d{2})\b/i)
+      ||trecho.match(/\bTERMO\s+CIRCUNSTANCIADO\s+(?:DE\s+OCORR[ÊE]NCIA\s*)?(?:N[º°o.]*\s*)?(\d{1,9}\s*\/\s*20\d{2})\b/i);
+    return m?m[1].replace(/\s/g,''):'';
+  }
+  function preencherTcoDoPpe(texto){
+    const numero=numeroTcoDoPpe(texto);
+    if(!numero)return;
+    $('cipaTemTco').value='SIM';
+    $('cipaNumeroTco').value=numero;
+    atualizarCampoTco();
+  }
+  function validarTco(){return $('cipaTemTco').value!=='SIM'||Boolean($('cipaNumeroTco').value.trim())}
+  $('cipaTemTco').addEventListener('change',atualizarCampoTco);
+  atualizarCampoTco();
   const estado={autos:[],embargos:[],notificacoes:[],fauna:[],educacao:[],tdba:[]};
   const datasPpe={inicio:null,fim:null};
   let catalogoFauna=[],faunaIndiceNovo=null,faunaCatalogoCarregado=false;
@@ -319,6 +345,27 @@
     await substituir('cipa_fauna',ocorrenciaId,normalizarLinhas('fauna'));
     await substituir('cipa_educacao_ambiental',ocorrenciaId,normalizarLinhas('educacao'));
     await substituir('cipa_tdba',ocorrenciaId,normalizarLinhas('tdba'));
+    // Depois dos demais anexos, vincular o único TCO informado pelo operador.
+    // Identificação por ID do BO evita duas gravações ao editar/salvar novamente.
+    if($('cipaTemTco').value==='SIM'){
+      const numero=$('cipaNumeroTco').value.trim();
+      if(!numero)throw new Error('Informe o número do TCO da CIPA.');
+      const consulta=await banco.rpc('buscar_bo_para_tco',{
+        p_ocorrencia_id:ocorrenciaId,p_numero_bo:null,p_ano:null
+      });
+      if(consulta.error)throw new Error('Não foi possível verificar os TCOs do PPE: '+consulta.error.message);
+      const existentes=Array.isArray(consulta.data?.[0]?.tcos)?consulta.data[0].tcos:[];
+      const chave=x=>String(x||'').replace(/[^0-9A-Z]/gi,'').toUpperCase();
+      if(!existentes.some(t=>chave(t.numero_tco)===chave(numero))){
+        if(existentes.length)throw new Error('Este PPE já possui TCO '+existentes.map(t=>t.numero_tco).join(', ')+'. Confira ou gerencie os vínculos no módulo geral de TCO antes de cadastrar outro.');
+        const resultado=await banco.rpc('cadastrar_tco_publico',{
+          p_ocorrencia_id:ocorrenciaId,p_numero_tco:numero,
+          p_data_tco:$('data').value||null,p_observacao:null
+        });
+        if(resultado.error)throw new Error('O TCO não pôde ser vinculado: '+resultado.error.message);
+      }
+      $('cipaTcoNota').textContent='TCO '+numero+' vinculado ao PPE no cadastro geral de TCOs.';
+    }
     $('quantAutoInfracao').value=estado.autos.length||'';
     $('autoInfracao').value=estado.autos.map(x=>x.numero).filter(Boolean).join('; ');
   }
@@ -336,12 +383,21 @@
     const r=await Promise.all(qs);if(r.some(x=>x.error)){console.error('Falha ao carregar módulo CIPA',r.find(x=>x.error)?.error);return}
     const b=r[0].data||{};datasPpe.inicio=b.data_registro_inicio||null;datasPpe.fim=b.data_registro_fim||null;$('cipaAreaTipo').value=b.area_tipo||'';if(coordCampo())coordCampo().value=b.coordenadas_texto||'';sincronizarCoordenadasLocal();const origemSalva=b.origem_atuacao||'';if(origemSalva&&![...$('cipaOrigem').options].some(o=>o.value===origemSalva)){$('cipaOrigem').add(new Option(origemSalva,origemSalva))}$('cipaOrigem').value=origemSalva;$('cipaDocumentoOrigem').value=b.documento_origem||'';const ordemSalva=window.CipaRegrasPpe?.documentoDaMissao(b.documento_origem||'')||{};$('cipaTipoOrdem').value=b.tipo_documento_origem||ordemSalva.tipo||'';$('cipaAnexo').value=b.anexo_referencia||'';
     ['autos','embargos','notificacoes','fauna','educacao','tdba'].forEach((k,i)=>{estado[k]=r[i+1].data||[];render(k)});
+    const tco=await banco.rpc('buscar_bo_para_tco',{p_ocorrencia_id:ocorrenciaId,p_numero_bo:null,p_ano:null});
+    if(tco.error){$('cipaTcoNota').textContent='Não foi possível carregar os TCOs já vinculados.';return}
+    const existentes=Array.isArray(tco.data?.[0]?.tcos)?tco.data[0].tcos:[];
+    $('cipaTemTco').value=existentes.length?'SIM':'NAO';
+    $('cipaNumeroTco').value=existentes[0]?.numero_tco||'';
+    atualizarCampoTco();
+    if(existentes.length>1)$('cipaTcoNota').textContent='Este PPE possui '+existentes.length+' TCOs. Consulte a lista completa no módulo geral de TCOs.';
+    else if(existentes.length)$('cipaTcoNota').textContent='TCO existente vinculado a este PPE. Para excluir, utilize o módulo geral de TCOs.';
   }
 
   function blocoAte(texto,inicio,proximos){
     const p=texto.indexOf(inicio);if(p<0)return'';let fim=texto.length;proximos.forEach(m=>{const x=texto.indexOf(m,p+inicio.length);if(x>=0&&x<fim)fim=x});return texto.slice(p,fim);
   }
   function extrairCipa(texto){
+    preencherTcoDoPpe(texto);
     const registro=texto.match(/Data\/Hora In[íi]cio do Registro:\s*(\d{2}\/\d{2}\/20\d{2})\s*(\d{2}:\d{2})/i);
     const encerramento=texto.match(/Data\/Hora Fim:\s*(\d{2}\/\d{2}\/20\d{2})\s*(\d{2}:\d{2})/i);
     if(registro)datasPpe.inicio=dtLocal(registro[1],registro[2])+':00-04:00';
@@ -405,5 +461,5 @@
   });
 
   const idEdicaoCipa=new URLSearchParams(location.search).get('id');if(idEdicaoCipa)carregar(idEdicaoCipa);
-  window.CipaCadastro={salvar,carregar,estado,extrairCipa,finalizarPreenchimentoPpe,parseCoordenadas,coordenadasDoTexto,sincronizarCoordenadasLocal};
+  window.CipaCadastro={salvar,carregar,estado,extrairCipa,finalizarPreenchimentoPpe,numeroTcoDoPpe,validarTco,parseCoordenadas,coordenadasDoTexto,sincronizarCoordenadasLocal};
 })();
