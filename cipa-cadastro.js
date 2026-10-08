@@ -153,6 +153,7 @@
   };
   // O TCO da CIPA utiliza a tabela public.tcos e o mesmo procedimento geral
   // dos batalhões; sem criar um procedimento ambiental paralelo.
+  let tcosJaVinculados=[];
   function atualizarCampoTco(){
     const tem=$('cipaTemTco')?.value==='SIM',wrap=$('cipaNumeroTcoWrap');
     if(wrap)wrap.hidden=!tem;
@@ -171,7 +172,22 @@
     $('cipaNumeroTco').value=numero;
     atualizarCampoTco();
   }
-  function validarTco(){return $('cipaTemTco').value!=='SIM'||Boolean($('cipaNumeroTco').value.trim())}
+  function validarTco(){
+    const sim=$('cipaTemTco').value==='SIM',numero=$('cipaNumeroTco').value.trim();
+    if(sim&&!numero){
+      $('cipaTcoNota').textContent='Informe o número do TCO para vincular ao PPE.';
+      return false;
+    }
+    if(tcosJaVinculados.length){
+      const chave=x=>String(x||'').replace(/[^0-9A-Z]/gi,'').toUpperCase();
+      if(!sim||!tcosJaVinculados.some(t=>chave(t.numero_tco)===chave(numero))){
+        $('cipaTcoNota').textContent='O PPE já possui TCO vinculado. Para alterar ou excluir, utilize o módulo geral de TCOs.';
+        alert($('cipaTcoNota').textContent);
+        return false;
+      }
+    }
+    return true;
+  }
   $('cipaTemTco').addEventListener('change',atualizarCampoTco);
   atualizarCampoTco();
   const estado={autos:[],embargos:[],notificacoes:[],fauna:[],educacao:[],tdba:[]};
@@ -398,6 +414,7 @@
     const tco=await banco.rpc('buscar_bo_para_tco',{p_ocorrencia_id:ocorrenciaId,p_numero_bo:null,p_ano:null});
     if(tco.error){$('cipaTcoNota').textContent='Não foi possível carregar os TCOs já vinculados.';return}
     const existentes=Array.isArray(tco.data?.[0]?.tcos)?tco.data[0].tcos:[];
+    tcosJaVinculados=existentes;
     $('cipaTemTco').value=existentes.length?'SIM':'NAO';
     $('cipaNumeroTco').value=existentes[0]?.numero_tco||'';
     atualizarCampoTco();
