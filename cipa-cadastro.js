@@ -100,7 +100,6 @@
       <div id="cipaFauna" class="cipa-repeater"></div>
       <div id="cipaEducacao" class="cipa-repeater"></div>
       <div id="cipaTdba" class="cipa-repeater"></div>
-      <div id="cipaTcos" class="cipa-repeater"></div>
     </div>`;
   alvo.before(sec);
   const h=alvo.querySelector('h2');if(h)h.textContent='11. Outros indicadores operacionais';
@@ -125,12 +124,9 @@
     ]},
     tdba:{box:'cipaTdba',titulo:'TDBA / Bens Apreendidos',botao:'+ Adicionar TDBA',campos:[
       ['numero_tdba','TDBA','text'],['auto_infracao','Auto de Infração','text'],['tipo','Tipo','text'],['quantidade','Quantidade','number'],['apreensao','Apreensão','text','cipa-span2'],['valor_bens','Valor dos bens (R$)','number'],['depositario_fiel','Depositário fiel','text'],['caracteristicas','Características','textarea','cipa-span4']
-    ]},
-    tcos:{box:'cipaTcos',titulo:'TCO ambiental',botao:'+ Adicionar TCO',campos:[
-      ['crime','Crime','text','cipa-span2'],['numero_processo_jecrim','Processo JECRIM','text'],['localidade','Localidade','select'],['responsavel','Responsável','text'],['autor','Autor','text'],['vitima','Vítima','text'],['apreensoes','Apreensões','textarea','cipa-span4']
     ]}
   };
-  const estado={autos:[],embargos:[],notificacoes:[],fauna:[],educacao:[],tdba:[],tcos:[]};
+  const estado={autos:[],embargos:[],notificacoes:[],fauna:[],educacao:[],tdba:[]};
   const datasPpe={inicio:null,fim:null};
   function campoHtml(c,v=''){
     const [k,l,t,cls='']=c,val=v??'',step=(k.includes('area_')?'0.0001':k.includes('valor_')?'0.01':'1');
@@ -185,7 +181,6 @@
     await substituir('cipa_fauna',ocorrenciaId,normalizarLinhas('fauna'));
     await substituir('cipa_educacao_ambiental',ocorrenciaId,normalizarLinhas('educacao'));
     await substituir('cipa_tdba',ocorrenciaId,normalizarLinhas('tdba'));
-    await substituir('cipa_tcos_ambientais',ocorrenciaId,normalizarLinhas('tcos'));
     $('quantAutoInfracao').value=estado.autos.length||'';
     $('autoInfracao').value=estado.autos.map(x=>x.numero).filter(Boolean).join('; ');
   }
@@ -198,12 +193,11 @@
       banco.from('cipa_autos_notificacao').select('*').eq('ocorrencia_id',ocorrenciaId).order('data_notificacao'),
       banco.from('cipa_fauna').select('*').eq('ocorrencia_id',ocorrenciaId).order('data_registro'),
       banco.from('cipa_educacao_ambiental').select('*').eq('ocorrencia_id',ocorrenciaId).order('data_acao'),
-      banco.from('cipa_tdba').select('*').eq('ocorrencia_id',ocorrenciaId),
-      banco.from('cipa_tcos_ambientais').select('*').eq('ocorrencia_id',ocorrenciaId)
+      banco.from('cipa_tdba').select('*').eq('ocorrencia_id',ocorrenciaId)
     ];
     const r=await Promise.all(qs);if(r.some(x=>x.error)){console.error('Falha ao carregar módulo CIPA',r.find(x=>x.error)?.error);return}
     const b=r[0].data||{};datasPpe.inicio=b.data_registro_inicio||null;datasPpe.fim=b.data_registro_fim||null;$('cipaAreaTipo').value=b.area_tipo||'';if(coordCampo())coordCampo().value=b.coordenadas_texto||'';sincronizarCoordenadasLocal();const origemSalva=b.origem_atuacao||'';if(origemSalva&&![...$('cipaOrigem').options].some(o=>o.value===origemSalva)){$('cipaOrigem').add(new Option(origemSalva,origemSalva))}$('cipaOrigem').value=origemSalva;$('cipaDocumentoOrigem').value=b.documento_origem||'';const ordemSalva=window.CipaRegrasPpe?.documentoDaMissao(b.documento_origem||'')||{};$('cipaTipoOrdem').value=b.tipo_documento_origem||ordemSalva.tipo||'';$('cipaAnexo').value=b.anexo_referencia||'';
-    ['autos','embargos','notificacoes','fauna','educacao','tdba','tcos'].forEach((k,i)=>{estado[k]=r[i+1].data||[];render(k)});
+    ['autos','embargos','notificacoes','fauna','educacao','tdba'].forEach((k,i)=>{estado[k]=r[i+1].data||[];render(k)});
   }
 
   function blocoAte(texto,inicio,proximos){
