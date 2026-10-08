@@ -91,6 +91,8 @@ function iniciar(dados){
  assert.match(out,/Não informado/);
  assert.match(out,/ANEXO A/);
  assert.match(out,/ANEXO D/);
+ assert.match(out,/ANEXO E/);
+ assert.match(out,/00000096\\/2026/);
  assert.ok((out.match(/class="page/g)||[]).length>=12);
  assert.ok(fixture.contagens().paginaFinalizada>=1);
  const vazio=iniciar({oc:[],tcos:[]});
@@ -98,6 +100,7 @@ function iniciar(dados){
  assert.match(vazio.doc.innerHTML,/Não há PPEs\/BOs/);
  assert.doesNotMatch(vazio.doc.innerHTML,/data-toc-target="cipa-anexo-auto"/);
  assert.doesNotMatch(vazio.doc.innerHTML,/data-toc-target="cipa-anexo-embargo"/);
+ assert.doesNotMatch(vazio.doc.innerHTML,/data-toc-target="cipa-anexo-tco"/);
  assert.doesNotMatch(vazio.doc.innerHTML,/MONTE RORAIMA/i);
  console.log('PASS: relatório institucional CIPA, síntese, capítulos, anexos, assinatura, ausência de dados e denominação oficial.');
 })().catch(err=>{console.error(err);process.exitCode=1});
