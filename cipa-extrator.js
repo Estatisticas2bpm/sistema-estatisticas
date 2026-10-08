@@ -86,6 +86,68 @@
       descricao:[fundamentacao.art_dec_6514&&'Art. '+fundamentacao.art_dec_6514+' do Decreto 6.514/08',fundamentacao.art_lei_9605&&'Art. '+fundamentacao.art_lei_9605+' da Lei 9.605/98',desc.replace(/\s+/g,' ').trim()].filter(Boolean).join('; ')
     };
   }
+  // Dados resumidos de fauna do relato. Não infere ferimentos, espécies incertas
+  // ou destinação quando o PPE não afirma expressamente o resultado.
+  function extrairFauna(texto){
+    const bruto=normal(texto);
+    const inicio=bruto.search(/RELATO\s*\/\s*HIST[ÓO]RICO/i);
+    let relato=inicio>=0?bruto.slice(inicio):bruto;
+    const fim=relato.search(/\n\s*(?:AUTO DE INFRA[ÇC][ÃA]O|TERMO DE EMBARGO|TDBA\s*N[º°]?)[^\n]{0,50}\n/i);
+    if(fim>150)relato=relato.slice(0,fim);
+    if(relato.length>35000)relato=relato.slice(0,35000);
+    const grupos=[
+      ['Galo',/galos?\b/iu],['Curicaca',/curicacas?\b/iu],
+      ['Arara-canindé',/araras?[- ]canind[eé]s?\b/iu],
+      ['Tracajá',/tracaj[aá]s?\b/iu],
+      ['Onça-pintada',/on[çc]as?[- ]pintadas?\b/iu]
+    ];
+    const encontrados=[];
+    const re=/\b(\d{1,4}|um|uma)\s+(?:\([^)]+\)\s*)?([A-Za-zÀ-ÿ-]+(?:\s+[A-Za-zÀ-ÿ-]+)?)/giu;
+    for(const m of relato.matchAll(re)){
+      const especie=grupos.find(([,reAnimal])=>reAnimal.test(m[2]));
+      if(!especie)continue;
+      const quantidade=/^(um|uma)$/i.test(m[1])?1:Number(m[1]);
+      if(!Number.isInteger(quantidade)||quantidade<1||quantidade>9999)continue;
+      encontrados.push({nome_comum:especie[0],quantidade,inicio:m.index});
+    }
+    const porEspecie=new Map();
+    for(const linha of encontrados){
+      const total=porEspecie.get(linha.nome_comum)||[];
+      total.push(linha);
+      porEspecie.set(linha.nome_comum,total);
+    }
+    const fauna=[],avisos=[];
+    for(const [nome,ocorrencias] of porEspecie){
+      const quantidades=[...new Set(ocorrencias.map(x=>x.quantidade))];
+      if(quantidades.length!==1){
+        avisos.push('Quantidades diferentes para '+nome+'; conferir o PPE antes de lançar.');
+        continue;
+      }
+      const pos=ocorrencias[0].inicio;
+      const local=relato.slice(Math.max(0,pos-600),Math.min(relato.length,pos+900));
+      const temApreensao=/\bapreend(?:id[oa]s?|idos|idas)|\bapreens[ãa]o\b/i.test(local);
+      const temResgate=/\bresgatad[oa]s?\b|\bresgate\b/i.test(local);
+      const temRecolhimento=/\brecolhid[oa]s?\b|\brecolhimento\b/i.test(local);
+      const temSoltura=/\bsolt[oa]s?\b|\bsoltura\b/i.test(local);
+      const procedimentos=[temApreensao&&'APREENSÃO',temResgate&&'RESGATE',temRecolhimento&&'RECOLHIMENTO',temSoltura&&'SOLTURA'].filter(Boolean);
+      let procedimento=procedimentos.length===1?procedimentos[0]:null;
+      // Custódia só pode ser afirmada com declaração expressa no histórico.
+      let destinacao=null;
+      if(/(?:mantid[oa]s?|permanec(?:eram|em|endo))[\s\S]{0,160}(?:local|im[oó]vel|propriedade)[\s\S]{0,180}(?:deposit[aá]rio|dep[oó]sito)/i.test(relato)
+         || /(?:deposit[aá]rio fiel|sob dep[oó]sito)[\s\S]{0,120}(?:pr[oó]prio im[oó]vel|no local)/i.test(relato)){
+        destinacao='MANTIDOS NO LOCAL SOB DEPÓSITO';
+      }else if(/encaminhad[oa]s?\s+(?:ao|para o)\s+CETAS/i.test(relato)){
+        destinacao='CETAS';
+      }else if(/solt[oa]s?\s+na\s+natureza/i.test(relato)){
+        destinacao='SOLTOS NA NATUREZA';
+      }else if(/entregues?\s+(?:a|ao|à)\s+(?:um\s+)?[óo]rg[ãa]o/i.test(relato)){
+        destinacao='ENTREGUES A ÓRGÃO COMPETENTE';
+      }
+      fauna.push({nome_comum:nome,quantidade:quantidades[0],procedimento,destinacao});
+      if(procedimentos.length>1)avisos.push('Procedimentos diferentes citados para '+nome+'; selecionar manualmente.');
+    }
+    return {fauna,avisos};
+  }
   function extrair(texto){
     const docs=documentos(texto);
     const autos=docs.filter(d=>d.tipo==='auto').map(lerAuto);
@@ -98,8 +160,9 @@
     return {
       autos:[...new Map(autos.map(x=>[x.numero,x])).values()],
       embargos:[...new Map(embargos.map(x=>[x.numero,x])).values()],
+      ...extrairFauna(texto),
       documentosEncontrados:docs.length
     };
   }
-  return {documentos,extrair,lerAuto,lerTermo};
+  return {documentos,extrair,lerAuto,lerTermo,extrairFauna};
 });
