@@ -99,6 +99,7 @@
       <div id="cipaEmbargos" class="cipa-repeater"></div>
       <div id="cipaNotificacoes" class="cipa-repeater"></div>
       <div id="cipaFauna" class="cipa-repeater"></div>
+      <p id="cipaFaunaImportacaoAviso" class="cipa-span4" style="margin:0;color:#8a5813;font-size:12px" role="status"></p>
       <datalist id="cipaFaunaOpcoes"></datalist>
       <div id="cipaFaunaNovoPainel" class="cipa-fauna-novo" hidden>
         <strong>Cadastrar animal no catálogo</strong>
@@ -158,7 +159,16 @@
     const resposta=await banco.from('cipa_catalogo_animais').select('id,nome_popular,nome_cientifico,grupo').eq('ativo',true).order('nome_popular');
     if(resposta.error){console.warn('Não foi possível carregar o catálogo de fauna da CIPA.',resposta.error);return false}
     catalogoFauna=resposta.data||[];faunaCatalogoCarregado=true;
-    atualizarOpcoesFauna();return true;
+    atualizarOpcoesFauna();
+    // A leitura do PPE pode terminar antes da lista de espécies carregar.
+    let precisaRenderizar=false;
+    estado.fauna.forEach((animal,i)=>{
+      const antes=animal.animal_catalogo_id;
+      if(animalPorNome(animal.nome_comum))associarAnimal(i);
+      if(antes!==animal.animal_catalogo_id)precisaRenderizar=true;
+    });
+    if(precisaRenderizar)render('fauna');
+    return true;
   }
   function associarAnimal(indice){
     const item=estado.fauna[indice];if(!item)return;
@@ -347,6 +357,17 @@
     const documentos=window.CipaExtrator?.extrair(texto);
     if(documentos?.autos?.length){estado.autos=documentos.autos.map(tipoInfracaoSePpe);render('autos')}
     if(documentos?.embargos?.length){estado.embargos=documentos.embargos;render('embargos')}
+    // Só sugere grupos com espécie/quantidade explícitas e nunca substitui
+    // registros que o policial já informou ou importou nesta ocorrência.
+    if(documentos?.fauna?.length&&!estado.fauna.length){
+      estado.fauna=documentos.fauna.map(x=>({...x}));
+      estado.fauna.forEach((x,i)=>associarAnimal(i));
+      render('fauna');
+      $('cipaFaunaImportacaoAviso').textContent='Fauna sugerida pelo relato do PPE. Confira quantidade, procedimento e destinação antes de salvar.';
+    }
+    if(documentos?.avisos?.length){
+      $('cipaFaunaImportacaoAviso').textContent=documentos.avisos.join(' ');
+    }
     $('quantAutoInfracao').value=estado.autos.length||'';$('autoInfracao').value=estado.autos.map(x=>x.numero).join('; ');
   }
 
