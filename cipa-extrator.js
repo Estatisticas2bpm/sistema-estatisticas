@@ -136,7 +136,8 @@
       if(/(?:mantid[oa]s?|permanec(?:eram|em|endo))[\s\S]{0,160}(?:local|im[oó]vel|propriedade)[\s\S]{0,180}(?:deposit[aá]rio|dep[oó]sito)/i.test(relato)
          || /(?:deposit[aá]rio fiel|sob dep[oó]sito)[\s\S]{0,120}(?:pr[oó]prio im[oó]vel|no local)/i.test(relato)){
         destinacao='MANTIDOS NO LOCAL SOB DEPÓSITO';
-      }else if(/encaminhad[oa]s?\s+(?:ao|para o)\s+CETAS/i.test(relato)){
+      }else if(/(?:encaminhad[oa]s?|encaminhou|entregues?|entregou)\s+(?:ao|para o)\s+CETAS/i.test(relato)
+        && !/n[ãa]o\s+(?:foram\s+|foi\s+)?(?:encaminhad[oa]s?|encaminhou|entregues?|entregou)\s+(?:ao|para o)\s+CETAS/i.test(relato)){
         destinacao='CETAS';
       }else if(/solt[oa]s?\s+na\s+natureza/i.test(relato)){
         destinacao='SOLTOS NA NATUREZA';
