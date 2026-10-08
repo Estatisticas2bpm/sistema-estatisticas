@@ -81,6 +81,7 @@
   }
   const style=document.createElement('style');
   style.textContent='.cipa-modulo{border:1px solid #a7c7b6!important;background:linear-gradient(180deg,#f6fbf8,#fff)}.cipa-modulo h2{color:#245b43}.cipa-repeater{grid-column:1/-1;border:1px solid #d6e5dc;border-radius:12px;padding:12px;background:#fff}.cipa-repeater-head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:10px}.cipa-repeater-head h3{margin:0;color:#245b43}.cipa-list{display:grid;gap:10px}.cipa-item{border:1px solid #dbe6df;border-radius:10px;padding:10px;background:#fbfdfc}.cipa-item-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.cipa-item-grid label{font-size:11px;font-weight:800;color:#52677a}.cipa-item-grid input,.cipa-item-grid select,.cipa-item-grid textarea{display:block;width:100%;margin-top:4px;border:1px solid #cdd8e5;border-radius:8px;padding:8px;background:#fff}.cipa-item-grid textarea{min-height:64px;resize:vertical}.cipa-span2{grid-column:span 2}.cipa-span4{grid-column:1/-1}.cipa-remove{border:0;background:#a63d40;color:#fff;border-radius:7px;padding:7px 10px;cursor:pointer;float:right}@media(max-width:800px){.cipa-item-grid{grid-template-columns:1fr 1fr}.cipa-span4{grid-column:1/-1}}';
+  style.textContent+='.cipa-modulo [hidden]{display:none!important}';
   style.textContent+='.cipa-fauna-escolha{display:flex;gap:6px;align-items:center}.cipa-fauna-escolha input{flex:1;min-width:0}.cipa-fauna-escolha button{flex:none;margin-top:4px;border:0;border-radius:8px;background:#245b43;color:white;font-size:19px;padding:5px 12px;cursor:pointer}.cipa-fauna-novo{grid-column:1/-1;border:1px solid #9fc5b0;background:#f1faf5;border-radius:12px;padding:14px}.cipa-fauna-novo[hidden]{display:none}.cipa-fauna-novo-grade{display:grid;grid-template-columns:2fr 2fr 1fr;gap:10px}.cipa-fauna-novo-grade label{font-size:12px;font-weight:700}.cipa-fauna-novo-grade input,.cipa-fauna-novo-grade select{width:100%;display:block;margin-top:5px;padding:9px;border:1px solid #bdcdd4;border-radius:8px}.cipa-fauna-acoes{display:flex;gap:8px;margin-top:10px}.cipa-fauna-ajuda{font-size:11px;font-weight:400;color:#617589}@media(max-width:800px){.cipa-fauna-novo-grade{grid-template-columns:1fr}}';
   document.head.appendChild(style);
 
@@ -126,7 +127,8 @@
       ['numero','Nº do Auto','text'],['data_autuacao','Data da autuação','date'],
       ['tipo_infracao','Tipo de infração','tipo-infracao','cipa-span2'],
       ['tipo_sancao','Sanção aplicada','text','cipa-span2'],
-      ['valor_multa','Valor da multa (R$)','number'],['area_embargada_ha','Área (ha)','number']
+      ['valor_multa','Valor da multa (R$)','number'],['area_embargada_ha','Área embargada (ha)','number'],
+      ['area_desmatada_constatada_ha','Área desmatada constatada (ha)','number','cipa-span2']
     ]},
     embargos:{box:'cipaEmbargos',titulo:'Termos de Embargo / Interdição',botao:'+ Adicionar Termo',campos:[
       ['numero','Nº do Termo','text'],['data_embargo','Data','date'],['auto_infracao_originario','Auto de Infração originário','text'],['area_embargada_ha','Área vinculada (ha)','number'],['descricao','Fundamento legal (Art. Decreto 6.514/08) e descrição','textarea','cipa-span4']
@@ -261,6 +263,10 @@
   }
   function campoHtml(c,v='',obj={}){
     const [k,l,t,cls='']=c,val=v??'',step=(k.includes('area_')?'0.0001':k.includes('valor_')?'0.01':'1');
+    if(k==='area_desmatada_constatada_ha'){
+      const mostrar=obj.tipo_infracao==='DESMATAMENTO';
+      return `<label class="${cls}" ${mostrar?'':'hidden'}>${l}<input data-k="${k}" type="number" min="0" step="0.0001" value="${esc(val)}"><small class="cipa-fauna-ajuda">Preencha somente se o documento informar a área desmatada constatada. Não use aqui a área do embargo.</small></label>`;
+    }
     if(opcoesEstatisticas[t]){
       const opc=opcoesEstatisticas[t];
       const extras=val&&!opc.includes(String(val))?[String(val)]:[];
@@ -286,6 +292,12 @@
   sec.addEventListener('change',e=>{
     const item=e.target.closest('.cipa-item');if(!item)return;
     syncItem(item);
+    if(item.dataset.tipo==='autos'&&e.target.dataset.k==='tipo_infracao'){
+      const auto=estado.autos[Number(item.dataset.i)];
+      if(auto&&auto.tipo_infracao!=='DESMATAMENTO')auto.area_desmatada_constatada_ha=null;
+      render('autos');
+      return;
+    }
     if(item.dataset.tipo==='fauna'&&e.target.dataset.k==='nome_comum'){
       associarAnimal(Number(item.dataset.i));render('fauna');
     }
