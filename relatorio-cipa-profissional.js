@@ -148,7 +148,8 @@
       const hectaresDesmatados=desmatadas.length?soma(desmatadas,'area_desmatada_constatada_ha'):null;
       const animaisAnt=soma(faunaAnt,'quantidade'),multasAnt=soma(autosAnt,'valor_multa');
       const resTco=[...new Set(tcos.map(x=>String(x.numero_tco||x.id||'').trim()).filter(Boolean))].length;
-      const docsDistintos=(arr,key)=>new Set(arr.map(x=>String(x[key]||'').trim()).filter(Boolean)).size;
+      const docsDistintos=(arr,key)=>new Set(arr.map(x=>String(x[key]||'').trim())
+        .filter(v=>v&&!/^(?:-|S\/?N|N\/?I|NI|SEM N[ÚU]MERO|NÃO INFORMADO)$/i.test(v))).size;
       const totalTR=docsDistintos(fauna,'numero_tr');
       const qMes=partesAno(inicio,fim);
       const ocorrenciasPorMes=new Map(),autosPorMes=new Map(),embargosPorMes=new Map(),faunaPorMes=new Map();
@@ -193,8 +194,15 @@
         ['ANEXO C. AUTOS DE NOTIFICAÇÃO','cipa-anexo-notifica'],
         ['ANEXO D. FAUNA E EDUCAÇÃO AMBIENTAL','cipa-anexo-fauna']
       ];
+      const anexosDisponiveis={
+        'cipa-anexo-auto':autos.length>0,
+        'cipa-anexo-embargo':embargos.length>0,
+        'cipa-anexo-notifica':notif.length>0,
+        'cipa-anexo-fauna':fauna.length>0||educacao.length>0
+      };
+      const indiceSumario=sumario.filter(([,id])=>!(id in anexosDisponiveis)||anexosDisponiveis[id]);
       pages.push(secPag('SUMÁRIO',
-        '<ol class="cipa-toc">'+sumario.map(x=>'<li><span>'+h(x[0])+'</span><span class="dots"></span><strong data-toc-target="'+h(x[1])+'">-</strong></li>').join('')+'</ol>'+
+        '<ol class="cipa-toc">'+indiceSumario.map(x=>'<li><span>'+h(x[0])+'</span><span class="dots"></span><strong data-toc-target="'+h(x[1])+'">-</strong></li>').join('')+'</ol>'+
         nota('Os anexos são exibidos quando houver documentos cadastrados no período. A numeração será atualizada após a composição final das páginas.'),'summary',periodo));
       const resumoTexto=oc.length
         ?'Foram registrados '+fmt(oc.length)+' PPE(s)/BO(s) no intervalo informado. A fiscalização produziu '+fmt(autos.length)+' Auto(s) de Infração e '+fmt(embargos.length)+' termo(s) de embargo. O conjunto inclui '+fmt(totalAnimais)+' animal(is) registrado(s) em fauna. Os totais de fauna, multas, embargos e PPEs medem dimensões distintas da atividade e não devem ser somados.'
