@@ -596,6 +596,19 @@ else comparativos.push(indicador('Classificação AME',a.filter(ehAme).length,p.
 rows('tabComparativo',comparativos.join(''));loading.style.display='none'}
 function dadosPessoaInformados(n,s,i){return [n,s,i].some(v=>!ehNaoInformado(v))}function listaPessoas(a,prefix){let chave=prefix==='vitima'?'vitimas':'infratores',lista=[];a.forEach(x=>{let n=x[prefix+'_nacionalidade'],sx=x[prefix+'_sexo'],i=x[prefix+'_idade'];if(dadosPessoaInformados(n,sx,i))lista.push({nacionalidade:n,sexo:sx,idade:i});let texto=String(x.observacao_final||''),marca='[[PESSOAS_ENVOLVIDAS]]',pos=texto.indexOf(marca);if(pos>=0)try{let dados=JSON.parse(texto.slice(pos+marca.length));lista.push(...(dados[chave]||[]).filter(pessoa=>dadosPessoaInformados(pessoa.nacionalidade,pessoa.sexo,pessoa.idade)))}catch(_){}});return lista}
 function perfil(a,prefix,chartId,box){let pessoas=listaPessoas(a,prefix),nacs=rank(pessoas,x=>normalizarNacionalidade(x.nacionalidade),20),sex=rank(pessoas,x=>normalizarSexo(x.sexo),8),idades=pessoas.map(x=>num(x.idade)).filter(Boolean),faltNac=pessoas.filter(x=>ehNaoInformado(x.nacionalidade)).length,faltSexo=pessoas.filter(x=>ehNaoInformado(x.sexo)).length,faltIdade=pessoas.filter(x=>ehNaoInformado(x.idade)).length;chart(chartId,'doughnut',sex.map(x=>x[0]),sex.map(x=>x[1]),'Sexo',sex.map(x=>corSexo(x[0])));let linhas=nacs.map(x=>`<tr><td>${esc(x[0])}</td><td>${x[1]}</td></tr>`).join('');$(box).innerHTML=`<table><tr><th>Nacionalidade</th><th>Quantidade</th></tr>${linhas||'<tr><td colspan="2">Sem nacionalidade informada</td></tr>'}<tr><th>Faixa etária</th><td>${idades.length?Math.min(...idades)+' a '+Math.max(...idades)+' anos':'Sem idade informada'}</td></tr><tr><th>Pessoas identificadas</th><td>${pessoas.length}</td></tr><tr><th>Campos pendentes</th><td>Nacionalidade: ${faltNac} · Sexo: ${faltSexo} · Idade: ${faltIdade}</td></tr></table>`}
+async function consultarCipaPaginado(tabela,campo,data,ini,fim){
+  const linhas=[],passo=1000;
+  for(let offset=0;;offset+=passo){
+    const res=await db.from(tabela).select(campo).gte(data,ini).lte(data,fim)
+      .order('id',{ascending:true}).range(offset,offset+passo-1);
+    if(res.error)return res;
+    const lote=res.data||[];
+    linhas.push(...lote);
+    if(lote.length<passo)break;
+    if(offset>200000)return {error:{message:'O intervalo contém registros demais. Selecione um período menor.'}};
+  }
+  return {data:linhas,error:null};
+}
 async function carregar(){loading.style.display='grid';let calls=[db.rpc('obter_dados_dashboard_territorial',{data_inicio:ini.value,data_fim:fim.value}),db.rpc('obter_tcos_dashboard_territorial',{data_inicio:ini.value,data_fim:fim.value})],temComparacao=comparar.value!=='nenhum',pc=temComparacao?periodoComparado():null;if(temComparacao)calls.push(db.rpc('obter_dados_dashboard_territorial',{data_inicio:pc[0],data_fim:pc[1]}),db.rpc('obter_tcos_dashboard_territorial',{data_inicio:pc[0],data_fim:pc[1]}));let r=await Promise.all(calls);if(r[0].error){loading.textContent='Erro ao carregar: '+r[0].error.message;return}if(r[1].error){loading.textContent='Erro ao carregar TCOs: '+r[1].error.message;return}atual=r[0].data||[];tcosAtual=r[1].data||[];anterior=temComparacao?(r[2].data||[]):[];tcosAnterior=temComparacao?(r[3].data||[]):[];
   cipaAutosAtual=[];cipaAutosAnterior=[];cipaNotificacoesAtual=[];cipaNotificacoesAnterior=[];cipaFaunaAtual=[];cipaFaunaAnterior=[];cipaEmbargosAtual=[];cipaEmbargosAnterior=[];cipaEducacaoAtual=[];cipaEducacaoAnterior=[];autosCipturAtual=[];autosCipturAnterior=[];abordagensGiroAtual=[];abordagensGiroAnterior=[];servicosCavalariaAtual=[];servicosCavalariaAnterior=[];
   if(ehCipa()){
@@ -606,11 +619,11 @@ async function carregar(){loading.style.display='grid';let calls=[db.rpc('obter_
       ['cipa_termos_embargo','data_embargo','id,ocorrencia_id,numero,data_embargo,area_embargada_ha,auto_infracao_originario'],
       ['cipa_educacao_ambiental','data_acao','id,ocorrencia_id,data_acao,publico_estimado,acao,local_acao']
     ];
-    const atuais=await Promise.all(pares.map(x=>db.from(x[0]).select(x[2]).gte(x[1],ini.value).lte(x[1],fim.value)));
+    const atuais=await Promise.all(pares.map(x=>consultarCipaPaginado(x[0],x[2],x[1],ini.value,fim.value)));
     if(atuais.some(x=>x.error)){loading.textContent='Erro ao carregar módulo CIPA: '+atuais.find(x=>x.error).error.message;return}
     [cipaAutosAtual,cipaNotificacoesAtual,cipaFaunaAtual,cipaEmbargosAtual,cipaEducacaoAtual]=atuais.map(x=>x.data||[]);
     if(temComparacao){
-      const ants=await Promise.all(pares.map(x=>db.from(x[0]).select(x[2]).gte(x[1],pc[0]).lte(x[1],pc[1])));
+      const ants=await Promise.all(pares.map(x=>consultarCipaPaginado(x[0],x[2],x[1],pc[0],pc[1])));
       if(ants.some(x=>x.error)){loading.textContent='Erro ao carregar comparação CIPA: '+ants.find(x=>x.error).error.message;return}
       [cipaAutosAnterior,cipaNotificacoesAnterior,cipaFaunaAnterior,cipaEmbargosAnterior,cipaEducacaoAnterior]=ants.map(x=>x.data||[]);
     }
