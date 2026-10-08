@@ -1,0 +1,51 @@
+/* Relatório institucional ambiental da CIPA. Escopo isolado das demais unidades. */
+#document.cipa-report{width:210mm}
+.cipa-report .page{position:relative;width:210mm;min-height:297mm;padding:20mm 16mm 17mm}
+.cipa-report .page:not(.cover){padding-top:22mm}
+.cipa-report .internal-head{left:16mm;right:16mm;top:8mm;line-height:1.45;font-size:8.2px}
+.cipa-report .footer{left:16mm;right:16mm;bottom:6mm}
+.cipa-report .title.cipa-titulo{font-size:14px;color:#133a2a;border-bottom:2px solid #247453;padding-bottom:7px;margin:0 0 14px}
+.cipa-cover-head{grid-template-columns:90px minmax(0,1fr) 90px;align-items:start;gap:8px;font-size:11.5px}
+.cipa-cover-head img{width:77px;height:85px;object-fit:contain}
+.cipa-cover-identificacao{width:78px;height:88px;border:2px solid #1a6748;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#164e3a;justify-self:center;line-height:1.15;background:linear-gradient(150deg,#f1f9f3,#fff)}
+.cipa-cover-identificacao span{font-size:21px;font-weight:900;letter-spacing:1px}
+.cipa-cover-identificacao small{font-size:7px;font-weight:800;letter-spacing:.25px;margin-top:5px;text-align:center}
+.cipa-cover-title{margin-top:65mm}
+.cipa-cover-title h1{font-size:20px;line-height:1.4;margin:0 0 14px}
+.cipa-cover-title h2{font-size:15px;line-height:1.4}
+.cipa-cover-title p{font-size:11px;margin-top:15px;letter-spacing:.8px;font-weight:700}
+.cipa-cover-linha{width:68%;height:3px;background:#1a6748;margin:18px auto}
+.cipa-report .cover-bottom{bottom:24mm}
+.cipa-toc{margin:13mm 0 0;padding:0;list-style:none;font-size:11px;line-height:1.5}
+.cipa-toc li{display:flex;gap:8px;align-items:baseline;margin:6.5px 0;break-inside:avoid}
+.cipa-toc li span:first-child{max-width:86%;font-weight:700}
+.cipa-toc li .dots{height:10px;flex:1;border-bottom:1px dotted #9aabaa}
+.cipa-toc li strong{width:14px;text-align:right;color:#174c39}
+.cipa-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:9px 0 14px}
+.cipa-metrica{border:1px solid #abcabd;background:#f7fbf8;border-radius:7px;text-align:center;padding:10px 4px;min-height:59px}
+.cipa-metrica strong{display:block;font-size:16px;color:#1d6348;font-weight:900;overflow-wrap:anywhere;line-height:1.25}
+.cipa-metrica span{display:block;color:#334c42;font-size:8.3px;font-weight:800;line-height:1.25;margin-top:5px}
+.cipa-subtitulo{font-size:11px;font-weight:900;color:#fff;text-align:left;letter-spacing:.3px;padding:7px 9px;margin:13px 0 5px;background:#286d52}
+.cipa-paragrafo{font-size:10px;line-height:1.58;text-align:justify;margin:9px 0 12px}
+.cipa-nota{font-size:9px;line-height:1.45;color:#314338;border-left:3px solid #3b8b67;background:#f2f8f4;padding:8px 9px;margin:10px 0}
+.cipa-table{font-size:9.1px;table-layout:fixed;width:100%;margin:7px 0 10px}
+.cipa-table thead th{background:#205d47;color:white;padding:6px 5px;text-align:center;overflow-wrap:anywhere}
+.cipa-table td{padding:5px;line-height:1.35;overflow-wrap:anywhere}
+.cipa-table tbody tr:nth-child(even){background:#f5f8f6}
+.cipa-table tr{break-inside:avoid;page-break-inside:avoid}
+.cipa-table thead{display:table-header-group}
+.cipa-metodologia{font-size:10px;line-height:1.45}
+.cipa-metodologia p{margin:7px 0}
+.cipa-assinatura{margin:22px 0 10px;font-size:10px}
+.cipa-report .source{color:#5b6d61;font-size:8px;margin:10px 0}
+@media print{
+  #document.cipa-report{width:210mm;margin:0}
+  .cipa-report .page{width:210mm;min-height:297mm;max-height:none;background:#fff;box-shadow:none;margin:0;break-after:page;page-break-after:always}
+  .cipa-report .page:last-child{break-after:auto;page-break-after:auto}
+  .cipa-report .page .cipa-subtitulo,.cipa-report .cipa-metrica,.cipa-report tr{break-inside:avoid}
+}
+@media(max-width:850px){
+  #document.cipa-report{width:100%}
+  .cipa-report .page{width:100%}
+  .cipa-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
