@@ -150,7 +150,7 @@
     ]}
   };
   // O TCO da CIPA utiliza a tabela public.tcos e o mesmo procedimento geral
-  // dos batalhões; não usa cipa_tcos_ambientais.
+  // dos batalhões; sem criar um procedimento ambiental paralelo.
   function atualizarCampoTco(){
     const tem=$('cipaTemTco')?.value==='SIM',wrap=$('cipaNumeroTcoWrap');
     if(wrap)wrap.hidden=!tem;
