@@ -43,6 +43,21 @@ assert.equal(os.numero,'21201323/2026');
 assert.match(cipa,/Origem do acionamento \/ operação/);
 assert.match(cipa,/cipaTipoOrdem/);
 assert.match(cipa,/cipaNumeroOrdem/);
+
+// A coluna de referência completa deve preservar toda a identificação do PPE.
+const exemploLiteral='ORDEM DE MISSÃO DA PMRR Nº 42/2026PMRR/QCG/CPC/CIPA/P2P3A';
+const exemplo=core.documentoDaMissao(exemploLiteral);
+assert.equal(exemplo.tipo,'ORDEM DE MISSÃO');
+assert.equal(exemplo.numero,'42/2026');
+assert.equal(exemplo.referencia,exemploLiteral);
+const dividido=core.documentoDaMissao('ORDEM DE MISSÃO DA PMRR Nº\\n42/2026PMRR/QCG/CPC/CIPA/P2P3A\\npara executar a operação'.replaceAll('\\n','\n'));
+assert.equal(dividido.referencia,exemploLiteral);
+const comBarra=core.documentoDaMissao('ORDEM DE MISSÃO DA PMRR Nº 42/2026/PMRR/QCG/CPC/CIPA/P2P3A');
+assert.equal(comBarra.referencia,'ORDEM DE MISSÃO DA PMRR Nº 42/2026/PMRR/QCG/CPC/CIPA/P2P3A');
+const concorrentes=core.documentoDaMissao('A ordem de missão foi planejada. Conforme ORDEM DE MISSÃO DA PMRR Nº 42/2026PMRR/QCG/CPC/CIPA/P2P3A, foi executada a missão.');
+assert.equal(concorrentes.referencia,exemploLiteral);
+assert.equal(core.documentoDaMissao('ORDEM DE MISSÃO SEM NUMERAÇÃO').referencia,'');
+assert.match(cipa,/<textarea id="cipaDocumentoOrigem" rows="2"/);
 assert.match(cipa,/finalizarPreenchimentoPpe/);
 assert.match(cadastro,/cipa-regras-ppe\.js/);
 assert.match(cadastro,/finalizarPreenchimentoPpe\?\./);
