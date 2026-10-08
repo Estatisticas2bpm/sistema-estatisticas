@@ -81,6 +81,17 @@ assert.match(relatorio,/buildRelatorioCipa/);
 assert.match(relCipa,/FISCALIZAÇÃO AMBIENTAL/);
 assert.match(relCipa,/VALOR DAS MULTAS/);
 assert.match(relCipa,/ÁREA EMBARGADA/);
-assert.match(relCipa,/FAUNA, EDUCAÇÃO AMBIENTAL E TCO/);
+assert.match(relCipa,/FAUNA E EDUCAÇÃO AMBIENTAL/);
+assert.doesNotMatch(cipaCadastro,/TCO ambiental/i);
+assert.doesNotMatch(cipaCadastro,/cipaTcos|cipa_tcos_ambientais/);
+assert.doesNotMatch(dashboard,/TCO ambiental|cipa_tcos_ambientais/);
+assert.doesNotMatch(relCipa,/TCO AMBIENTAL|cipa_tcos_ambientais/);
+assert.match(cipaCadastro,/Fauna \/ TR/);
+assert.match(cipaCadastro,/numero_tr/);
+assert.match(cipaCadastro,/nome_comum/);
+assert.match(cipaCadastro,/nome_cientifico/);
+const tcoGeral=read('tco.html');
+assert.match(tcoGeral,/Cadastrar TCO/);
+assert.match(tcoGeral,/Vincule o TCO ao BO correspondente/);
 
 console.log('PASS: módulo ambiental especializado da CIPA validado.');
