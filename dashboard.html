@@ -167,6 +167,11 @@
     <div><h3 style="margin:0 0 8px;color:var(--navy)">Destinação / custódia</h3><div class="tablewrap"><table><thead><tr><th>Destinação</th><th>Animais</th></tr></thead><tbody id="tabCipaDestinacoes"></tbody></table></div></div>
   </div>
   <p class="sub">Procedimento e destinação descrevem os mesmos animais. Não some as duas tabelas para obter o total.</p>
+  <div class="grid2" style="margin-top:18px">
+    <div><h3 style="margin:0 0 8px;color:var(--navy)">Autos de Infração do período</h3><div class="tablewrap"><table><thead><tr><th>Nº Auto</th><th>Data</th><th>Tipo</th><th>Multa (R$)</th></tr></thead><tbody id="tabCipaAutosDetalhe"></tbody></table></div></div>
+    <div><h3 style="margin:0 0 8px;color:var(--navy)">Termos de embargo do período</h3><div class="tablewrap"><table><thead><tr><th>Nº Termo</th><th>Data</th><th>Área (ha)</th></tr></thead><tbody id="tabCipaEmbargosDetalhe"></tbody></table></div></div>
+  </div>
+  <p class="sub">A área de desmatamento constatada é informada separadamente quando constar no documento. Não se presume desmatamento a partir da área embargada.</p>
 </section>
 <section class="section"><h2>Documentos Produzidos</h2><p class="sub">BO, TCO, ROP e demais documentos do período</p><div class="grid2"><div class="chartbox"><canvas id="chartDocs"></canvas></div><div class="tablewrap"><table><thead><tr><th>Documento</th><th>Atual</th><th>Comparado</th><th>Variação</th></tr></thead><tbody id="tabDocs"></tbody></table></div></div></section>
 <section class="section"><h2>Principais Ocorrências</h2><p class="sub">Incidência por natureza. Um mesmo BO pode aparecer em mais de uma natureza quando o registro possuir múltiplas classificações.</p><div class="grid2"><div class="chartbox"><canvas id="chartOcorrencias"></canvas></div><div class="tablewrap"><table><thead><tr><th>#</th><th>Ocorrência</th><th>Quantidade</th><th>Bairros recorrentes</th><th>Idade</th></tr></thead><tbody id="tabOcorrencias"></tbody></table></div></div></section>
@@ -549,6 +554,10 @@ function renderCipa(a,p){
   chart('chartCipaMunicipios','bar',municipios.map(x=>x[0]),municipios.map(x=>x[1]),'PPEs',CORES.green);
   chart('chartCipaArea','doughnut',tiposAreas.map(x=>x[0]),tiposAreas.map(x=>x[1]),'PPEs',[CORES.green,CORES.amber]);
   chart('chartCipaOrigem','bar',origens.map(x=>x[0]),origens.map(x=>x[1]),'PPEs',CORES.teal);
+  rows('tabCipaAutosDetalhe',autos.slice().sort((x,y)=>String(y.data_autuacao||'').localeCompare(String(x.data_autuacao||''))).slice(0,40)
+    .map(x=>'<tr><td>'+esc(x.numero)+'</td><td>'+esc(x.data_autuacao||'')+'</td><td>'+esc(x.tipo_infracao||x.descricao_infracao||'Não informado')+'</td><td>'+moeda(x.valor_multa)+'</td></tr>').join(''));
+  rows('tabCipaEmbargosDetalhe',embargos.slice().sort((x,y)=>String(y.data_embargo||'').localeCompare(String(x.data_embargo||''))).slice(0,40)
+    .map(x=>'<tr><td>'+esc(x.numero)+'</td><td>'+esc(x.data_embargo||'')+'</td><td>'+num(x.area_embargada_ha).toLocaleString('pt-BR',{maximumFractionDigits:2})+'</td></tr>').join(''));
   const resumoInfra={};
   autos.forEach(x=>{
     const chave=norm(x.tipo_infracao||x.descricao_infracao||('Art. '+(x.art_dec_6514||x.art_lei_9605||'Não informado')));
