@@ -192,13 +192,15 @@
         ['ANEXO A. AUTOS DE INFRAÇÃO','cipa-anexo-auto'],
         ['ANEXO B. TERMOS DE EMBARGO','cipa-anexo-embargo'],
         ['ANEXO C. AUTOS DE NOTIFICAÇÃO','cipa-anexo-notifica'],
-        ['ANEXO D. FAUNA E EDUCAÇÃO AMBIENTAL','cipa-anexo-fauna']
+        ['ANEXO D. FAUNA E EDUCAÇÃO AMBIENTAL','cipa-anexo-fauna'],
+        ['ANEXO E. TERMOS CIRCUNSTANCIADOS','cipa-anexo-tco']
       ];
       const anexosDisponiveis={
         'cipa-anexo-auto':autos.length>0,
         'cipa-anexo-embargo':embargos.length>0,
         'cipa-anexo-notifica':notif.length>0,
-        'cipa-anexo-fauna':fauna.length>0||educacao.length>0
+        'cipa-anexo-fauna':fauna.length>0||educacao.length>0,
+        'cipa-anexo-tco':tcos.length>0
       };
       const indiceSumario=sumario.filter(([,id])=>!(id in anexosDisponiveis)||anexosDisponiveis[id]);
       pages.push(secPag('SUMÁRIO',
@@ -364,6 +366,9 @@
             primeira?'cipa-anexo-fauna':'',periodo));primeira=false;
         }
       }
+      tabelaDetalhada(pages,periodo,'ANEXO E','TERMOS CIRCUNSTANCIADOS','cipa-anexo-tco',tcos,
+        ['Nº TCO','DATA','Nº PPE / BO'],x=>linha(x.numero_tco||'Não informado',
+          data(x.data_tco),x.numero_bo||x.numero_bo_origem||'Conferir vínculo no cadastro'),20);
       q('document').classList.add('cipa-report');
       q('document').innerHTML=pages.join('');
       document.title='CIPA - RELATÓRIO DE PRODUTIVIDADE AMBIENTAL - '+periodo.arquivo;
