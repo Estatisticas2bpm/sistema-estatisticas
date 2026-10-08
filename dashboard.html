@@ -494,17 +494,24 @@ function renderCiptur(){
     return '<tr><td class="rank">'+(i+1)+'º</td><td><b>'+esc(x.codigo)+'</b></td><td style="white-space:normal;min-width:320px">'+esc(x.descricao)+'</td><td>'+x.qtd+'</td><td>'+ant+'</td><td class="'+cls(x.qtd,ant)+'">'+variacao(x.qtd,ant)+'</td><td>'+esc(valor)+'</td></tr>';
   }).join(''));
 }
+function cipaTemFiltroPpe(){
+  return ['cipaMunicipio','cipaArea','cipaOrigemFiltro','status','ocorrencia','subtipo','bairro',
+    'logradouro','comandante','vtr','turno','aisc','sisc','setor','companhia','documento']
+    .some(id=>String($(id)?.value||'').trim()!=='');
+}
 function renderCipa(a,p){
   if(!ehCipa())return;
   const moeda=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const ha=v=>Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:2})+' ha';
   const somaCampo=(arr,k)=>arr.reduce((sum,x)=>sum+num(x[k]),0);
   const idsAtual=new Set(a.map(x=>String(x.id))),idsAnterior=new Set(p.map(x=>String(x.id)));
+  const filtrarPorPpe=cipaTemFiltroPpe();
   const valor=id=>String($(id)?.value||'').trim();
   const contem=(str,pesquisa)=>chaveOcorrencia(str||'').includes(chaveOcorrencia(pesquisa||''));
-  function selecionarLinhas(arr,ids,tipo){
+  function selecionarLinhas(arr,ids,tipo,base){
     return arr.filter(x=>{
-      if(!ids.has(String(x.ocorrencia_id)))return false;
+      if(filtrarPorPpe&&!ids.has(String(x.ocorrencia_id)))return false;
+      if(!cipaOcorrenciaPassaFiltros({id:x.ocorrencia_id},base))return false;
       if(tipo==='auto'){
         if(valor('cipaTipoInfracao')&&!contem(x.tipo_infracao||x.descricao_infracao,valor('cipaTipoInfracao')))return false;
         if(valor('cipaSancao')&&!contem(x.tipo_sancao,valor('cipaSancao')))return false;
@@ -518,11 +525,11 @@ function renderCipa(a,p){
       return true;
     });
   }
-  const autos=selecionarLinhas(cipaAutosAtual,idsAtual,'auto'),autosAnt=selecionarLinhas(cipaAutosAnterior,idsAnterior,'auto');
-  const fauna=selecionarLinhas(cipaFaunaAtual,idsAtual,'fauna');
-  const embargos=selecionarLinhas(cipaEmbargosAtual,idsAtual,'embargo'),embargosAnt=selecionarLinhas(cipaEmbargosAnterior,idsAnterior,'embargo');
-  const notificacoes=selecionarLinhas(cipaNotificacoesAtual,idsAtual,'notificacao');
-  const educacao=selecionarLinhas(cipaEducacaoAtual,idsAtual,'educacao');
+  const autos=selecionarLinhas(cipaAutosAtual,idsAtual,'auto',atual),autosAnt=selecionarLinhas(cipaAutosAnterior,idsAnterior,'auto',anterior);
+  const fauna=selecionarLinhas(cipaFaunaAtual,idsAtual,'fauna',atual);
+  const embargos=selecionarLinhas(cipaEmbargosAtual,idsAtual,'embargo',atual),embargosAnt=selecionarLinhas(cipaEmbargosAnterior,idsAnterior,'embargo',anterior);
+  const notificacoes=selecionarLinhas(cipaNotificacoesAtual,idsAtual,'notificacao',atual);
+  const educacao=selecionarLinhas(cipaEducacaoAtual,idsAtual,'educacao',atual);
   const multas=somaCampo(autos,'valor_multa'),multasAnt=somaCampo(autosAnt,'valor_multa');
   const area=somaCampo(embargos,'area_embargada_ha'),areaAnt=somaCampo(embargosAnt,'area_embargada_ha');
   $('cipaAutosTotal').textContent=autos.length;
