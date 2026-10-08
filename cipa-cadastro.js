@@ -119,9 +119,10 @@
 
   const defs={
     autos:{box:'cipaAutos',titulo:'Autos de Infração Ambiental',botao:'+ Adicionar Auto de Infração',campos:[
-      ['numero','Nº do Auto','text'],['data_autuacao','Data da autuação','date'],['autuado','Autuado','text'],['tipo_sancao','Sanção','text'],
-      ['valor_multa','Valor da multa (R$)','number'],['area_embargada_ha','Área embargada (ha)','number'],['fiscal_ambiental','Fiscal ambiental','text'],['art_lei_9605','Art. Lei 9.605/98','text'],
-      ['art_dec_6514','Art. Dec. 6.514/08','text'],['outra_legislacao','Outra legislação','text'],['descricao_infracao','Descrição da infração','textarea','cipa-span4']
+      ['numero','Nº do Auto','text'],['data_autuacao','Data da autuação','date'],
+      ['tipo_infracao','Tipo de infração','tipo-infracao','cipa-span2'],
+      ['tipo_sancao','Sanção aplicada','text','cipa-span2'],
+      ['valor_multa','Valor da multa (R$)','number'],['area_embargada_ha','Área (ha)','number']
     ]},
     embargos:{box:'cipaEmbargos',titulo:'Termos de Embargo / Interdição',botao:'+ Adicionar Termo',campos:[
       ['numero','Nº do Termo','text'],['data_embargo','Data','date'],['auto_infracao_originario','Auto de Infração originário','text'],['area_embargada_ha','Área vinculada (ha)','number'],['descricao','Fundamento legal (Art. Decreto 6.514/08) e descrição','textarea','cipa-span4']
@@ -130,8 +131,12 @@
       ['numero','Nº da Notificação','text'],['data_notificacao','Data','date'],['hora_notificacao','Hora','time'],['autuado','Autuado','text'],['data_limite','Data limite','date'],['fiscal_ambiental','Fiscal ambiental','text'],['descricao','Descrição','textarea','cipa-span4']
     ]},
     fauna:{box:'cipaFauna',titulo:'Fauna / Animais Envolvidos',botao:'+ Adicionar animal',campos:[
-      ['nome_comum','Animal (nome popular)','fauna','cipa-span2'],['nome_cientifico','Nome científico','text','cipa-span2'],
-      ['quantidade','Quantidade','number'],['numero_tr','TR (opcional)','text'],['data_registro','Data','date'],['procedencia','Procedência','text']
+      ['nome_comum','Animal (nome popular)','fauna','cipa-span2'],
+      ['nome_cientifico','Nome científico','text','cipa-span2'],
+      ['quantidade','Quantidade','number'],
+      ['procedimento','Procedimento','procedimento'],
+      ['destinacao','Destinação / custódia','destinacao','cipa-span2'],
+      ['numero_tr','TR (se houver)','text','cipa-span2']
     ]},
     educacao:{box:'cipaEducacao',titulo:'Educação Ambiental',botao:'+ Adicionar ação',campos:[
       ['data_acao','Data','date'],['publico_estimado','Público estimado','number'],['acao','Ação','text'],['local_acao','Local','text']
@@ -198,8 +203,33 @@
       status.textContent=erro?.code==='23505'?'O animal já foi cadastrado. Atualize a lista e selecione a espécie.':'Não foi possível cadastrar o animal: '+(erro?.message||'erro desconhecido');
     }finally{botao.disabled=false}
   }
+  const opcoesEstatisticas={
+    procedimento:['APREENSÃO','RESGATE','RECOLHIMENTO','SOLTURA','CONSTATAÇÃO','OUTRO'],
+    destinacao:['MANTIDOS NO LOCAL SOB DEPÓSITO','CETAS','SOLTOS NA NATUREZA','ENTREGUES A ÓRGÃO COMPETENTE','OUTRA DESTINAÇÃO'],
+    'tipo-infracao':['DESMATAMENTO','MAUS-TRATOS DE ANIMAIS','CAÇA IRREGULAR','PESCA IRREGULAR','COMÉRCIO DE FAUNA','EXTRAÇÃO MINERAL','POLUIÇÃO','QUEIMADA / USO DO FOGO','OUTRAS INFRAÇÕES AMBIENTAIS']
+  };
+  function classificarInfracao(descricao){
+    const t=String(descricao||'');
+    if(/maus[ -]?tratos?\s+(?:de|contra|a)\s+animais?|rinha de galos/i.test(t))return 'MAUS-TRATOS DE ANIMAIS';
+    if(/desmat|supressão\s+(?:de\s+)?vegetação|destruir\s+(?:vegetação|floresta)/i.test(t))return 'DESMATAMENTO';
+    if(/pesca\s+(?:predatória|ilegal|irregular)|pescar\s+(?:sem|em)\s+/i.test(t))return 'PESCA IRREGULAR';
+    if(/caça\s+(?:ilegal|irregular|predatória)|caçar\s+(?:sem|em)\s+/i.test(t))return 'CAÇA IRREGULAR';
+    if(/extração\s+(?:irregular|ilegal|de)\s+(?:minera|areia|ouro)/i.test(t))return 'EXTRAÇÃO MINERAL';
+    if(/poluição\b/i.test(t))return 'POLUIÇÃO';
+    if(/queimada|incêndio\s+florestal|uso\s+irregular\s+do\s+fogo/i.test(t))return 'QUEIMADA / USO DO FOGO';
+    return '';
+  }
+  function tipoInfracaoSePpe(item){
+    if(item&&!item.tipo_infracao)item.tipo_infracao=classificarInfracao(item.descricao_infracao);
+    return item;
+  }
   function campoHtml(c,v='',obj={}){
     const [k,l,t,cls='']=c,val=v??'',step=(k.includes('area_')?'0.0001':k.includes('valor_')?'0.01':'1');
+    if(opcoesEstatisticas[t]){
+      const opc=opcoesEstatisticas[t];
+      const extras=val&&!opc.includes(String(val))?[String(val)]:[];
+      return `<label class="${cls}">${l}<select data-k="${k}"><option value="">Não informado</option>${[...opc,...extras].map(o=>`<option value="${esc(o)}" ${String(val)===o?'selected':''}>${esc(o)}</option>`).join('')}</select></label>`;
+    }
     if(t==='fauna')return `<label class="${cls}">${l}<span class="cipa-fauna-escolha"><input data-k="nome_comum" list="cipaFaunaOpcoes" autocomplete="off" placeholder="Pesquise o animal" value="${esc(val)}"><button type="button" data-fauna-novo title="Adicionar animal ao catálogo" aria-label="Adicionar animal ao catálogo">+</button></span><input type="hidden" data-k="animal_catalogo_id" value="${esc(obj.animal_catalogo_id||'')}"><span class="cipa-fauna-ajuda">Selecione uma espécie ou use + para cadastrar outra.</span></label>`;
     if(k==='nome_cientifico')return `<label class="${cls}">${l}<input data-k="${k}" type="text" readonly value="${esc(val)}" placeholder="Preenchido pela lista"></label>`;
     if(t==='textarea')return `<label class="${cls}">${l}<textarea data-k="${k}">${esc(val)}</textarea></label>`;
@@ -207,6 +237,7 @@
     return `<label class="${cls}">${l}<input data-k="${k}" type="${t}" ${t==='number'?`min="0" step="${step}"`:''} value="${esc(val)}"></label>`;
   }
   function render(tipo){
+    if(tipo==='autos')estado.autos.forEach(tipoInfracaoSePpe);
     const d=defs[tipo],box=$(d.box);box.innerHTML=`<div class="cipa-repeater-head"><h3>${d.titulo}</h3><button type="button" class="botao-item" data-add="${tipo}">${d.botao}</button></div><div class="cipa-list">${estado[tipo].map((x,i)=>`<div class="cipa-item" data-tipo="${tipo}" data-i="${i}"><button type="button" class="cipa-remove" data-rm="${tipo}" data-i="${i}">Remover</button><div class="cipa-item-grid">${d.campos.map(c=>campoHtml(c,x[c[0]],x)).join('')}</div></div>`).join('')||'<p class="lista-vazia">Nenhum registro informado.</p>'}</div>`;
     if(tipo==='autos'){$('quantAutoInfracao').value=estado.autos.length||'';$('autoInfracao').value=estado.autos.map(x=>x.numero).filter(Boolean).join('; ');}
   }
@@ -257,6 +288,11 @@
     if(!faunaCatalogoCarregado)await carregarCatalogoFauna();
     for(const animal of estado.fauna){
       if(!String(animal.nome_comum||'').trim())continue;
+      // Períodos do painel CIPA usam data_registro, preservá-la mesmo sem campo visível.
+      if(!animal.data_registro)animal.data_registro=$('data').value||null;
+      if(!Number.isInteger(Number(animal.quantidade))||Number(animal.quantidade)<1){
+        throw new Error('Informe uma quantidade inteira e positiva para o animal "'+animal.nome_comum+'".');
+      }
       const especie=animalPorNome(animal.nome_comum);
       if(especie){
         animal.animal_catalogo_id=especie.id;animal.nome_comum=especie.nome_popular;animal.nome_cientifico=especie.nome_cientifico||null;
@@ -309,7 +345,7 @@
 
 
     const documentos=window.CipaExtrator?.extrair(texto);
-    if(documentos?.autos?.length){estado.autos=documentos.autos;render('autos')}
+    if(documentos?.autos?.length){estado.autos=documentos.autos.map(tipoInfracaoSePpe);render('autos')}
     if(documentos?.embargos?.length){estado.embargos=documentos.embargos;render('embargos')}
     $('quantAutoInfracao').value=estado.autos.length||'';$('autoInfracao').value=estado.autos.map(x=>x.numero).join('; ');
   }
