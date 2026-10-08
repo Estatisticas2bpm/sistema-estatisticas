@@ -143,7 +143,7 @@
   const estado={autos:[],embargos:[],notificacoes:[],fauna:[],educacao:[],tdba:[]};
   const datasPpe={inicio:null,fim:null};
   let catalogoFauna=[],faunaIndiceNovo=null,faunaCatalogoCarregado=false;
-  const normalizarFauna=texto=>String(texto||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').trim().toUpperCase().replace(/\\s+/g,' ');
+  const normalizarFauna=texto=>String(texto||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase().replace(/\s+/g,' ');
   function animalPorNome(nome){return catalogoFauna.find(a=>normalizarFauna(a.nome_popular)===normalizarFauna(nome))}
   function atualizarOpcoesFauna(){
     const lista=$('cipaFaunaOpcoes');if(!lista)return;
