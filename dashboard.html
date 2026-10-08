@@ -494,29 +494,62 @@ function renderCipa(a,p){
   if(!ehCipa())return;
   const moeda=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const ha=v=>Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:2})+' ha';
-  const somaCampo=(arr,k)=>arr.reduce((s,x)=>s+num(x[k]),0);
-  const multas=somaCampo(cipaAutosAtual,'valor_multa'),multasAnt=somaCampo(cipaAutosAnterior,'valor_multa');
-  const area=somaCampo(cipaAutosAtual,'area_embargada_ha'),areaAnt=somaCampo(cipaAutosAnterior,'area_embargada_ha');
-  $('cipaAutosTotal').textContent=cipaAutosAtual.length;$('cipaAutosVar').textContent=comparar.value==='nenhum'?'':variacao(cipaAutosAtual.length,cipaAutosAnterior.length);
-  $('cipaMultasTotal').textContent=moeda(multas);$('cipaMultasVar').textContent=comparar.value==='nenhum'?'':variacao(multas,multasAnt);
-  $('cipaAreaEmbargada').textContent=ha(area);$('cipaAreaVar').textContent=comparar.value==='nenhum'?'':variacao(area,areaAnt);
-  $('cipaEmbargosTotal').textContent=cipaAutosAtual.filter(x=>chaveOcorrencia(x.tipo_sancao).includes('EMBARGO')).length;
-  $('cipaNotificacoesTotal').textContent=cipaNotificacoesAtual.length;
-  $('cipaFaunaTotal').textContent=somaCampo(cipaFaunaAtual,'quantidade');
-  $('cipaEducacaoTotal').textContent=cipaEducacaoAtual.length;$('cipaPublicoTotal').textContent='Público: '+somaCampo(cipaEducacaoAtual,'publico_estimado');
-  const mun=rank(a,'municipio',12),areas=rank(a,x=>x.cipa_area_tipo,4),orig=rank(a,x=>x.cipa_origem_atuacao,10);
-  chart('chartCipaMunicipios','bar',mun.map(x=>x[0]),mun.map(x=>x[1]),'PPEs',CORES.green);
-  chart('chartCipaArea','doughnut',areas.map(x=>x[0]),areas.map(x=>x[1]),'PPEs',[CORES.green,CORES.amber]);
-  chart('chartCipaOrigem','bar',orig.map(x=>x[0]),orig.map(x=>x[1]),'PPEs',CORES.teal);
-  const im={};cipaAutosAtual.forEach(x=>{let k=norm(x.tipo_infracao||x.descricao_infracao||('Art. '+(x.art_dec_6514||x.art_lei_9605||'Não informado')));if(!im[k])im[k]={q:0,m:0,a:0};im[k].q++;im[k].m+=num(x.valor_multa);im[k].a+=num(x.area_embargada_ha)});
-  const ir=Object.entries(im).sort((x,y)=>y[1].q-x[1].q).slice(0,15);
-  rows('tabCipaInfracoes',ir.map((x,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(x[0])+'</td><td>'+x[1].q+'</td><td>'+moeda(x[1].m)+'</td><td>'+x[1].a.toLocaleString('pt-BR',{maximumFractionDigits:2})+'</td></tr>').join(''));
-  const fm={};cipaFaunaAtual.forEach(x=>{let k=norm(x.nome_comum);fm[k]=(fm[k]||0)+num(x.quantidade)});
-  const fr=Object.entries(fm).sort((x,y)=>y[1]-x[1]||x[0].localeCompare(y[0])).slice(0,15);
-  rows('tabCipaFauna',fr.map((x,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(x[0])+'</td><td>'+x[1]+'</td></tr>').join(''));
+  const somaCampo=(arr,k)=>arr.reduce((sum,x)=>sum+num(x[k]),0);
+  const idsAtual=new Set(a.map(x=>String(x.id))),idsAnterior=new Set(p.map(x=>String(x.id)));
+  const valor=id=>String($(id)?.value||'').trim();
+  const contem=(str,pesquisa)=>chaveOcorrencia(str||'').includes(chaveOcorrencia(pesquisa||''));
+  function selecionarLinhas(arr,ids,tipo){
+    return arr.filter(x=>{
+      if(!ids.has(String(x.ocorrencia_id)))return false;
+      if(tipo==='auto'){
+        if(valor('cipaTipoInfracao')&&!contem(x.tipo_infracao||x.descricao_infracao,valor('cipaTipoInfracao')))return false;
+        if(valor('cipaSancao')&&!contem(x.tipo_sancao,valor('cipaSancao')))return false;
+      }
+      if(tipo==='fauna'){
+        if(valor('cipaAnimal')&&!contem(x.nome_comum+' '+(x.nome_cientifico||''),valor('cipaAnimal')))return false;
+        if(valor('cipaProcedimento')&&x.procedimento!==valor('cipaProcedimento'))return false;
+        if(valor('cipaDestinacao')&&x.destinacao!==valor('cipaDestinacao'))return false;
+      }
+      return true;
+    });
+  }
+  const autos=selecionarLinhas(cipaAutosAtual,idsAtual,'auto'),autosAnt=selecionarLinhas(cipaAutosAnterior,idsAnterior,'auto');
+  const fauna=selecionarLinhas(cipaFaunaAtual,idsAtual,'fauna');
+  const embargos=selecionarLinhas(cipaEmbargosAtual,idsAtual,'embargo'),embargosAnt=selecionarLinhas(cipaEmbargosAnterior,idsAnterior,'embargo');
+  const notificacoes=selecionarLinhas(cipaNotificacoesAtual,idsAtual,'notificacao');
+  const educacao=selecionarLinhas(cipaEducacaoAtual,idsAtual,'educacao');
+  const multas=somaCampo(autos,'valor_multa'),multasAnt=somaCampo(autosAnt,'valor_multa');
+  const area=somaCampo(embargos,'area_embargada_ha'),areaAnt=somaCampo(embargosAnt,'area_embargada_ha');
+  $('cipaAutosTotal').textContent=autos.length;
+  $('cipaAutosVar').textContent=comparar.value==='nenhum'?'':variacao(autos.length,autosAnt.length);
+  $('cipaMultasTotal').textContent=moeda(multas);
+  $('cipaMultasVar').textContent=comparar.value==='nenhum'?'':variacao(multas,multasAnt);
+  $('cipaAreaEmbargada').textContent=ha(area);
+  $('cipaAreaVar').textContent=comparar.value==='nenhum'?'':variacao(area,areaAnt);
+  $('cipaEmbargosTotal').textContent=embargos.length;
+  $('cipaNotificacoesTotal').textContent=notificacoes.length;
+  $('cipaFaunaTotal').textContent=somaCampo(fauna,'quantidade');
+  $('cipaEducacaoTotal').textContent=educacao.length;
+  $('cipaPublicoTotal').textContent='Público: '+somaCampo(educacao,'publico_estimado');
+  const municipios=rank(a,'municipio',12),tiposAreas=rank(a,x=>x.cipa_area_tipo,4),origens=rank(a,x=>x.cipa_origem_atuacao,10);
+  chart('chartCipaMunicipios','bar',municipios.map(x=>x[0]),municipios.map(x=>x[1]),'PPEs',CORES.green);
+  chart('chartCipaArea','doughnut',tiposAreas.map(x=>x[0]),tiposAreas.map(x=>x[1]),'PPEs',[CORES.green,CORES.amber]);
+  chart('chartCipaOrigem','bar',origens.map(x=>x[0]),origens.map(x=>x[1]),'PPEs',CORES.teal);
+  const resumoInfra={};
+  autos.forEach(x=>{
+    const chave=norm(x.tipo_infracao||x.descricao_infracao||('Art. '+(x.art_dec_6514||x.art_lei_9605||'Não informado')));
+    if(!resumoInfra[chave])resumoInfra[chave]={q:0,m:0,a:0};
+    resumoInfra[chave].q++;resumoInfra[chave].m+=num(x.valor_multa);resumoInfra[chave].a+=num(x.area_embargada_ha);
+  });
+  const infra=Object.entries(resumoInfra).sort((a,b)=>b[1].q-a[1].q).slice(0,15);
+  rows('tabCipaInfracoes',infra.map((x,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(x[0])+'</td><td>'+x[1].q+'</td><td>'+moeda(x[1].m)+'</td><td>'+x[1].a.toLocaleString('pt-BR',{maximumFractionDigits:2})+'</td></tr>').join(''));
+  const porEspecie={};
+  fauna.forEach(x=>{const k=norm(x.nome_comum);porEspecie[k]=(porEspecie[k]||0)+num(x.quantidade)});
+  const ranking=Object.entries(porEspecie).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])).slice(0,15);
+  rows('tabCipaFauna',ranking.map((x,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(x[0])+'</td><td>'+x[1]+'</td></tr>').join(''));
   for(const [campo,tabela] of [['procedimento','tabCipaProcedimentos'],['destinacao','tabCipaDestinacoes']]){
     const grupos={};
-    cipaFaunaAtual.forEach(x=>{const k=norm(x[campo]||'NÃO INFORMADO');grupos[k]=(grupos[k]||0)+num(x.quantidade)});
+    fauna.forEach(x=>{const k=norm(x[campo]||'NÃO INFORMADO');grupos[k]=(grupos[k]||0)+num(x.quantidade)});
     const valores=Object.entries(grupos).sort((a,b)=>b[1]-a[1]);
     rows(tabela,valores.map(x=>'<tr><td>'+esc(x[0])+'</td><td>'+x[1]+'</td></tr>').join(''));
   }
