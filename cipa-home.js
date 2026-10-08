@@ -33,9 +33,17 @@
       ['cipa_autos_infracao','data_autuacao','valor_multa']
     ];
     const resultados=await Promise.all(specs.map(async ([tabela,data,campo])=>{
-      const r=await db.from(tabela).select('id,'+campo).gte(data,ini).lte(data,fim);
-      if(r.error)throw Error(tabela+': '+r.error.message);
-      return r.data||[];
+      const linhas=[],passo=1000;
+      for(let offset=0;;offset+=passo){
+        const r=await db.from(tabela).select('id,'+campo).gte(data,ini).lte(data,fim)
+          .order('id',{ascending:true}).range(offset,offset+passo-1);
+        if(r.error)throw Error(tabela+': '+r.error.message);
+        const lote=r.data||[];
+        linhas.push(...lote);
+        if(lote.length<passo)break;
+        if(offset>200000)throw Error('Intervalo muito amplo; selecione um período menor.');
+      }
+      return linhas;
     }));
     return {fauna:resultados[0],embargos:resultados[1],autos:resultados[2]};
   }
