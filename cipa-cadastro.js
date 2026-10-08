@@ -162,7 +162,7 @@
     return ref||([tipo,numero?'Nº '+numero:''].filter(Boolean).join(' ')||null);
   }
   function dadosBase(){
-    return {ppe_original:null,data_registro_inicio:datasPpe.inicio,data_registro_fim:datasPpe.fim,area_tipo:$('cipaAreaTipo').value||null,coordenadas_texto:coordCampo()?.value.trim()||null,origem_atuacao:$('cipaOrigem').value.trim()||null,documento_origem:referenciaDocumento(),anexo_referencia:$('cipaAnexo').value.trim()||null};
+    return {ppe_original:null,data_registro_inicio:datasPpe.inicio,data_registro_fim:datasPpe.fim,area_tipo:$('cipaAreaTipo').value||null,coordenadas_texto:coordCampo()?.value.trim()||null,origem_atuacao:$('cipaOrigem').value.trim()||null,tipo_documento_origem:$('cipaTipoOrdem').value||null,numero_documento_origem:$('cipaNumeroOrdem').value.trim()||null,documento_origem:referenciaDocumento(),anexo_referencia:$('cipaAnexo').value.trim()||null};
   }
   function normalizarLinhas(tipo){
     return estado[tipo].map(x=>Object.fromEntries(Object.entries(x).map(([k,v])=>[k,v===''?null:v]))).filter(x=>Object.values(x).some(v=>v!==null&&v!==false));
@@ -200,7 +200,7 @@
       banco.from('cipa_tcos_ambientais').select('*').eq('ocorrencia_id',ocorrenciaId)
     ];
     const r=await Promise.all(qs);if(r.some(x=>x.error)){console.error('Falha ao carregar módulo CIPA',r.find(x=>x.error)?.error);return}
-    const b=r[0].data||{};datasPpe.inicio=b.data_registro_inicio||null;datasPpe.fim=b.data_registro_fim||null;$('cipaAreaTipo').value=b.area_tipo||'';if(coordCampo())coordCampo().value=b.coordenadas_texto||'';sincronizarCoordenadasLocal();$('cipaOrigem').value=b.origem_atuacao||'';$('cipaDocumentoOrigem').value=b.documento_origem||'';const ordemSalva=window.CipaRegrasPpe?.documentoDaMissao(b.documento_origem||'')||{};$('cipaTipoOrdem').value=ordemSalva.tipo||'';$('cipaNumeroOrdem').value=ordemSalva.numero||'';$('cipaAnexo').value=b.anexo_referencia||'';
+    const b=r[0].data||{};datasPpe.inicio=b.data_registro_inicio||null;datasPpe.fim=b.data_registro_fim||null;$('cipaAreaTipo').value=b.area_tipo||'';if(coordCampo())coordCampo().value=b.coordenadas_texto||'';sincronizarCoordenadasLocal();$('cipaOrigem').value=b.origem_atuacao||'';$('cipaDocumentoOrigem').value=b.documento_origem||'';const ordemSalva=window.CipaRegrasPpe?.documentoDaMissao(b.documento_origem||'')||{};$('cipaTipoOrdem').value=b.tipo_documento_origem||ordemSalva.tipo||'';$('cipaNumeroOrdem').value=b.numero_documento_origem||ordemSalva.numero||'';$('cipaAnexo').value=b.anexo_referencia||'';
     ['autos','embargos','notificacoes','fauna','educacao','tdba','tcos'].forEach((k,i)=>{estado[k]=r[i+1].data||[];render(k)});
   }
 
