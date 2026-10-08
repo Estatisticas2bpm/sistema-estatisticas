@@ -92,7 +92,7 @@ function iniciar(dados){
  assert.match(out,/ANEXO A/);
  assert.match(out,/ANEXO D/);
  assert.match(out,/ANEXO E/);
- assert.match(out,/00000096\\/2026/);
+ assert.ok(out.includes('00000096/2026'));
  assert.ok((out.match(/class="page/g)||[]).length>=12);
  assert.ok(fixture.contagens().paginaFinalizada>=1);
  const vazio=iniciar({oc:[],tcos:[]});
