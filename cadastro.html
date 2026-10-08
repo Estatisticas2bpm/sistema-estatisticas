@@ -118,9 +118,15 @@
         '        if (idEdicao) {\n          importacaoPdfPendente = false;',
         '        if (window.CipaCadastro?.salvar) await window.CipaCadastro.salvar(ocorrenciaSalvaId);\n\n        if (idEdicao) {\n          importacaoPdfPendente = false;'
       );
+      // Após o formulário comum ser preenchido, aplicar o catálogo próprio da CIPA.
+      // Antes disso, o preenchimento genérico poderia sobrescrever a natureza ambiental.
+      html=html.replace(
+        '        const enderecoPreparado = await preencherRascunhoPdf(dados);',
+        '        const enderecoPreparado = await preencherRascunhoPdf(dados);\n        window.CipaCadastro?.finalizarPreenchimentoPpe?.(texto,catalogos.tipos);'
+      );
       html=html.replace(
         '</body>',
-        '<script src="cipa-extrator.js?v=20261007-1"><\/script><script src="cipa-cadastro.js?v=20261007-12"><\/script></body>'
+        '<script src="cipa-extrator.js?v=20261007-1"><\/script><script src="cipa-regras-ppe.js?v=20261008-1"><\/script><script src="cipa-cadastro.js?v=20261008-1"><\/script></body>'
       );
     }
 
