@@ -12,17 +12,39 @@
       .replace(/[^A-Za-z0-9]+/g,' ').replace(/\s+/g,' ').trim().toUpperCase();
   }
   function documentoDaMissao(texto){
-    const bruto=String(texto||'');
-    // Ignora número de AI, TCO e termo de embargo: somente ordem de missão/serviço.
-    const match=bruto.match(/\bORDEM\s+DE\s+(MISS[ÃA]O|SERVI[ÇC]O)\b[^\n]{0,200}/i);
-    if(!match)return {tipo:'',numero:'',referencia:''};
-    const tipo=/MISS[ÃA]O/i.test(match[1])?'ORDEM DE MISSÃO':'ORDEM DE SERVIÇO';
-    const referencia=match[0]
-      .split(/\bOPERA[ÇC][ÃA]O\s+BIOMA\b|\bDESLOCOU-SE\b|\bCOM\s+O\s+OBJETIVO\b/i)[0]
-      .replace(/\s+/g,' ').replace(/[;,.\s]+$/,'').trim();
-    const num=referencia.match(/(?:N[º°o.]*\s*|N[ÚU]MERO\s*)?(\d{1,10}\s*\/\s*20\d{2})/i)
-      || referencia.match(/(?:N[º°o.]*\s*|N[ÚU]MERO\s*)(\d{3,12})(?!\d)/i);
-    return {tipo,numero:num?num[1].replace(/\s+/g,''):'',referencia};
+    const bruto=String(texto||'').replace(/\u00a0/g,' ');
+    const inicio=/\bORDEM\s+DE\s+(MISS[ÃA]O|SERVI[ÇC]O)\b/gi;
+    const candidatos=[...bruto.matchAll(inicio)];
+    if(!candidatos.length)return {tipo:'',numero:'',referencia:''};
+
+    const escolhas=candidatos.map((item,indice)=>{
+      // A identificação formal pode estar quebrada entre duas linhas do PPE.
+      // Limitar o trecho ao próximo documento impede misturar duas ordens.
+      const limite=Math.min(item.index+320,candidatos[indice+1]?.index??bruto.length);
+      const trecho=bruto.slice(item.index,limite)
+        .split(/\b(?:RELATO\/HIST[ÓO]RICO|ASSINATURAS|AUTO DE INFRA[ÇC][ÃA]O|TERMO DE EMBARGO)\b/i)[0]
+        .replace(/[\t ]+/g,' ').replace(/\s*\n\s*/g,' ').trim();
+      // A referência preserva a grafia do PPE: 42/2026PMRR/... não é
+      // silenciosamente reescrito para 42/2026/PMRR/...
+      const referenciaNumerica=/\b(\d{1,12}\s*\/\s*20\d{2})(?:((?:\s*\/?\s*)(?:PMRR|QCG|CPC|CIPA|P\d+[A-Z0-9]*)(?:\s*\/\s*[A-Z0-9-]{1,20}){0,12}))?/i;
+      const marcador=/(?:N[º°o.]|N[ÚU]MERO)\s*[:.-]?\s*/i;
+      const comMarcador=marcador.exec(trecho);
+      const depois=comMarcador?trecho.slice(comMarcador.index+comMarcador[0].length):trecho;
+      const numeroEncontrado=referenciaNumerica.exec(depois);
+      let referencia='',numero='';
+      if(numeroEncontrado){
+        const fim=(comMarcador?comMarcador.index+comMarcador[0].length:0)+numeroEncontrado.index+numeroEncontrado[0].length;
+        referencia=trecho.slice(0,fim).replace(/\s+/g,' ').trim();
+        numero=numeroEncontrado[1].replace(/\s+/g,'');
+      }
+      const tipo=/MISS[ÃA]O/i.test(item[1])?'ORDEM DE MISSÃO':'ORDEM DE SERVIÇO';
+      const pontos=(numero?10:0)+(/\bPMRR\b/i.test(referencia)?3:0)+(/\bQCG\b/i.test(referencia)?3:0)
+        +(referencia.includes('CIPA')?2:0)+(comMarcador?1:0);
+      return {tipo,numero,referencia,pontos};
+    });
+    escolhas.sort((a,b)=>b.pontos-a.pontos);
+    const escolhido=escolhas[0];
+    return {tipo:escolhido.tipo,numero:escolhido.numero,referencia:escolhido.referencia};
   }
   function origemDaAtuacao(texto,doc){
     const bruto=String(texto||'');
