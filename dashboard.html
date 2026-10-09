@@ -520,36 +520,45 @@ function turnoCipg(hora){
   return min>=480&&min<1200?'1':'2';
 }
 function renderCipg(){
-  if(!ehCipg())return;
-  const filtroTipo=$('cipgFiltroTipo').value,filtroMod=$('cipgFiltroModalidade').value;
-  const inst=$('cipgFiltroInstituicao').value.trim().toLocaleUpperCase('pt-BR');
-  const ok=x=>(!filtroTipo||x.tipo_local===filtroTipo)&&(!filtroMod||x.modalidade===filtroMod)&&
-    (!inst||String(x.instituicao||'').toLocaleUpperCase('pt-BR').includes(inst));
-  const atual=servicosCipgAtual.filter(ok),ant=servicosCipgAnterior.filter(ok);
-  const somaC=(a,k)=>a.reduce((v,x)=>v+num(x[k]),0);
-  const chave=x=>String(x.instituicao||'').trim().toLocaleUpperCase('pt-BR');
-  $('cipgServicos').textContent=atual.length;
-  $('cipgServicosVar').textContent=comparar.value==='nenhum'?'':variacao(atual.length,ant.length)+' em relação ao comparado';
-  $('cipgInstituicoes').textContent=new Set(atual.map(chave).filter(Boolean)).size;
-  $('cipgRondas').textContent=somaC(atual,'rondas_realizadas');
-  $('cipgIntercorrencias').textContent=somaC(atual,'intercorrencias');
-  $('cipgGuardaFixa').textContent=atual.filter(x=>x.modalidade==='GUARDA_FIXA').length;
-  $('cipgPenal').textContent=atual.filter(x=>x.tipo_local==='ESTABELECIMENTO_PENAL').length;
-  $('cipgReforcos').textContent=atual.filter(x=>x.modalidade==='REFORCO').length;
-  const modalidades=[['GUARDA_FIXA','Guarda fixa'],['RONDA','Ronda'],['REFORCO','Reforço'],['APOIO_OPERACIONAL','Apoio'],['OUTRA','Outra']];
-  chart('chartCipgModalidades','doughnut',modalidades.map(x=>x[1]),modalidades.map(x=>atual.filter(z=>z.modalidade===x[0]).length),'Serviços',CORES.green);
-  const tipos=[['EDIFICIO_PUBLICO','Edifício público'],['ESTABELECIMENTO_PENAL','Segurança externa penal'],['OUTRO','Outro']];
-  chart('chartCipgTipos','doughnut',tipos.map(x=>x[1]),tipos.map(x=>atual.filter(z=>z.tipo_local===x[0]).length),'Serviços',CORES.teal);
-  const dias={};atual.forEach(x=>{const d=x.data_servico||'';if(d)dias[d]=(dias[d]||0)+1});
-  const evolução=Object.entries(dias).sort((a,b)=>a[0].localeCompare(b[0]));
-  chart('chartCipgEvolucao','line',evolução.map(x=>x[0].slice(8,10)+'/'+x[0].slice(5,7)),evolução.map(x=>x[1]),'Serviços',CORES.green);
-  const locais=new Map();atual.forEach(x=>{
-    const key=chave(x);if(!key)return;
-    const a=locais.get(key)||{nome:String(x.instituicao||'').trim(),servicos:0,rondas:0,intercorrencias:0};
-    a.servicos++;a.rondas+=num(x.rondas_realizadas);a.intercorrencias+=num(x.intercorrencias);locais.set(key,a);
-  });
-  const rank=[...locais.values()].sort((a,b)=>b.servicos-a.servicos||a.nome.localeCompare(b.nome,'pt-BR'));
-  rows('tabCipgInstituicoes',rank.map(x=>'<tr><td>'+esc(x.nome)+'</td><td>'+x.servicos+'</td><td>'+x.rondas+'</td><td>'+x.intercorrencias+'</td></tr>').join(''));
+ if(!ehCipg())return;
+ const vl=id=>String($(id)?.value||'').trim();
+ const base=servicosCipgAtual.filter(x=>
+  (!vl('cipgFiltroTipo')||x.tipo_local===vl('cipgFiltroTipo'))&&
+  (!vl('cipgFiltroModalidade')||x.modalidade===vl('cipgFiltroModalidade'))&&
+  (!vl('cipgFiltroSituacao')||x.situacao===vl('cipgFiltroSituacao'))&&
+  (!vl('cipgFiltroInstituicao')||(String(x.instituicao||'').toUpperCase().includes(vl('cipgFiltroInstituicao').toUpperCase())||
+  String(x.posto_codigo||'').toUpperCase().includes(vl('cipgFiltroInstituicao').toUpperCase()))));
+ const ids=new Set(base.map(x=>x.id));
+ const eventos=eventosCipgAtual.filter(x=>ids.has(x.servico_id)&&
+  (!vl('cipgFiltroEvento')||x.tipo_evento===vl('cipgFiltroEvento'))&&
+  (!vl('cipgFiltroDesfecho')||x.desfecho===vl('cipgFiltroDesfecho'))&&
+  (!vl('cipgFiltroEmServico')||x.em_servico===vl('cipgFiltroEmServico'))&&
+  (!vl('cipgFiltroCausa')||String(x.causa_motivo||'').toUpperCase().includes(vl('cipgFiltroCausa').toUpperCase()))&&
+  (!vl('cipgFiltroTurno')||turnoCipg(x.hora_evento)===vl('cipgFiltroTurno')));
+ const filtroEvento=['cipgFiltroEvento','cipgFiltroDesfecho','cipgFiltroEmServico','cipgFiltroCausa','cipgFiltroTurno'].some(id=>vl(id));
+ const presentes=new Set(eventos.map(x=>x.servico_id));
+ const servicos=filtroEvento?base.filter(x=>presentes.has(x.id)):base;
+ const somaC=k=>soma(servicos,k);
+ const sem=servicos.filter(x=>x.situacao==='SEM ALTERACAO'&&!presentes.has(x.id)).length;
+ const contar=(campo,v)=>eventos.filter(x=>x[campo]===v).length;
+ $('cipgServicos').textContent=servicos.length;
+ $('cipgServicosVar').textContent=comparar.value==='nenhum'?'':'Dados do período filtrado';
+ $('cipgHospital').textContent=contar('tipo_evento','ENTRADA DE PM NO HOSPITAL');
+ $('cipgSemAlteracao').textContent=sem;
+ $('cipgComAlteracao').textContent=servicos.length-sem;
+ $('cipgEmServico').textContent=contar('em_servico','SIM');
+ $('cipgInternados').textContent=contar('desfecho','INTERNADO');
+ $('cipgObservacao').textContent=contar('desfecho','EM OBSERVAÇÃO');
+ $('cipgLiberados').textContent=contar('desfecho','LIBERADO');
+ $('cipgObitos').textContent=eventos.filter(x=>x.desfecho==='ÓBITO'||x.tipo_evento==='ÓBITO DE PM').length;
+ $('cipgInstituicoes').textContent=new Set(servicos.map(x=>String(x.posto_codigo||x.instituicao||'').toUpperCase()).filter(Boolean)).size;
+ $('cipgEfetivoOrd').textContent=somaC('efetivo_ordinario');
+ $('cipgEfetivoSvi').textContent=somaC('efetivo_svi');
+ $('cipgKm').textContent=Number(somaC('km_rodados')).toLocaleString('pt-BR',{maximumFractionDigits:2});
+ $('cipgLitros').textContent=Number(somaC('litros_abastecidos')).toLocaleString('pt-BR',{maximumFractionDigits:2});
+ $('cipgRondas').textContent=somaC('rondas_realizadas');
+ $('cipgIntercorrencias').textContent=somaC('intercorrencias');
+ renderGraficosCipg(servicos,eventos);
 }
 function renderCavalaria(){
   if(!ehCavalaria())return;
