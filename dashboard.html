@@ -519,6 +519,36 @@ function turnoCipg(hora){
   const min=partes[0]*60+partes[1];
   return min>=480&&min<1200?'1':'2';
 }
+function renderGraficosCipg(servicos,eventos){
+ const grupos=[
+  ['chartCipgCausas','causa_motivo','bar'],
+  ['chartCipgDesfechos','desfecho','doughnut'],
+  ['chartCipgGraduacoes','graduacao','bar'],
+  ['chartCipgUnidades','unidade_militar','bar'],
+  ['chartCipgConducoes','conduzido_por','doughnut']
+ ];
+ for(const [id,k,tipo] of grupos){
+  const a=rank(eventos,x=>x[k]||'Não informado',12);
+  chart(id,tipo,a.map(x=>x[0]),a.map(x=>x[1]),'Eventos',CORES.green);
+ }
+ const postos=rank(servicos,x=>x.posto_codigo||x.instituicao||'Não informado',12);
+ chart('chartCipgPostos','doughnut',postos.map(x=>x[0]),postos.map(x=>x[1]),'Serviços',CORES.teal);
+ const dias={};servicos.forEach(x=>{if(x.data_servico)dias[x.data_servico]=(dias[x.data_servico]||0)+1});
+ const serie=Object.entries(dias).sort((a,b)=>a[0].localeCompare(b[0]));
+ chart('chartCipgEvolucao','line',serie.map(x=>x[0].slice(8,10)+'/'+x[0].slice(5,7)),
+  serie.map(x=>x[1]),'Serviços',CORES.green);
+ const evIds=new Set(eventos.map(x=>x.servico_id)),gruposPosto=new Map();
+ for(const x of servicos){
+  const key=String(x.posto_codigo||x.instituicao||'Não informado');
+  const p=gruposPosto.get(key)||{servicos:0,sa:0,ef:0};
+  p.servicos++;if(x.situacao==='SEM ALTERACAO'&&!evIds.has(x.id))p.sa++;
+  p.ef+=num(x.efetivo_ordinario)+num(x.efetivo_svi);
+  gruposPosto.set(key,p);
+ }
+ const ordered=[...gruposPosto].sort((a,b)=>b[1].servicos-a[1].servicos);
+ rows('tabCipgInstituicoes',ordered.map(([k,v])=>
+  '<tr><td>'+esc(k)+'</td><td>'+v.servicos+'</td><td>'+v.sa+'</td><td>'+v.ef+'</td></tr>').join(''));
+}
 function renderCipg(){
  if(!ehCipg())return;
  const vl=id=>String($(id)?.value||'').trim();
