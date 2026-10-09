@@ -21,6 +21,8 @@ window.SISTEMA_AUTH_CONFIG = Object.freeze({
     "cadastro-base.html":"cadastro",
     "autos-infracao.html":"cadastro",
     "cavalaria-produtividade.html":"cadastro",
+    "cipg-produtividade.html":"cadastro",
+    "cipg-eventos.html":"cadastro",
     "consulta.html":"consulta",
     "dashboard.html":"dashboard",
     "giro-acesso-abordagens.html":"dashboard",
@@ -45,6 +47,8 @@ window.SISTEMA_AUTH_CONFIG = Object.freeze({
     "dashboard-cpc.html":"PAINEL_CPC",
     "territorio-cpc.html":"PAINEL_CPC",
     "autos-infracao.html":"AUTOS_INFRACAO",
-    "cavalaria-produtividade.html":"PRODUTIVIDADE_CAVALARIA"
+    "cavalaria-produtividade.html":"PRODUTIVIDADE_CAVALARIA",
+    "cipg-produtividade.html":"PRODUTIVIDADE_CIPG",
+    "cipg-eventos.html":"PRODUTIVIDADE_CIPG"
   })
 });
