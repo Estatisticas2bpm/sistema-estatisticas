@@ -174,7 +174,7 @@ async function salvar(evt){
   const el=$('recibo');el.hidden=false;el.textContent='Registro concluído: SEI '+payload.numero_sei+'. Você já pode iniciar outro serviço.';
   servicoSalvoId=null;
   $('form').reset();$('dia').value=hoje();
-  $('listaEventos').innerHTML='';
+  $('listaEventos').innerHTML='';eventCounter=0;
   $('kmRodados').readOnly=false;
   situacao();atualizarKm();atualizarEfetivo();
   await listar();
@@ -198,6 +198,19 @@ async function listar(){
 }
 function ligarEventos(){
  $('houveEvento').addEventListener('change',()=>{
+  if(valor('houveEvento')==='NAO'&&linhasEventos().length){
+   if(servicoSalvoId){
+    $('houveEvento').value='SIM';
+    status('O relatório já está salvo. Conclua os acontecimentos pendentes antes de mudar a situação.',true);
+    return;
+   }
+   if(!window.confirm('Descartar os acontecimentos preenchidos e marcar o relatório sem acontecimentos?')){
+    $('houveEvento').value='SIM';
+    return;
+   }
+   $('listaEventos').innerHTML='';
+   eventCounter=0;
+  }
   if(valor('houveEvento')==='SIM'&&!linhasEventos().length)$('listaEventos').insertAdjacentHTML('beforeend',itemEvento());
   situacao();
  });
@@ -226,7 +239,7 @@ function ligarEventos(){
  $('form').addEventListener('submit',salvar);
  $('limpar').addEventListener('click',()=>{
   if(servicoSalvoId){status('O relatório já foi salvo, mas há acontecimentos pendentes. Conclua o registro antes de limpar.',true);return}
-  $('form').reset();$('listaEventos').innerHTML='';$('dia').value=hoje();situacao();atualizarKm();atualizarEfetivo();$('recibo').hidden=true;status('Formulário pronto para o próximo serviço.');
+  $('form').reset();$('listaEventos').innerHTML='';eventCounter=0;$('dia').value=hoje();situacao();atualizarKm();atualizarEfetivo();$('recibo').hidden=true;status('Formulário pronto para o próximo serviço.');
  });
 }
 async function iniciar(){
