@@ -76,7 +76,7 @@ button{background:#1f6046;color:white;border:0;border-radius:8px;padding:11px 17
      out.push(...(r.data||[]));if((r.data||[]).length<passo)break;
    }
    $('servico').innerHTML='<option value="">Selecione o relatório</option>'+
-     out.map(x=>'<option value="'+esc(x.id)+'">'+esc(
+     out.filter(x=>String(x.numero_sei||'').trim()).map(x=>'<option value="'+esc(x.id)+'">'+esc(
        (x.numero_sei?'SEI '+x.numero_sei+' · ':'')+
        (x.data_servico||'')+' · '+x.instituicao+' ['+(x.situacao||'S/A')+']')+'</option>').join('');
  }
