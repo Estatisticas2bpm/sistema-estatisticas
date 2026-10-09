@@ -5,29 +5,46 @@
   const somar=(a,k)=>(a||[]).reduce((s,x)=>s+(Number(x[k])||0),0);
   const distintas=a=>new Set((a||[]).map(x=>String(x.instituicao||'').trim().toLocaleUpperCase('pt-BR')).filter(Boolean)).size;
   const numero=v=>Number(v||0).toLocaleString('pt-BR');
+  const totalEfetivo=rows=>somar(rows,'efetivo_ordinario')+somar(rows,'efetivo_svi');
+  const hospital=events=>(events||[]).filter(x=>x.tipo_evento==='ENTRADA DE PM NO HOSPITAL').length;
+  const semAlteracao=(services,events)=>{
+    const ids=new Set((events||[]).map(x=>x.servico_id));
+    return (services||[]).filter(s=>s.situacao==='SEM ALTERACAO'&&!ids.has(s.id)).length;
+  };
+  async function lerEventos(db,servicos){
+    const ids=servicos.map(x=>x.id),todos=[];
+    for(let i=0;i<ids.length;i+=150){
+      const r=await db.from('cipg_eventos_guarda')
+        .select('id,servico_id,tipo_evento')
+        .in('servico_id',ids.slice(i,i+150));
+      if(r.error)throw Error('Falha ao consultar os eventos do livro de serviço: '+r.error.message);
+      todos.push(...(r.data||[]));
+    }
+    return todos;
+  }
   function preparar(){
     document.body.classList.add('modo-cipg');
     $('heroTitulo').textContent='Visão rápida — CIPG';
     $('heroEyebrow').innerHTML='<i class="pulse"></i> Policiamento de Guarda · CIPG';
-    const cards=[['total','Serviços de guarda','shield-check'],
-      ['conducoes','Instituições atendidas','building-2'],
-      ['tcosProduzidos','Rondas realizadas','route'],
-      ['veiculosRecuperadosKpi','Intercorrências','clipboard-list']];
+    const cards=[['total','Relatórios de serviço','shield-check'],
+      ['conducoes','PMs atendidos no hospital','heart-pulse'],
+      ['tcosProduzidos','Serviços sem alteração','clipboard-check'],
+      ['veiculosRecuperadosKpi','Efetivo empregado','users']];
     cards.forEach(([id,nome])=>{
       const card=$(id)?.closest('.kpi');
       if(card)card.querySelector('label').textContent=nome;
     });
-    $('totalSub').textContent='serviços cadastrados neste mês';
-    $('conducoesSub').textContent='instituições distintas no mês';
-    $('tcosSub').textContent='rondas registradas nos serviços';
-    $('veiculosSub').textContent='situações registradas em serviço';
-    $('topOcorrenciasDescricao').textContent='Modalidades dos serviços de guarda';
+    $('totalSub').textContent='inclusive relatórios sem alteração (S/A)';
+    $('conducoesSub').textContent='entradas registradas no livro de serviço';
+    $('tcosSub').textContent='relatórios identificados como S/A';
+    $('veiculosSub').textContent='ordinário + SVI (postos/serviços, não PMs únicos)';
+    $('topOcorrenciasDescricao').textContent='Acontecimentos registrados pela CIPG';
   }
   async function consultar(db,inicio,fim){
     const rows=[],limite=1000;
     for(let pagina=0;;pagina++){
       const r=await db.from('cipg_servicos_guarda')
-       .select('id,data_servico,instituicao,tipo_local,modalidade,rondas_realizadas,intercorrencias')
+       .select('id,data_servico,instituicao,posto_codigo,tipo_local,modalidade,situacao,efetivo_ordinario,efetivo_svi,rondas_realizadas,intercorrencias')
        .gte('data_servico',inicio).lte('data_servico',fim).order('id',{ascending:true})
        .range(pagina*limite,(pagina+1)*limite-1);
       if(r.error)throw Error('Falha ao consultar serviços da CIPG: '+r.error.message);
@@ -35,25 +52,30 @@
       if((r.data||[]).length<limite)break;
       if(pagina>=200)throw Error('Intervalo muito amplo. Selecione um período menor.');
     }
-    return rows;
+    const eventos=await lerEventos(db,rows);
+    return {servicos:rows,eventos};
   }
   function renderizar(atual,anterior,hoje,pc){
-    $('total').textContent=numero(atual.length);
-    $('conducoes').textContent=numero(distintas(atual));
-    $('tcosProduzidos').textContent=numero(somar(atual,'rondas_realizadas'));
-    $('veiculosRecuperadosKpi').textContent=numero(somar(atual,'intercorrencias'));
+    const a=atual.servicos||[],b=anterior.servicos||[],
+      ea=atual.eventos||[],eb=anterior.eventos||[];
+    $('total').textContent=numero(a.length);
+    $('conducoes').textContent=numero(hospital(ea));
+    $('tcosProduzidos').textContent=numero(semAlteracao(a,ea));
+    $('veiculosRecuperadosKpi').textContent=numero(totalEfetivo(a));
     $('periodoComparativo').textContent='Mês atual × período comparado';
     if(typeof itemComparativo==='function'){
       $('comparativoMes').innerHTML=
-        itemComparativo('Serviços de guarda',atual.length,anterior.length,'prod')+
-        itemComparativo('Rondas',somar(atual,'rondas_realizadas'),somar(anterior,'rondas_realizadas'),'prod')+
-        itemComparativo('Intercorrências',somar(atual,'intercorrencias'),somar(anterior,'intercorrencias'),'crime');
+        itemComparativo('Relatórios de serviço',a.length,b.length,'prod')+
+        itemComparativo('Entradas hospitalares',hospital(ea),hospital(eb),'prod')+
+        itemComparativo('Sem alteração (S/A)',semAlteracao(a,ea),semAlteracao(b,eb),'prod')+
+        itemComparativo('Efetivo empregado',totalEfetivo(a),totalEfetivo(b),'prod');
     }
-    $('resumoInteligente').textContent='No mês: '+numero(atual.length)+' serviço(s) de guarda, '+
-      numero(distintas(atual))+' instituição(ões) atendida(s), '+
-      numero(somar(atual,'rondas_realizadas'))+' ronda(s) e '+
-      numero(somar(atual,'intercorrencias'))+' intercorrência(s). '+
-      'Serviços sem BO também compõem a produtividade; ocorrências policiais são contabilizadas separadamente.';
+    $('resumoInteligente').textContent='No mês: '+numero(a.length)+' relatório(s) de serviço, '+
+      numero(hospital(ea))+' atendimento(s) hospitalar(es) de PM(s), '+
+      numero(semAlteracao(a,ea))+' serviço(s) sem alteração, '+
+      numero(totalEfetivo(a))+' empregos de efetivo (ordinário + SVI) e '+
+      numero(distintas(a))+' instituição(ões) atendida(s). '+
+      'Eventos do livro de serviço não são somados às ocorrências policiais do CPC.';
   }
   function falha(err){
     console.error('Falha na visão CIPG',err);
