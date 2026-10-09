@@ -72,6 +72,10 @@ function situacao(){
  $('contagemEventos').textContent=String(linhasEventos().length);
  $('totalEventos').value=String(linhasEventos().length);
 }
+function atualizarEfetivo(){
+  const a=Number(valor('efetivoOrdinario'))||0,b=Number(valor('efetivoSvi'))||0;
+  $('efetivoTotal').value=String(Math.max(0,a)+Math.max(0,b));
+}
 function atualizarKm(){
  const a=numeroOpcional('kmInicial'),b=numeroOpcional('kmFinal');
  if(a!==null&&b!==null){
@@ -172,7 +176,7 @@ async function salvar(evt){
   $('form').reset();$('dia').value=hoje();
   $('listaEventos').innerHTML='';
   $('kmRodados').readOnly=false;
-  situacao();atualizarKm();
+  situacao();atualizarKm();atualizarEfetivo();
   await listar();
  }catch(e){
   console.error('CIPG caderno',e);
@@ -215,19 +219,21 @@ function ligarEventos(){
   const card=e.target.closest('[data-evento]');
   card.querySelector('[data-turno]').textContent=turno(e.target.value)||'Informe a hora';
  });
+ $('efetivoOrdinario').addEventListener('input',atualizarEfetivo);
+ $('efetivoSvi').addEventListener('input',atualizarEfetivo);
  $('kmInicial').addEventListener('change',atualizarKm);
  $('kmFinal').addEventListener('change',atualizarKm);
  $('form').addEventListener('submit',salvar);
  $('limpar').addEventListener('click',()=>{
   if(servicoSalvoId){status('O relatório já foi salvo, mas há acontecimentos pendentes. Conclua o registro antes de limpar.',true);return}
-  $('form').reset();$('listaEventos').innerHTML='';$('dia').value=hoje();situacao();atualizarKm();$('recibo').hidden=true;status('Formulário pronto para o próximo serviço.');
+  $('form').reset();$('listaEventos').innerHTML='';$('dia').value=hoje();situacao();atualizarKm();atualizarEfetivo();$('recibo').hidden=true;status('Formulário pronto para o próximo serviço.');
  });
 }
 async function iniciar(){
  try{
   sessao=window.SistemaAuth?.ready?await window.SistemaAuth.ready:window.SistemaAuth;
   if(!sessao||!autenticado()){window.location.replace('index.html?erro=sem-permissao');return}
-  $('dia').value=hoje();$('dia').max=hoje();ligarEventos();situacao();
+  $('dia').value=hoje();$('dia').max=hoje();ligarEventos();situacao();atualizarEfetivo();
   await carregarPostos();await listar();
   status('Pronto para registrar o livro de serviço. O relatório é feito manualmente, sem PDF.');
  }catch(e){status('Não foi possível carregar o caderno: '+(e.message||e),true)}
