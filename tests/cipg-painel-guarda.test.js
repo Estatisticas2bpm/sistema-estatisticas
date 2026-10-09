@@ -29,7 +29,7 @@ assert.match(home,/CipgHome\.renderizar/);
 assert.match(home,/cipg-home\.js\?v=/);
 assert.doesNotThrow(()=>new Function(homeModulo));
 assert.match(homeModulo,/Relatórios de serviço/);
-assert.match(homeModulo,/PMs atendidos no hospital/);
+assert.match(homeModulo,/Entradas de PM no hospital/);
 assert.match(homeModulo,/Serviços sem alteração/);
 assert.match(homeModulo,/Efetivo empregado/);
 assert.match(homeModulo,/cipg_servicos_guarda/);
