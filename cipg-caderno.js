@@ -48,11 +48,11 @@ function itemEvento(){
  return '<article class="evento" data-evento="'+nr+'"><div class="evento-head"><b>Militar / acontecimento <span class="evento-num">'+nr+'</span></b>'+
  '<button type="button" data-remove="'+nr+'" class="btn-subtle">Remover</button></div>'+
  '<div class="fieldgrid">'+
- campoEvento('tipo','Tipo de acontecimento *','<select data-col="tipo_evento" required>'+grupos.tipos.map(x=>opcao(x)).join('')+'</select>')+
+ campoEvento('tipo','Tipo de acontecimento *','<select data-col="tipo_evento" required>'+opcao('','Selecione o acontecimento')+grupos.tipos.map(x=>opcao(x)).join('')+'</select>')+
  campoEvento('data','Data do fato','<input data-col="data_evento" type="date" value="'+esc(valor('dia'))+'">')+
  campoEvento('hora','Hora do fato','<input data-col="hora_evento" type="time">')+
  campoEvento('turno','Turno calculado','<output data-turno class="output">Informe a hora</output>')+
- '<div class="wide"><details data-detalhes open><summary>Dados do militar e atendimento (quando houver)</summary><div class="fieldgrid">'+
+ '<div class="wide"><details data-detalhes><summary>Dados do militar e atendimento (quando houver)</summary><div class="fieldgrid">'+
  campoEvento('graduacao','Graduação','<select data-col="graduacao">'+tipoSelect(grupos.graduacoes)+'</select>')+
  campoEvento('unidade','Unidade do militar','<input data-col="unidade_militar" maxlength="120" placeholder="Ex.: 1º BPM">')+
  campoEvento('em_servico','Estava em serviço?','<select data-col="em_servico">'+tipoSelect(grupos.emServico)+'</select>')+
