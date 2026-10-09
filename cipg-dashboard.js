@@ -127,7 +127,8 @@ function consolidar(a){
   faltaGraduacao:events.filter(e=>!str(e.graduacao)).length,
   faltaDataEvento:events.filter(e=>!str(e.data_evento)).length,
   faltaDesfechoHospital:internacoes.filter(e=>!str(e.desfecho)).length,
-  relatoriosComAcontecimentoSemEvento:services.filter(s=>s.situacao==='COM ALTERACAO'&&!eventIds.has(s.id)).length
+  relatoriosComAcontecimentoSemEvento:services.filter(s=>s.situacao==='COM ALTERACAO'&&!eventIds.has(s.id)&&
+   !s.alteracao_pessoal&&!s.alteracao_instalacoes&&!s.alteracao_material).length
  };
 }
 function tabelaPorPosto(a){
@@ -256,7 +257,7 @@ function render(dadosA,dadosB,ctx){
   ['Eventos sem data própria',m.faltaDataEvento],
   ['Eventos sem graduação',m.faltaGraduacao],
   ['Entradas hospitalares sem desfecho',m.faltaDesfechoHospital],
-  ['Relatórios com alteração e sem evento vinculado',m.relatoriosComAcontecimentoSemEvento]
+  ['Relatórios com alteração sem evento nem categoria indicada',m.relatoriosComAcontecimentoSemEvento]
  ];
  rows('tabCipgQualidade',qualidade.map(([label,v])=>'<tr><td>'+esc(label)+'</td><td>'+numBR(v)+'</td></tr>').join(''));
  const porId=new Map(a.eventos.map(e=>[e.servico_id,0]));
