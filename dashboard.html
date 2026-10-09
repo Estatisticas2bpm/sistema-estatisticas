@@ -48,6 +48,7 @@
  <label>Posto / instituição<input id="cipgFiltroInstituicao" placeholder="PSE, CSE ou instituição"></label>
  <label>Situação do relatório<select id="cipgFiltroSituacao"><option value="">Todas</option><option value="SEM ALTERACAO">Sem alteração (S/A)</option><option value="COM ALTERACAO">Com alteração</option></select></label>
  <label>Categoria do posto<select id="cipgFiltroTipo"><option value="">Todas</option><option value="EDIFICIO_PUBLICO">Edifícios públicos</option><option value="ESTABELECIMENTO_PENAL">Estabelecimentos penais</option><option value="OUTRO">Outros</option></select></label>
+ <label>Regime de serviço<input id="cipgFiltroRegime" placeholder="Regime registrado"></label>
  <label>Atividade<select id="cipgFiltroModalidade"><option value="">Todas</option><option value="GUARDA_FIXA">Guarda fixa</option><option value="RONDA">Ronda</option><option value="REFORCO">Reforço</option><option value="APOIO_OPERACIONAL">Apoio operacional</option><option value="OUTRA">Outra</option></select></label>
  <label>Tipo de evento<select id="cipgFiltroEvento"><option value="">Todos</option><option>ENTRADA DE PM NO HOSPITAL</option><option>ÓBITO DE PM</option><option>ALTERAÇÃO NO POSTO</option><option>FUGA / EVASÃO</option><option>TUMULTO</option><option>APOIO PRESTADO</option><option>OUTROS</option></select></label>
  <label>Desfecho<select id="cipgFiltroDesfecho"><option value="">Todos</option><option>EM ATENDIMENTO</option><option>EM OBSERVAÇÃO</option><option>INTERNADO</option><option>LIBERADO</option><option>TRANSFERIDO</option><option>ÓBITO</option></select></label>
@@ -66,6 +67,10 @@
  <div class="grid2" style="margin-top:18px">
  <div><h3>Conduzido por</h3><div class="chartbox"><canvas id="chartCipgConducoes"></canvas></div></div>
  <div><h3>Serviços por posto</h3><div class="chartbox"><canvas id="chartCipgPostos"></canvas></div></div>
+ </div>
+ <div class="grid2" style="margin-top:18px">
+ <div><h3>Tipos de eventos</h3><div class="chartbox"><canvas id="chartCipgTiposEventos"></canvas></div></div>
+ <div><h3>Setores de atendimento</h3><div class="chartbox"><canvas id="chartCipgSetores"></canvas></div></div>
  </div>
  <div class="grid2" style="margin-top:18px">
  <div><h3>Relatórios por dia</h3><div class="chartbox"><canvas id="chartCipgEvolucao"></canvas></div></div>
