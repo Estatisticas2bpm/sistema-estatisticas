@@ -5,11 +5,9 @@
 .cipa-report .internal-head{left:16mm;right:16mm;top:8mm;line-height:1.45;font-size:8.2px}
 .cipa-report .footer{left:16mm;right:16mm;bottom:6mm}
 .cipa-report .title.cipa-titulo{font-size:14px;color:#133a2a;border-bottom:2px solid #247453;padding-bottom:7px;margin:0 0 14px}
-.cipa-cover-head{grid-template-columns:90px minmax(0,1fr) 90px;align-items:start;gap:8px;font-size:11.5px}
+.cipa-cover-head{grid-template-columns:110px minmax(0,1fr) 110px;align-items:start;gap:8px;font-size:11.5px}
 .cipa-cover-head img{width:77px;height:85px;object-fit:contain}
-.cipa-cover-identificacao{width:78px;height:88px;border:2px solid #1a6748;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#164e3a;justify-self:center;line-height:1.15;background:linear-gradient(150deg,#f1f9f3,#fff)}
-.cipa-cover-identificacao span{font-size:21px;font-weight:900;letter-spacing:1px}
-.cipa-cover-identificacao small{font-size:7px;font-weight:800;letter-spacing:.25px;margin-top:5px;text-align:center}
+.cipa-cover-head .cipa-cover-logo{width:108px;height:86px;object-fit:contain;object-position:center;justify-self:center;align-self:start}
 .cipa-cover-title{margin-top:65mm}
 .cipa-cover-title h1{font-size:20px;line-height:1.4;margin:0 0 14px}
 .cipa-cover-title h2{font-size:15px;line-height:1.4}

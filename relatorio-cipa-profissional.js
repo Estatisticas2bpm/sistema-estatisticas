@@ -164,13 +164,13 @@
       for(const a of autos){const k=dado(a.tipo_infracao||a.descricao_infracao),v=valorMultasPorTipo.get(k)||{q:0,total:0};v.q++;v.total+=n(a.valor_multa);valorMultasPorTipo.set(k,v);}
       const multaPorTipo=[...valorMultasPorTipo].sort((a,b)=>b[1].total-a[1].total);
       const pages=[];
-      // Capa: símbolo oficial PMRR na esquerda; identificação textual CIPA
-      // no lado direito até a disponibilização de insígnia oficial verificável.
+      // Capa exclusiva da CIPA: símbolo oficial PMRR à esquerda e brasão
+      // ambiental da unidade à direita. Os demais relatórios usam builders próprios.
       const cover='<section class="page cover cipa-capa" data-section="cover">'+
         '<div class="cover-top cipa-cover-head"><img src="brasao-pmrr.png" alt="Brasão da Polícia Militar de Roraima">'+
         '<div>ESTADO DE RORAIMA<br>POLÍCIA MILITAR DE RORAIMA<br>COMANDO DE POLICIAMENTO DA CAPITAL - CPC<br>'+
         INSTITUICAO+' - CIPA<br>“Amazônia: Patrimônio dos Brasileiros”</div>'+
-        '<div class="cipa-cover-identificacao" aria-label="Identificação textual da unidade CIPA"><span>CIPA</span><small>POLICIAMENTO<br>AMBIENTAL</small></div></div>'+
+        '<img class="cipa-cover-logo" src="assets/logos/cipa-brasao-relatorio.jpg" alt="Brasão da CIPA"></div>'+
         '<div class="cover-title cipa-cover-title"><div class="cipa-cover-linha"></div>'+
         '<h1>RELATÓRIO DE PRODUTIVIDADE E ESTATÍSTICAS AMBIENTAIS</h1>'+
         '<h2>'+h(periodo.titulo)+'</h2><p>COMPANHIA INDEPENDENTE DE POLICIAMENTO AMBIENTAL</p>'+
