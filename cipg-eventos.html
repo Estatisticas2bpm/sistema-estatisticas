@@ -1,0 +1,100 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SIE-CPC — Eventos do Livro de Serviço da CIPG</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font:14px Inter,Arial,sans-serif;background:#eef3f8;color:#182c3b}
+header{background:linear-gradient(115deg,#081b34,#184a5b 70%,#25614f);color:#fff;padding:24px 5%}
+.top,main{max-width:1020px;margin:auto}.top{display:flex;align-items:center;justify-content:space-between;gap:12px}.top h1{margin:0;font-size:24px}.top p{color:#d5e4ec}.top a{color:#fff;text-decoration:none;border:1px solid #ffffff77;padding:9px;border-radius:9px}
+main{padding:18px 3% 40px}.panel{background:#fff;padding:22px;border:1px solid #d6e2e8;border-radius:12px;margin:0 0 17px}
+h2{margin:0 0 6px;font-size:20px}.sub{color:#546979;font-size:13px;line-height:1.55}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}.item label{display:block;font-weight:700;font-size:12px;margin-bottom:6px}
+input,select{width:100%;padding:10px;border:1px solid #a7bac7;border-radius:8px;background:#fff;font-size:14px}
+button{background:#1f6046;color:white;border:0;border-radius:8px;padding:11px 17px;font-weight:700;cursor:pointer}button:disabled{opacity:.5}
+.status{font-size:13px;color:#426679}.status.erro{color:#ac1e26}.status.ok{color:#16693e}
+.nota{background:#eef8f2;padding:12px;border-left:4px solid #32745a;font-size:13px;line-height:1.5;margin:14px 0}
+.actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:16px}
+@media(max-width:760px){.grid{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="auth-config.js"></script><script src="auth-guard.js"></script>
+</head><body>
+<header><div class="top"><div><h1>Eventos do Livro de Serviço — CIPG</h1><p>Registro estatístico de acontecimentos vinculados ao relatório SEI</p></div><a href="cipg-produtividade.html">← Livro de serviço</a></div></header>
+<main>
+<section class="panel"><h2>Registrar acontecimento</h2>
+<p class="sub">Registre uma linha por militar envolvido. Se dois militares aparecerem no mesmo relatório, faça dois registros. Estes eventos não entram como BO/ocorrência no consolidado do CPC.</p>
+<form id="form"><div class="grid">
+<div class="item" style="grid-column:1/-1"><label for="servico">Relatório de serviço / Nº SEI *</label><select id="servico" required><option value="">Carregando relatórios...</option></select></div>
+<div class="item"><label for="tipoEvento">Tipo de evento *</label><select id="tipoEvento" required>
+<option>ENTRADA DE PM NO HOSPITAL</option><option>ÓBITO DE PM</option><option>ALTERAÇÃO NO POSTO</option><option>FUGA / EVASÃO</option><option>TUMULTO</option><option>APOIO PRESTADO</option><option>OUTROS</option></select></div>
+<div class="item"><label for="graduacao">Graduação</label><select id="graduacao">
+<option value="">Não informado</option><option>CEL</option><option>TEN CEL</option><option>MAJ</option><option>CAP</option><option>1º TEN</option><option>2º TEN</option><option>ASP OF</option><option>ST</option><option>1º SGT</option><option>2º SGT</option><option>3º SGT</option><option>CB</option><option>SD</option><option>CIVIL</option><option>OUTRO</option></select></div>
+<div class="item"><label for="unidadeMilitar">Unidade do militar</label><input id="unidadeMilitar" maxlength="120" placeholder="Ex.: 1º BPM"></div>
+<div class="item"><label for="emServico">Estava em serviço?</label><select id="emServico"><option value="">Não informado</option><option>SIM</option><option>NÃO</option><option>NÃO INFORMADO</option></select></div>
+<div class="item"><label for="causa">Causa / motivo</label><select id="causa"><option value="">Não informado</option>
+<option>ACIDENTE DE TRÂNSITO</option><option>ATROPELAMENTO</option><option>PAF — ARMA DE FOGO</option><option>ARMA BRANCA</option><option>AGRESSÃO FÍSICA</option><option>INFARTO / PROBLEMA CARDÍACO</option><option>AVC</option><option>MAL SÚBITO</option><option>SURTO / CRISE PSIQUIÁTRICA</option><option>QUEDA</option><option>OUTRA DOENÇA</option><option>OUTROS</option></select></div>
+<div class="item"><label for="conduzido">Conduzido por</label><select id="conduzido"><option value="">Não informado</option>
+<option>SAMU</option><option>VIATURA PM</option><option>CORPO DE BOMBEIROS</option><option>MEIOS PRÓPRIOS</option><option>OUTROS</option><option>NÃO INFORMADO</option></select></div>
+<div class="item"><label for="setor">Setor de atendimento</label><input id="setor" maxlength="120" placeholder="Setor, se informado no relatório"></div>
+<div class="item"><label for="desfecho">Desfecho</label><select id="desfecho"><option value="">Não informado</option>
+<option>EM ATENDIMENTO</option><option>EM OBSERVAÇÃO</option><option>INTERNADO</option><option>LIBERADO</option><option>TRANSFERIDO</option><option>ÓBITO</option></select></div>
+</div>
+<p class="nota"><b>Dados sensíveis:</b> não copie nome de guerra do policial, lesão/quadro clínico ou outros dados médicos para este cadastro estatístico. O relatório oficial SEI permanece como fonte original e os indicadores do dashboard serão agregados.</p>
+<div class="actions"><button id="salvar" type="submit">Salvar evento</button><button id="limpar" type="button" style="background:#526f80">Limpar</button><span id="status" class="status" role="status">Carregando...</span></div>
+</form></section>
+<section class="panel"><h2>Como funciona o vínculo</h2><p class="sub">Primeiro registre o relatório na tela de produtividade da CIPG. Depois escolha seu número SEI acima. O sistema relacionará cada acontecimento ao relatório correto sem criar ocorrência policial no CPC. Os relatórios marcados S/A não precisam receber eventos.</p></section>
+</main>
+<script>
+(()=>{
+ const $=id=>document.getElementById(id);
+ let sessao=null;
+ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ function msg(t,erro=false){$('status').textContent=t;$('status').className='status '+(erro?'erro':'ok')}
+ function autorizado(){
+   const sigla=String(sessao?.contexto?.sigla||sessao?.perfil?.unidades?.sigla||'').toUpperCase();
+   const perfil=String(sessao?.perfil?.perfil||'').toUpperCase();
+   return sigla==='CIPG'&&['ADMIN','ESTATISTICA','OPERADOR'].includes(perfil)
+     &&(typeof sessao?.temModulo!=='function'||sessao.temModulo('PRODUTIVIDADE_CIPG'));
+ }
+ async function carregarServicos(){
+   const out=[],passo=1000;
+   for(let k=0;k<20;k++){
+     const r=await sessao.client.from('cipg_servicos_guarda')
+       .select('id,data_servico,instituicao,numero_sei,situacao')
+       .eq('unidade_id',sessao.contexto.unidade_id)
+       .order('data_servico',{ascending:false}).range(k*passo,(k+1)*passo-1);
+     if(r.error)throw r.error;
+     out.push(...(r.data||[]));if((r.data||[]).length<passo)break;
+   }
+   $('servico').innerHTML='<option value="">Selecione o relatório</option>'+
+     out.map(x=>'<option value="'+esc(x.id)+'">'+esc(
+       (x.numero_sei?'SEI '+x.numero_sei+' · ':'')+
+       (x.data_servico||'')+' · '+x.instituicao+' ['+(x.situacao||'S/A')+']')+'</option>').join('');
+ }
+ const val=id=>String($(id).value||'').trim()||null;
+ $('form').addEventListener('submit',async e=>{
+   e.preventDefault();
+   if(!autorizado())return msg('Acesso não autorizado.',true);
+   const btn=$('salvar');btn.disabled=true;
+   try{
+     if(!val('servico'))throw Error('Selecione o relatório de serviço correspondente.');
+     const dados={
+       servico_id:val('servico'),tipo_evento:val('tipoEvento'),graduacao:val('graduacao'),
+       unidade_militar:val('unidadeMilitar'),em_servico:val('emServico'),
+       causa_motivo:val('causa'),conduzido_por:val('conduzido'),
+       setor_atendimento:val('setor'),desfecho:val('desfecho')
+     };
+     const r=await sessao.client.from('cipg_eventos_guarda').insert(dados);
+     if(r.error)throw r.error;
+     const id=dados.servico_id;
+     $('form').reset();$('servico').value=id;
+     msg('Acontecimento registrado. Para outro militar envolvido, preencha outra linha para o mesmo relatório.');
+   }catch(err){msg('Falha ao salvar acontecimento: '+(err.message||err),true)}
+   finally{btn.disabled=false}
+ });
+ $('limpar').addEventListener('click',()=>{$('form').reset();msg('Formulário limpo.')});
+ (async()=>{
+   sessao=window.SistemaAuth?.client&&window.SistemaAuth?.user?window.SistemaAuth:await window.SistemaAuth?.ready;
+   if(!sessao||!autorizado()){location.replace('index.html?erro=sem-permissao');return}
+   await carregarServicos();msg('Pronto para registrar acontecimentos.');
+ })().catch(err=>msg('Falha ao carregar relatórios: '+(err.message||err),true));
+})();
+</script></body></html>
