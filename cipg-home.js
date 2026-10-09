@@ -27,7 +27,7 @@
     $('heroTitulo').textContent='Visão rápida — CIPG';
     $('heroEyebrow').innerHTML='<i class="pulse"></i> Policiamento de Guarda · CIPG';
     const cards=[['total','Relatórios de serviço','shield-check'],
-      ['conducoes','PMs atendidos no hospital','heart-pulse'],
+      ['conducoes','Entradas de PM no hospital','heart-pulse'],
       ['tcosProduzidos','Serviços sem alteração','clipboard-check'],
       ['veiculosRecuperadosKpi','Efetivo empregado','users']];
     cards.forEach(([id,nome])=>{
