@@ -23,6 +23,9 @@ button{background:#1f6046;color:white;border:0;border-radius:8px;padding:11px 17
 <p class="sub">Registre uma linha por militar envolvido. Se dois militares aparecerem no mesmo relatório, faça dois registros. Estes eventos não entram como BO/ocorrência no consolidado do CPC.</p>
 <form id="form"><div class="grid">
 <div class="item" style="grid-column:1/-1"><label for="servico">Relatório de serviço / Nº SEI *</label><select id="servico" required><option value="">Carregando relatórios...</option></select></div>
+<div class="item"><label for="dataEvento">Data do acontecimento</label><input id="dataEvento" type="date"></div>
+<div class="item"><label for="horaEvento">Hora do acontecimento</label><input id="horaEvento" type="time"></div>
+<div class="item"><label for="turnoEvento">Turno CIPG (automático)</label><input id="turnoEvento" placeholder="Conforme hora" readonly></div>
 <div class="item"><label for="tipoEvento">Tipo de evento *</label><select id="tipoEvento" required>
 <option>ENTRADA DE PM NO HOSPITAL</option><option>ÓBITO DE PM</option><option>ALTERAÇÃO NO POSTO</option><option>FUGA / EVASÃO</option><option>TUMULTO</option><option>APOIO PRESTADO</option><option>OUTROS</option></select></div>
 <div class="item"><label for="graduacao">Graduação</label><select id="graduacao">
@@ -47,6 +50,14 @@ button{background:#1f6046;color:white;border:0;border-radius:8px;padding:11px 17
  const $=id=>document.getElementById(id);
  let sessao=null;
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ function turnoDeHora(hora){
+   if(!/^\\d{2}:\\d{2}$/.test(hora||''))return '';
+   const partes=hora.split(':').map(Number),min=partes[0]*60+partes[1];
+   return min>=8*60&&min<20*60?'1º TURNO — 08h às 20h':'2º TURNO — 20h às 08h';
+ }
+ $('horaEvento').addEventListener('input',()=>{
+   $('turnoEvento').value=turnoDeHora($('horaEvento').value);
+ });
  function msg(t,erro=false){$('status').textContent=t;$('status').className='status '+(erro?'erro':'ok')}
  function autorizado(){
    const sigla=String(sessao?.contexto?.sigla||sessao?.perfil?.unidades?.sigla||'').toUpperCase();
@@ -77,7 +88,8 @@ button{background:#1f6046;color:white;border:0;border-radius:8px;padding:11px 17
    try{
      if(!val('servico'))throw Error('Selecione o relatório de serviço correspondente.');
      const dados={
-       servico_id:val('servico'),tipo_evento:val('tipoEvento'),graduacao:val('graduacao'),
+       servico_id:val('servico'),tipo_evento:val('tipoEvento'),
+       data_evento:val('dataEvento'),hora_evento:val('horaEvento'),graduacao:val('graduacao'),
        unidade_militar:val('unidadeMilitar'),em_servico:val('emServico'),
        causa_motivo:val('causa'),conduzido_por:val('conduzido'),
        setor_atendimento:val('setor'),desfecho:val('desfecho')
@@ -85,7 +97,7 @@ button{background:#1f6046;color:white;border:0;border-radius:8px;padding:11px 17
      const r=await sessao.client.from('cipg_eventos_guarda').insert(dados);
      if(r.error)throw r.error;
      const id=dados.servico_id;
-     $('form').reset();$('servico').value=id;
+     $('form').reset();$('servico').value=id;$('turnoEvento').value='';
      msg('Acontecimento registrado. Para outro militar envolvido, preencha outra linha para o mesmo relatório.');
    }catch(err){msg('Falha ao salvar acontecimento: '+(err.message||err),true)}
    finally{btn.disabled=false}
