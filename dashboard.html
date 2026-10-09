@@ -601,79 +601,19 @@ function turnoCipg(hora){
   const min=partes[0]*60+partes[1];
   return min>=480&&min<1200?'1':'2';
 }
-function renderGraficosCipg(servicos,eventos){
- const grupos=[
-  ['chartCipgCausas','causa_motivo','bar'],
-  ['chartCipgDesfechos','desfecho','doughnut'],
-  ['chartCipgGraduacoes','graduacao','bar'],
-  ['chartCipgUnidades','unidade_militar','bar'],
-  ['chartCipgConducoes','conduzido_por','doughnut'],
-  ['chartCipgSetores','setor_atendimento','bar'],
-  ['chartCipgTiposEventos','tipo_evento','doughnut']
- ];
- for(const [id,k,tipo] of grupos){
-  const a=rank(eventos,x=>x[k]||'Não informado',12);
-  chart(id,tipo,a.map(x=>x[0]),a.map(x=>x[1]),'Eventos',CORES.green);
- }
- const postos=rank(servicos,x=>x.posto_codigo||x.instituicao||'Não informado',12);
- chart('chartCipgPostos','doughnut',postos.map(x=>x[0]),postos.map(x=>x[1]),'Serviços',CORES.teal);
- const dias={};servicos.forEach(x=>{if(x.data_servico)dias[x.data_servico]=(dias[x.data_servico]||0)+1});
- const serie=Object.entries(dias).sort((a,b)=>a[0].localeCompare(b[0]));
- chart('chartCipgEvolucao','line',serie.map(x=>x[0].slice(8,10)+'/'+x[0].slice(5,7)),
-  serie.map(x=>x[1]),'Serviços',CORES.green);
- const evIds=new Set(eventos.map(x=>x.servico_id)),gruposPosto=new Map();
- for(const x of servicos){
-  const key=String(x.posto_codigo||x.instituicao||'Não informado');
-  const p=gruposPosto.get(key)||{servicos:0,sa:0,ef:0};
-  p.servicos++;if(x.situacao==='SEM ALTERACAO'&&!evIds.has(x.id))p.sa++;
-  p.ef+=num(x.efetivo_ordinario)+num(x.efetivo_svi);
-  gruposPosto.set(key,p);
- }
- const ordered=[...gruposPosto].sort((a,b)=>b[1].servicos-a[1].servicos);
- rows('tabCipgInstituicoes',ordered.map(([k,v])=>
-  '<tr><td>'+esc(k)+'</td><td>'+v.servicos+'</td><td>'+v.sa+'</td><td>'+v.ef+'</td></tr>').join(''));
-}
 function renderCipg(){
  if(!ehCipg())return;
- const vl=id=>String($(id)?.value||'').trim();
- const base=servicosCipgAtual.filter(x=>
-  (!vl('cipgFiltroTipo')||x.tipo_local===vl('cipgFiltroTipo'))&&
-  (!vl('cipgFiltroModalidade')||x.modalidade===vl('cipgFiltroModalidade'))&&
-  (!vl('cipgFiltroRegime')||String(x.regime||'').toUpperCase().includes(vl('cipgFiltroRegime').toUpperCase()))&&
-  (!vl('cipgFiltroSituacao')||x.situacao===vl('cipgFiltroSituacao'))&&
-  (!vl('cipgFiltroInstituicao')||(String(x.instituicao||'').toUpperCase().includes(vl('cipgFiltroInstituicao').toUpperCase())||
-  String(x.posto_codigo||'').toUpperCase().includes(vl('cipgFiltroInstituicao').toUpperCase()))));
- const ids=new Set(base.map(x=>x.id));
- const eventos=eventosCipgAtual.filter(x=>ids.has(x.servico_id)&&
-  (!vl('cipgFiltroEvento')||x.tipo_evento===vl('cipgFiltroEvento'))&&
-  (!vl('cipgFiltroDesfecho')||x.desfecho===vl('cipgFiltroDesfecho'))&&
-  (!vl('cipgFiltroEmServico')||x.em_servico===vl('cipgFiltroEmServico'))&&
-  (!vl('cipgFiltroCausa')||String(x.causa_motivo||'').toUpperCase().includes(vl('cipgFiltroCausa').toUpperCase()))&&
-  (!vl('cipgFiltroTurno')||turnoCipg(x.hora_evento)===vl('cipgFiltroTurno')));
- const filtroEvento=['cipgFiltroEvento','cipgFiltroDesfecho','cipgFiltroEmServico','cipgFiltroCausa','cipgFiltroTurno'].some(id=>vl(id));
- const presentes=new Set(eventos.map(x=>x.servico_id));
- const servicos=filtroEvento?base.filter(x=>presentes.has(x.id)):base;
- const somaC=k=>soma(servicos,k);
- const sem=servicos.filter(x=>x.situacao==='SEM ALTERACAO'&&!presentes.has(x.id)).length;
- const contar=(campo,v)=>eventos.filter(x=>x[campo]===v).length;
- $('cipgServicos').textContent=servicos.length;
- $('cipgServicosVar').textContent=comparar.value==='nenhum'?'':'Dados do período filtrado';
- $('cipgHospital').textContent=contar('tipo_evento','ENTRADA DE PM NO HOSPITAL');
- $('cipgSemAlteracao').textContent=sem;
- $('cipgComAlteracao').textContent=servicos.length-sem;
- $('cipgEmServico').textContent=contar('em_servico','SIM');
- $('cipgInternados').textContent=contar('desfecho','INTERNADO');
- $('cipgObservacao').textContent=contar('desfecho','EM OBSERVAÇÃO');
- $('cipgLiberados').textContent=contar('desfecho','LIBERADO');
- $('cipgObitos').textContent=eventos.filter(x=>x.desfecho==='ÓBITO'||x.tipo_evento==='ÓBITO DE PM').length;
- $('cipgInstituicoes').textContent=new Set(servicos.map(x=>String(x.posto_codigo||x.instituicao||'').toUpperCase()).filter(Boolean)).size;
- $('cipgEfetivoOrd').textContent=somaC('efetivo_ordinario');
- $('cipgEfetivoSvi').textContent=somaC('efetivo_svi');
- $('cipgKm').textContent=Number(somaC('km_rodados')).toLocaleString('pt-BR',{maximumFractionDigits:2});
- $('cipgLitros').textContent=Number(somaC('litros_abastecidos')).toLocaleString('pt-BR',{maximumFractionDigits:2});
- $('cipgRondas').textContent=somaC('rondas_realizadas');
- $('cipgIntercorrencias').textContent=somaC('intercorrencias');
- renderGraficosCipg(servicos,eventos);
+ if(!window.CipgDashboard){
+  console.error('Módulo do dashboard CIPG não carregado');
+  return;
+ }
+ const seletores={};
+ for(const id of CipgDashboard.filtros)seletores[id]=$(id)?.value||'';
+ CipgDashboard.render(
+  {servicos:servicosCipgAtual,eventos:eventosCipgAtual},
+  {servicos:servicosCipgAnterior,eventos:eventosCipgAnterior},
+  {seletores,get:$,chart,rows,esc,comparar:comparar.value,variacao,cor:CORES.green}
+ );
 }
 function renderCavalaria(){
   if(!ehCavalaria())return;
@@ -882,7 +822,7 @@ async function carregar(){loading.style.display='grid';let calls=[db.rpc('obter_
     }
   }
   if(ehCipg()){
-    const campos='id,data_servico,instituicao,posto_codigo,tipo_local,modalidade,situacao,regime,numero_sei,efetivo_ordinario,efetivo_svi,km_rodados,litros_abastecidos,rondas_realizadas,intercorrencias';
+    const campos='id,data_servico,instituicao,posto_codigo,tipo_local,modalidade,situacao,regime,numero_sei,turno_cipg,efetivo_ordinario,efetivo_svi,km_inicial,km_final,km_rodados,litros_abastecidos,rondas_realizadas,intercorrencias,viatura,saidas_autorizadas,alteracao_pessoal,alteracao_instalacoes,alteracao_material,recebeu_de,passou_para,outros_solicitacoes';
     const a=await consultarCipaPaginado('cipg_servicos_guarda',campos,'data_servico',ini.value,fim.value);
     if(a.error){loading.textContent='Erro ao carregar produtividade da CIPG: '+a.error.message;return}
     servicosCipgAtual=a.data||[];
@@ -990,5 +930,17 @@ document.querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>{let h=new D
 aplicar.onclick=carregar;filtroTipoSubtracao.onchange=render;aisc.onchange=()=>{sisc.value='';setor.value='';popularTerritorio();render()};sisc.onchange=()=>{setor.value='';popularTerritorio();render()};setor.onchange=render;
 gerarPdf.onclick=()=>location.href='relatorio.html?v=20261007-bope1&ini='+ini.value+'&fim='+fim.value+'&comparar='+comparar.value+'&sisc='+encodeURIComponent(sisc.value)+'&companhia='+encodeURIComponent(companhia.value)+'&subunidade_bope='+encodeURIComponent($('subunidadeBope')?.value||'');
 let h=new Date();ini.value=fmt(new Date(h.getFullYear(),h.getMonth(),1));fim.value=fmt(h);
-(async()=>{if(window.SistemaAuth?.ready)await window.SistemaAuth.ready;const ctx=window.SistemaAuth?.contexto||{};if(String(ctx.sigla||'').toUpperCase()==='BOPE')$('subunidadeBopeWrap').hidden=false;$('subunidadeBope')?.addEventListener('change',render);['cipaMunicipio','cipaArea','cipaOrigemFiltro'].forEach(id=>$(id)?.addEventListener('change',render));prepararFiltrosAbordagemGiro();configurarModuloCiptur();configurarModuloCipa();configurarModuloGiro();configurarModuloCavalaria();configurarModuloCipg();['cipgFiltroTipo','cipgFiltroModalidade','cipgFiltroInstituicao','cipgFiltroSituacao','cipgFiltroEvento','cipgFiltroDesfecho','cipgFiltroEmServico','cipgFiltroCausa','cipgFiltroTurno','cipgFiltroRegime'].forEach(id=>{const el=$(id);if(el){el.addEventListener('change',render);if(el.tagName==='INPUT')el.addEventListener('input',render)}});let tr=await db.rpc('obter_catalogo_territorial_cpc');if(!tr.error){catalogoTerritorial=tr.data||{};popularTerritorio()}else console.error('Falha ao carregar matriz territorial:',tr.error);carregar()})();
+(async()=>{if(window.SistemaAuth?.ready)await window.SistemaAuth.ready;const ctx=window.SistemaAuth?.contexto||{};if(String(ctx.sigla||'').toUpperCase()==='BOPE')$('subunidadeBopeWrap').hidden=false;$('subunidadeBope')?.addEventListener('change',render);['cipaMunicipio','cipaArea','cipaOrigemFiltro'].forEach(id=>$(id)?.addEventListener('change',render));prepararFiltrosAbordagemGiro();configurarModuloCiptur();configurarModuloCipa();configurarModuloGiro();configurarModuloCavalaria();configurarModuloCipg();
+if(ehCipg()&&window.CipgDashboard){
+ let debounceCipg;
+ CipgDashboard.filtros.forEach(id=>{
+  const el=$(id);if(!el)return;
+  el.addEventListener('change',render);
+  if(el.tagName==='INPUT')el.addEventListener('input',()=>{clearTimeout(debounceCipg);debounceCipg=setTimeout(render,330)});
+ });
+ $('cipgLimparFiltros')?.addEventListener('click',()=>{
+  CipgDashboard.filtros.forEach(id=>{if($(id))$(id).value=''});
+  render();
+ });
+}let tr=await db.rpc('obter_catalogo_territorial_cpc');if(!tr.error){catalogoTerritorial=tr.data||{};popularTerritorio()}else console.error('Falha ao carregar matriz territorial:',tr.error);carregar()})();
 </script></body></html>
