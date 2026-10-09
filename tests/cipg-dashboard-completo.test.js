@@ -71,6 +71,7 @@ assert.equal(m.internados,1);
 assert.equal(m.liberados,1);
 assert.equal(m.obitos,1,'O mesmo óbito não pode ser somado duas vezes por tipo e desfecho');
 assert.equal(m.alteracaoMaterial,1);
+assert.equal(m.relatoriosComAcontecimentoSemEvento,0,'Alteração de material, sem evento pessoal, não é ausência de informação');
 assert.equal(m.rondas,4);
 assert.equal(m.saidas,1);
 assert.equal(m.quilometros,40);
