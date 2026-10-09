@@ -29,6 +29,11 @@ body.modo-bope .hero{min-height:340px;background-color:#000;background-image:lin
 body.modo-bope .hero:after{display:none}
 body.modo-bope .hero .top,body.modo-bope .hero .heroCopy{position:relative;z-index:1;text-shadow:0 2px 12px rgba(0,0,0,.95)}
 @media(max-width:768px){body.modo-bope .hero{min-height:420px;background-position:center,right center;background-image:linear-gradient(90deg,rgba(0,0,0,.99) 0%,rgba(0,0,0,.94) 50%,rgba(0,0,0,.64) 74%,rgba(0,0,0,.22) 100%),url("assets/banners/bope-home-banner.png?v=20261009-bope-banner1")}body.modo-bope .heroCopy{max-width:82%}}
+</style><style id="1bpm-banner-styles">
+body.modo-1bpm .hero{min-height:340px;background-color:#03172c;background-image:linear-gradient(90deg,rgba(2,18,39,.98) 0%,rgba(2,25,53,.86) 35%,rgba(2,35,68,.34) 61%,rgba(2,35,68,.04) 82%),url("assets/banners/1bpm-home-banner.png?v=20261009-1bpm-banner1");background-position:center,right center;background-size:100% 100%,contain;background-repeat:no-repeat;box-shadow:inset 0 -85px 90px rgba(2,14,31,.45)}
+body.modo-1bpm .hero:after{display:none}
+body.modo-1bpm .hero .top,body.modo-1bpm .hero .heroCopy{position:relative;z-index:1;text-shadow:0 2px 11px rgba(0,0,0,.92)}
+@media(max-width:768px){body.modo-1bpm .hero{min-height:420px;background-position:center,right center;background-image:linear-gradient(90deg,rgba(2,17,40,.99) 0%,rgba(2,24,52,.95) 50%,rgba(3,38,72,.62) 74%,rgba(3,42,78,.22) 100%),url("assets/banners/1bpm-home-banner.png?v=20261009-1bpm-banner1")}body.modo-1bpm .heroCopy{max-width:82%}}
 </style><script src="auth-config.js"></script><script src="auth-guard.js"></script></head><body>
 <header class="hero"><div class="top"><div class="brand"><div class="brandLogos"><img src="brasao-pmrr.png" alt="Brasão da Polícia Militar de Roraima"></div><div><b>SIE-CPC</b><small>Sistema Integrado de Estatística do CPC</small><div data-sie-unit style="margin-top:5px;font-size:11px;font-weight:900;letter-spacing:.8px;color:#9ee5e7;text-transform:uppercase">Unidade ativa · carregando...</div></div></div></div><div class="heroCopy"><span class="eyebrow" id="heroEyebrow"><i class="pulse"></i> Panorama operacional</span><h1 id="heroTitulo">Visão rápida do mês</h1><p id="periodoSemana">Carregando período...</p><div id="cpcEscopoHero" class="cpcScopeHero" hidden>Consolidação das unidades subordinadas</div></div></header>
 <main class="container">
@@ -156,6 +161,13 @@ function aplicarModo2Bpm(){
   heroEyebrow.innerHTML='<i class="pulse"></i> Painel operacional do 2º BPM';
   heroTitulo.textContent="Visão rápida — 2º BPM";
 }
+function aplicarModo1Bpm(){
+  document.body.classList.add("modo-1bpm");
+  heroEyebrow.innerHTML='<i class="pulse"></i> Painel operacional do 1º BPM';
+  heroTitulo.textContent="Visão rápida — 1º BPM";
+  var linkDashboard=document.querySelector('a[href^="dashboard.html"]');
+  if(linkDashboard)linkDashboard.href="dashboard.html?v=20261009-1bpm-banner1";
+}
 function aplicarModoBope(){
   document.body.classList.add("modo-bope");
   heroEyebrow.innerHTML='<i class="pulse"></i> Painel operacional do BOPE';
@@ -268,4 +280,5 @@ var calls=[db.rpc("obter_dados_dashboard",{data_inicio:iso(inicio),data_fim:iso(
  draw("topBairros",rank(rr[5].servicos||[],"posto_codigo","instituicao"),[["#0d5273","#1b90a0"],["#266b86","#40a5b1"],["#3d8297","#63b6bd"],["#5897aa","#81c7ca"],["#76aebb","#a0d5d6"]]);
 }tipoMapa.innerHTML='<option value="">Todos os tipos de ocorrência</option>'+((cats.tipos||[]).map(function(t){return '<option>'+escHome(t.nome)+'</option>'}).join(""));carregarMapa()}
 periodoMapa.onchange=function(){var custom=this.value==="personalizado";mapaInicio.style.display=custom?"inline-block":"none";mapaFim.style.display=custom?"inline-block":"none";if(!custom)carregarMapa()};tipoMapa.onchange=carregarMapa;camadaGiroMapa.onchange=renderizarMapa;visualizacaoMapa.onchange=renderizarMapa;aplicarMapa.onclick=carregarMapa;unidadeMapa.onchange=function(){atualizarAreaValores();carregarMapa()};areaTipoMapa.onchange=function(){atualizarAreaValores();carregarMapa()};areaValorMapa.onchange=carregarMapa;mapaInicio.style.display="none";mapaFim.style.display="none";carregar();
+(async()=>{const authReady=window.SistemaAuth?.ready,auth=authReady?await authReady:window.SistemaAuth;const sigla=String(auth?.contexto?.sigla||auth?.perfil?.unidades?.sigla||'').toUpperCase();if(sigla==='1BPM')aplicarModo1Bpm()})();
 </script></body></html>
