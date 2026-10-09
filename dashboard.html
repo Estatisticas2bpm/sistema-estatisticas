@@ -1,5 +1,11 @@
 <!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SIE-CPC — Dashboard Completo</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style id="cavalaria-dashboard-banner-styles">
+body.modo-cavalaria header{min-height:clamp(220px,23vw,300px);display:flex;align-items:flex-end;padding:24px;background-color:#03172f;background-image:linear-gradient(90deg,rgba(2,16,38,.98) 0%,rgba(2,25,55,.84) 38%,rgba(2,39,73,.24) 72%),url("assets/banners/cavalaria-home-banner.png?v=20261009-cavalaria-banner1");background-position:center,right center;background-size:100% 100%,contain;background-repeat:no-repeat;box-shadow:inset 0 -65px 85px rgba(2,13,31,.5)}
+body.modo-cavalaria header .head{position:relative;z-index:1;padding:16px 18px;border-radius:16px;background:linear-gradient(90deg,rgba(2,17,39,.88),rgba(3,38,72,.2));backdrop-filter:blur(2px);text-shadow:0 2px 9px rgba(0,0,0,.92)}
+body.modo-cavalaria header .head a{background:rgba(2,17,39,.58);backdrop-filter:blur(3px)}
+@media(max-width:720px){body.modo-cavalaria header{min-height:250px;padding:18px 3%;background-position:center,right center;background-image:linear-gradient(90deg,rgba(2,16,38,.99) 0%,rgba(2,24,52,.95) 55%,rgba(3,40,76,.62) 100%),url("assets/banners/cavalaria-home-banner.png?v=20261009-cavalaria-banner1")}body.modo-cavalaria header .head{width:100%;padding:12px;background:linear-gradient(90deg,rgba(2,17,39,.95),rgba(3,38,72,.48))}}
+</style>
 <style id="cipa-dashboard-banner-styles">
 body.modo-cipa header{min-height:clamp(220px,23vw,300px);display:flex;align-items:flex-end;padding:24px;background-color:#031a38;background-image:linear-gradient(90deg,rgba(2,17,43,.96) 0%,rgba(2,26,55,.77) 38%,rgba(3,52,63,.26) 69%),url("assets/banners/cipa-home-banner.png?v=20261009-cipa-banner3");background-position:center,right center;background-size:100% 100%,contain;background-repeat:no-repeat;box-shadow:inset 0 -65px 85px rgba(2,19,31,.43)}
 body.modo-cipa header .head{position:relative;z-index:1;padding:16px 18px;border-radius:16px;background:linear-gradient(90deg,rgba(2,20,39,.84),rgba(2,37,49,.18));backdrop-filter:blur(2px);text-shadow:0 2px 8px rgba(0,0,0,.85)}
@@ -413,6 +419,7 @@ function configurarModuloCipg(){
 }
 function configurarModuloCavalaria(){
   const ativo=ehCavalaria();
+  document.body.classList.toggle('modo-cavalaria',ativo);
   if($('navCavalaria'))$('navCavalaria').hidden=!ativo;
   if($('secCavalariaProdutividade'))$('secCavalariaProdutividade').hidden=!ativo;
   if(ativo){

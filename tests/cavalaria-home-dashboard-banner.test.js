@@ -1,0 +1,16 @@
+const fs=require('fs');
+const assert=require('assert');
+const index=fs.readFileSync('index.html','utf8');
+const dashboard=fs.readFileSync('dashboard.html','utf8');
+const asset='assets/banners/cavalaria-home-banner.png';
+assert.ok(fs.existsSync(asset),'banner da Cavalaria deve existir');
+assert.ok(fs.statSync(asset).size>100000,'banner da Cavalaria deve manter qualidade');
+assert.match(index,/body\.modo-cavalaria \.hero/,'home deve possuir estilo exclusivo da Cavalaria');
+assert.match(index,/cavalaria-home-banner\.png\?v=20261009-cavalaria-banner1/,'home deve usar o novo banner');
+assert.match(index,/background-size:100% 100%,contain/,'home deve preservar a imagem completa');
+assert.match(index,/Visão rápida — Cavalaria/,'home deve manter identificação da Cavalaria');
+assert.match(dashboard,/body\.modo-cavalaria header/,'dashboard deve possuir estilo exclusivo da Cavalaria');
+assert.match(dashboard,/classList\.toggle\('modo-cavalaria',ativo\)/,'dashboard deve ativar o modo somente para Cavalaria');
+assert.match(dashboard,/cavalaria-home-banner\.png\?v=20261009-cavalaria-banner1/,'dashboard deve usar o novo banner');
+for(const modo of ['modo-cipa','modo-bope','modo-1bpm'])assert.ok(index.includes(modo)&&dashboard.includes(modo),`modo ${modo} deve permanecer preservado`);
+console.log('Cavalaria banner: testes aprovados.');
