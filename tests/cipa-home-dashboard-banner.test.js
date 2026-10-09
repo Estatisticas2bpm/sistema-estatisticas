@@ -15,14 +15,14 @@ assert.match(home, /modoCipa=!modoCpc&&siglaAtiva==="CIPA"/);
 assert.match(home, /if\(modoCipa\)CipaHome\.preparar\(\)/);
 assert.match(cipaHome, /classList\.add\('modo-cipa'\)/);
 assert.match(home, /body\.modo-cipa \.hero/);
-assert.match(home, /assets\/banners\/cipa-home-banner\.png\?v=20261009-cipa-banner1/);
+assert.match(home, /assets\/banners\/cipa-home-banner\.png\?v=20261009-cipa-banner2/);
 
 assert.match(dashboard, /function ehCipa\(\)\{return siglaUnidadeAtiva\(\)==='CIPA'\}/);
 assert.match(dashboard, /function configurarModuloCipa\(\)/);
 assert.match(dashboard, /classList\.toggle\('modo-cipa',ativo\)/);
 assert.match(dashboard, /body\.modo-cipa header/);
 assert.match(dashboard, /Dashboard Ambiental — CIPA/);
-assert.match(dashboard, /assets\/banners\/cipa-home-banner\.png\?v=20261009-cipa-banner1/);
+assert.match(dashboard, /assets\/banners\/cipa-home-banner\.png\?v=20261009-cipa-banner2/);
 
 // Protege as identidades já existentes contra substituição acidental.
 assert.match(home, /body\.modo-giro \.hero/);
