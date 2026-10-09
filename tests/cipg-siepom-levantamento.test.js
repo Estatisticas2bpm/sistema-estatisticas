@@ -50,7 +50,7 @@ assert.match(turno('20:00'),/2º TURNO/);
 assert.match(turno('07:59'),/2º TURNO/);
 assert.equal(turno(''),'');
 
-for(const text of ['Relatórios de serviço','PMs atendidos no hospital','Serviços sem alteração','Efetivo empregado']){
+for(const text of ['Relatórios de serviço','Entradas de PM no hospital','Serviços sem alteração','Efetivo empregado']){
  assert.ok(home.includes(text),text+' ausente da visão rápida');
 }
 assert.match(home,/cipg_eventos_guarda/);
