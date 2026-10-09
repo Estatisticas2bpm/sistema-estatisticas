@@ -762,10 +762,16 @@ async function carregar(){loading.style.display='grid';let calls=[db.rpc('obter_
     const a=await consultarCipaPaginado('cipg_servicos_guarda',campos,'data_servico',ini.value,fim.value);
     if(a.error){loading.textContent='Erro ao carregar produtividade da CIPG: '+a.error.message;return}
     servicosCipgAtual=a.data||[];
+    const evt=await consultarEventosCipg(servicosCipgAtual);
+    if(evt.error){loading.textContent='Erro ao carregar acontecimentos CIPG: '+evt.error.message;return}
+    eventosCipgAtual=evt.data||[];
     if(temComparacao){
       const b=await consultarCipaPaginado('cipg_servicos_guarda',campos,'data_servico',pc[0],pc[1]);
       if(b.error){loading.textContent='Erro ao carregar comparação da CIPG: '+b.error.message;return}
       servicosCipgAnterior=b.data||[];
+      const evtAnt=await consultarEventosCipg(servicosCipgAnterior);
+      if(evtAnt.error){loading.textContent='Erro ao comparar eventos CIPG: '+evtAnt.error.message;return}
+      eventosCipgAnterior=evtAnt.data||[];
     }
   }
   if(ehGiro()){
