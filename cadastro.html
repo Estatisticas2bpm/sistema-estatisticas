@@ -12,6 +12,11 @@
   try {
     const sessaoCadastro=window.SistemaAuth?.ready?await window.SistemaAuth.ready:window.SistemaAuth;
     const siglaCadastro=String(sessaoCadastro?.contexto?.sigla||sessaoCadastro?.perfil?.unidades?.sigla||'').toUpperCase();
+    // CIPG registra livro de serviço manual, não BO/PPE nem upload de documento.
+    if(siglaCadastro==='CIPG'){
+      window.location.replace('cipg-produtividade.html'+window.location.search);
+      return;
+    }
     const ehCipturCadastro=siglaCadastro==='CIPTUR';
     const ehGiroCadastro=siglaCadastro==='GIRO';
     const ehCipaCadastro=siglaCadastro==='CIPA';
