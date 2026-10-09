@@ -741,7 +741,7 @@ async function carregar(){loading.style.display='grid';let calls=[db.rpc('obter_
     }
   }
   if(ehCipg()){
-    const campos='id,data_servico,instituicao,tipo_local,modalidade,rondas_realizadas,intercorrencias';
+    const campos='id,data_servico,instituicao,posto_codigo,tipo_local,modalidade,situacao,regime,numero_sei,efetivo_ordinario,efetivo_svi,km_rodados,litros_abastecidos,rondas_realizadas,intercorrencias';
     const a=await consultarCipaPaginado('cipg_servicos_guarda',campos,'data_servico',ini.value,fim.value);
     if(a.error){loading.textContent='Erro ao carregar produtividade da CIPG: '+a.error.message;return}
     servicosCipgAtual=a.data||[];
