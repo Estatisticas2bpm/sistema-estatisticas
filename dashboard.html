@@ -807,7 +807,7 @@ async function consultarCipaPaginado(tabela,campo,data,ini,fim){
   }
   return {data:linhas,error:null};
 }
-async function carregar(){loading.style.display='grid';let calls=[db.rpc('obter_dados_dashboard_territorial',{data_inicio:ini.value,data_fim:fim.value}),db.rpc('obter_tcos_dashboard_territorial',{data_inicio:ini.value,data_fim:fim.value})],temComparacao=comparar.value!=='nenhum',pc=temComparacao?periodoComparado():null;if(temComparacao)calls.push(db.rpc('obter_dados_dashboard_territorial',{data_inicio:pc[0],data_fim:pc[1]}),db.rpc('obter_tcos_dashboard_territorial',{data_inicio:pc[0],data_fim:pc[1]}));let r=await Promise.all(calls);if(r[0].error){loading.textContent='Erro ao carregar: '+r[0].error.message;return}if(r[1].error){loading.textContent='Erro ao carregar TCOs: '+r[1].error.message;return}atual=r[0].data||[];tcosAtual=r[1].data||[];anterior=temComparacao?(r[2].data||[]):[];tcosAnterior=temComparacao?(r[3].data||[]):[];
+async function carregar(){loading.style.display='grid';loading.textContent='Carregando dados estatísticos...';try{let calls=[db.rpc('obter_dados_dashboard_territorial',{data_inicio:ini.value,data_fim:fim.value}),db.rpc('obter_tcos_dashboard_territorial',{data_inicio:ini.value,data_fim:fim.value})],temComparacao=comparar.value!=='nenhum',pc=temComparacao?periodoComparado():null;if(temComparacao)calls.push(db.rpc('obter_dados_dashboard_territorial',{data_inicio:pc[0],data_fim:pc[1]}),db.rpc('obter_tcos_dashboard_territorial',{data_inicio:pc[0],data_fim:pc[1]}));let r=await Promise.all(calls);if(r[0].error){loading.textContent='Erro ao carregar: '+r[0].error.message;return}if(r[1].error){loading.textContent='Erro ao carregar TCOs: '+r[1].error.message;return}atual=r[0].data||[];tcosAtual=r[1].data||[];anterior=temComparacao?(r[2].data||[]):[];tcosAnterior=temComparacao?(r[3].data||[]):[];
   cipaAutosAtual=[];cipaAutosAnterior=[];cipaNotificacoesAtual=[];cipaNotificacoesAnterior=[];cipaFaunaAtual=[];cipaFaunaAnterior=[];cipaEmbargosAtual=[];cipaEmbargosAnterior=[];cipaEducacaoAtual=[];cipaEducacaoAnterior=[];autosCipturAtual=[];autosCipturAnterior=[];abordagensGiroAtual=[];abordagensGiroAnterior=[];servicosCavalariaAtual=[];servicosCavalariaAnterior=[];servicosCipgAtual=[];servicosCipgAnterior=[];eventosCipgAtual=[];eventosCipgAnterior=[];
   if(ehCipa()){
     const pares=[
@@ -868,7 +868,7 @@ async function carregar(){loading.style.display='grid';let calls=[db.rpc('obter_
     autosCipturAtual=ar[0].data||[];
     autosCipturAnterior=temComparacao?(ar[1].data||[]):[];
   }
-  render()}
+  render()}catch(erro){console.error('Falha ao carregar dashboard:',erro);loading.textContent='Não foi possível concluir o carregamento: '+(erro?.message||String(erro))+'. Atualize a página ou informe este erro ao suporte.';loading.style.display='grid';}}
 function popularTerritorio(){
  if(!catalogoTerritorial)return;
  let aAnt=aisc.value,sAnt=sisc.value,stAnt=setor.value,ctx=window.SistemaAuth?.contexto||{},todasAisc=catalogoTerritorial.aisc||[];
@@ -947,5 +947,5 @@ if(ehCipg()&&window.CipgDashboard){
   CipgDashboard.filtros.forEach(id=>{if($(id))$(id).value=''});
   render();
  });
-}let tr=await db.rpc('obter_catalogo_territorial_cpc');if(!tr.error){catalogoTerritorial=tr.data||{};popularTerritorio()}else console.error('Falha ao carregar matriz territorial:',tr.error);carregar()})();
+}let tr=await db.rpc('obter_catalogo_territorial_cpc');if(!tr.error){catalogoTerritorial=tr.data||{};popularTerritorio()}else console.error('Falha ao carregar matriz territorial:',tr.error);await carregar()})().catch(erro=>{console.error('Falha na inicialização do dashboard:',erro);loading.textContent='Erro na inicialização do painel: '+(erro?.message||String(erro));loading.style.display='grid'});
 </script></body></html>
