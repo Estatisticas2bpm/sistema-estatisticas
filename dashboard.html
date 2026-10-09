@@ -533,7 +533,9 @@ function renderGraficosCipg(servicos,eventos){
   ['chartCipgDesfechos','desfecho','doughnut'],
   ['chartCipgGraduacoes','graduacao','bar'],
   ['chartCipgUnidades','unidade_militar','bar'],
-  ['chartCipgConducoes','conduzido_por','doughnut']
+  ['chartCipgConducoes','conduzido_por','doughnut'],
+  ['chartCipgSetores','setor_atendimento','bar'],
+  ['chartCipgTiposEventos','tipo_evento','doughnut']
  ];
  for(const [id,k,tipo] of grupos){
   const a=rank(eventos,x=>x[k]||'Não informado',12);
@@ -563,6 +565,7 @@ function renderCipg(){
  const base=servicosCipgAtual.filter(x=>
   (!vl('cipgFiltroTipo')||x.tipo_local===vl('cipgFiltroTipo'))&&
   (!vl('cipgFiltroModalidade')||x.modalidade===vl('cipgFiltroModalidade'))&&
+  (!vl('cipgFiltroRegime')||String(x.regime||'').toUpperCase().includes(vl('cipgFiltroRegime').toUpperCase()))&&
   (!vl('cipgFiltroSituacao')||x.situacao===vl('cipgFiltroSituacao'))&&
   (!vl('cipgFiltroInstituicao')||(String(x.instituicao||'').toUpperCase().includes(vl('cipgFiltroInstituicao').toUpperCase())||
   String(x.posto_codigo||'').toUpperCase().includes(vl('cipgFiltroInstituicao').toUpperCase()))));
@@ -913,5 +916,5 @@ document.querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>{let h=new D
 aplicar.onclick=carregar;filtroTipoSubtracao.onchange=render;aisc.onchange=()=>{sisc.value='';setor.value='';popularTerritorio();render()};sisc.onchange=()=>{setor.value='';popularTerritorio();render()};setor.onchange=render;
 gerarPdf.onclick=()=>location.href='relatorio.html?v=20261007-bope1&ini='+ini.value+'&fim='+fim.value+'&comparar='+comparar.value+'&sisc='+encodeURIComponent(sisc.value)+'&companhia='+encodeURIComponent(companhia.value)+'&subunidade_bope='+encodeURIComponent($('subunidadeBope')?.value||'');
 let h=new Date();ini.value=fmt(new Date(h.getFullYear(),h.getMonth(),1));fim.value=fmt(h);
-(async()=>{if(window.SistemaAuth?.ready)await window.SistemaAuth.ready;const ctx=window.SistemaAuth?.contexto||{};if(String(ctx.sigla||'').toUpperCase()==='BOPE')$('subunidadeBopeWrap').hidden=false;$('subunidadeBope')?.addEventListener('change',render);['cipaMunicipio','cipaArea','cipaOrigemFiltro'].forEach(id=>$(id)?.addEventListener('change',render));prepararFiltrosAbordagemGiro();configurarModuloCiptur();configurarModuloCipa();configurarModuloGiro();configurarModuloCavalaria();configurarModuloCipg();['cipgFiltroTipo','cipgFiltroModalidade','cipgFiltroInstituicao','cipgFiltroSituacao','cipgFiltroEvento','cipgFiltroDesfecho','cipgFiltroEmServico','cipgFiltroCausa','cipgFiltroTurno'].forEach(id=>{const el=$(id);if(el){el.addEventListener('change',render);if(el.tagName==='INPUT')el.addEventListener('input',render)}});let tr=await db.rpc('obter_catalogo_territorial_cpc');if(!tr.error){catalogoTerritorial=tr.data||{};popularTerritorio()}else console.error('Falha ao carregar matriz territorial:',tr.error);carregar()})();
+(async()=>{if(window.SistemaAuth?.ready)await window.SistemaAuth.ready;const ctx=window.SistemaAuth?.contexto||{};if(String(ctx.sigla||'').toUpperCase()==='BOPE')$('subunidadeBopeWrap').hidden=false;$('subunidadeBope')?.addEventListener('change',render);['cipaMunicipio','cipaArea','cipaOrigemFiltro'].forEach(id=>$(id)?.addEventListener('change',render));prepararFiltrosAbordagemGiro();configurarModuloCiptur();configurarModuloCipa();configurarModuloGiro();configurarModuloCavalaria();configurarModuloCipg();['cipgFiltroTipo','cipgFiltroModalidade','cipgFiltroInstituicao','cipgFiltroSituacao','cipgFiltroEvento','cipgFiltroDesfecho','cipgFiltroEmServico','cipgFiltroCausa','cipgFiltroTurno','cipgFiltroRegime'].forEach(id=>{const el=$(id);if(el){el.addEventListener('change',render);if(el.tagName==='INPUT')el.addEventListener('input',render)}});let tr=await db.rpc('obter_catalogo_territorial_cpc');if(!tr.error){catalogoTerritorial=tr.data||{};popularTerritorio()}else console.error('Falha ao carregar matriz territorial:',tr.error);carregar()})();
 </script></body></html>
