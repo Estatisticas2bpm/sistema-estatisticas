@@ -187,7 +187,8 @@ function render(dadosA,dadosB,ctx){
   postosCatalogados:'cipgPostosCatalogados',passagemRecebeu:'cipgPassagemRecebeu',
   passagemPassou:'cipgPassagemPassou'
  };
- for(const field of info)set(ids[field],n(field));
+ for(const field of info)set(ids[field],
+  (field==='efetivoMedio'&&m.efetivoMedio===null)?'—':n(field));
  set('cipgIntercorrencias',numBR(soma(a.servicos,'intercorrencias')));
  set('cipgPctSa',m.pctSa===null?'—':numBR(m.pctSa)+'%');
  set('cipgConsumo',m.mediaConsumo===null?'—':numBR(m.mediaConsumo)+' L/100 km');
@@ -228,7 +229,7 @@ function render(dadosA,dadosB,ctx){
  rows('tabCipgInstituicoes',posto.map(x=>'<tr><td>'+esc(x.posto)+'</td><td>'+numBR(x.servicos)+
   '</td><td>'+numBR(x.sa)+'</td><td>'+numBR(x.ord+x.svi)+'</td></tr>').join(''));
  rows('tabCipgPostosDetalhado',posto.map(x=>'<tr>'+[
-  x.posto,x.servicos,x.sa,x.eventos,x.hospital,x.ord,x.svi,x.rondas,x.intercorrencias,
+  x.posto,x.servicos,x.sa,x.eventos,(x.hospital>0&&x.hospital<3?'≤ 2':x.hospital),x.ord,x.svi,x.rondas,x.intercorrencias,
   numBR(x.km),numBR(x.litros)
  ].map(v=>'<td>'+esc(String(v))+'</td>').join('')+'</tr>').join(''));
  rows('tabCipgMensal',serie.map(x=>'<tr>'+[
@@ -270,7 +271,8 @@ function render(dadosA,dadosB,ctx){
  ].map(v=>'<td>'+esc(v)+'</td>').join('')+'</tr>').join(''));
  const docs=$('cipgDocumentosNota');
  if(docs)docs.textContent='Últimos '+lista.length+' de '+a.servicos.length+
-  ' relatório(s) do período. Os campos exibidos são referências administrativas, sem dados pessoais.';
+  ' relatório(s) do período. Os campos exibidos são referências administrativas, sem dados pessoais. '+
+  'Não se divulgam nomes de militares nem descrições clínicas.';
  return {atual:a,anterior:b,indicadores:m,comparacao:p};
 }
 window.CipgDashboard={filtros,selecionar,consolidar,tabelaPorPosto,tabelaPorMes,turnoEvento,
