@@ -37,6 +37,7 @@ button{background:#1f6046;color:white;border:0;border-radius:8px;padding:11px 17
 <div class="item"><label for="conduzido">Conduzido por</label><select id="conduzido"><option value="">Não informado</option>
 <option>SAMU</option><option>VIATURA PM</option><option>CORPO DE BOMBEIROS</option><option>MEIOS PRÓPRIOS</option><option>OUTROS</option><option>NÃO INFORMADO</option></select></div>
 <div class="item"><label for="setor">Setor de atendimento</label><input id="setor" maxlength="120" placeholder="Setor, se informado no relatório"></div>
+<div class="item"><label for="apoio">Apoio / acompanhamento</label><input id="apoio" maxlength="160" placeholder="Somente resumo administrativo, sem nomes"></div>
 <div class="item"><label for="desfecho">Desfecho</label><select id="desfecho"><option value="">Não informado</option>
 <option>EM ATENDIMENTO</option><option>EM OBSERVAÇÃO</option><option>INTERNADO</option><option>LIBERADO</option><option>TRANSFERIDO</option><option>ÓBITO</option></select></div>
 </div>
@@ -92,7 +93,7 @@ button{background:#1f6046;color:white;border:0;border-radius:8px;padding:11px 17
        data_evento:val('dataEvento'),hora_evento:val('horaEvento'),graduacao:val('graduacao'),
        unidade_militar:val('unidadeMilitar'),em_servico:val('emServico'),
        causa_motivo:val('causa'),conduzido_por:val('conduzido'),
-       setor_atendimento:val('setor'),desfecho:val('desfecho')
+       setor_atendimento:val('setor'),desfecho:val('desfecho'),apoio_acompanhamento:val('apoio')
      };
      const r=await sessao.client.from('cipg_eventos_guarda').insert(dados);
      if(r.error)throw r.error;
