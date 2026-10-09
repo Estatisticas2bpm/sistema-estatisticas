@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SIE-CPC — Produtividade da CIPG</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#eef3f8;color:#1c2c39;font:14px Inter,Arial,sans-serif}
+header{padding:23px 5%;background:linear-gradient(120deg,#091b34,#143f5a 65%,#235c50);color:#fff}
+.head,main{width:min(1100px,94%);margin:auto}.head{display:flex;align-items:center;justify-content:space-between;gap:14px}
+h1{margin:0;font-size:25px}header p{color:#d4e0e8;margin:6px 0 0}.head a{color:#fff;border:1px solid #ffffff66;border-radius:8px;padding:10px;text-decoration:none}
+main{margin:20px auto 35px}.panel{background:white;padding:20px;border:1px solid #d4e0e7;border-radius:13px;margin-bottom:18px;box-shadow:0 6px 16px #0011}
+.panel h2{margin:0 0 8px;font-size:19px}.sub{color:#526b7b;font-size:12px;line-height:1.5}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}.campo label{font-weight:700;font-size:12px;display:block;margin-bottom:6px}
+input,select{width:100%;padding:11px;border:1px solid #a9bac9;border-radius:8px;background:white;color:#1f3041;font-size:14px}
+button{border:0;border-radius:8px;background:#1f5c46;color:white;padding:11px 18px;font-weight:bold;cursor:pointer}button:disabled{opacity:.55}
+.actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:16px}.status{font-size:13px;color:#47607a}.status.erro{color:#b42318}.status.ok{color:#116747}
+table{border-collapse:collapse;width:100%}th,td{padding:9px;text-align:left;border-bottom:1px solid #dfebef;font-size:12px}th{background:#eaf2ef}
+.tablewrap{overflow-x:auto}.empty{color:#607488;font-size:13px;padding:15px}.nota{background:#edf6f1;border-left:4px solid #2c7758;padding:10px;margin:12px 0;font-size:12px}
+@media(max-width:750px){.grid{grid-template-columns:1fr}.head{align-items:flex-start;flex-direction:column}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="auth-config.js"></script><script src="auth-guard.js"></script>
+</head><body><header><div class="head"><div><h1>Produtividade da CIPG</h1><p>Companhia Independente de Policiamento de Guarda · SIE-CPC / PMRR</p></div><a href="dashboard.html">← Dashboard</a></div></header>
+<main>
+<section class="panel"><h2>Registrar serviço de guarda</h2>
+<p class="sub">Registre a produtividade resumida da guarda. O serviço não precisa gerar BO. Não informe escalas futuras, posições táticas, nomes de policiais nem outras informações sensíveis.</p>
+<form id="form"><div class="grid">
+<div class="campo"><label for="dia">Data do serviço *</label><input id="dia" type="date" required></div>
+<div class="campo"><label for="instituicao">Instituição / local atendido *</label><input id="instituicao" required maxlength="160" placeholder="Nome da instituição (não o posto tático)"></div>
+<div class="campo"><label for="tipoLocal">Categoria do local *</label><select id="tipoLocal"><option value="EDIFICIO_PUBLICO">Edifício público estadual</option><option value="ESTABELECIMENTO_PENAL">Estabelecimento penal (segurança externa)</option><option value="OUTRO">Outro</option></select></div>
+<div class="campo"><label for="modalidade">Atividade predominante *</label><select id="modalidade"><option value="GUARDA_FIXA">Guarda fixa</option><option value="RONDA">Ronda</option><option value="REFORCO">Reforço de guarda</option><option value="APOIO_OPERACIONAL">Apoio operacional</option><option value="OUTRA">Outra</option></select></div>
+<div class="campo"><label for="rondas">Rondas realizadas</label><input id="rondas" type="number" min="0" max="10000" value="0"></div>
+<div class="campo"><label for="intercorrencias">Intercorrências registradas</label><input id="intercorrencias" type="number" min="0" max="10000" value="0"></div>
+<div class="campo"><label for="documento">Nº do documento de referência (opcional)</label><input id="documento" maxlength="120" placeholder="PPE, BO ou relatório"></div>
+</div>
+<p class="nota"><b>Critério estatístico:</b> um serviço lançado corresponde a um registro de atividade. As rondas e intercorrências são quantidades dentro do serviço, não serviços adicionais. Uma ocorrência que originar BO deve ser cadastrada também como ocorrência na aba própria.</p>
+<div class="actions"><button id="salvar" type="submit">Salvar serviço</button><button id="limpar" type="button" style="background:#54687a">Limpar</button><span id="status" class="status" role="status">Carregando permissões...</span></div>
+</form></section>
+<section class="panel"><h2>Últimos serviços cadastrados</h2><p class="sub">Visualização resumida somente para usuários autorizados.</p><div id="recentes" class="empty">Consultando...</div></section>
+</main>
+<script>
+(()=>{
+ const $=id=>document.getElementById(id);
+ let sessao=null;
+ const escapar=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ function mostrar(msg,erro=false){$('status').textContent=msg;$('status').className='status '+(erro?'erro':'ok')}
+ function diaHoje(){const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')}
+ function autorizado(){
+   const perfil=String(sessao?.perfil?.perfil||'').toUpperCase();
+   const sigla=String(sessao?.contexto?.sigla||sessao?.perfil?.unidades?.sigla||'').toUpperCase();
+   return sigla==='CIPG'&&['ADMIN','ESTATISTICA','OPERADOR'].includes(perfil)
+     &&(typeof sessao?.temModulo!=='function'||sessao.temModulo('PRODUTIVIDADE_CIPG'));
+ }
+ function inteiro(id){
+   const v=Number($(id).value);
+   if(!Number.isInteger(v)||v<0||v>10000)throw Error('Informe uma quantidade válida em '+id+'.');
+   return v;
+ }
+ async function recentes(){
+   const r=await sessao.client.from('cipg_servicos_guarda')
+     .select('data_servico,instituicao,tipo_local,modalidade,rondas_realizadas,intercorrencias')
+     .eq('unidade_id',sessao.contexto.unidade_id).order('data_servico',{ascending:false}).limit(25);
+   if(r.error){$('recentes').textContent='Erro ao consultar serviços: '+r.error.message;return}
+   if(!r.data?.length){$('recentes').textContent='Nenhum serviço registrado até agora.';return}
+   const tipos={EDIFICIO_PUBLICO:'Prédio público',ESTABELECIMENTO_PENAL:'Estabelecimento penal',OUTRO:'Outro'};
+   const atos={GUARDA_FIXA:'Guarda fixa',RONDA:'Ronda',REFORCO:'Reforço',APOIO_OPERACIONAL:'Apoio',OUTRA:'Outra'};
+   $('recentes').className='tablewrap';
+   $('recentes').innerHTML='<table><thead><tr><th>Data</th><th>Instituição</th><th>Categoria</th><th>Atividade</th><th>Rondas</th><th>Intercorrências</th></tr></thead><tbody>'+
+     r.data.map(x=>'<tr><td>'+escapar((x.data_servico||'').split('-').reverse().join('/'))+'</td><td>'+escapar(x.instituicao)+'</td><td>'+escapar(tipos[x.tipo_local])+'</td><td>'+escapar(atos[x.modalidade])+'</td><td>'+Number(x.rondas_realizadas||0)+'</td><td>'+Number(x.intercorrencias||0)+'</td></tr>').join('')+'</tbody></table>';
+ }
+ $('form').addEventListener('submit',async e=>{
+   e.preventDefault();if(!autorizado())return mostrar('Acesso não autorizado.',true);
+   const btn=$('salvar');btn.disabled=true;
+   try{
+     const instituicao=$('instituicao').value.trim();
+     if(instituicao.length<3)throw Error('Identifique a instituição atendida.');
+     const obj={
+       unidade_id:sessao.contexto.unidade_id,data_servico:$('dia').value,
+       instituicao,tipo_local:$('tipoLocal').value,modalidade:$('modalidade').value,
+       rondas_realizadas:inteiro('rondas'),intercorrencias:inteiro('intercorrencias'),
+       documento_referencia:$('documento').value.trim()||null
+     };
+     const r=await sessao.client.from('cipg_servicos_guarda').insert(obj);
+     if(r.error)throw r.error;
+     mostrar('Serviço registrado. Os indicadores do painel serão atualizados na próxima consulta.');
+     $('form').reset();$('dia').value=diaHoje();await recentes();
+   }catch(err){mostrar('Não foi possível salvar: '+(err.message||err),true)}
+   finally{btn.disabled=false}
+ });
+ $('limpar').addEventListener('click',()=>{$('form').reset();$('dia').value=diaHoje();mostrar('Formulário limpo.')});
+ (async()=>{
+   sessao=window.SistemaAuth?.client&&window.SistemaAuth?.user?window.SistemaAuth:await window.SistemaAuth?.ready;
+   if(!sessao||!autorizado()){location.replace('index.html?erro=sem-permissao');return}
+   $('dia').value=diaHoje();mostrar('Pronto para registrar serviços.');await recentes();
+ })().catch(err=>mostrar('Falha no carregamento: '+(err.message||err),true));
+})();
+</script></body></html>
