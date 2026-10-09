@@ -39,6 +39,9 @@
     $('tcosSub').textContent='relatórios identificados como S/A';
     $('veiculosSub').textContent='ordinário + SVI (postos/serviços, não PMs únicos)';
     $('topOcorrenciasDescricao').textContent='Acontecimentos registrados pela CIPG';
+    $('topOcorrenciasTitulo').textContent='Top 5 eventos do livro de serviço';
+    $('topBairrosTitulo').textContent='Postos com mais relatórios';
+    $('topBairrosDescricao').textContent='Serviços registrados por posto no mês';
   }
   async function consultar(db,inicio,fim){
     const rows=[],limite=1000;
