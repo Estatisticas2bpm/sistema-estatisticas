@@ -52,6 +52,7 @@ function itemEvento(){
  campoEvento('data','Data do fato','<input data-col="data_evento" type="date" value="'+esc(valor('dia'))+'">')+
  campoEvento('hora','Hora do fato','<input data-col="hora_evento" type="time">')+
  campoEvento('turno','Turno calculado','<output data-turno class="output">Informe a hora</output>')+
+ '<div class="wide"><details data-detalhes open><summary>Dados do militar e atendimento (quando houver)</summary><div class="fieldgrid">'+
  campoEvento('graduacao','Graduação','<select data-col="graduacao">'+tipoSelect(grupos.graduacoes)+'</select>')+
  campoEvento('unidade','Unidade do militar','<input data-col="unidade_militar" maxlength="120" placeholder="Ex.: 1º BPM">')+
  campoEvento('em_servico','Estava em serviço?','<select data-col="em_servico">'+tipoSelect(grupos.emServico)+'</select>')+
@@ -59,7 +60,7 @@ function itemEvento(){
  campoEvento('conducao','Conduzido por','<select data-col="conduzido_por">'+tipoSelect(grupos.conducao)+'</select>')+
  campoEvento('setor','Setor de atendimento','<input data-col="setor_atendimento" maxlength="120" placeholder="Se constar no relato">')+
  campoEvento('desfecho','Desfecho','<select data-col="desfecho">'+tipoSelect(grupos.desfechos)+'</select>')+
- '</div><p class="helper">Não informar nome do militar, lesões, diagnóstico ou dados clínicos.</p></article>';
+ '</div></details></div></div><p class="helper">Não informar nome do militar, lesões, diagnóstico ou dados clínicos.</p></article>';
 }
 function linhasEventos(){return [...document.querySelectorAll('#listaEventos .evento')]}
 function situacao(){
@@ -203,6 +204,11 @@ function ligarEventos(){
   if(card?.dataset.gravado==='sim')return status('O acontecimento já salvo não pode ser excluído neste formulário. Solicite correção ao setor de estatística.',true);
   card?.remove();situacao();
  });
+ $('listaEventos').addEventListener('change',e=>{
+  if(e.target.dataset.col!=='tipo_evento')return;
+  const detalhes=e.target.closest('[data-evento]')?.querySelector('[data-detalhes]');
+  if(detalhes)detalhes.open=/HOSPITAL|ÓBITO DE PM/.test(e.target.value);
+ });
  $('listaEventos').addEventListener('input',e=>{
   if(e.target.dataset.col!=='hora_evento')return;
   const card=e.target.closest('[data-evento]');
@@ -220,7 +226,7 @@ async function iniciar(){
  try{
   sessao=window.SistemaAuth?.ready?await window.SistemaAuth.ready:window.SistemaAuth;
   if(!sessao||!autenticado()){window.location.replace('index.html?erro=sem-permissao');return}
-  $('dia').value=hoje();ligarEventos();situacao();
+  $('dia').value=hoje();$('dia').max=hoje();ligarEventos();situacao();
   await carregarPostos();await listar();
   status('Pronto para registrar o livro de serviço. O relatório é feito manualmente, sem PDF.');
  }catch(e){status('Não foi possível carregar o caderno: '+(e.message||e),true)}
