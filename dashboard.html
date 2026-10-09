@@ -502,6 +502,23 @@ function rankListaCavalaria(lista,campo){
   const m={};(lista||[]).forEach(x=>{const a=Array.isArray(x?.[campo])?x[campo]:[];a.forEach(v=>{const k=String(v||'').trim();if(k)m[k]=(m[k]||0)+1})});
   return Object.entries(m).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],'pt-BR')).slice(0,10);
 }
+async function consultarEventosCipg(servicos){
+  const ids=servicos.map(x=>x.id),resultado=[];
+  for(let i=0;i<ids.length;i+=100){
+    const resp=await db.from('cipg_eventos_guarda')
+      .select('id,servico_id,data_evento,hora_evento,tipo_evento,graduacao,unidade_militar,em_servico,causa_motivo,conduzido_por,setor_atendimento,desfecho')
+      .in('servico_id',ids.slice(i,i+100));
+    if(resp.error)return {data:[],error:resp.error};
+    resultado.push(...(resp.data||[]));
+  }
+  return {data:resultado,error:null};
+}
+function turnoCipg(hora){
+  const partes=String(hora||'').slice(0,5).split(':').map(Number);
+  if(partes.length!==2||!Number.isInteger(partes[0])||!Number.isInteger(partes[1]))return '';
+  const min=partes[0]*60+partes[1];
+  return min>=480&&min<1200?'1':'2';
+}
 function renderCipg(){
   if(!ehCipg())return;
   const filtroTipo=$('cipgFiltroTipo').value,filtroMod=$('cipgFiltroModalidade').value;
