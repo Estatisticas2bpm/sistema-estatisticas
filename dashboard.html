@@ -19,34 +19,59 @@
 <a href="cipg-produtividade.html">Registrar serviço</a></nav>
 <nav id="navCavalaria" class="module-nav" hidden aria-label="Módulos do painel Cavalaria"><a href="#secVisaoGeral">Visão geral</a><a href="#secCavalariaProdutividade">Produtividade operacional</a><a href="#secProdutividade">Resultados de ocorrências</a><a href="#secComandantes">Comandantes</a><a href="cavalaria-produtividade.html">Registrar produtividade</a></nav>
 <section class="cards" id="secVisaoGeral"><div class="card"><small>Total de ocorrências</small><strong id="kTotal">0</strong><em id="vTotal"></em></div><div class="card teal"><small>Ocorrências atendidas</small><strong id="kAtendidas">0</strong></div><div class="card red"><small>Demandas reprimidas</small><strong id="kReprimidas">0</strong></div><div class="card steel"><small>Documentos produzidos</small><strong id="kDocumentos">0</strong></div><div class="card steel"><small>Conduções</small><strong id="kConduzidos">0</strong><em>inclui compatibilidade com registros legados</em></div></section><section class="section" id="secCipgProdutividade" hidden>
- <span class="module-tag">Produtividade de guarda · CIPG</span>
+ <span class="module-tag">Produtividade · Livro de serviço CIPG</span>
  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
- <div><h2>Serviços e produtividade de guarda</h2><p class="sub">Guardas em edifícios públicos estaduais e segurança externa de estabelecimentos penais. Serviços sem BO são contabilizados separadamente das ocorrências policiais.</p></div>
- <a class="btn" href="cipg-produtividade.html" style="text-decoration:none">Registrar produtividade</a>
+ <div><h2>Livro de serviço e acontecimentos da CIPG</h2>
+ <p class="sub">Relatórios S/A e com alteração; acompanhamento de policiais atendidos no hospital. Um evento por militar envolvido, vinculado ao SEI. Os eventos do livro não são BOs.</p></div>
+ <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn" href="cipg-produtividade.html" style="text-decoration:none">Registrar relatório</a><a class="btn" href="cipg-eventos.html" style="text-decoration:none">Registrar evento</a></div></div>
+ <div class="cards">
+ <div class="card"><small>Relatórios de serviço</small><strong id="cipgServicos">0</strong><em id="cipgServicosVar"></em></div>
+ <div class="card green"><small>PMs atendidos no hospital</small><strong id="cipgHospital">0</strong></div>
+ <div class="card teal"><small>Serviços sem alteração (S/A)</small><strong id="cipgSemAlteracao">0</strong></div>
+ <div class="card steel"><small>Com alteração / evento</small><strong id="cipgComAlteracao">0</strong></div>
+ <div class="card amber"><small>Estavam em serviço</small><strong id="cipgEmServico">0</strong></div>
+ <div class="card steel"><small>Internados</small><strong id="cipgInternados">0</strong></div>
+ <div class="card teal"><small>Em observação</small><strong id="cipgObservacao">0</strong></div>
+ <div class="card green"><small>Liberados</small><strong id="cipgLiberados">0</strong></div>
+ <div class="card"><small>Óbitos</small><strong id="cipgObitos">0</strong></div>
  </div>
  <div class="cards">
- <div class="card"><small>Serviços de guarda</small><strong id="cipgServicos">0</strong><em id="cipgServicosVar"></em></div>
- <div class="card green"><small>Instituições atendidas</small><strong id="cipgInstituicoes">0</strong></div>
- <div class="card teal"><small>Rondas realizadas</small><strong id="cipgRondas">0</strong></div>
- <div class="card amber"><small>Intercorrências</small><strong id="cipgIntercorrencias">0</strong></div>
- <div class="card steel"><small>Guarda fixa</small><strong id="cipgGuardaFixa">0</strong></div>
- <div class="card steel"><small>Segurança externa penal</small><strong id="cipgPenal">0</strong></div>
- <div class="card green"><small>Reforços de guarda</small><strong id="cipgReforcos">0</strong></div>
+ <div class="card steel"><small>Instituições atendidas</small><strong id="cipgInstituicoes">0</strong></div>
+ <div class="card"><small>Efetivo ordinário empregado</small><strong id="cipgEfetivoOrd">0</strong></div>
+ <div class="card green"><small>Efetivo SVI empregado</small><strong id="cipgEfetivoSvi">0</strong></div>
+ <div class="card teal"><small>Km rodados</small><strong id="cipgKm">0</strong></div>
+ <div class="card amber"><small>Litros abastecidos</small><strong id="cipgLitros">0</strong></div>
+ <div class="card steel"><small>Rondas informadas</small><strong id="cipgRondas">0</strong></div>
+ <div class="card"><small>Intercorrências</small><strong id="cipgIntercorrencias">0</strong></div>
  </div>
  <div class="grid3" style="margin-top:12px">
- <label>Categoria do local<select id="cipgFiltroTipo"><option value="">Todas</option><option value="EDIFICIO_PUBLICO">Edifícios públicos</option><option value="ESTABELECIMENTO_PENAL">Estabelecimentos penais</option><option value="OUTRO">Outros</option></select></label>
+ <label>Posto / instituição<input id="cipgFiltroInstituicao" placeholder="PSE, CSE ou instituição"></label>
+ <label>Situação do relatório<select id="cipgFiltroSituacao"><option value="">Todas</option><option value="SEM ALTERACAO">Sem alteração (S/A)</option><option value="COM ALTERACAO">Com alteração</option></select></label>
+ <label>Categoria do posto<select id="cipgFiltroTipo"><option value="">Todas</option><option value="EDIFICIO_PUBLICO">Edifícios públicos</option><option value="ESTABELECIMENTO_PENAL">Estabelecimentos penais</option><option value="OUTRO">Outros</option></select></label>
  <label>Atividade<select id="cipgFiltroModalidade"><option value="">Todas</option><option value="GUARDA_FIXA">Guarda fixa</option><option value="RONDA">Ronda</option><option value="REFORCO">Reforço</option><option value="APOIO_OPERACIONAL">Apoio operacional</option><option value="OUTRA">Outra</option></select></label>
- <label>Instituição<input id="cipgFiltroInstituicao" placeholder="Pesquisar instituição"></label>
+ <label>Tipo de evento<select id="cipgFiltroEvento"><option value="">Todos</option><option>ENTRADA DE PM NO HOSPITAL</option><option>ÓBITO DE PM</option><option>ALTERAÇÃO NO POSTO</option><option>FUGA / EVASÃO</option><option>TUMULTO</option><option>APOIO PRESTADO</option><option>OUTROS</option></select></label>
+ <label>Desfecho<select id="cipgFiltroDesfecho"><option value="">Todos</option><option>EM ATENDIMENTO</option><option>EM OBSERVAÇÃO</option><option>INTERNADO</option><option>LIBERADO</option><option>TRANSFERIDO</option><option>ÓBITO</option></select></label>
+ <label>Em serviço?<select id="cipgFiltroEmServico"><option value="">Todos</option><option>SIM</option><option>NÃO</option><option>NÃO INFORMADO</option></select></label>
+ <label>Causa / motivo<input id="cipgFiltroCausa" placeholder="Ex.: acidente de trânsito"></label>
+ <label>Turno CIPG (horário do evento)<select id="cipgFiltroTurno"><option value="">Todos</option><option value="1">1º turno · 08h–20h</option><option value="2">2º turno · 20h–08h</option></select></label>
  </div>
  <div class="grid2" style="margin-top:18px">
- <div><h3>Serviços por modalidade</h3><div class="chartbox"><canvas id="chartCipgModalidades"></canvas></div></div>
- <div><h3>Distribuição por tipo de instituição</h3><div class="chartbox"><canvas id="chartCipgTipos"></canvas></div></div>
+ <div><h3>Eventos por causa / motivo</h3><div class="chartbox"><canvas id="chartCipgCausas"></canvas></div></div>
+ <div><h3>Desfecho dos atendimentos</h3><div class="chartbox"><canvas id="chartCipgDesfechos"></canvas></div></div>
  </div>
  <div class="grid2" style="margin-top:18px">
- <div><h3>Serviços por dia</h3><div class="chartbox"><canvas id="chartCipgEvolucao"></canvas></div></div>
- <div><h3>Instituições atendidas no período</h3><div class="tablewrap"><table><thead><tr><th>Instituição</th><th>Serviços</th><th>Rondas</th><th>Intercorrências</th></tr></thead><tbody id="tabCipgInstituicoes"></tbody></table></div></div>
+ <div><h3>Eventos por graduação</h3><div class="chartbox"><canvas id="chartCipgGraduacoes"></canvas></div></div>
+ <div><h3>Unidade de origem do militar</h3><div class="chartbox"><canvas id="chartCipgUnidades"></canvas></div></div>
  </div>
- <p class="sub" style="margin-top:14px">As estatísticas apresentam somente serviços cadastrados e acessíveis ao usuário. Instituições são contadas pelo nome padronizado no registro. Escalas futuras, efetivo nominal e detalhes de segurança não são exibidos.</p>
+ <div class="grid2" style="margin-top:18px">
+ <div><h3>Conduzido por</h3><div class="chartbox"><canvas id="chartCipgConducoes"></canvas></div></div>
+ <div><h3>Serviços por posto</h3><div class="chartbox"><canvas id="chartCipgPostos"></canvas></div></div>
+ </div>
+ <div class="grid2" style="margin-top:18px">
+ <div><h3>Relatórios por dia</h3><div class="chartbox"><canvas id="chartCipgEvolucao"></canvas></div></div>
+ <div><h3>Produtividade por posto</h3><div class="tablewrap"><table><thead><tr><th>Posto</th><th>Relatórios</th><th>S/A</th><th>Efetivo</th></tr></thead><tbody id="tabCipgInstituicoes"></tbody></table></div></div>
+ </div>
+ <p class="sub" style="margin-top:14px"><b>Apuração:</b> um relatório S/A conta como serviço, não como ocorrência. Entradas no hospital são registros por militar, não pessoas distintas em todo o período. Efetivo ordinário + SVI representa empregos por serviço, não policiais únicos. Dados pessoais e descrições clínicas não são exibidos.</p>
  </section>
 <section class="section" id="secCavalariaProdutividade" hidden>
   <span class="module-tag">Produtividade operacional · Cavalaria</span>
