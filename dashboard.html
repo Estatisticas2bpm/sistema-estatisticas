@@ -585,15 +585,20 @@ function rankListaCavalaria(lista,campo){
   return Object.entries(m).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],'pt-BR')).slice(0,10);
 }
 async function consultarEventosCipg(servicos){
-  const ids=servicos.map(x=>x.id),resultado=[];
-  for(let i=0;i<ids.length;i+=100){
-    const resp=await db.from('cipg_eventos_guarda')
-      .select('id,servico_id,data_evento,hora_evento,tipo_evento,graduacao,unidade_militar,em_servico,causa_motivo,conduzido_por,setor_atendimento,desfecho')
-      .in('servico_id',ids.slice(i,i+100));
-    if(resp.error)return {data:[],error:resp.error};
-    resultado.push(...(resp.data||[]));
+ const ids=servicos.map(x=>x.id),dados=[],passo=1000;
+ for(let i=0;i<ids.length;i+=100){
+  const lote=ids.slice(i,i+100);
+  for(let offset=0;;offset+=passo){
+   const r=await db.from('cipg_eventos_guarda')
+    .select('id,servico_id,data_evento,hora_evento,tipo_evento,graduacao,unidade_militar,em_servico,causa_motivo,conduzido_por,setor_atendimento,desfecho')
+    .in('servico_id',lote).order('id',{ascending:true}).range(offset,offset+passo-1);
+   if(r.error)return {data:[],error:r.error};
+   const linhas=r.data||[];dados.push(...linhas);
+   if(linhas.length<passo)break;
+   if(offset>=200000)return {data:[],error:{message:'Quantidade elevada de acontecimentos. Selecione um período menor.'}};
   }
-  return {data:resultado,error:null};
+ }
+ return {data:dados,error:null};
 }
 function turnoCipg(hora){
   const partes=String(hora||'').slice(0,5).split(':').map(Number);
