@@ -60,6 +60,7 @@ function itemEvento(){
  campoEvento('conducao','Conduzido por','<select data-col="conduzido_por">'+tipoSelect(grupos.conducao)+'</select>')+
  campoEvento('setor','Setor de atendimento','<input data-col="setor_atendimento" maxlength="120" placeholder="Se constar no relato">')+
  campoEvento('desfecho','Desfecho','<select data-col="desfecho">'+tipoSelect(grupos.desfechos)+'</select>')+
+ campoEvento('apoio','Apoio / acompanhamento','<input data-col="apoio_acompanhamento" maxlength="160" placeholder="Apenas resumo administrativo, sem nomes">')+
  '</div></details></div></div><p class="helper">Não informar nome do militar, lesões, diagnóstico ou dados clínicos.</p></article>';
 }
 function linhasEventos(){return [...document.querySelectorAll('#listaEventos .evento')]}
@@ -134,7 +135,7 @@ function documentoServico(){
 }
 function eventoDeTela(el,servicoId){
  const reg={servico_id:servicoId,tipo_evento:valorEvento(el,'tipo_evento')};
- for(const key of ['data_evento','hora_evento','graduacao','unidade_militar','em_servico','causa_motivo','conduzido_por','setor_atendimento','desfecho']){
+ for(const key of ['data_evento','hora_evento','graduacao','unidade_militar','em_servico','causa_motivo','conduzido_por','setor_atendimento','desfecho','apoio_acompanhamento']){
   reg[key]=valorEvento(el,key)||null;
  }
  return reg;
