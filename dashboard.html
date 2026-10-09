@@ -291,14 +291,16 @@ function configurarModuloCipg(){
   const titulo=document.querySelector('header h1'),sub=document.querySelector('header .head p');
   if(titulo)titulo.textContent='Dashboard Completo — CIPG';
   if(sub)sub.textContent='Livro de serviço, ocorrências do livro, atendimentos de PMs, postos, efetivo ordinário/SVI e desfechos; BOs separados';
-  for(const id of ['aisc','sisc','companhia','setor']){
+  // Os filtros criminais pertencem aos batalhões, não ao livro de serviços da CIPG.
+  // Mantém somente datas/comparação no topo; filtros específicos ficam na seção CIPG.
+  for(const id of ['aisc','sisc','companhia','setor','status','ocorrencia','subtipo',
+   'bairro','logradouro','comandante','vtr','turno','documento']){
     const item=$(id),bloco=item?.closest('label');
     if(bloco)bloco.hidden=true;
     if(item)item.value='';
   }
-  if($('documento')){
-    $('documento').innerHTML='<option value="">Todos</option><option>BO</option><option>TCO</option><option>ROP</option>';
-  }
+  // Relatório genérico de BO não representa corretamente os serviços da CIPG.
+  if($('gerarPdf'))$('gerarPdf').hidden=true;
 }
 function configurarModuloCavalaria(){
   const ativo=ehCavalaria();
