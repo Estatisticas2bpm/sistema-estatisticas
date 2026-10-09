@@ -51,7 +51,7 @@ button{background:#1f6046;color:white;border:0;border-radius:8px;padding:11px 17
  let sessao=null;
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  function turnoDeHora(hora){
-   if(!/^\\d{2}:\\d{2}$/.test(hora||''))return '';
+   if(!/^\d{2}:\d{2}$/.test(hora||''))return '';
    const partes=hora.split(':').map(Number),min=partes[0]*60+partes[1];
    return min>=8*60&&min<20*60?'1º TURNO — 08h às 20h':'2º TURNO — 20h às 08h';
  }
