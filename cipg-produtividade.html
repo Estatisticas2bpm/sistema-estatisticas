@@ -24,14 +24,28 @@ table{border-collapse:collapse;width:100%}th,td{padding:9px;text-align:left;bord
 <p class="sub">Registre a produtividade resumida da guarda. O serviço não precisa gerar BO. Não informe escalas futuras, posições táticas, nomes de policiais nem outras informações sensíveis.</p>
 <form id="form"><div class="grid">
 <div class="campo"><label for="dia">Data do serviço *</label><input id="dia" type="date" required></div>
-<div class="campo"><label for="instituicao">Instituição / local atendido *</label><input id="instituicao" required maxlength="160" placeholder="Nome da instituição (não o posto tático)"></div>
+<div class="campo"><label for="posto">Posto de serviço</label><select id="posto"><option value="">Outro posto / não catalogado</option></select></div>
+<div class="campo"><label for="instituicao">Instituição atendida *</label><input id="instituicao" required maxlength="160" placeholder="Nome da instituição (não o posto tático)"></div>
 <div class="campo"><label for="tipoLocal">Categoria do local *</label><select id="tipoLocal"><option value="EDIFICIO_PUBLICO">Edifício público estadual</option><option value="ESTABELECIMENTO_PENAL">Estabelecimento penal (segurança externa)</option><option value="OUTRO">Outro</option></select></div>
+<div class="campo"><label for="regime">Regime de serviço</label><input id="regime" maxlength="70" placeholder="Conforme relatório; opcional"></div>
+<div class="campo"><label for="turno">Turno próprio da CIPG</label><select id="turno" disabled><option>08h–20h / 20h–08h (conforme o serviço)</option></select></div>
 <div class="campo"><label for="modalidade">Atividade predominante *</label><select id="modalidade"><option value="GUARDA_FIXA">Guarda fixa</option><option value="RONDA">Ronda</option><option value="REFORCO">Reforço de guarda</option><option value="APOIO_OPERACIONAL">Apoio operacional</option><option value="OUTRA">Outra</option></select></div>
 <div class="campo"><label for="rondas">Rondas realizadas</label><input id="rondas" type="number" min="0" max="10000" value="0"></div>
 <div class="campo"><label for="intercorrencias">Intercorrências registradas</label><input id="intercorrencias" type="number" min="0" max="10000" value="0"></div>
-<div class="campo"><label for="documento">Nº do documento de referência (opcional)</label><input id="documento" maxlength="120" placeholder="PPE, BO ou relatório"></div>
+<div class="campo"><label for="documento">Nº SEI do relatório de serviço</label><input id="documento" maxlength="120" placeholder="Ex.: 23858411"></div>
+<div class="campo"><label for="situacao">Situação *</label><select id="situacao"><option value="SEM ALTERACAO">Sem alteração (S/A)</option><option value="COM ALTERACAO">Com alteração / evento</option></select></div>
+<div class="campo"><label for="efetivoOrdinario">Efetivo ordinário</label><input id="efetivoOrdinario" type="number" value="0" min="0" max="10000"></div>
+<div class="campo"><label for="efetivoSvi">Efetivo SVI</label><input id="efetivoSvi" type="number" value="0" min="0" max="10000"></div>
+<div class="campo"><label for="viatura">Viatura (opcional)</label><input id="viatura" maxlength="60" placeholder="Identificação operacional"></div>
+<div class="campo"><label for="kmRodados">Km rodados</label><input id="kmRodados" type="number" min="0" step="0.01" placeholder="Se informado"></div>
+<div class="campo"><label for="litros">Litros abastecidos</label><input id="litros" type="number" min="0" step="0.01" placeholder="Se informado"></div>
+<div class="campo"><label for="saidas">Saídas autorizadas (quantidade)</label><input id="saidas" type="number" min="0" step="1" placeholder="Se informado"></div>
+<div class="campo"><label for="alteracaoPessoal">Alteração de pessoal</label><select id="alteracaoPessoal"><option value="NAO">Não</option><option value="SIM">Sim</option></select></div>
+<div class="campo"><label for="alteracaoInstalacoes">Alteração de instalações</label><select id="alteracaoInstalacoes"><option value="NAO">Não</option><option value="SIM">Sim</option></select></div>
+<div class="campo"><label for="alteracaoMaterial">Alteração de material</label><select id="alteracaoMaterial"><option value="NAO">Não</option><option value="SIM">Sim</option></select></div>
 </div>
-<p class="nota"><b>Critério estatístico:</b> um serviço lançado corresponde a um registro de atividade. As rondas e intercorrências são quantidades dentro do serviço, não serviços adicionais. Uma ocorrência que originar BO deve ser cadastrada também como ocorrência na aba própria.</p>
+<p class="nota"><b>Critério SIEPOM:</b> um relatório de serviço gera uma linha, inclusive quando consta S/A. Os acontecimentos relatados são cadastrados separadamente, com vínculo pelo número SEI. Se dois militares estiverem envolvidos, registre dois eventos. O turno da CIPG é 08h–20h ou 20h–08h; este cadastro de estatísticas não registra escalas futuras.</p>
+<div class="actions"><a href="cipg-eventos.html" style="color:#165a44;font-weight:bold">Registrar acontecimentos do livro de serviço →</a></div>
 <div class="actions"><button id="salvar" type="submit">Salvar serviço</button><button id="limpar" type="button" style="background:#54687a">Limpar</button><span id="status" class="status" role="status">Carregando permissões...</span></div>
 </form></section>
 <section class="panel"><h2>Últimos serviços cadastrados</h2><p class="sub">Visualização resumida somente para usuários autorizados.</p><div id="recentes" class="empty">Consultando...</div></section>
@@ -49,6 +63,18 @@ table{border-collapse:collapse;width:100%}th,td{padding:9px;text-align:left;bord
    return sigla==='CIPG'&&['ADMIN','ESTATISTICA','OPERADOR'].includes(perfil)
      &&(typeof sessao?.temModulo!=='function'||sessao.temModulo('PRODUTIVIDADE_CIPG'));
  }
+ async function carregarPostos(){
+   const res=await sessao.client.from('cipg_postos').select('codigo,nome,tipo_local').eq('ativo',true).order('codigo');
+   if(res.error){console.error(res.error);mostrar('Os postos cadastrados não puderam ser carregados; digite a instituição manualmente.',true);return}
+   const lista=res.data||[];
+   $('posto').innerHTML='<option value="">Outro posto / não catalogado</option>'+
+     lista.map(x=>'<option value="'+escapar(x.codigo)+'">'+escapar(x.codigo+' — '+x.nome)+'</option>').join('');
+   const porId=Object.fromEntries(lista.map(x=>[x.codigo,x]));
+   $('posto').addEventListener('change',()=>{
+     const p=porId[$('posto').value];
+     if(p){$('instituicao').value=p.nome;$('tipoLocal').value=p.tipo_local;}
+   });
+ }
  function inteiro(id){
    const v=Number($(id).value);
    if(!Number.isInteger(v)||v<0||v>10000)throw Error('Informe uma quantidade válida em '+id+'.');
@@ -56,15 +82,13 @@ table{border-collapse:collapse;width:100%}th,td{padding:9px;text-align:left;bord
  }
  async function recentes(){
    const r=await sessao.client.from('cipg_servicos_guarda')
-     .select('data_servico,instituicao,tipo_local,modalidade,rondas_realizadas,intercorrencias')
+     .select('data_servico,instituicao,numero_sei,situacao,efetivo_ordinario,efetivo_svi,rondas_realizadas,intercorrencias')
      .eq('unidade_id',sessao.contexto.unidade_id).order('data_servico',{ascending:false}).limit(25);
    if(r.error){$('recentes').textContent='Erro ao consultar serviços: '+r.error.message;return}
    if(!r.data?.length){$('recentes').textContent='Nenhum serviço registrado até agora.';return}
-   const tipos={EDIFICIO_PUBLICO:'Prédio público',ESTABELECIMENTO_PENAL:'Estabelecimento penal',OUTRO:'Outro'};
-   const atos={GUARDA_FIXA:'Guarda fixa',RONDA:'Ronda',REFORCO:'Reforço',APOIO_OPERACIONAL:'Apoio',OUTRA:'Outra'};
    $('recentes').className='tablewrap';
-   $('recentes').innerHTML='<table><thead><tr><th>Data</th><th>Instituição</th><th>Categoria</th><th>Atividade</th><th>Rondas</th><th>Intercorrências</th></tr></thead><tbody>'+
-     r.data.map(x=>'<tr><td>'+escapar((x.data_servico||'').split('-').reverse().join('/'))+'</td><td>'+escapar(x.instituicao)+'</td><td>'+escapar(tipos[x.tipo_local])+'</td><td>'+escapar(atos[x.modalidade])+'</td><td>'+Number(x.rondas_realizadas||0)+'</td><td>'+Number(x.intercorrencias||0)+'</td></tr>').join('')+'</tbody></table>';
+   $('recentes').innerHTML='<table><thead><tr><th>Data</th><th>Instituição</th><th>Nº SEI</th><th>Situação</th><th>Ef. ord.</th><th>Ef. SVI</th><th>Rondas</th><th>Intercorrências</th></tr></thead><tbody>'+
+     r.data.map(x=>'<tr><td>'+escapar((x.data_servico||'').split('-').reverse().join('/'))+'</td><td>'+escapar(x.instituicao)+'</td><td>'+escapar(x.numero_sei||'—')+'</td><td>'+escapar(x.situacao||'—')+'</td><td>'+Number(x.efetivo_ordinario||0)+'</td><td>'+Number(x.efetivo_svi||0)+'</td><td>'+Number(x.rondas_realizadas||0)+'</td><td>'+Number(x.intercorrencias||0)+'</td></tr>').join('')+'</tbody></table>';
  }
  $('form').addEventListener('submit',async e=>{
    e.preventDefault();if(!autorizado())return mostrar('Acesso não autorizado.',true);
@@ -74,9 +98,20 @@ table{border-collapse:collapse;width:100%}th,td{padding:9px;text-align:left;bord
      if(instituicao.length<3)throw Error('Identifique a instituição atendida.');
      const obj={
        unidade_id:sessao.contexto.unidade_id,data_servico:$('dia').value,
+       posto_codigo:$('posto').value||null,
        instituicao,tipo_local:$('tipoLocal').value,modalidade:$('modalidade').value,
        rondas_realizadas:inteiro('rondas'),intercorrencias:inteiro('intercorrencias'),
-       documento_referencia:$('documento').value.trim()||null
+       documento_referencia:$('documento').value.trim()||null,
+       numero_sei:$('documento').value.trim()||null,
+       situacao:$('situacao').value,regime:$('regime').value.trim()||null,
+       efetivo_ordinario:inteiro('efetivoOrdinario'),efetivo_svi:inteiro('efetivoSvi'),
+       viatura:$('viatura').value.trim()||null,
+       km_rodados:$('kmRodados').value===''?null:Number($('kmRodados').value),
+       litros_abastecidos:$('litros').value===''?null:Number($('litros').value),
+       saidas_autorizadas:$('saidas').value===''?null:inteiro('saidas'),
+       alteracao_pessoal:$('alteracaoPessoal').value==='SIM',
+       alteracao_instalacoes:$('alteracaoInstalacoes').value==='SIM',
+       alteracao_material:$('alteracaoMaterial').value==='SIM'
      };
      const r=await sessao.client.from('cipg_servicos_guarda').insert(obj);
      if(r.error)throw r.error;
@@ -89,7 +124,7 @@ table{border-collapse:collapse;width:100%}th,td{padding:9px;text-align:left;bord
  (async()=>{
    sessao=window.SistemaAuth?.client&&window.SistemaAuth?.user?window.SistemaAuth:await window.SistemaAuth?.ready;
    if(!sessao||!autorizado()){location.replace('index.html?erro=sem-permissao');return}
-   $('dia').value=diaHoje();mostrar('Pronto para registrar serviços.');await recentes();
+   $('dia').value=diaHoje();await carregarPostos();mostrar('Pronto para registrar serviços.');await recentes();
  })().catch(err=>mostrar('Falha no carregamento: '+(err.message||err),true));
 })();
 </script></body></html>
