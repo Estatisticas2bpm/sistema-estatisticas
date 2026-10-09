@@ -39,7 +39,7 @@ for(const x of ['servico_id','tipo_evento','graduacao','unidade_militar',
  assert.ok(eventos.includes(x),x+' ausente do evento');
 }
 assert.doesNotMatch(eventos,/id="nomeGuerra"|id="lesao"|id="quadro"/);
-assert.match(eventos,/Uma linha por militar/);
+assert.match(eventos,/uma linha por militar/i);
 const inicio=eventos.indexOf('function turnoDeHora(');
 const fim=eventos.indexOf(" $('horaEvento').addEventListener",inicio);
 assert.ok(inicio>0&&fim>inicio);
