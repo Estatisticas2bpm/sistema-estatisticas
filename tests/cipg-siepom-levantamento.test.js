@@ -17,8 +17,8 @@ for(const text of ['cipg_postos','cipg_servicos_guarda','cipg_eventos_guarda','n
  assert.ok(schema.includes(text),text+' ausente no schema CIPG');
 }
 assert.match(schema,/area_pendente_validacao/);
-assert.match(schema,/,'CSE','|\\('CSE'/);
-assert.match(schema,/,'PSE','|\\('PSE'/);
+assert.ok(schema.includes("('CSE'"));
+assert.ok(schema.includes("('PSE'"));
 assert.match(schema,/row level security/);
 assert.match(schema,/private\.pode_acessar_unidade/);
 assert.match(schema,/private\.pode_escrever_operacional/);
