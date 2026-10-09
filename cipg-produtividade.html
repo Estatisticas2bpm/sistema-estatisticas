@@ -44,7 +44,7 @@ button:disabled{opacity:.55}.btn-subtle{background:#e5eeeb;border:1px solid #abc
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="auth-config.js"></script><script src="auth-guard.js"></script><script src="cipg-caderno.js?v=20261009-3"></script>
+<script src="auth-config.js"></script><script src="auth-guard.js"></script><script src="cipg-caderno.js?v=20261009-4"></script>
 </head><body>
 <header><div class="head"><div><h1>Caderno digital de serviço — CIPG</h1>
 <p>Companhia Independente de Policiamento de Guarda · Polícia Militar de Roraima · SIE-CPC</p></div>
@@ -73,6 +73,7 @@ button:disabled{opacity:.55}.btn-subtle{background:#e5eeeb;border:1px solid #abc
 <label class="field"><span>Passou para</span><input id="passouPara" maxlength="120"></label>
 <label class="field"><span>Efetivo ordinário</span><input id="efetivoOrdinario" data-label="Efetivo ordinário" type="number" min="0" max="10000" value="0" inputmode="numeric"></label>
 <label class="field"><span>Efetivo SVI</span><input id="efetivoSvi" data-label="Efetivo SVI" type="number" min="0" max="10000" value="0" inputmode="numeric"></label>
+<label class="field"><span>Efetivo total (automático)</span><input id="efetivoTotal" readonly value="0"></label>
 </div></details>
 <details><summary>Viatura, quilometragem e abastecimento</summary><div class="fieldgrid">
 <label class="field"><span>Viatura</span><input id="viatura" maxlength="60"></label>
