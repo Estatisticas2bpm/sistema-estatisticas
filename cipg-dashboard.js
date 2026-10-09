@@ -128,7 +128,8 @@ function consolidar(a){
   faltaDataEvento:events.filter(e=>!str(e.data_evento)).length,
   faltaDesfechoHospital:internacoes.filter(e=>!str(e.desfecho)).length,
   relatoriosComAcontecimentoSemEvento:services.filter(s=>s.situacao==='COM ALTERACAO'&&!eventIds.has(s.id)&&
-   !s.alteracao_pessoal&&!s.alteracao_instalacoes&&!s.alteracao_material).length
+   !s.alteracao_pessoal&&!s.alteracao_instalacoes&&!s.alteracao_material&&
+   !str(s.outros_solicitacoes)).length
  };
 }
 function tabelaPorPosto(a){
