@@ -36,9 +36,9 @@
     if(tipo==='CIPA')return global.CipaHome.consultar(db,ini,fim);
     if(tipo==='CIPG')return global.CipgHome.consultar(db,ini,fim);
     const specs={
-      GIRO:['giro_abordagens','id,unidade_id,quantidade_pessoas','registrado_em'],
-      CAVALARIA:['cavalaria_servicos_produtividade','id,unidade_id,tipo_policiamento,contexto_atividade,abordagens_pessoas','data_servico'],
-      CIPTUR:['ciptur_autos_infracao','id,unidade_id,houve_remocao,tipo_veiculo_removido','data_infracao']
+      GIRO:['giro_abordagens','id,unidade_id,registrado_em,quantidade_pessoas','registrado_em'],
+      CAVALARIA:['cavalaria_servicos_produtividade','id,unidade_id,data_servico,tipo_policiamento,contexto_atividade,abordagens_pessoas','data_servico'],
+      CIPTUR:['ciptur_autos_infracao','id,unidade_id,data_infracao,houve_remocao,tipo_veiculo_removido','data_infracao']
     };
     const s=specs[tipo];
     if(!s)throw Error('Fonte desconhecida');
