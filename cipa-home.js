@@ -47,24 +47,38 @@
     }));
     return {fauna:resultados[0],embargos:resultados[1],autos:resultados[2]};
   }
+  // Contrato estatístico reutilizável: mesma apuração no painel da unidade e no CPC.
+  // Valores brutos; a formatação monetária ou de hectares pertence à interface.
+  function indicadores(ocorrencias,registros){
+    const r=registros||{};
+    return {
+      ocorrencias:(ocorrencias||[]).length,
+      animais:soma(r.fauna,'quantidade'),
+      areaEmbargadaHa:soma(r.embargos,'area_embargada_ha'),
+      valorMultas:soma(r.autos,'valor_multa'),
+      termosEmbargo:(r.embargos||[]).length,
+      autosInfracao:(r.autos||[]).length
+    };
+  }
   function renderizar(d,dAnt,atual,anterior,hoje,pc){
-    const animais=soma(atual.fauna,'quantidade'),animaisAnt=soma(anterior.fauna,'quantidade');
-    const area=soma(atual.embargos,'area_embargada_ha'),areaAnt=soma(anterior.embargos,'area_embargada_ha');
-    const multas=soma(atual.autos,'valor_multa'),multasAnt=soma(anterior.autos,'valor_multa');
-    $('total').textContent=(d||[]).length;
+    const k=indicadores(d,atual),kAnt=indicadores(dAnt,anterior);
+    const animais=k.animais,animaisAnt=kAnt.animais;
+    const area=k.areaEmbargadaHa,areaAnt=kAnt.areaEmbargadaHa;
+    const multas=k.valorMultas,multasAnt=kAnt.valorMultas;
+    $('total').textContent=k.ocorrencias;
     $('conducoes').textContent=numero(animais);
     $('tcosProduzidos').textContent=numero(area);
     $('veiculosRecuperadosKpi').textContent=dinheiro(multas);
-    $('tcosSub').textContent=atual.embargos.length+' termo(s) de embargo no mês';
-    $('veiculosSub').textContent=atual.autos.length+' auto(s) de infração no mês';
+    $('tcosSub').textContent=k.termosEmbargo+' termo(s) de embargo no mês';
+    $('veiculosSub').textContent=k.autosInfracao+' auto(s) de infração no mês';
     $('periodoComparativo').textContent='1º a '+hoje.getDate()+' de '+nomeMes(hoje).toLowerCase()+
       ' × 1º a '+pc[1].getDate()+' de '+nomeMes(pc[1]).toLowerCase();
     $('comparativoMes').innerHTML=
-      itemComparativo('Ocorrências',(d||[]).length,(dAnt||[]).length,'crime')+
+      itemComparativo('Ocorrências',k.ocorrencias,kAnt.ocorrencias,'crime')+
       itemComparativo('Animais',animais,animaisAnt,'prod')+
       itemComparativo('Área embargada (ha)',area,areaAnt,'prod')+
       itemComparativo('Multas (R$)',multas,multasAnt,'prod');
-    $('resumoInteligente').textContent='No período, '+(d||[]).length+' ocorrência(s), '+numero(animais)+
+    $('resumoInteligente').textContent='No período, '+k.ocorrencias+' ocorrência(s), '+numero(animais)+
       ' animal(is) registrado(s), '+numero(area)+' ha em termos de embargo e '+
       dinheiro(multas)+' em multas aplicadas. Área embargada não representa necessariamente área desmatada.';
   }
@@ -73,5 +87,5 @@
     ['conducoes','tcosProduzidos','veiculosRecuperadosKpi'].forEach(id=>$(id).textContent='—');
     $('resumoInteligente').textContent='Não foi possível carregar os indicadores ambientais: '+(erro.message||erro);
   }
-  window.CipaHome={preparar,consultar,renderizar,falha};
+  window.CipaHome={preparar,consultar,indicadores,renderizar,falha};
 })();
