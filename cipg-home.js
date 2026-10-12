@@ -68,26 +68,36 @@
     const eventos=await lerEventos(db,rows);
     return {servicos:rows,eventos};
   }
+  // Contrato estatístico reutilizável no CPC, sem confundir eventos e serviços com BOs.
+  function indicadores(registros){
+    const r=registros||{},a=r.servicos||[],eventos=r.eventos||[];
+    return {
+      relatoriosServico:a.length,
+      entradasPmHospital:hospital(eventos),
+      servicosSemAlteracao:semAlteracao(a,eventos),
+      empregosEfetivo:totalEfetivo(a),
+      instituicoesAtendidas:distintas(a)
+    };
+  }
   function renderizar(atual,anterior,hoje,pc){
-    const a=atual.servicos||[],b=anterior.servicos||[],
-      ea=atual.eventos||[],eb=anterior.eventos||[];
-    $('total').textContent=numero(a.length);
-    $('conducoes').textContent=numero(hospital(ea));
-    $('tcosProduzidos').textContent=numero(semAlteracao(a,ea));
-    $('veiculosRecuperadosKpi').textContent=numero(totalEfetivo(a));
+    const k=indicadores(atual),kAnt=indicadores(anterior);
+    $('total').textContent=numero(k.relatoriosServico);
+    $('conducoes').textContent=numero(k.entradasPmHospital);
+    $('tcosProduzidos').textContent=numero(k.servicosSemAlteracao);
+    $('veiculosRecuperadosKpi').textContent=numero(k.empregosEfetivo);
     $('periodoComparativo').textContent='Mês atual × período comparado';
     if(typeof itemComparativo==='function'){
       $('comparativoMes').innerHTML=
-        itemComparativo('Relatórios de serviço',a.length,b.length,'prod')+
-        itemComparativo('Entradas hospitalares',hospital(ea),hospital(eb),'prod')+
-        itemComparativo('Sem alteração (S/A)',semAlteracao(a,ea),semAlteracao(b,eb),'prod')+
-        itemComparativo('Efetivo empregado',totalEfetivo(a),totalEfetivo(b),'prod');
+        itemComparativo('Relatórios de serviço',k.relatoriosServico,kAnt.relatoriosServico,'prod')+
+        itemComparativo('Entradas hospitalares',k.entradasPmHospital,kAnt.entradasPmHospital,'prod')+
+        itemComparativo('Sem alteração (S/A)',k.servicosSemAlteracao,kAnt.servicosSemAlteracao,'prod')+
+        itemComparativo('Efetivo empregado',k.empregosEfetivo,kAnt.empregosEfetivo,'prod');
     }
-    $('resumoInteligente').textContent='No mês: '+numero(a.length)+' relatório(s) de serviço, '+
-      numero(hospital(ea))+' atendimento(s) hospitalar(es) de PM(s), '+
-      numero(semAlteracao(a,ea))+' serviço(s) sem alteração, '+
-      numero(totalEfetivo(a))+' empregos de efetivo (ordinário + SVI) e '+
-      numero(distintas(a))+' instituição(ões) atendida(s). '+
+    $('resumoInteligente').textContent='No mês: '+numero(k.relatoriosServico)+' relatório(s) de serviço, '+
+      numero(k.entradasPmHospital)+' entrada(s) hospitalar(es) de PM registrada(s), '+
+      numero(k.servicosSemAlteracao)+' serviço(s) sem alteração, '+
+      numero(k.empregosEfetivo)+' empregos de efetivo (ordinário + SVI) e '+
+      numero(k.instituicoesAtendidas)+' instituição(ões) atendida(s). '+
       'Eventos do livro de serviço não são somados às ocorrências policiais do CPC.';
   }
   function falha(err){
@@ -95,5 +105,5 @@
     for(const id of ['total','conducoes','tcosProduzidos','veiculosRecuperadosKpi'])$(id).textContent='—';
     $('resumoInteligente').textContent='Falha ao consultar os serviços de guarda: '+(err?.message||err);
   }
-  window.CipgHome={preparar,consultar,renderizar,falha,rotulos};
+  window.CipgHome={preparar,consultar,indicadores,renderizar,falha,rotulos};
 })();
