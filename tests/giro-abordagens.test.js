@@ -114,7 +114,7 @@ assert.doesNotMatch(home,/<a[^>]*id="giroAccessShortcut"[^>]*href="dashboard\.ht
 assert.match(home,/id="camadaGiroMapa"/);
 assert.match(home,/Ocorrências \+ abordagens/);
 assert.match(home,/abordagensMapaAtuais/);
-assert.match(home,/db\.from\("giro_abordagens"\)/);
+assert.match(home,/consultarRegistrosHome\("giro_abordagens"/);
 assert.match(home,/ABORDAGEM GIRO/);
 assert.match(home,/camadaGiroMapa\.onchange=function\(\)\{if\(modoCpc\)carregarMapa\(\);else renderizarMapa\(\)\}/);
 assert.match(home,/giro-moto-marker/);
