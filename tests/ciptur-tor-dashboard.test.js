@@ -39,9 +39,9 @@ assert.match(dashboard,/cipturRemocoesTotal/);
 // Visão rápida da CIPTUR usa os quatro KPIs definidos.
 assert.match(home,/function aplicarModoCiptur\(\)/);
 assert.match(home,/Autos de Infração/);
-assert.match(home,/Veículos Removidos/);
+assert.match(home,/Autos com remoção/);
 assert.match(home,/ciptur_autos_infracao/);
-assert.match(home,/Carros /);
-assert.match(home,/Motos /);
+assert.match(home,/carro /);
+assert.match(home,/moto /);
 
 console.log('CIPTUR: TOR, dashboard e visão rápida validados.');
