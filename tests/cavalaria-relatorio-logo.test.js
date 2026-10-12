@@ -1,0 +1,17 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const root=path.resolve(__dirname,'..');
+const relatorio=fs.readFileSync(path.join(root,'relatorio.html'),'utf8');
+const logo=path.join(root,'assets','logos','cavalaria-brasao.jpg');
+assert.ok(fs.existsSync(logo),'logo da Cavalaria ausente');
+assert.ok(fs.statSync(logo).size>100000,'logo da Cavalaria parece inválida');
+assert.match(relatorio,/function ehCavalariaRel\(\)\{return String\(unidadeRel\(\)\.sigla\|\|''\)\.toUpperCase\(\)==='CAVALARIA'\}/);
+assert.match(relatorio,/const logoCavalariaPdf='assets\/logos\/cavalaria-brasao\.jpg';/);
+assert.match(relatorio,/ehCavalariaRel\(\)\?'<img class="cover-brand-cavalaria" src="'\+logoCavalariaPdf\+'" alt="Brasão da Cavalaria">'/);
+assert.match(relatorio,/\.cover-brand-cavalaria\{width:88px!important;height:88px!important;object-fit:contain!important/);
+assert.match(relatorio,/ehCipturRel\(\)\?'<img class="cover-brand-ciptur"/,'CIPTUR deve permanecer preservada');
+assert.match(relatorio,/eh2BpmRel\(\)\?'<img src="'\+logo2BpmPdf/,'2º BPM deve permanecer preservado');
+assert.match(relatorio,/assets\/logos\/giro-brasao\.svg/,'GIRO deve permanecer preservado');
+assert.match(relatorio,/<div class="cover-brand">SIE-CPC<\/div>/,'fallback das demais unidades deve permanecer');
+console.log('Cavalaria: logo exclusiva validada na capa do relatório PDF.');
