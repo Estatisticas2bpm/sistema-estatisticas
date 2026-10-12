@@ -20,10 +20,10 @@
       c.querySelector('label').textContent=label;
       c.querySelector('.kpiIcon').textContent=icone;
     });
-    $('totalSub').textContent='PPEs/BOs do mês';
-    $('conducoesSub').textContent='quantidade de animais registrados';
-    $('tcosSub').textContent='hectares em termos de embargo';
-    $('veiculosSub').textContent='valor dos autos de infração';
+    $('totalSub').textContent='PPEs/BOs por data da ocorrência';
+    $('conducoesSub').textContent='animais por data do registro';
+    $('tcosSub').textContent='hectares por data do termo de embargo';
+    $('veiculosSub').textContent='valor por data do auto de infração';
     $('topOcorrenciasDescricao').textContent='Principais naturezas das ocorrências da CIPA';
   }
   async function consultar(db,ini,fim){
@@ -69,10 +69,10 @@
     $('conducoes').textContent=numero(animais);
     $('tcosProduzidos').textContent=numero(area);
     $('veiculosRecuperadosKpi').textContent=dinheiro(multas);
-    $('tcosSub').textContent=k.termosEmbargo+' termo(s) de embargo no mês';
-    $('veiculosSub').textContent=k.autosInfracao+' auto(s) de infração no mês';
+    $('tcosSub').textContent=k.termosEmbargo+' termo(s) pela data do embargo';
+    $('veiculosSub').textContent=k.autosInfracao+' auto(s) pela data da autuação';
     $('periodoComparativo').textContent='1º a '+hoje.getDate()+' de '+nomeMes(hoje).toLowerCase()+
-      ' × 1º a '+pc[1].getDate()+' de '+nomeMes(pc[1]).toLowerCase();
+      ' de '+hoje.getFullYear()+' × 1º a '+pc[1].getDate()+' de '+nomeMes(pc[1]).toLowerCase()+' de '+pc[1].getFullYear();
     $('comparativoMes').innerHTML=
       itemComparativo('Ocorrências',k.ocorrencias,kAnt.ocorrencias,'crime')+
       itemComparativo('Animais',animais,animaisAnt,'prod')+
