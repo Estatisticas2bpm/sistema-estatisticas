@@ -12,13 +12,21 @@
     return (services||[]).filter(s=>s.situacao==='SEM ALTERACAO'&&!ids.has(s.id)).length;
   };
   async function lerEventos(db,servicos){
-    const ids=servicos.map(x=>x.id),todos=[];
+    const ids=[...new Set((servicos||[]).map(x=>x.id).filter(Boolean))],todos=[],passo=1000,maxPaginas=200;
     for(let i=0;i<ids.length;i+=150){
-      const r=await db.from('cipg_eventos_guarda')
-        .select('id,servico_id,tipo_evento')
-        .in('servico_id',ids.slice(i,i+150));
-      if(r.error)throw Error('Falha ao consultar os eventos do livro de serviço: '+r.error.message);
-      todos.push(...(r.data||[]));
+      const grupo=ids.slice(i,i+150);
+      for(let pagina=0;pagina<maxPaginas;pagina++){
+        const r=await db.from('cipg_eventos_guarda')
+          .select('id,servico_id,tipo_evento')
+          .in('servico_id',grupo)
+          .order('id',{ascending:true})
+          .range(pagina*passo,(pagina+1)*passo-1);
+        if(r.error)throw Error('Falha ao consultar os eventos do livro de serviço: '+r.error.message);
+        const lote=r.data||[];
+        todos.push(...lote);
+        if(lote.length<passo)break;
+        if(pagina===maxPaginas-1)throw Error('Muitos eventos no período; selecione um intervalo menor.');
+      }
     }
     return todos;
   }
