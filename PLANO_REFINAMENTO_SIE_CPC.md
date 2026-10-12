@@ -1,6 +1,6 @@
 # Plano de refinamento do SIE-CPC
 
-**Versão:** 1.6 — 12/10/2026  
+**Versão:** 1.7 — 12/10/2026  
 **Estado:** em execução; homologação pendente.  
 **Escopo:** CPC, 1º BPM, 2º BPM, BOPE, Cavalaria, CIPA, CIPG, CIPTUR e GIRO.
 
@@ -25,7 +25,7 @@ Transformar os painéis, mapas, consultas, auditorias e relatórios PDF em um co
 - [x] Títulos "Panorama Estatístico" nas páginas iniciais do CPC, 1º BPM, 2º BPM, BOPE, Cavalaria, CIPTUR e GIRO.
 - [x] Títulos "Panorama Estatístico" em `cipa-home.js` e `cipg-home.js` (12/10/2026).
 - [x] Documentar plano, arquitetura observada e definições iniciais dos indicadores.
-- [ ] Revisar outras telas e textos para consistência (sem substituir "operacional" quando descrever efetivamente atividade operacional).
+- [x] Revisar títulos e descrições de todas as páginas HTML e scripts JS de nível raiz para consistência: panoramas estatísticos corrigidos, inclusive `painel-tv.html`; manter "operacional" ao descrever atividade efetivamente operacional.
 - [ ] Confirmar nomenclaturas, fontes, filtros e permissões de cada indicador junto às unidades.
 **Aceite:** título correto conforme unidade ativa; nenhum impacto negativo na autenticação, filtro por unidade ou nos números do período.
 
@@ -160,5 +160,6 @@ As alterações da **Fase 3 (cartões CPC), Fase 4 (mapa), Fase 5 (seção de in
 - **12/10/2026:** descrição do quarto indicador da CIPTUR alterada para "Autos com remoção", incluindo comparativo e resumo; a unidade ainda deve confirmar método de apuração de veículos efetivamente removidos.
 - **12/10/2026:** verificação de RLS habilitado nas oito tabelas especializadas: políticas SELECT vinculam registros às unidades acessíveis, inclusive via ocorrência (CIPA) e serviço de guarda (CIPG). Não houve simulação de autenticação real.
 - **12/10/2026:** fórmulas CIPA/CIPG centralizadas em `indicadores(...)`, com reuso no painel da unidade e preparação para a fase de consolidação CPC; datas de referência explicitadas; arquivo de testes de regressão criado e cenários testados com interpretação JavaScript isolada.
-- **12/10/2026:** PR #68 integrado ao main com CI aprovado. A ramificação posterior implementa mini-séries especializadas do dashboard executivo, com indicadores e datas por unidade.
+- **12/10/2026:** PR #68 integrado ao main com CI aprovado. PR #69 integrado ao main com CI aprovado, incluindo mini-séries especializadas de produtividade.
+- **12/10/2026:** revisão de títulos e descrições em arquivos HTML/JS de nível raiz concluída; `painel-tv.html` padronizado para panorama estatístico.
 - **Próximo trabalho:** validar os números e consultas sob sessões autenticadas de cada unidade (incluindo permissões e filtros); reunir amostras reais de CIPA/CIPG/Cavalaria; prosseguir com contratos estatísticos para GIRO/Cavalaria/CIPTUR antes da consolidação CPC.
