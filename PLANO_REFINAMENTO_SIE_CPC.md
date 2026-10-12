@@ -1,6 +1,6 @@
 # Plano de refinamento do SIE-CPC
 
-**Versão:** 1.0 — 12/10/2026  
+**Versão:** 1.1 — 12/10/2026  
 **Estado:** em execução; homologação pendente.  
 **Escopo:** CPC, 1º BPM, 2º BPM, BOPE, Cavalaria, CIPA, CIPG, CIPTUR e GIRO.
 
@@ -32,7 +32,7 @@ Transformar os painéis, mapas, consultas, auditorias e relatórios PDF em um co
 ### Fase 2 — Visão rápida especializada em todas as unidades
 - [ ] Revisar fonte, período, agregação e comparativo de cada um dos quatro cartões.
 - [ ] Conferir CIPA e CIPG com seus próprios relatórios/cadernos; Cavalaria com serviços e atividades; CIPTUR com A.I. e remoções; GIRO com abordagens; BOPE e BPMs conforme suas naturezas.
-- [ ] Rever estados de carregamento, ausência de dados e falhas.
+- [ ] Rever estados de carregamento, ausência de dados e falhas (em andamento: corrigida a exibição indevida de zero quando consultas básicas da visão rápida falham; ainda faltam estados por módulo e testes).
 **Aceite:** cartões e comparativos validados contra consultas aos registros, unidade a unidade.
 
 ### Fase 3 — "Unidades em números" no CPC
@@ -75,6 +75,14 @@ Transformar os painéis, mapas, consultas, auditorias e relatórios PDF em um co
 - [ ] Registrar aprovação por unidade, versão publicada e instruções operacionais.
 **Aceite:** checklist assinado/confirmado pelos responsáveis e versão estável em produção.
 
+## Acompanhamento de execução
+
+**Legenda:** [x] implementado e conferido no código; [ ] pendente ou parcialmente executado. Implementação não equivale a homologação em navegador/banco.
+
+- **Fase 1:** 3/5 itens implementados; dois itens aguardam revisão ampla e confirmação com unidades. Aceite pendente.
+- **Fase 2:** em andamento; identificadas as fontes de CIPA/CIPG e o risco de consultas com erro serem apresentadas como zero. Correção inicial publicada; validação com registros ainda pendente.
+- **Fases 3 a 8:** não homologadas; manter os itens não concluídos desmarcados.
+
 ## Inventário inicial de módulos (código)
 
 - `index.html`: visão rápida das unidades, visão central CPC, "Unidades em números" e mapa resumido.
@@ -104,4 +112,5 @@ Transformar os painéis, mapas, consultas, auditorias e relatórios PDF em um co
 ## Registro de progresso
 
 - **12/10/2026:** fases e contratos documentados; complementada a padronização de CIPA e CIPG.
+- **12/10/2026:** Fase 2 iniciada: conferidas as consultas e fórmulas de CIPA/CIPG no código; protegidas as cinco consultas básicas da visão rápida contra apresentação de zero em caso de falha. Falta testar com dados reais e concluir as demais unidades.
 - **Próximo trabalho:** encerrar a Fase 1 com validação das regras e iniciar a Fase 2 pelos cartões CIPA/CIPG/Cavalaria/CIPTUR/GIRO, em blocos independentes.
