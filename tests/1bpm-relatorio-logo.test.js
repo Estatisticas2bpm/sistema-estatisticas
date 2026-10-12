@@ -1,0 +1,18 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const root=path.resolve(__dirname,'..');
+const relatorio=fs.readFileSync(path.join(root,'relatorio.html'),'utf8');
+const logo=path.join(root,'assets','logos','1bpm-brasao.jpg');
+assert.ok(fs.existsSync(logo),'logo do 1º BPM ausente');
+assert.ok(fs.statSync(logo).size>100000,'logo do 1º BPM parece inválida');
+assert.match(relatorio,/function eh1BpmRel\(\)\{return String\(unidadeRel\(\)\.sigla\|\|''\)\.toUpperCase\(\)==='1º BPM'\}/);
+assert.match(relatorio,/const logo1BpmPdf='assets\/logos\/1bpm-brasao\.jpg';/);
+assert.match(relatorio,/eh1BpmRel\(\)\?'<img class="cover-brand-1bpm" src="'\+logo1BpmPdf\+'" alt="Brasão do 1º BPM">'/);
+assert.match(relatorio,/\.cover-brand-1bpm\{width:88px!important;height:88px!important;object-fit:contain!important/);
+assert.match(relatorio,/ehCavalariaRel\(\)\?'<img class="cover-brand-cavalaria"/,'Cavalaria deve permanecer preservada');
+assert.match(relatorio,/ehCipturRel\(\)\?'<img class="cover-brand-ciptur"/,'CIPTUR deve permanecer preservada');
+assert.match(relatorio,/eh2BpmRel\(\)\?'<img src="'\+logo2BpmPdf/,'2º BPM deve permanecer preservado');
+assert.match(relatorio,/assets\/logos\/giro-brasao\.svg/,'GIRO deve permanecer preservado');
+assert.match(relatorio,/<div class="cover-brand">SIE-CPC<\/div>/,'fallback das demais unidades deve permanecer');
+console.log('1º BPM: logo exclusiva validada na capa do relatório PDF.');
