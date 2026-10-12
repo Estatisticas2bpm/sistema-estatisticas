@@ -4,6 +4,7 @@ const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
 const home = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const dashboard = fs.readFileSync(path.join(root, 'dashboard.html'), 'utf8');
 const banner = path.join(root, 'assets', 'banners', '2bpm-home-banner.png');
 
 assert.ok(fs.existsSync(banner), 'banner institucional do 2º BPM ausente');
@@ -11,7 +12,8 @@ assert.match(home, /modo2Bpm=!modoCpc&&siglaAtiva==="2BPM"/);
 assert.match(home, /function aplicarModo2Bpm\(\)/);
 assert.match(home, /classList\.add\("modo-2bpm"\)/);
 assert.match(home, /body\.modo-2bpm \.hero/);
-assert.match(home, /assets\/banners\/2bpm-home-banner\.png\?v=20261012-2bpm-home2/);
+assert.match(home, /assets\/banners\/2bpm-home-banner\.png\?v=20261012-2bpm-night3/);
+assert.match(home, /dashboard\.html\?v=20261012-2bpm-night3/);
 assert.match(home, /id="2bpm-banner-styles-v2"/);
 assert.match(home, /body\.modo-2bpm \.hero\{min-height:340px[\s\S]*?background-size:100% 100%,contain/);
 assert.match(home, /body\.modo-giro \.hero/);
@@ -19,5 +21,11 @@ assert.match(home, /assets\/capa-giro-noturna\.png/);
 assert.match(home, /body\.modo-ciptur \.hero/);
 assert.match(home, /assets\/banners\/ciptur-home-banner\.png/);
 assert.doesNotMatch(home, /siglaAtiva==="(?:GIRO|CIPTUR|CPC|CAVALARIA)"[^;]*modo2Bpm=true/);
+assert.match(dashboard, /id="2bpm-dashboard-banner-styles"/);
+assert.match(dashboard, /function ehSegundoBpm\(\)/);
+assert.match(dashboard, /classList\.toggle\('modo-2bpm',ativo\)/);
+assert.match(dashboard, /assets\/banners\/2bpm-home-banner\.png\?v=20261012-2bpm-night3/);
+assert.match(dashboard, /Dashboard Operacional — 2º BPM/);
+assert.match(dashboard, /configurarModuloSegundoBpm\(\)/);
 
-console.log('Banner exclusivo do 2º BPM validado.');
+console.log('Banner exclusivo do 2º BPM validado na home e no dashboard.');

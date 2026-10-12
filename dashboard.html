@@ -6,6 +6,12 @@ body.modo-cipg header .head{position:relative;z-index:1;padding:16px 18px;border
 body.modo-cipg header .head a{background:rgba(2,16,42,.58);backdrop-filter:blur(3px)}
 @media(max-width:720px){body.modo-cipg header{min-height:250px;padding:18px 3%;background-position:center,right center;background-image:linear-gradient(90deg,rgba(2,15,40,.99) 0%,rgba(2,24,59,.95) 55%,rgba(3,45,91,.62) 100%),url("assets/banners/cipg-home-banner.png?v=20261009-cipg-banner1")}body.modo-cipg header .head{width:100%;padding:12px;background:linear-gradient(90deg,rgba(2,16,42,.95),rgba(3,45,91,.48))}}
 </style>
+<style id="2bpm-dashboard-banner-styles">
+body.modo-2bpm header{min-height:clamp(220px,23vw,300px);display:flex;align-items:flex-end;padding:24px;background-color:#03172f;background-image:linear-gradient(90deg,rgba(1,14,38,.98) 0%,rgba(1,20,50,.84) 38%,rgba(1,24,57,.24) 72%),url("assets/banners/2bpm-home-banner.png?v=20261012-2bpm-night3");background-position:center,right center;background-size:100% 100%,contain;background-repeat:no-repeat;box-shadow:inset 0 -65px 85px rgba(1,13,34,.5)}
+body.modo-2bpm header .head{position:relative;z-index:1;padding:16px 18px;border-radius:16px;background:linear-gradient(90deg,rgba(1,14,38,.88),rgba(2,35,72,.2));backdrop-filter:blur(2px);text-shadow:0 2px 9px rgba(0,0,0,.92)}
+body.modo-2bpm header .head a{background:rgba(1,14,38,.58);backdrop-filter:blur(3px)}
+@media(max-width:720px){body.modo-2bpm header{min-height:250px;padding:18px 3%;background-position:center,right center;background-image:linear-gradient(90deg,rgba(1,13,36,.99) 0%,rgba(1,19,48,.95) 55%,rgba(1,24,58,.62) 100%),url("assets/banners/2bpm-home-banner.png?v=20261012-2bpm-night3")}body.modo-2bpm header .head{width:100%;padding:12px;background:linear-gradient(90deg,rgba(1,14,38,.95),rgba(2,35,72,.46))}}
+</style>
 <style id="cavalaria-dashboard-banner-styles">
 body.modo-cavalaria header{min-height:clamp(220px,23vw,300px);display:flex;align-items:flex-end;padding:24px;background-color:#03172f;background-image:linear-gradient(90deg,rgba(2,16,38,.98) 0%,rgba(2,25,55,.84) 38%,rgba(2,39,73,.24) 72%),url("assets/banners/cavalaria-home-banner.png?v=20261009-cavalaria-banner1");background-position:center,right center;background-size:100% 100%,contain;background-repeat:no-repeat;box-shadow:inset 0 -65px 85px rgba(2,13,31,.5)}
 body.modo-cavalaria header .head{position:relative;z-index:1;padding:16px 18px;border-radius:16px;background:linear-gradient(90deg,rgba(2,17,39,.88),rgba(3,38,72,.2));backdrop-filter:blur(2px);text-shadow:0 2px 9px rgba(0,0,0,.92)}
@@ -363,6 +369,15 @@ function ehGiro(){return siglaUnidadeAtiva()==='GIRO'}
 function ehCavalaria(){return siglaUnidadeAtiva()==='CAVALARIA'}
 function ehBope(){return siglaUnidadeAtiva()==='BOPE'}
 function ehPrimeiroBpm(){return siglaUnidadeAtiva()==='1BPM'}
+function ehSegundoBpm(){return siglaUnidadeAtiva()==='2BPM'}
+function configurarModuloSegundoBpm(){
+  const ativo=ehSegundoBpm();
+  document.body.classList.toggle('modo-2bpm',ativo);
+  if(!ativo)return;
+  const h=document.querySelector('header h1'),p=document.querySelector('header .head p');
+  if(h)h.textContent='Dashboard Operacional — 2º BPM';
+  if(p)p.textContent='Análise estatística operacional do 2º Batalhão de Polícia Militar';
+}
 function configurarModuloPrimeiroBpm(){
   const ativo=ehPrimeiroBpm();
   document.body.classList.toggle('modo-1bpm',ativo);
@@ -987,7 +1002,7 @@ document.querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>{let h=new D
 aplicar.onclick=carregar;filtroTipoSubtracao.onchange=render;aisc.onchange=()=>{sisc.value='';setor.value='';popularTerritorio();render()};sisc.onchange=()=>{setor.value='';popularTerritorio();render()};setor.onchange=render;
 gerarPdf.onclick=()=>location.href='relatorio.html?v=20261012-1bpm-logo1&ini='+ini.value+'&fim='+fim.value+'&comparar='+comparar.value+'&sisc='+encodeURIComponent(sisc.value)+'&companhia='+encodeURIComponent(companhia.value)+'&subunidade_bope='+encodeURIComponent($('subunidadeBope')?.value||'');
 let h=new Date();ini.value=fmt(new Date(h.getFullYear(),h.getMonth(),1));fim.value=fmt(h);
-(async()=>{if(window.SistemaAuth?.ready)await window.SistemaAuth.ready;$('subunidadeBope')?.addEventListener('change',render);['cipaMunicipio','cipaArea','cipaOrigemFiltro'].forEach(id=>$(id)?.addEventListener('change',render));prepararFiltrosAbordagemGiro();configurarModuloCiptur();configurarModuloCipa();configurarModuloGiro();configurarModuloCavalaria();configurarModuloCipg();configurarModuloBope();configurarModuloPrimeiroBpm();
+(async()=>{if(window.SistemaAuth?.ready)await window.SistemaAuth.ready;$('subunidadeBope')?.addEventListener('change',render);['cipaMunicipio','cipaArea','cipaOrigemFiltro'].forEach(id=>$(id)?.addEventListener('change',render));prepararFiltrosAbordagemGiro();configurarModuloCiptur();configurarModuloCipa();configurarModuloGiro();configurarModuloCavalaria();configurarModuloCipg();configurarModuloBope();configurarModuloPrimeiroBpm();configurarModuloSegundoBpm();
 if(ehCipg()&&window.CipgDashboard){
  let debounceCipg;
  CipgDashboard.filtros.forEach(id=>{
