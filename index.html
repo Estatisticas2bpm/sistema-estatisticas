@@ -55,7 +55,7 @@ body.modo-1bpm .hero:after{display:none}
 body.modo-1bpm .hero .top,body.modo-1bpm .hero .heroCopy{position:relative;z-index:1;text-shadow:0 2px 11px rgba(0,0,0,.92)}
 @media(max-width:768px){body.modo-1bpm .hero{min-height:420px;background-position:center,right center;background-image:linear-gradient(90deg,rgba(2,17,40,.99) 0%,rgba(2,24,52,.95) 50%,rgba(3,38,72,.62) 74%,rgba(3,42,78,.22) 100%),url("assets/banners/1bpm-home-banner.png?v=20261009-1bpm-banner1")}body.modo-1bpm .heroCopy{max-width:82%}}
 </style><script src="auth-config.js"></script><script src="auth-guard.js"></script></head><body>
-<header class="hero"><div class="top"><div class="brand"><div class="brandLogos"><img src="brasao-pmrr.png" alt="Brasão da Polícia Militar de Roraima"></div><div><b>SIE-CPC</b><small>Sistema Integrado de Estatística do CPC</small><div data-sie-unit style="margin-top:5px;font-size:11px;font-weight:900;letter-spacing:.8px;color:#9ee5e7;text-transform:uppercase">Unidade ativa · carregando...</div></div></div></div><div class="heroCopy"><span class="eyebrow" id="heroEyebrow"><i class="pulse"></i> Panorama operacional</span><h1 id="heroTitulo">Visão rápida do mês</h1><p id="periodoSemana">Carregando período...</p><div id="cpcEscopoHero" class="cpcScopeHero" hidden>Consolidação das unidades subordinadas</div></div></header>
+<header class="hero"><div class="top"><div class="brand"><div class="brandLogos"><img src="brasao-pmrr.png" alt="Brasão da Polícia Militar de Roraima"></div><div><b>SIE-CPC</b><small>Sistema Integrado de Estatística do CPC</small><div data-sie-unit style="margin-top:5px;font-size:11px;font-weight:900;letter-spacing:.8px;color:#9ee5e7;text-transform:uppercase">Unidade ativa · carregando...</div></div></div></div><div class="heroCopy"><span class="eyebrow" id="heroEyebrow"><i class="pulse"></i> Panorama estatístico</span><h1 id="heroTitulo">Visão rápida do mês</h1><p id="periodoSemana">Carregando período...</p><div id="cpcEscopoHero" class="cpcScopeHero" hidden>Consolidação das unidades subordinadas</div></div></header>
 <main class="container">
 <section class="kpis">
 <article class="kpi" style="--accent:#0e4f8a"><div class="kpiTop"><div class="kpiIcon">📋</div></div><label>Total de Ocorrências</label><strong id="total">—</strong><small id="totalSub">registros no mês</small></article>
@@ -109,10 +109,10 @@ function fraseVariacao(a,b){if(!b)return a?"não havia registros no intervalo co
 function renderResumoComparativo(d,tcos,dAnt,tcosAnt,hoje,pc){var c1=somar(d,"conducoes_operacionais"),cAnt=somar(dAnt,"conducoes_operacionais"),v=somar(d,"veiculos_recuperados"),vAnt=somar(dAnt,"veiculos_recuperados"),topO=rank(d,"ocorrencia","crime")[0],topB=rank(d,"bairro","localidade")[0];document.getElementById("periodoComparativo").textContent="1º a "+hoje.getDate()+" de "+nomeMes(hoje).toLowerCase()+" × 1º a "+pc[1].getDate()+" de "+nomeMes(pc[1]).toLowerCase();document.getElementById("comparativoMes").innerHTML=itemComparativo("Ocorrências",d.length,dAnt.length,"crime")+itemComparativo("Conduções",c1,cAnt,"prod")+itemComparativo("TCOs",tcos.length,tcosAnt.length,"prod")+itemComparativo("Veículos recuperados",v,vAnt,"prod");if(!d.length){document.getElementById("resumoInteligente").textContent="Ainda não há ocorrências registradas no período corrente para gerar uma leitura estatística.";return}var partes=[];if(modoCpc){var escopo=unidadePorId(filtroCpcUnidade),rotulo=escopo?siglaHome(escopo.sigla):"as unidades subordinadas ao CPC";partes.push("Até "+hoje.toLocaleDateString("pt-BR",{day:"2-digit",month:"long"})+", "+rotulo+" registraram "+d.length+" ocorrência"+(d.length===1?"":"s")+" e "+fraseVariacao(d.length,dAnt.length)+".");if(!escopo&&cpcUnidades.length&&cpcAtual.length){var dist=unidadesCpcPrincipais().map(function(u){var q=dadosPorUnidade(cpcAtual,u.id).length;return{u:u,q:q}}).sort(function(a,b){return b.q-a.q});if(dist[0]&&dist[0].q){var pct=(dist[0].q*100/cpcAtual.length).toFixed(1).replace(".0","");partes.push(siglaHome(dist[0].u.sigla)+" concentra "+dist[0].q+" registros ("+pct+"% do total consolidado do mês).")}}}else{partes.push("Até "+hoje.toLocaleDateString("pt-BR",{day:"2-digit",month:"long"})+", foram registradas "+d.length+" ocorrências e "+fraseVariacao(d.length,dAnt.length)+".")}if(topO)partes.push("A natureza com maior frequência é "+topO[0]+", com "+topO[1]+" registro"+(topO[1]===1?"":"s")+".");if(topB){var p=(topB[1]*100/d.length).toFixed(1).replace(".0","");partes.push("O bairro com maior concentração é "+topB[0]+", com "+topB[1]+" ocorrência"+(topB[1]===1?"":"s")+" ("+p+"% do total).")}var oper=[];if(c1)oper.push(c1===1?"1 condução":c1+" conduções");if(tcos.length)oper.push(tcos.length+" TCO"+(tcos.length===1?"":"s"));if(v)oper.push(v+" veículo"+(v===1?"":"s")+" recuperado"+(v===1?"":"s"));if(oper.length)partes.push("No resultado operacional do período, constam "+oper.join(", ")+".");document.getElementById("resumoInteligente").textContent=partes.join(" ")}
 function aplicarModoGiro(){
   document.body.classList.add('modo-giro');
-  heroEyebrow.innerHTML='<i class="pulse"></i> Painel operacional do GIRO';
+  heroEyebrow.innerHTML='<i class="pulse"></i> Painel estatístico do GIRO';
   var perfilGiro=String(window.SistemaAuth?.perfil?.perfil||'').toUpperCase(),atalhoAcesso=document.getElementById('giroAccessShortcut');
   if(atalhoAcesso)atalhoAcesso.hidden=!(perfilGiro==='ADMIN'||perfilGiro==='ESTATISTICA');
-  heroTitulo.textContent="Visão rápida — GIRO";
+  heroTitulo.textContent="Panorama Estatístico do GIRO";
   var kpiAb=tcosProduzidos.closest(".kpi"),kpiPessoas=veiculosRecuperadosKpi.closest(".kpi");
   if(kpiAb){kpiAb.querySelector("label").textContent="Abordagens";kpiAb.querySelector(".kpiIcon").textContent="◎";}
   if(kpiPessoas){kpiPessoas.querySelector("label").textContent="Pessoas abordadas";kpiPessoas.querySelector(".kpiIcon").textContent="◉";}
@@ -141,8 +141,8 @@ function aplicarModoCavalaria(){
   document.body.classList.add("modo-cavalaria");
   var linkDashboard=document.querySelector('a[href^="dashboard.html"]');
   if(linkDashboard)linkDashboard.href="dashboard.html?v=20261002-cavalaria-dashboard1&banner=20261009-cavalaria-banner1";
-  heroEyebrow.innerHTML='<i class="pulse"></i> Painel operacional da Cavalaria';
-  heroTitulo.textContent="Visão rápida — Cavalaria";
+  heroEyebrow.innerHTML='<i class="pulse"></i> Painel estatístico da Cavalaria';
+  heroTitulo.textContent="Panorama Estatístico da Cavalaria";
   var cards=[total.closest(".kpi"),conducoes.closest(".kpi"),tcosProduzidos.closest(".kpi"),veiculosRecuperadosKpi.closest(".kpi")];
   var defs=[["Serviços realizados","♞"],["Pessoas abordadas","◎"],["Policiamento montado","♘"],["Eventos / Operações","◆"]];
   cards.forEach(function(k,i){if(k){k.querySelector("label").textContent=defs[i][0];k.querySelector(".kpiIcon").textContent=defs[i][1]}});
@@ -180,27 +180,27 @@ function renderResumoCavalaria(serv,servAnt,hoje,pc){
 }
 function aplicarModo2Bpm(){
   document.body.classList.add("modo-2bpm");
-  heroEyebrow.innerHTML='<i class="pulse"></i> Painel operacional do 2º BPM';
-  heroTitulo.textContent="Visão rápida — 2º BPM";
+  heroEyebrow.innerHTML='<i class="pulse"></i> Painel estatístico do 2º BPM';
+  heroTitulo.textContent="Panorama Estatístico do 2º BPM";
   var linkDashboard=document.querySelector('a[href^="dashboard.html"]');
   if(linkDashboard)linkDashboard.href="dashboard.html?v=20261012-2bpm-night3";
 }
 function aplicarModo1Bpm(){
   document.body.classList.add("modo-1bpm");
-  heroEyebrow.innerHTML='<i class="pulse"></i> Painel operacional do 1º BPM';
-  heroTitulo.textContent="Visão rápida — 1º BPM";
+  heroEyebrow.innerHTML='<i class="pulse"></i> Painel estatístico do 1º BPM';
+  heroTitulo.textContent="Panorama Estatístico do 1º BPM";
   var linkDashboard=document.querySelector('a[href^="dashboard.html"]');
   if(linkDashboard)linkDashboard.href="dashboard.html?v=20261009-1bpm-banner1";
 }
 function aplicarModoBope(){
   document.body.classList.add("modo-bope");
-  heroEyebrow.innerHTML='<i class="pulse"></i> Painel operacional do BOPE';
-  heroTitulo.textContent="Visão rápida — BOPE";
+  heroEyebrow.innerHTML='<i class="pulse"></i> Painel estatístico do BOPE';
+  heroTitulo.textContent="Panorama Estatístico do BOPE";
 }
 function aplicarModoCiptur(){
   document.body.classList.add("modo-ciptur");
-  heroEyebrow.innerHTML='<i class="pulse"></i> Painel operacional da CIPTUR';
-  heroTitulo.textContent="Visão rápida — CIPTUR";
+  heroEyebrow.innerHTML='<i class="pulse"></i> Painel estatístico da CIPTUR';
+  heroTitulo.textContent="Panorama Estatístico da CIPTUR";
   var kpiAi=tcosProduzidos.closest(".kpi"),kpiRem=veiculosRecuperadosKpi.closest(".kpi");
   if(kpiAi){kpiAi.querySelector("label").textContent="Autos de Infração";kpiAi.querySelector(".kpiIcon").textContent="⚑";}
   if(kpiRem){kpiRem.querySelector("label").textContent="Veículos Removidos";kpiRem.querySelector(".kpiIcon").textContent="↺";}
@@ -224,7 +224,7 @@ function renderResumoCiptur(d,dAnt,autos,autosAnt,hoje,pc){
   if(rem)partes.push("Nas remoções, constam "+carros+" carro"+(carros===1?"":"s")+" e "+motos+" moto"+(motos===1?"":"s")+".");
   resumoInteligente.textContent=partes.join(" ");
 }
-function aplicarModoCpc(){document.body.classList.add("modo-cpc");heroEyebrow.innerHTML='<i class="pulse"></i> Central executiva do Comando';heroTitulo.textContent="Panorama Operacional do CPC";cpcEscopoHero.hidden=false;cpcUnidadesPanel.hidden=false;atalhosCpcTitulo.hidden=false;mapaTitulo.textContent="Mapa Criminal Consolidado";mapaDescricao.textContent="Distribuição das ocorrências das unidades subordinadas, com filtros por batalhão e área";searchTitulo.textContent="Consultar ocorrências das unidades";searchDescricao.textContent="Pesquise nos registros acessíveis ao CPC por BO, natureza ou bairro.";topOcorrenciasDescricao.textContent="Naturezas mais registradas pelas unidades subordinadas";topBairrosDescricao.textContent="Concentração territorial consolidada das unidades";var nav=document.getElementById("atalhosHome"),ordem=["dashboard-cpc.html","territorio-cpc.html","dashboard.html","mapa-criminal.html","analise-temporal.html","consulta.html","relatorio.html","auditoria.html","modo-tv.html","usuarios.html","fluxos.html"];Array.from(nav.querySelectorAll("a")).sort(function(a,b){var pa=(a.getAttribute("href")||"").split("?")[0],pb=(b.getAttribute("href")||"").split("?")[0],ia=ordem.indexOf(pa),ib=ordem.indexOf(pb);return(ia<0?99:ia)-(ib<0?99:ib)}).forEach(function(a){nav.appendChild(a)});var painel=nav.querySelector('a[href="dashboard-cpc.html"]');if(painel)painel.classList.add("cpcPrimary")}
+function aplicarModoCpc(){document.body.classList.add("modo-cpc");heroEyebrow.innerHTML='<i class="pulse"></i> Central executiva do Comando';heroTitulo.textContent="Panorama Estatístico do CPC";cpcEscopoHero.hidden=false;cpcUnidadesPanel.hidden=false;atalhosCpcTitulo.hidden=false;mapaTitulo.textContent="Mapa Criminal Consolidado";mapaDescricao.textContent="Distribuição das ocorrências das unidades subordinadas, com filtros por batalhão e área";searchTitulo.textContent="Consultar ocorrências das unidades";searchDescricao.textContent="Pesquise nos registros acessíveis ao CPC por BO, natureza ou bairro.";topOcorrenciasDescricao.textContent="Naturezas mais registradas pelas unidades subordinadas";topBairrosDescricao.textContent="Concentração territorial consolidada das unidades";var nav=document.getElementById("atalhosHome"),ordem=["dashboard-cpc.html","territorio-cpc.html","dashboard.html","mapa-criminal.html","analise-temporal.html","consulta.html","relatorio.html","auditoria.html","modo-tv.html","usuarios.html","fluxos.html"];Array.from(nav.querySelectorAll("a")).sort(function(a,b){var pa=(a.getAttribute("href")||"").split("?")[0],pb=(b.getAttribute("href")||"").split("?")[0],ia=ordem.indexOf(pa),ib=ordem.indexOf(pb);return(ia<0?99:ia)-(ib<0?99:ib)}).forEach(function(a){nav.appendChild(a)});var painel=nav.querySelector('a[href="dashboard-cpc.html"]');if(painel)painel.classList.add("cpcPrimary")}
 function popularFiltrosMapaCpc(){unidadeMapa.innerHTML='<option value="">Todas as unidades</option>'+ordenarUnidadesCpc().map(function(x){var u=x.u,prefixo=x.nivel?'↳ '.repeat(Math.min(x.nivel,2)):'';return '<option value="'+escHome(u.id)+'">'+escHome(prefixo+siglaHome(u.sigla)+' — '+u.nome+(filhosUnidadeCpc(u.id).length?' · CONSOLIDADO':''))+'</option>'}).join("");atualizarAreaValores()}
 function atualizarAreaValores(){if(!modoCpc)return;var tipo=areaTipoMapa.value,valores=[];areaValorMapa.disabled=!tipo;if(!tipo){areaValorMapa.innerHTML='<option value="">Todas</option>';return}if(tipo==="AISC"){valores=(cpcTerritorio.aisc||[]).map(function(x){return x.codigo})}else if(tipo==="SISC"){valores=(cpcTerritorio.sisc||[]).map(function(x){return x.codigo})}else if(tipo==="SETOR"){valores=(cpcTerritorio.setores||[]).map(function(x){return x.codigo})}else if(tipo==="BAIRRO"){valores=(cpcTerritorio.bairros||[]).map(function(x){return x.nome})}else if(tipo==="COMPANHIA"){valores=[...new Set(dadosPorUnidade(cpcAtual,unidadeMapa.value).map(function(x){return String(x.companhia||"").trim()}).filter(Boolean))]}valores=[...new Set(valores)].sort(function(a,b){return String(a).localeCompare(String(b),"pt-BR",{numeric:true})});areaValorMapa.innerHTML='<option value="">Todas</option>'+valores.map(function(v){return '<option>'+escHome(v)+'</option>'}).join("")}
 function renderUnidadesCpc(){var principais=unidadesCpcPrincipais(),selecionada=unidadePorId(filtroCpcUnidade),pai=selecionada&&unidadePorId(selecionada.parent_id),agregador=selecionada&&filhosUnidadeCpc(selecionada.id).length?selecionada:(pai&&filhosUnidadeCpc(pai.id).length?pai:null),detalhe=agregador?filhosUnidadeCpc(agregador.id):[],cards=[{id:"",sigla:"TODAS",nome:"Todas as unidades subordinadas"}].concat(principais);detalhe.forEach(function(u){if(!cards.some(function(x){return String(x.id)===String(u.id)}))cards.push(u)});cpcUnidadesGrid.innerHTML=cards.map(function(u){var d=dadosPorUnidade(cpcAtual,u.id),t=dadosPorUnidade(cpcTcosAtual,u.id),active=String(filtroCpcUnidade)===String(u.id),filha=!!(u.id&&u.parent_id&&unidadePorId(u.parent_id));return '<button type="button" class="cpcUnitCard'+(active?" active":"")+'" data-cpc-unit="'+escHome(u.id)+'"><b>'+escHome((filha?"↳ ":"")+(u.id?siglaHome(u.sigla):"Todas as unidades"))+'</b><small>'+escHome(u.nome+(u.id&&filhosUnidadeCpc(u.id).length?" · consolidado":""))+'</small><div class="cpcUnitMetrics"><span><strong>'+d.length+'</strong>Ocorrências</span><span><strong>'+somar(d,"conducoes_operacionais")+'</strong>Conduções</span><span><strong>'+t.length+'</strong>TCOs</span><span><strong>'+somar(d,"veiculos_recuperados")+'</strong>Veículos</span></div></button>'}).join("");cpcUnidadesGrid.querySelectorAll("[data-cpc-unit]").forEach(function(btn){btn.onclick=function(){filtroCpcUnidade=this.dataset.cpcUnit||"";renderCpcAtual();if(unidadeMapa){unidadeMapa.value=filtroCpcUnidade;atualizarAreaValores();carregarMapa()}}});var u=unidadePorId(filtroCpcUnidade);cpcFiltroAtivo.textContent="Abrangência atual: "+(u?siglaHome(u.sigla)+" — "+u.nome+(filhosUnidadeCpc(u.id).length?" (consolidado)":""):"todas as unidades subordinadas.")} 
