@@ -75,7 +75,7 @@ body.modo-1bpm .hero .top,body.modo-1bpm .hero .heroCopy{position:relative;z-ind
 <section class="search"><div><h2 id="searchTitulo">Localizar uma ocorrência</h2><p id="searchDescricao">Pesquise por número do BO, tipo de ocorrência ou bairro.</p></div><form class="searchForm" action="consulta.html"><input name="q" aria-label="Pesquisar ocorrências" placeholder="Digite para pesquisar..."><button class="btn">⌕ Pesquisar</button></form></section>
 <div id="atalhosCpcTitulo" class="cpcActionsTitle" hidden><b>Ferramentas de análise do Comando</b><span>Consultas, dashboards, mapa, séries temporais, relatórios e auditoria das unidades subordinadas.</span></div><nav class="actions" id="atalhosHome"><a class="action" id="atalhoCadastroPrincipal" href="cadastro.html?v=pdf21"><span>＋</span>Cadastrar ocorrência</a><a class="action" href="autos-infracao.html" data-permission="cadastro" data-module="AUTOS_INFRACAO" hidden><span>⚑</span>Autos de infração</a><a class="action" href="cavalaria-produtividade.html" data-permission="cadastro" data-module="PRODUTIVIDADE_CAVALARIA" hidden><span>♞</span>Produtividade da Cavalaria</a><a class="action" href="consulta.html"><span>⌕</span>Consultar ocorrências</a><a class="action" href="dashboard.html?v=20261009-bope-banner1"><span>▥</span>Dashboard completo</a><a class="action" id="giroAccessShortcut" href="giro-acesso-abordagens.html" hidden><span>🔑</span>Gerenciar acesso das abordagens</a><a class="action" href="dashboard-cpc.html" data-permission="dashboard" data-module="PAINEL_CPC" hidden><span>◎</span>Painel Geral CPC</a><a class="action" href="territorio-cpc.html" data-permission="dashboard" data-module="PAINEL_CPC" hidden><span>⌘</span>Matriz territorial</a><a class="action" href="auditoria.html"><span>✓</span>Auditoria de dados</a><a class="action" href="analise-temporal.html"><span>◷</span>Análise temporal</a><a class="action" href="mapa-criminal.html"><span>⌖</span>Mapa criminal</a><a class="action" href="tco-rapido.html"><span>▤</span>TCO rápido</a><a class="action" href="relatorio.html"><span>▧</span>Gerar relatório</a><a class="action" id="linkPlanilhaOcorrencias" href="#" data-permission="planilha" data-planilha-unidade hidden><span>▦</span>Planilha de ocorrências</a><a class="action" href="acoes.html" data-permission="acoes" data-module="ACOES_SOCIAIS" hidden><span>📷</span>Ações preventivas</a><a class="action" href="modo-tv.html"><span>▣</span>Modo TV</a><a class="action" href="fluxos.html"><span>⇢</span>Fluxos da Seção</a><a class="action" href="usuarios.html" data-permission="usuarios" data-auth-only hidden><span>👥</span>Gerenciar usuários</a></nav>
 </main><footer>SIE-CPC — Polícia Militar de Roraima · Comando de Policiamento da Capital</footer>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="https://cdn.jsdelivr.net/npm/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="cipa-home.js?v=20261012-contrato2"></script><script src="cipg-home.js?v=20261012-contrato2"></script><script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="https://cdn.jsdelivr.net/npm/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="estatistica-indicadores.js?v=20261012-1"></script><script src="cipa-home.js?v=20261012-contrato2"></script><script src="cipg-home.js?v=20261012-contrato2"></script><script>
 const db=supabase.createClient("https://jppmhhukujigxupgskdk.supabase.co","sb_publishable_ZVnU35i2x9zwppQqYg7UYw_mzaT43aG");
 var modoCpc=false,modo2Bpm=false,modoCiptur=false,modoCipa=false,modoCipg=false,modoGiro=false,modoCavalaria=false,modoBope=false,cpcUnidades=[],cpcAtual=[],cpcAnterior=[],cpcTcosAtual=[],cpcTcosAnterior=[],cpcTerritorio={},filtroCpcUnidade="";
 function escHome(v){return String(v??"").replace(/[&<>"']/g,function(ch){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]})}
@@ -130,7 +130,7 @@ function aplicarModoGiro(){
   searchDescricao.textContent="Pesquise por BO, natureza ou bairro nos registros da unidade.";
 }
 function renderResumoGiro(d,dAnt,abord,abordAnt,hoje,pc){
-  var ab=abord.length,abAnt=abordAnt.length,pessoas=abord.reduce(function(s,x){return s+(Number(x.quantidade_pessoas)||0)},0),pessoasAnt=abordAnt.reduce(function(s,x){return s+(Number(x.quantidade_pessoas)||0)},0),c=somar(d,"conducoes_operacionais"),cAnt=somar(dAnt,"conducoes_operacionais");
+  var k=EstatisticaIndicadores.giro(abord),kAnt=EstatisticaIndicadores.giro(abordAnt),ab=k.abordagens,abAnt=kAnt.abordagens,pessoas=k.pessoasAbordadas,pessoasAnt=kAnt.pessoasAbordadas,c=somar(d,"conducoes_operacionais"),cAnt=somar(dAnt,"conducoes_operacionais");
   tcosProduzidos.textContent=ab;veiculosRecuperadosKpi.textContent=pessoas;
   tcosSub.textContent="abordagens registradas no mês";veiculosSub.textContent="pessoas abordadas no mês";
   periodoComparativo.textContent="1º a "+hoje.getDate()+" de "+nomeMes(hoje).toLowerCase()+" × 1º a "+pc[1].getDate()+" de "+nomeMes(pc[1]).toLowerCase();
@@ -161,11 +161,10 @@ function aplicarModoCavalaria(){
   searchDescricao.textContent="BOs permanecem disponíveis como documentação complementar às atividades da unidade.";
 }
 function renderResumoCavalaria(serv,servAnt,hoje,pc){
-  var pessoas=somar(serv,"abordagens_pessoas"),pessoasAnt=somar(servAnt,"abordagens_pessoas");
-  var montado=serv.filter(function(x){return x.tipo_policiamento==="POLICIAMENTO_MONTADO"}).length;
-  var montadoAnt=servAnt.filter(function(x){return x.tipo_policiamento==="POLICIAMENTO_MONTADO"}).length;
-  var evop=serv.filter(function(x){return x.contexto_atividade==="EVENTO"||x.tipo_policiamento==="POLICIAMENTO_OPERACOES"}).length;
-  var evopAnt=servAnt.filter(function(x){return x.contexto_atividade==="EVENTO"||x.tipo_policiamento==="POLICIAMENTO_OPERACOES"}).length;
+  var k=EstatisticaIndicadores.cavalaria(serv),kAnt=EstatisticaIndicadores.cavalaria(servAnt);
+  var pessoas=k.pessoasAbordadas,pessoasAnt=kAnt.pessoasAbordadas;
+  var montado=k.policiamentoMontado,montadoAnt=kAnt.policiamentoMontado;
+  var evop=k.eventosOperacoes,evopAnt=kAnt.eventosOperacoes;
   total.textContent=serv.length;conducoes.textContent=pessoas;tcosProduzidos.textContent=montado;veiculosRecuperadosKpi.textContent=evop;
   periodoComparativo.textContent="1º a "+hoje.getDate()+" de "+nomeMes(hoje).toLowerCase()+" × 1º a "+pc[1].getDate()+" de "+nomeMes(pc[1]).toLowerCase();
   comparativoMes.innerHTML=itemComparativo("Serviços",serv.length,servAnt.length,"prod")+itemComparativo("Pessoas abordadas",pessoas,pessoasAnt,"prod")+itemComparativo("Policiamento montado",montado,montadoAnt,"prod")+itemComparativo("Eventos / Operações",evop,evopAnt,"prod");
@@ -209,8 +208,9 @@ function aplicarModoCiptur(){
   topOcorrenciasDescricao.textContent="Ocorrências policiais mais registradas pela CIPTUR";
 }
 function renderResumoCiptur(d,dAnt,autos,autosAnt,hoje,pc){
-  var ai=autos.length,aiAnt=autosAnt.length,rem=autos.filter(function(x){return x.houve_remocao}).length,remAnt=autosAnt.filter(function(x){return x.houve_remocao}).length;
-  var carros=autos.filter(function(x){return x.houve_remocao&&x.tipo_veiculo_removido==="CARRO"}).length,motos=autos.filter(function(x){return x.houve_remocao&&x.tipo_veiculo_removido==="MOTO"}).length;
+  var k=EstatisticaIndicadores.ciptur(autos),kAnt=EstatisticaIndicadores.ciptur(autosAnt);
+  var ai=k.autosInfracao,aiAnt=kAnt.autosInfracao,rem=k.autosComRemocao,remAnt=kAnt.autosComRemocao;
+  var carros=k.autosRemocaoCarro,motos=k.autosRemocaoMoto;
   var c1=somar(d,"conducoes_operacionais"),cAnt=somar(dAnt,"conducoes_operacionais");
   tcosProduzidos.textContent=ai;
   veiculosRecuperadosKpi.textContent=rem;
