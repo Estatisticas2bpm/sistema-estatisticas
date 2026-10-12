@@ -1,6 +1,6 @@
 # Plano de refinamento do SIE-CPC
 
-**Versão:** 1.1 — 12/10/2026  
+**Versão:** 1.2 — 12/10/2026  
 **Estado:** em execução; homologação pendente.  
 **Escopo:** CPC, 1º BPM, 2º BPM, BOPE, Cavalaria, CIPA, CIPG, CIPTUR e GIRO.
 
@@ -80,7 +80,7 @@ Transformar os painéis, mapas, consultas, auditorias e relatórios PDF em um co
 **Legenda:** [x] implementado e conferido no código; [ ] pendente ou parcialmente executado. Implementação não equivale a homologação em navegador/banco.
 
 - **Fase 1:** 3/5 itens implementados; dois itens aguardam revisão ampla e confirmação com unidades. Aceite pendente.
-- **Fase 2:** em andamento; identificadas as fontes de CIPA/CIPG e o risco de consultas com erro serem apresentadas como zero. Correção inicial publicada; validação com registros ainda pendente.
+- **Fase 2:** em andamento; fontes e fórmulas inspecionadas para CIPA, CIPG, GIRO, Cavalaria e CIPTUR. Corrigida apresentação de zero por falha de consulta básica e delimitado o período das abordagens do GIRO pelo fuso de Roraima (UTC-04:00). Validação com registros reais ainda pendente.
 - **Fases 3 a 8:** não homologadas; manter os itens não concluídos desmarcados.
 
 ## Inventário inicial de módulos (código)
@@ -113,4 +113,4 @@ Transformar os painéis, mapas, consultas, auditorias e relatórios PDF em um co
 
 - **12/10/2026:** fases e contratos documentados; complementada a padronização de CIPA e CIPG.
 - **12/10/2026:** Fase 2 iniciada: conferidas as consultas e fórmulas de CIPA/CIPG no código; protegidas as cinco consultas básicas da visão rápida contra apresentação de zero em caso de falha. Falta testar com dados reais e concluir as demais unidades.
-- **Próximo trabalho:** encerrar a Fase 1 com validação das regras e iniciar a Fase 2 pelos cartões CIPA/CIPG/Cavalaria/CIPTUR/GIRO, em blocos independentes.
+- **12/10/2026:** revisão estática dos cálculos dos cartões GIRO, Cavalaria e CIPTUR; corrigidos limites de data/hora das abordagens GIRO para o fuso UTC-04:00. Não foram feitas mudanças no banco de dados.\n- **Próximo trabalho:** verificar paginação e cobertura de consultas especializadas, validar amostras reais de CIPA/CIPG/Cavalaria/CIPTUR/GIRO e conferir permissões e filtros por unidade.
