@@ -7,8 +7,8 @@
   const dinheiro=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   function preparar(){
     document.body.classList.add('modo-cipa');
-    $('heroEyebrow').innerHTML='<i class="pulse"></i> Painel ambiental da CIPA';
-    $('heroTitulo').textContent='Visão rápida — CIPA';
+    $('heroEyebrow').innerHTML='<i class="pulse"></i> Painel estatístico ambiental da CIPA';
+    $('heroTitulo').textContent='Panorama Estatístico da CIPA';
     const cards=[
       ['total','Total de ocorrências','📋'],
       ['conducoes','Animais envolvidos','🦜'],
