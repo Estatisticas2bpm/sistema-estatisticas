@@ -1,6 +1,6 @@
 # Plano de refinamento do SIE-CPC
 
-**Versão:** 1.3 — 12/10/2026  
+**Versão:** 1.4 — 12/10/2026  
 **Estado:** em execução; homologação pendente.  
 **Escopo:** CPC, 1º BPM, 2º BPM, BOPE, Cavalaria, CIPA, CIPG, CIPTUR e GIRO.
 
@@ -38,6 +38,10 @@ Transformar os painéis, mapas, consultas, auditorias e relatórios PDF em um co
 - [x] Implantar paginação também nos eventos da CIPG vinculados aos serviços, em grupos de até 150 IDs; verificar com simulação de **1.375 eventos** distribuídos entre 150 serviços.
 - [x] Ajustar a legenda de CIPTUR de "Veículos removidos" para **"Autos com remoção"** na visão rápida, de acordo com o campo `houve_remocao`: um auto não prova uma remoção de veículo distinta.
 - [x] Verificar agregados do banco em 01–12/10/2026: GIRO = **6 abordagens / 6 pessoas**, CIPTUR = **28 autos / 8 autos com indicação de remoção**. Conferência das fórmulas, **não homologação do resultado no navegador/perfis**.
+- [x] Auditar regras de leitura RLS das oito tabelas especializadas: todas com RLS habilitado, políticas SELECT por unidade ou ocorrência vinculada; **teste prático com perfis autenticados ainda pendente**.
+- [x] Extrair funções `CipaHome.indicadores` e `CipgHome.indicadores` e usá-las nos próprios cartões, comparativos e resumos, preparando reuso dos mesmos critérios no CPC.
+- [x] Esclarecer datas de referência da CIPA nas descrições (ocorrência, fauna, embargo, autuação) e explicitar datas/anos no comparativo de CIPA e CIPG.
+- [x] Adicionar `tests/indicadores-home.test.cjs` para conferir fórmulas, situações sem registros, total de efetivo, vedação de dupla soma de embargo e renderização; execução do conteúdo com ambiente JS compatível aprovada. **Execução nativa no Node e homologação no navegador pendentes**.
 - [ ] Homologar os números com o acesso real de cada unidade, inclusive políticas RLS e os filtros do painel, e obter documentos de referência.
 - [ ] Confirmar com a CIPTUR se existe forma de contabilizar **veículos únicos removidos**, diferente de autos sinalizados com remoção.
 - [ ] Validar período, comparativo e correção dos cartões especializados da CIPA, CIPG e Cavalaria com registros representativos (essas tabelas estavam vazias em 12/10/2026).
@@ -88,7 +92,7 @@ Transformar os painéis, mapas, consultas, auditorias e relatórios PDF em um co
 **Legenda:** [x] implementado e conferido no código; [ ] pendente ou parcialmente executado. Implementação não equivale a homologação em navegador/banco.
 
 - **Fase 1:** 3/5 itens implementados; dois itens aguardam revisão ampla e confirmação com unidades. Aceite pendente.
-- **Fase 2:** em andamento; estrutura inspecionada e paginação de GIRO, Cavalaria, CIPTUR e eventos CIPG implementada e simulada; conferência SQL agregada GIRO/CIPTUR concluída. Testes end-to-end, acesso por perfil, conferência documental e unidades sem dados ainda pendentes.
+- **Fase 2:** em andamento; contratos reutilizáveis CIPA/CIPG implementados; estrutura e políticas RLS verificadas; paginação e conferência SQL GIRO/CIPTUR concluídas; regressão lógica em JS aprovada. Testes com perfis reais, navegador e documentos de origem ainda pendentes.
 - **Fases 3 a 8:** não homologadas; manter os itens não concluídos desmarcados.
 
 ## Inventário inicial de módulos (código)
@@ -124,4 +128,7 @@ Transformar os painéis, mapas, consultas, auditorias e relatórios PDF em um co
 - **12/10/2026:** revisão estática dos cálculos dos cartões GIRO, Cavalaria e CIPTUR; corrigidos limites de data/hora das abordagens GIRO para o fuso UTC-04:00. Não foram feitas mudanças no banco de dados.
 - **12/10/2026:** corrigida paginação dos indicadores mensais especializados na home (`index.html`) e da lista de eventos da CIPG (`cipg-home.js`). Testes simulados verificaram 2.205 registros em três páginas e 1.375 eventos em duas páginas, além de propagação de erro.
 - **12/10/2026:** consulta SQL de validação (somente leitura): GIRO 6 abordagens/6 pessoas e CIPTUR 28 A.I./8 autos com remoção em 01–12/10/2026. CIPA, CIPG e Cavalaria sem registros nas tabelas especializadas na data da verificação. Oito autos com remoção não demonstram oito veículos únicos.
-- **12/10/2026:** descrição do quarto indicador da CIPTUR alterada para "Autos com remoção", incluindo comparativo e resumo; a unidade ainda deve confirmar método de apuração de veículos efetivamente removidos.\n- **Próximo trabalho:** verificar paginação e cobertura de consultas especializadas, validar amostras reais de CIPA/CIPG/Cavalaria/CIPTUR/GIRO e conferir permissões e filtros por unidade.
+- **12/10/2026:** descrição do quarto indicador da CIPTUR alterada para "Autos com remoção", incluindo comparativo e resumo; a unidade ainda deve confirmar método de apuração de veículos efetivamente removidos.
+- **12/10/2026:** verificação de RLS habilitado nas oito tabelas especializadas: políticas SELECT vinculam registros às unidades acessíveis, inclusive via ocorrência (CIPA) e serviço de guarda (CIPG). Não houve simulação de autenticação real.
+- **12/10/2026:** fórmulas CIPA/CIPG centralizadas em `indicadores(...)`, com reuso no painel da unidade e preparação para a fase de consolidação CPC; datas de referência explicitadas; arquivo de testes de regressão criado e cenários testados com interpretação JavaScript isolada.
+- **Próximo trabalho:** validar os números e consultas sob sessões autenticadas de cada unidade (incluindo permissões e filtros); reunir amostras reais de CIPA/CIPG/Cavalaria; prosseguir com contratos estatísticos para GIRO/Cavalaria/CIPTUR antes da consolidação CPC.
