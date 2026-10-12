@@ -296,6 +296,21 @@ function totaisAbordagemRel(lista){return{
 }}
 function escopoGiroRel(){return 'GIRO - PRODUTIVIDADE OPERACIONAL E ABORDAGENS DE RUA'}
 function pageGiro(title,body){const periodo=periodoRelatorio(ini.value,fim.value);return`<section class="page"><div class="internal-head">${periodo.titulo}<br>${escopoGiroRel()}<br>${E(unidadeRel().nome).toUpperCase()}</div>${title?`<h2 class="title">${title}</h2>`:''}${body}<div class="footer"></div></section>`}
+
+async function consultarRegistrosPdf(tabela,campos,campoData,inicio,fim,unidadeId){
+  const todos=[],passo=1000;
+  for(let pagina=0;pagina<200;pagina++){
+    let q=db.from(tabela).select(campos)
+      .gte(campoData,inicio).lte(campoData,fim)
+      .order('id',{ascending:true}).range(pagina*passo,(pagina+1)*passo-1);
+    if(unidadeId)q=q.eq('unidade_id',unidadeId);
+    const r=await q;
+    if(r.error)return {data:null,error:r.error};
+    const lote=r.data||[];todos.push(...lote);
+    if(lote.length<passo)return {data:todos,error:null};
+  }
+  return {data:null,error:new Error('Período com registros demais para o relatório. Reduza o intervalo.')};
+}
 async function buildGiro(){
   $('document').innerHTML='<div class="notice">Consultando dados operacionais e abordagens do GIRO...</div>';
   const periodo=periodoRelatorio(ini.value,fim.value),cr=comparisonRange();
@@ -306,8 +321,8 @@ async function buildGiro(){
     db.rpc('obter_dados_dashboard_territorial',{data_inicio:cr[0],data_fim:cr[1]}),
     db.rpc('obter_tcos_dashboard_territorial',{data_inicio:ini.value,data_fim:fim.value}),
     db.rpc('obter_tcos_dashboard_territorial',{data_inicio:cr[0],data_fim:cr[1]}),
-    db.from('giro_abordagens').select('id,registrado_em,tipo_abordagem,pessoas,quantidade_pessoas,endereco,bairro,municipio,latitude,longitude').gte('registrado_em',atualIni).lte('registrado_em',atualFim),
-    db.from('giro_abordagens').select('id,registrado_em,tipo_abordagem,pessoas,quantidade_pessoas,endereco,bairro,municipio,latitude,longitude').gte('registrado_em',oldIni).lte('registrado_em',oldFim)
+    consultarRegistrosPdf('giro_abordagens','id,registrado_em,tipo_abordagem,pessoas,quantidade_pessoas,endereco,bairro,municipio,latitude,longitude','registrado_em',atualIni,atualFim),
+    consultarRegistrosPdf('giro_abordagens','id,registrado_em,tipo_abordagem,pessoas,quantidade_pessoas,endereco,bairro,municipio,latitude,longitude','registrado_em',oldIni,oldFim)
   ]);
   const erro=res.find(x=>x?.error)?.error;
   if(erro){$('document').innerHTML='<div class="notice">Erro: '+E(erro.message)+'</div>';return}
@@ -433,9 +448,8 @@ async function buildCiptur(){
   document.title='SIE-CPC - CIPTUR - '+periodo.arquivo;
   const aiCampos='id,data_infracao,codigo_infracao,descricao_snapshot,gravidade_snapshot,pontos_snapshot,valor_snapshot,valor_texto_snapshot,houve_remocao,tipo_veiculo_removido,agente_autuador_id,agente_codigo_snapshot,agente_nome_snapshot';
   const unidadeId=window.SistemaAuth?.contexto?.unidade_id||window.SistemaAuth?.perfil?.unidade_id||window.SistemaAuth?.perfil?.unidades?.id||'';
-  let aiAtual=db.from('ciptur_autos_infracao').select(aiCampos).gte('data_infracao',ini.value).lte('data_infracao',fim.value);
-  let aiAnterior=db.from('ciptur_autos_infracao').select(aiCampos).gte('data_infracao',cr[0]).lte('data_infracao',cr[1]);
-  if(unidadeId){aiAtual=aiAtual.eq('unidade_id',unidadeId);aiAnterior=aiAnterior.eq('unidade_id',unidadeId)}
+  const aiAtual=consultarRegistrosPdf('ciptur_autos_infracao',aiCampos,'data_infracao',ini.value,fim.value,unidadeId);
+  const aiAnterior=consultarRegistrosPdf('ciptur_autos_infracao',aiCampos,'data_infracao',cr[0],cr[1],unidadeId);
   const res=await Promise.all([
     db.rpc('obter_dados_dashboard_territorial',{data_inicio:ini.value,data_fim:fim.value}),
     db.rpc('obter_dados_dashboard_territorial',{data_inicio:cr[0],data_fim:cr[1]}),
@@ -474,7 +488,7 @@ async function buildCiptur(){
     ['1. DOCUMENTAÇÕES E OCORRÊNCIAS REGISTRADAS',3],
     ['2. ANÁLISE TERRITORIAL E TEMPORAL DAS OCORRÊNCIAS',4],
     ['3. FISCALIZAÇÃO DE TRÂNSITO — AUTOS DE INFRAÇÃO',5],
-    ['4. REMOÇÕES DE VEÍCULOS',7],
+    ['4. AUTOS COM INDICAÇÃO DE REMOÇÃO',7],
     ['5. PRODUTIVIDADE DO TOR',8],
     ['6. RESULTADOS OPERACIONAIS E APREENSÕES',9],
     ['7. OCORRÊNCIAS POR COMANDANTE',10],
@@ -487,7 +501,7 @@ async function buildCiptur(){
   const p4=pageCiptur('2. ANÁLISE TERRITORIAL E TEMPORAL DAS OCORRÊNCIAS',`<div class="two"><div><h3 class="subtitle">OCORRÊNCIAS POR DIA DA SEMANA</h3><div class="chart"><canvas id="cipturChartDiasOcc"></canvas></div></div><div><h3 class="subtitle">OCORRÊNCIAS POR TURNO</h3><div class="chart"><canvas id="cipturChartTurnosOcc"></canvas></div></div></div><h3 class="subtitle">BAIRROS COM MAIS OCORRÊNCIAS</h3>${table(['ORDEM','BAIRRO','ATUAL','COMPARADO','VARIAÇÃO'],hoods.slice(0,15).map((x,i)=>`<tr><td>${i+1}</td><td>${E(x[0])}</td><td>${x[1]}</td><td>${hoodOld[x[0]]||0}</td><td>${variance(x[1],hoodOld[x[0]]||0)}</td></tr>`))}<h3 class="subtitle">LOGRADOUROS COM MAIS OCORRÊNCIAS</h3>${table(['ORDEM','LOGRADOURO','FREQUÊNCIA'],rank(d,'endereco',15).map((x,i)=>`<tr><td>${i+1}</td><td>${E(x[0])}</td><td>${x[1]}</td></tr>`))}`);
   const p5=pageCiptur('3. FISCALIZAÇÃO DE TRÂNSITO — AUTOS DE INFRAÇÃO',`<div class="kpis-rel"><div class="kpi-rel"><b>${autos.length}</b><span>TOTAL DE A.I.</span></div><div class="kpi-rel"><b>${aiAtualRank.length}</b><span>INFRAÇÕES DISTINTAS</span></div><div class="kpi-rel"><b>${agentes.length}</b><span>AGENTES IDENTIFICADOS</span></div><div class="kpi-rel"><b>${removidos.length}</b><span>AUTOS COM REMOÇÃO</span></div><div class="kpi-rel"><b>${variance(autos.length,autosOld.length)}</b><span>VARIAÇÃO DOS A.I.</span></div></div><h3 class="subtitle">PRINCIPAIS INFRAÇÕES</h3>${table(['ORDEM','CÓDIGO','DESCRIÇÃO','GRAVIDADE','ATUAL','COMPARADO','VARIAÇÃO'],aiAtualRank.slice(0,20).map((x,i)=>`<tr><td>${i+1}</td><td>${E(x.codigo)}</td><td>${E(x.descricao)}</td><td>${E(x.gravidade)}</td><td>${x.qtd}</td><td>${aiOldMap[x.codigo]||0}</td><td>${variance(x.qtd,aiOldMap[x.codigo]||0)}</td></tr>`))}<p class="source">Fonte: módulo de Autos de Infração da CIPTUR.</p>`);
     const p5b=pageCiptur('',`<div class="two"><div><h3 class="subtitle">A.I. POR DIA DA SEMANA</h3><div class="chart"><canvas id="cipturChartAiDias"></canvas></div></div><div><h3 class="subtitle">AGENTES AUTUADORES</h3>${table(['ORDEM','AGENTE','ATUAL','COMPARADO'],agentes.slice(0,20).map((x,i)=>`<tr><td>${i+1}</td><td>${E(x[0])}</td><td>${x[1]}</td><td>${agentesOld[x[0]]||0}</td></tr>`))}</div></div><div class="note-rel">Os registros de A.I. armazenam data, infração, gravidade, remoção e agente. Não há campos próprios de horário, bairro ou logradouro no módulo atual; por isso esses indicadores não são apresentados.</div>`);
-  const p6=pageCiptur('4. REMOÇÕES DE VEÍCULOS',`<div class="kpis-rel"><div class="kpi-rel"><b>${removidos.length}</b><span>VEÍCULOS REMOVIDOS</span></div><div class="kpi-rel"><b>${removidosOld.length}</b><span>PERÍODO COMPARADO</span></div><div class="kpi-rel"><b>${variance(removidos.length,removidosOld.length)}</b><span>VARIAÇÃO</span></div><div class="kpi-rel"><b>${percentualRemocao}</b><span>A.I. COM REMOÇÃO</span></div><div class="kpi-rel"><b>${autos.length-removidos.length}</b><span>A.I. SEM REMOÇÃO</span></div></div><h3 class="subtitle">VEÍCULOS REMOVIDOS POR TIPO</h3>${table(['TIPO DE VEÍCULO','QUANTIDADE'],remTipos.map(x=>`<tr><td>${E(x[0])}</td><td>${x[1]}</td></tr>`),`<tr class="total"><td>TOTAL</td><td>${removidos.length}</td></tr>`)}<h3 class="subtitle">INFRAÇÕES QUE RESULTARAM EM REMOÇÃO</h3>${table(['CÓDIGO','DESCRIÇÃO','REMOÇÕES'],aiRank(removidos).map(x=>`<tr><td>${E(x.codigo)}</td><td>${E(x.descricao)}</td><td>${x.qtd}</td></tr>`))}<div class="note-rel">A remoção é vinculada ao respectivo Auto de Infração. O módulo atual não armazena local ou horário da remoção, portanto não são apresentados mapas ou rankings territoriais de remoções.</div>`);
+  const p6=pageCiptur('4. AUTOS COM INDICAÇÃO DE REMOÇÃO',`<div class="kpis-rel"><div class="kpi-rel"><b>${removidos.length}</b><span>AUTOS COM REMOÇÃO</span></div><div class="kpi-rel"><b>${removidosOld.length}</b><span>PERÍODO COMPARADO</span></div><div class="kpi-rel"><b>${variance(removidos.length,removidosOld.length)}</b><span>VARIAÇÃO</span></div><div class="kpi-rel"><b>${percentualRemocao}</b><span>A.I. COM REMOÇÃO</span></div><div class="kpi-rel"><b>${autos.length-removidos.length}</b><span>A.I. SEM REMOÇÃO</span></div></div><h3 class="subtitle">AUTOS COM REMOÇÃO POR TIPO</h3>${table(['TIPO DE VEÍCULO','QUANTIDADE'],remTipos.map(x=>`<tr><td>${E(x[0])}</td><td>${x[1]}</td></tr>`),`<tr class="total"><td>TOTAL</td><td>${removidos.length}</td></tr>`)}<h3 class="subtitle">INFRAÇÕES COM REMOÇÃO INDICADA</h3>${table(['CÓDIGO','DESCRIÇÃO','AUTOS'],aiRank(removidos).map(x=>`<tr><td>${E(x.codigo)}</td><td>${E(x.descricao)}</td><td>${x.qtd}</td></tr>`))}<div class="note-rel">Este quadro conta autos de infração com indicação de remoção (campo houve_remocao). Não comprova a quantidade de veículos distintos efetivamente removidos. A referência temporal é a data da infração; não há local ou horário específico da remoção para produzir mapas ou rankings.</div>`);
   const torRows=[
     ['OCORRÊNCIAS ATENDIDAS PELO TOR',tor.length,torOld.length],
     ['CONDUÇÕES',sum(tor,'conducoes_operacionais'),sum(torOld,'conducoes_operacionais')],
@@ -508,7 +522,7 @@ async function buildCiptur(){
     ['BOLETINS DE OCORRÊNCIA',docs.find(x=>x[0]==='BO')?.[1]||0,oldDocs.BO||0],
     ['TCO',docs.find(x=>x[0]==='TCO')?.[1]||0,oldDocs.TCO||0],
     ['AUTOS DE INFRAÇÃO',autos.length,autosOld.length],
-    ['VEÍCULOS REMOVIDOS',removidos.length,removidosOld.length],
+    ['AUTOS COM REMOÇÃO',removidos.length,removidosOld.length],
     ['OCORRÊNCIAS DO TOR',tor.length,torOld.length],
     ['CONDUÇÕES',sum(d,'conducoes_operacionais'),sum(old,'conducoes_operacionais')],
     ['PRISÕES',sum(d,'numero_prisoes'),sum(old,'numero_prisoes')],
