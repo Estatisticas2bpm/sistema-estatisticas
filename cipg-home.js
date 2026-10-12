@@ -85,7 +85,7 @@
     $('conducoes').textContent=numero(k.entradasPmHospital);
     $('tcosProduzidos').textContent=numero(k.servicosSemAlteracao);
     $('veiculosRecuperadosKpi').textContent=numero(k.empregosEfetivo);
-    $('periodoComparativo').textContent='Mês atual × período comparado';
+    $('periodoComparativo').textContent='1º a '+hoje.getDate()+' de '+nomeMes(hoje).toLowerCase()+' de '+hoje.getFullYear()+' × 1º a '+pc[1].getDate()+' de '+nomeMes(pc[1]).toLowerCase()+' de '+pc[1].getFullYear();
     if(typeof itemComparativo==='function'){
       $('comparativoMes').innerHTML=
         itemComparativo('Relatórios de serviço',k.relatoriosServico,kAnt.relatoriosServico,'prod')+
