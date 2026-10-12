@@ -26,8 +26,8 @@
     document.body.classList.add('modo-cipg');
     const linkDashboard=document.querySelector('a[href^="dashboard.html"]');
     if(linkDashboard)linkDashboard.href='dashboard.html?v=20261009-cipg-banner1';
-    $('heroTitulo').textContent='Visão rápida — CIPG';
-    $('heroEyebrow').innerHTML='<i class="pulse"></i> Policiamento de Guarda · CIPG';
+    $('heroTitulo').textContent='Panorama Estatístico da CIPG';
+    $('heroEyebrow').innerHTML='<i class="pulse"></i> Estatística de Guarda · CIPG';
     const cards=[['total','Relatórios de serviço','shield-check'],
       ['conducoes','Entradas de PM no hospital','heart-pulse'],
       ['tcosProduzidos','Serviços sem alteração','clipboard-check'],
