@@ -13,7 +13,7 @@ assert.equal(migrations.length, 1, 'deve existir uma única migration da Fase 3L
 const sql = ler(path.join('supabase', 'migrations', migrations[0]));
 const territorial = ler(path.join('supabase', 'migrations', '20260928230846_fase3m_c_painel_cpc_territorial.sql'));
 
-assert.match(index, /Panorama Operacional do CPC/);
+assert.match(index, /Panorama Estatístico do CPC/);
 assert.match(index, /id="cpcUnidadesPanel"/);
 assert.match(index, /id="unidadeMapa"/);
 assert.match(index, /id="areaTipoMapa"/);

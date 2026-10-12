@@ -16,7 +16,7 @@ assert.match(home,/classList\.add\("modo-bope"\)/);
 assert.match(home,/body\.modo-bope \.hero/);
 assert.match(home,/assets\/banners\/bope-home-banner\.png\?v=20261009-bope-banner1/);
 assert.match(home,/body\.modo-bope \.hero\{[^}]*background-size:100% 100%,contain/);
-assert.match(home,/Visão rápida — BOPE/);
+assert.match(home,/Panorama Estatístico do BOPE/);
 
 assert.match(dashboard,/function ehBope\(\)\{return siglaUnidadeAtiva\(\)==='BOPE'\}/);
 assert.match(dashboard,/function configurarModuloBope\(\)/);

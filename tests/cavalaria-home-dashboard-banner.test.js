@@ -8,7 +8,7 @@ assert.ok(fs.statSync(asset).size>100000,'banner da Cavalaria deve manter qualid
 assert.match(index,/body\.modo-cavalaria \.hero/,'home deve possuir estilo exclusivo da Cavalaria');
 assert.match(index,/cavalaria-home-banner\.png\?v=20261009-cavalaria-banner1/,'home deve usar o novo banner');
 assert.match(index,/background-size:100% 100%,contain/,'home deve preservar a imagem completa');
-assert.match(index,/Visão rápida — Cavalaria/,'home deve manter identificação da Cavalaria');
+assert.match(index,/Panorama Estatístico da Cavalaria/,'home deve manter identificação da Cavalaria');
 assert.match(dashboard,/body\.modo-cavalaria header/,'dashboard deve possuir estilo exclusivo da Cavalaria');
 assert.match(dashboard,/classList\.toggle\('modo-cavalaria',ativo\)/,'dashboard deve ativar o modo somente para Cavalaria');
 assert.match(dashboard,/cavalaria-home-banner\.png\?v=20261009-cavalaria-banner1/,'dashboard deve usar o novo banner');

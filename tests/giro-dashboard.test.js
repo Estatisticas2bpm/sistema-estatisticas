@@ -41,7 +41,7 @@ assert.match(dashboard,/lblCompanhia[\s\S]*?hidden=true/);
 assert.match(home,/modoGiro=false/);
 assert.match(home,/function aplicarModoGiro\(\)/);
 assert.match(home,/siglaAtiva==="GIRO"/);
-assert.match(home,/Visão rápida — GIRO/);
+assert.match(home,/Panorama Estatístico do GIRO/);
 assert.match(home,/Mapa Operacional — GIRO/);
 assert.match(home,/giro-moto-marker/);
 

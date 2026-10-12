@@ -24,7 +24,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for teste in tests/*.test.js; do
+          for teste in tests/*.test.js tests/*.test.cjs; do
             echo "TEST $teste"
             node "$teste"
           done

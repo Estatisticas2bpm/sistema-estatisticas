@@ -19,6 +19,11 @@ body.modo-cipg .mapPanel{display:none}
 footer{text-align:center;color:var(--muted);font-size:12px;padding:12px 0 30px}
 @media(max-width:850px){.kpis{grid-template-columns:1fr 1fr}.layout,.insights{grid-template-columns:1fr}.actions{grid-template-columns:1fr 1fr}.search{grid-template-columns:1fr}.searchForm,.search input{width:100%}.top{align-items:flex-start}.hero{padding-left:5%;padding-right:5%}}@media(max-width:500px){.kpis{grid-template-columns:1fr}.hero{padding-bottom:65px}.container{margin-top:-40px}.actions,.compareGrid{grid-template-columns:1fr}.kpi{padding:17px}}@media(max-width:700px){body.modo-giro .hero{min-height:500px;background-position:58% center;background-image:linear-gradient(180deg,rgba(2,12,29,.92) 0%,rgba(2,18,39,.68) 55%,rgba(2,18,39,.38) 100%),url("assets/capa-giro-noturna.png?v=20261003-giro-banner2")}}@media(max-width:768px){body.modo-2bpm .hero{min-height:500px;background-position:76% center;background-image:linear-gradient(90deg,rgba(1,13,36,.99) 0%,rgba(1,19,48,.94) 48%,rgba(1,24,58,.56) 100%),url("assets/banners/2bpm-home-banner.png?v=20261012-2bpm-home2")}body.modo-2bpm .heroCopy{max-width:82%}}@media(max-width:768px){body.modo-ciptur .hero{min-height:500px;background-position:72% center;background-image:linear-gradient(90deg,rgba(2,16,45,.99) 0%,rgba(3,27,72,.97) 43%,rgba(3,35,82,.72) 68%,rgba(3,35,82,.32) 100%),url("assets/banners/ciptur-home-banner.png?v=20261002-ciptur-home-banner1")}body.modo-ciptur .heroCopy{max-width:82%}}
 .mapPanel{margin-top:18px}.mapFilters{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.mapFilters select,.mapFilters input{border:1px solid #d5e0ea;border-radius:10px;padding:9px 11px;background:#fff;color:var(--ink)}#mapa{height:390px;border-radius:15px;overflow:hidden;background:#dfe8ef}.mapStatus{font-size:12px;color:var(--muted);margin-top:9px}.leaflet-popup-content{font-family:Inter,Segoe UI,Arial,sans-serif;line-height:1.4}.mapLegend{background:#fffffff2;border:1px solid #d8e2eb;border-radius:12px;padding:9px 11px;box-shadow:0 4px 14px #102a4322;line-height:1.7;color:#334155;font-size:11px}.mapLegend b{display:block;color:#102a43;margin-bottom:3px}.mapLegend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;border:1px solid #fff;box-shadow:0 0 0 1px #94a3b8}.giro-moto-marker{background:transparent!important;border:0!important}.giro-moto-marker span{display:grid;place-items:center;width:26px;height:26px;font-size:21px;line-height:1;filter:grayscale(1) brightness(.15);transform:translateY(-1px);text-shadow:0 1px 1px #fff,0 0 2px #fff}.mapLegend .motoLegend{display:inline-block;width:auto;height:auto;border:0;box-shadow:none;border-radius:0;margin-right:5px;font-size:15px;filter:grayscale(1) brightness(.15)}.cpcScopeHero{margin-top:13px;display:inline-flex;gap:8px;flex-wrap:wrap;align-items:center;background:#ffffff12;border:1px solid #ffffff28;border-radius:12px;padding:9px 12px;color:#d8ebf5;font-size:12px;font-weight:800}.cpcUnitsPanel{margin-top:18px}.cpcUnitsGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.cpcUnitCard{border:1px solid #dbe5ed;background:#fbfdff;border-radius:15px;padding:15px;text-align:left;cursor:pointer;color:var(--ink);transition:.18s;position:relative}.cpcUnitCard:hover,.cpcUnitCard.active{transform:translateY(-2px);border-color:#7da8c7;box-shadow:0 8px 22px #102e4a12}.cpcUnitCard.active{background:#eef7fb}.cpcUnitCard b{display:block;color:var(--navy);font-size:15px}.cpcUnitCard small{display:block;color:var(--muted);margin-top:3px}.cpcUnitMetrics{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:12px}.cpcUnitMetrics span{background:white;border:1px solid #e1e8ef;border-radius:9px;padding:8px 6px;text-align:center;font-size:10px;color:var(--muted)}.cpcUnitMetrics strong{display:block;color:var(--navy);font-size:16px;margin-bottom:2px}.cpcFilterActive{margin-top:10px;color:var(--blue);font-size:12px;font-weight:900}.cpcActionsTitle{margin-top:20px;background:linear-gradient(105deg,#071b33,#0e4f8a);color:#fff;border-radius:16px;padding:15px 18px}.cpcActionsTitle b{display:block;font-size:16px}.cpcActionsTitle span{display:block;color:#c9dceb;font-size:12px;margin-top:3px}.action.cpcPrimary{background:linear-gradient(120deg,#071b33,#0e4f8a);color:#fff;border-color:#0e4f8a;box-shadow:0 8px 22px #071b3320}.mapFilters .cpcOnly{display:none}body.modo-cpc .mapFilters .cpcOnly{display:inline-block}body.modo-cpc .search{border:1px solid #d6e4ee}@media(max-width:850px){.cpcUnitsGrid{grid-template-columns:1fr}.cpcUnitMetrics{grid-template-columns:1fr 1fr}}@media(max-width:500px){.cpcUnitMetrics{grid-template-columns:1fr 1fr}}
+.cpcDataNote{display:block;margin-top:8px;color:#b45309;font-size:11px}
+.cpcUnitPin{border:0;background:transparent}
+.cpcUnitPin .pinInner{display:block;position:relative;width:26px;height:26px;border:2px solid var(--unit-color);border-radius:50%;background:white;box-shadow:0 1px 7px #001a3b88;overflow:hidden}
+.cpcUnitPin .pinFallback{display:grid;place-items:center;position:absolute;inset:0;font-size:11px;color:white;background:var(--unit-color)}
+.cpcUnitPin img{display:block;position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:white}
 </style><style id="cpc-banner-styles">
 body.modo-cpc .hero{min-height:340px;background-color:#03172f;background-image:linear-gradient(90deg,rgba(1,15,39,.96) 0%,rgba(1,23,52,.82) 36%,rgba(2,39,74,.20) 68%),url("assets/banners/cpc-home-banner.png?v=20261012-cpc-banner1");background-position:center,right center;background-size:100% 100%,contain;background-repeat:no-repeat;box-shadow:inset 0 -85px 90px rgba(1,13,34,.42)}
 body.modo-cpc .hero:after{display:none}
@@ -75,7 +80,7 @@ body.modo-1bpm .hero .top,body.modo-1bpm .hero .heroCopy{position:relative;z-ind
 <section class="search"><div><h2 id="searchTitulo">Localizar uma ocorrência</h2><p id="searchDescricao">Pesquise por número do BO, tipo de ocorrência ou bairro.</p></div><form class="searchForm" action="consulta.html"><input name="q" aria-label="Pesquisar ocorrências" placeholder="Digite para pesquisar..."><button class="btn">⌕ Pesquisar</button></form></section>
 <div id="atalhosCpcTitulo" class="cpcActionsTitle" hidden><b>Ferramentas de análise do Comando</b><span>Consultas, dashboards, mapa, séries temporais, relatórios e auditoria das unidades subordinadas.</span></div><nav class="actions" id="atalhosHome"><a class="action" id="atalhoCadastroPrincipal" href="cadastro.html?v=pdf21"><span>＋</span>Cadastrar ocorrência</a><a class="action" href="autos-infracao.html" data-permission="cadastro" data-module="AUTOS_INFRACAO" hidden><span>⚑</span>Autos de infração</a><a class="action" href="cavalaria-produtividade.html" data-permission="cadastro" data-module="PRODUTIVIDADE_CAVALARIA" hidden><span>♞</span>Produtividade da Cavalaria</a><a class="action" href="consulta.html"><span>⌕</span>Consultar ocorrências</a><a class="action" href="dashboard.html?v=20261009-bope-banner1"><span>▥</span>Dashboard completo</a><a class="action" id="giroAccessShortcut" href="giro-acesso-abordagens.html" hidden><span>🔑</span>Gerenciar acesso das abordagens</a><a class="action" href="dashboard-cpc.html" data-permission="dashboard" data-module="PAINEL_CPC" hidden><span>◎</span>Painel Geral CPC</a><a class="action" href="territorio-cpc.html" data-permission="dashboard" data-module="PAINEL_CPC" hidden><span>⌘</span>Matriz territorial</a><a class="action" href="auditoria.html"><span>✓</span>Auditoria de dados</a><a class="action" href="analise-temporal.html"><span>◷</span>Análise temporal</a><a class="action" href="mapa-criminal.html"><span>⌖</span>Mapa criminal</a><a class="action" href="tco-rapido.html"><span>▤</span>TCO rápido</a><a class="action" href="relatorio.html"><span>▧</span>Gerar relatório</a><a class="action" id="linkPlanilhaOcorrencias" href="#" data-permission="planilha" data-planilha-unidade hidden><span>▦</span>Planilha de ocorrências</a><a class="action" href="acoes.html" data-permission="acoes" data-module="ACOES_SOCIAIS" hidden><span>📷</span>Ações preventivas</a><a class="action" href="modo-tv.html"><span>▣</span>Modo TV</a><a class="action" href="fluxos.html"><span>⇢</span>Fluxos da Seção</a><a class="action" href="usuarios.html" data-permission="usuarios" data-auth-only hidden><span>👥</span>Gerenciar usuários</a></nav>
 </main><footer>SIE-CPC — Polícia Militar de Roraima · Comando de Policiamento da Capital</footer>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="https://cdn.jsdelivr.net/npm/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="cipa-home.js?v=20261012-contrato2"></script><script src="cipg-home.js?v=20261012-contrato2"></script><script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="https://cdn.jsdelivr.net/npm/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="estatistica-indicadores.js?v=20261012-1"></script><script src="cipa-home.js?v=20261012-contrato2"></script><script src="cipg-home.js?v=20261012-contrato2"></script><script>
 const db=supabase.createClient("https://jppmhhukujigxupgskdk.supabase.co","sb_publishable_ZVnU35i2x9zwppQqYg7UYw_mzaT43aG");
 var modoCpc=false,modo2Bpm=false,modoCiptur=false,modoCipa=false,modoCipg=false,modoGiro=false,modoCavalaria=false,modoBope=false,cpcUnidades=[],cpcAtual=[],cpcAnterior=[],cpcTcosAtual=[],cpcTcosAnterior=[],cpcTerritorio={},filtroCpcUnidade="";
 function escHome(v){return String(v??"").replace(/[&<>"']/g,function(ch){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]})}
@@ -124,13 +129,13 @@ function aplicarModoGiro(){
   topBairrosDescricao.textContent="Distribuição territorial das ocorrências do GIRO";
   mapaTitulo.textContent="Mapa Operacional — GIRO";
   mapaDescricao.textContent="Ocorrências e abordagens preventivas registradas pelo GIRO";
-  if(camadaGiroMapa)camadaGiroMapa.hidden=false;
+  if(camadaGiroMapa)camadaGiroMapa.hidden=false;atualizarLegendaMapa();
   var legAb=document.getElementById("legendaGiroAbordagem");if(legAb)legAb.style.display="inline";
   searchTitulo.textContent="Consultar ocorrências do GIRO";
   searchDescricao.textContent="Pesquise por BO, natureza ou bairro nos registros da unidade.";
 }
 function renderResumoGiro(d,dAnt,abord,abordAnt,hoje,pc){
-  var ab=abord.length,abAnt=abordAnt.length,pessoas=abord.reduce(function(s,x){return s+(Number(x.quantidade_pessoas)||0)},0),pessoasAnt=abordAnt.reduce(function(s,x){return s+(Number(x.quantidade_pessoas)||0)},0),c=somar(d,"conducoes_operacionais"),cAnt=somar(dAnt,"conducoes_operacionais");
+  var k=EstatisticaIndicadores.giro(abord),kAnt=EstatisticaIndicadores.giro(abordAnt),ab=k.abordagens,abAnt=kAnt.abordagens,pessoas=k.pessoasAbordadas,pessoasAnt=kAnt.pessoasAbordadas,c=somar(d,"conducoes_operacionais"),cAnt=somar(dAnt,"conducoes_operacionais");
   tcosProduzidos.textContent=ab;veiculosRecuperadosKpi.textContent=pessoas;
   tcosSub.textContent="abordagens registradas no mês";veiculosSub.textContent="pessoas abordadas no mês";
   periodoComparativo.textContent="1º a "+hoje.getDate()+" de "+nomeMes(hoje).toLowerCase()+" × 1º a "+pc[1].getDate()+" de "+nomeMes(pc[1]).toLowerCase();
@@ -161,11 +166,10 @@ function aplicarModoCavalaria(){
   searchDescricao.textContent="BOs permanecem disponíveis como documentação complementar às atividades da unidade.";
 }
 function renderResumoCavalaria(serv,servAnt,hoje,pc){
-  var pessoas=somar(serv,"abordagens_pessoas"),pessoasAnt=somar(servAnt,"abordagens_pessoas");
-  var montado=serv.filter(function(x){return x.tipo_policiamento==="POLICIAMENTO_MONTADO"}).length;
-  var montadoAnt=servAnt.filter(function(x){return x.tipo_policiamento==="POLICIAMENTO_MONTADO"}).length;
-  var evop=serv.filter(function(x){return x.contexto_atividade==="EVENTO"||x.tipo_policiamento==="POLICIAMENTO_OPERACOES"}).length;
-  var evopAnt=servAnt.filter(function(x){return x.contexto_atividade==="EVENTO"||x.tipo_policiamento==="POLICIAMENTO_OPERACOES"}).length;
+  var k=EstatisticaIndicadores.cavalaria(serv),kAnt=EstatisticaIndicadores.cavalaria(servAnt);
+  var pessoas=k.pessoasAbordadas,pessoasAnt=kAnt.pessoasAbordadas;
+  var montado=k.policiamentoMontado,montadoAnt=kAnt.policiamentoMontado;
+  var evop=k.eventosOperacoes,evopAnt=kAnt.eventosOperacoes;
   total.textContent=serv.length;conducoes.textContent=pessoas;tcosProduzidos.textContent=montado;veiculosRecuperadosKpi.textContent=evop;
   periodoComparativo.textContent="1º a "+hoje.getDate()+" de "+nomeMes(hoje).toLowerCase()+" × 1º a "+pc[1].getDate()+" de "+nomeMes(pc[1]).toLowerCase();
   comparativoMes.innerHTML=itemComparativo("Serviços",serv.length,servAnt.length,"prod")+itemComparativo("Pessoas abordadas",pessoas,pessoasAnt,"prod")+itemComparativo("Policiamento montado",montado,montadoAnt,"prod")+itemComparativo("Eventos / Operações",evop,evopAnt,"prod");
@@ -209,8 +213,9 @@ function aplicarModoCiptur(){
   topOcorrenciasDescricao.textContent="Ocorrências policiais mais registradas pela CIPTUR";
 }
 function renderResumoCiptur(d,dAnt,autos,autosAnt,hoje,pc){
-  var ai=autos.length,aiAnt=autosAnt.length,rem=autos.filter(function(x){return x.houve_remocao}).length,remAnt=autosAnt.filter(function(x){return x.houve_remocao}).length;
-  var carros=autos.filter(function(x){return x.houve_remocao&&x.tipo_veiculo_removido==="CARRO"}).length,motos=autos.filter(function(x){return x.houve_remocao&&x.tipo_veiculo_removido==="MOTO"}).length;
+  var k=EstatisticaIndicadores.ciptur(autos),kAnt=EstatisticaIndicadores.ciptur(autosAnt);
+  var ai=k.autosInfracao,aiAnt=kAnt.autosInfracao,rem=k.autosComRemocao,remAnt=kAnt.autosComRemocao;
+  var carros=k.autosRemocaoCarro,motos=k.autosRemocaoMoto;
   var c1=somar(d,"conducoes_operacionais"),cAnt=somar(dAnt,"conducoes_operacionais");
   tcosProduzidos.textContent=ai;
   veiculosRecuperadosKpi.textContent=rem;
@@ -224,28 +229,168 @@ function renderResumoCiptur(d,dAnt,autos,autosAnt,hoje,pc){
   if(rem)partes.push("Entre os autos com remoção, "+carros+" indicam carro e "+motos+" indicam moto; isso não equivale necessariamente ao total de veículos distintos.");
   resumoInteligente.textContent=partes.join(" ");
 }
-function aplicarModoCpc(){document.body.classList.add("modo-cpc");heroEyebrow.innerHTML='<i class="pulse"></i> Central executiva do Comando';heroTitulo.textContent="Panorama Estatístico do CPC";cpcEscopoHero.hidden=false;cpcUnidadesPanel.hidden=false;atalhosCpcTitulo.hidden=false;mapaTitulo.textContent="Mapa Estatístico Consolidado do CPC";mapaDescricao.textContent="Distribuição geográfica dos registros das unidades subordinadas, com filtros por unidade e área";searchTitulo.textContent="Consultar ocorrências das unidades";searchDescricao.textContent="Pesquise nos registros acessíveis ao CPC por BO, natureza ou bairro.";topOcorrenciasDescricao.textContent="Naturezas mais registradas pelas unidades subordinadas";topBairrosDescricao.textContent="Concentração territorial consolidada das unidades";var nav=document.getElementById("atalhosHome"),ordem=["dashboard-cpc.html","territorio-cpc.html","dashboard.html","mapa-criminal.html","analise-temporal.html","consulta.html","relatorio.html","auditoria.html","modo-tv.html","usuarios.html","fluxos.html"];Array.from(nav.querySelectorAll("a")).sort(function(a,b){var pa=(a.getAttribute("href")||"").split("?")[0],pb=(b.getAttribute("href")||"").split("?")[0],ia=ordem.indexOf(pa),ib=ordem.indexOf(pb);return(ia<0?99:ia)-(ib<0?99:ib)}).forEach(function(a){nav.appendChild(a)});var painel=nav.querySelector('a[href="dashboard-cpc.html"]');if(painel)painel.classList.add("cpcPrimary")}
+function aplicarModoCpc(){document.body.classList.add("modo-cpc");heroEyebrow.innerHTML='<i class="pulse"></i> Central executiva do Comando';heroTitulo.textContent="Panorama Estatístico do CPC";cpcEscopoHero.hidden=false;cpcUnidadesPanel.hidden=false;atalhosCpcTitulo.hidden=false;mapaTitulo.textContent="Mapa Estatístico Consolidado do CPC";mapaDescricao.textContent="Distribuição geográfica dos registros das unidades subordinadas, com filtros por unidade e área";camadaGiroMapa.hidden=false;camadaGiroMapa.value="ocorrencias";atualizarLegendaMapa();searchTitulo.textContent="Consultar ocorrências das unidades";searchDescricao.textContent="Pesquise nos registros acessíveis ao CPC por BO, natureza ou bairro.";topOcorrenciasDescricao.textContent="Naturezas mais registradas pelas unidades subordinadas";topBairrosDescricao.textContent="Concentração territorial consolidada das unidades";var nav=document.getElementById("atalhosHome"),ordem=["dashboard-cpc.html","territorio-cpc.html","dashboard.html","mapa-criminal.html","analise-temporal.html","consulta.html","relatorio.html","auditoria.html","modo-tv.html","usuarios.html","fluxos.html"];Array.from(nav.querySelectorAll("a")).sort(function(a,b){var pa=(a.getAttribute("href")||"").split("?")[0],pb=(b.getAttribute("href")||"").split("?")[0],ia=ordem.indexOf(pa),ib=ordem.indexOf(pb);return(ia<0?99:ia)-(ib<0?99:ib)}).forEach(function(a){nav.appendChild(a)});var painel=nav.querySelector('a[href="dashboard-cpc.html"]');if(painel)painel.classList.add("cpcPrimary")}
 function popularFiltrosMapaCpc(){unidadeMapa.innerHTML='<option value="">Todas as unidades</option>'+ordenarUnidadesCpc().map(function(x){var u=x.u,prefixo=x.nivel?'↳ '.repeat(Math.min(x.nivel,2)):'';return '<option value="'+escHome(u.id)+'">'+escHome(prefixo+siglaHome(u.sigla)+' — '+u.nome+(filhosUnidadeCpc(u.id).length?' · CONSOLIDADO':''))+'</option>'}).join("");atualizarAreaValores()}
 function atualizarAreaValores(){if(!modoCpc)return;var tipo=areaTipoMapa.value,valores=[];areaValorMapa.disabled=!tipo;if(!tipo){areaValorMapa.innerHTML='<option value="">Todas</option>';return}if(tipo==="AISC"){valores=(cpcTerritorio.aisc||[]).map(function(x){return x.codigo})}else if(tipo==="SISC"){valores=(cpcTerritorio.sisc||[]).map(function(x){return x.codigo})}else if(tipo==="SETOR"){valores=(cpcTerritorio.setores||[]).map(function(x){return x.codigo})}else if(tipo==="BAIRRO"){valores=(cpcTerritorio.bairros||[]).map(function(x){return x.nome})}else if(tipo==="COMPANHIA"){valores=[...new Set(dadosPorUnidade(cpcAtual,unidadeMapa.value).map(function(x){return String(x.companhia||"").trim()}).filter(Boolean))]}valores=[...new Set(valores)].sort(function(a,b){return String(a).localeCompare(String(b),"pt-BR",{numeric:true})});areaValorMapa.innerHTML='<option value="">Todas</option>'+valores.map(function(v){return '<option>'+escHome(v)+'</option>'}).join("")}
-function renderUnidadesCpc(){var principais=unidadesCpcPrincipais(),selecionada=unidadePorId(filtroCpcUnidade),pai=selecionada&&unidadePorId(selecionada.parent_id),agregador=selecionada&&filhosUnidadeCpc(selecionada.id).length?selecionada:(pai&&filhosUnidadeCpc(pai.id).length?pai:null),detalhe=agregador?filhosUnidadeCpc(agregador.id):[],cards=[{id:"",sigla:"TODAS",nome:"Todas as unidades subordinadas"}].concat(principais);detalhe.forEach(function(u){if(!cards.some(function(x){return String(x.id)===String(u.id)}))cards.push(u)});cpcUnidadesGrid.innerHTML=cards.map(function(u){var d=dadosPorUnidade(cpcAtual,u.id),t=dadosPorUnidade(cpcTcosAtual,u.id),active=String(filtroCpcUnidade)===String(u.id),filha=!!(u.id&&u.parent_id&&unidadePorId(u.parent_id));return '<button type="button" class="cpcUnitCard'+(active?" active":"")+'" data-cpc-unit="'+escHome(u.id)+'"><b>'+escHome((filha?"↳ ":"")+(u.id?siglaHome(u.sigla):"Todas as unidades"))+'</b><small>'+escHome(u.nome+(u.id&&filhosUnidadeCpc(u.id).length?" · consolidado":""))+'</small><div class="cpcUnitMetrics"><span><strong>'+d.length+'</strong>Ocorrências</span><span><strong>'+somar(d,"conducoes_operacionais")+'</strong>Conduções</span><span><strong>'+t.length+'</strong>TCOs</span><span><strong>'+somar(d,"veiculos_recuperados")+'</strong>Veículos</span></div></button>'}).join("");cpcUnidadesGrid.querySelectorAll("[data-cpc-unit]").forEach(function(btn){btn.onclick=function(){filtroCpcUnidade=this.dataset.cpcUnit||"";renderCpcAtual();if(unidadeMapa){unidadeMapa.value=filtroCpcUnidade;atualizarAreaValores();carregarMapa()}}});var u=unidadePorId(filtroCpcUnidade);cpcFiltroAtivo.textContent="Abrangência atual: "+(u?siglaHome(u.sigla)+" — "+u.nome+(filhosUnidadeCpc(u.id).length?" (consolidado)":""):"todas as unidades subordinadas.")} 
-function renderCpcAtual(){var hoje=new Date(),pc=periodoMesAnterior(hoje),d=dadosPorUnidade(cpcAtual,filtroCpcUnidade),dAnt=dadosPorUnidade(cpcAnterior,filtroCpcUnidade),t=dadosPorUnidade(cpcTcosAtual,filtroCpcUnidade),tAnt=dadosPorUnidade(cpcTcosAnterior,filtroCpcUnidade),u=unidadePorId(filtroCpcUnidade);total.textContent=d.length;conducoes.textContent=somar(d,"conducoes_operacionais");tcosProduzidos.textContent=t.length;veiculosRecuperadosKpi.textContent=somar(d,"veiculos_recuperados");totalSub.textContent=u?"registros do "+siglaHome(u.sigla):unidadesCpcPrincipais().map(function(x){return siglaHome(x.sigla)+": "+dadosPorUnidade(cpcAtual,x.id).length}).join(" · ");conducoesSub.textContent=u?"conduções do "+siglaHome(u.sigla):"somatório das unidades subordinadas";tcosSub.textContent=u?"TCOs do "+siglaHome(u.sigla):unidadesCpcPrincipais().map(function(x){return siglaHome(x.sigla)+": "+dadosPorUnidade(cpcTcosAtual,x.id).length}).join(" · ");veiculosSub.textContent=u?"recuperados pelo "+siglaHome(u.sigla):"resultado consolidado das unidades";renderResumoComparativo(d,t,dAnt,tAnt,hoje,pc);draw("topOcorrencias",rank(d,"ocorrencia","crime"),[["#0e4f8a","#18a0ae"],["#2469a3","#44b7bc"],["#3a7fad","#74c6c8"],["#5794b8","#8fd0ce"],["#75a9c5","#acdcd7"]]);draw("topBairros",rank(d,"bairro","localidade"),[["#d36b36","#ef9f25"],["#d77e3e","#f2af3e"],["#dc9250","#f4bd59"],["#dfa562","#f6ca75"],["#e5b77b","#f8d794"]]);renderUnidadesCpc()}
+
+var cpcEspecializados={atual:{},anterior:{}};
+const tiposEspecializadosCpc=['CIPA','CIPG','CAVALARIA','CIPTUR','GIRO'];
+function extraCpcPorUnidade(u,periodo){
+  if(!u)return {status:'nao_aplicavel'};
+  const tipo=String(u.sigla||'').toUpperCase(),fonte=cpcEspecializados[periodo]?.[tipo];
+  if(!fonte)return {status:'carregando'};
+  if(fonte.status!=='ok')return fonte;
+  if(Array.isArray(fonte.data)){
+    const ids=new Set(idsDescendentesUnidade(u.id));
+    return {status:'ok',data:fonte.data.filter(x=>ids.has(String(x.unidade_id)))};
+  }
+  return fonte;
+}
+function metricasCpcUnidade(u,periodo){
+  const ocorrencias=dadosPorUnidade(periodo==='anterior'?cpcAnterior:cpcAtual,u?.id||'');
+  const tcos=dadosPorUnidade(periodo==='anterior'?cpcTcosAnterior:cpcTcosAtual,u?.id||'');
+  return EstatisticaIndicadores.cards(u?.sigla||'',ocorrencias,tcos,extraCpcPorUnidade(u,periodo));
+}
+async function consultarExtraCpc(tipo,inicio,fim){
+  if(tipo==='CIPA')return await CipaHome.consultar(db,inicio,fim);
+  if(tipo==='CIPG')return await CipgHome.consultar(db,inicio,fim);
+  const campos={
+    CAVALARIA:['cavalaria_servicos_produtividade','id,unidade_id,tipo_policiamento,contexto_atividade,abordagens_pessoas','data_servico'],
+    CIPTUR:['ciptur_autos_infracao','id,unidade_id,houve_remocao,tipo_veiculo_removido','data_infracao'],
+    GIRO:['giro_abordagens','id,unidade_id,quantidade_pessoas','registrado_em']
+  }[tipo];
+  if(!campos)throw Error('Indicador não configurado: '+tipo);
+  const i=tipo==='GIRO'?inicio+'T00:00:00-04:00':inicio;
+  const f=tipo==='GIRO'?fim+'T23:59:59.999-04:00':fim;
+  const resp=await consultarRegistrosHome(campos[0],campos[1],campos[2],i,f);
+  if(resp.error)throw resp.error;
+  return resp.data||[];
+}
+async function carregarEspecializadosCpc(inicio,fim,pc){
+  const consultas=tiposEspecializadosCpc.map(async function(tipo){
+    const pares=await Promise.allSettled([
+      consultarExtraCpc(tipo,iso(inicio),iso(fim)),
+      consultarExtraCpc(tipo,iso(pc[0]),iso(pc[1]))
+    ]);
+    ['atual','anterior'].forEach(function(periodo,i){
+      const p=pares[i];
+      cpcEspecializados[periodo][tipo]=p.status==='fulfilled'
+        ?{status:'ok',data:p.value}:{status:'erro'};
+      if(p.status==='rejected')console.error('Indicadores CPC - '+tipo+' - '+periodo,p.reason);
+    });
+    renderCpcAtual();
+  });
+  await Promise.all(consultas);
+}
+function atualizarCardsPrincipaisCpc(u){
+  const cards=u?metricasCpcUnidade(u,'atual'):EstatisticaIndicadores.cards('',cpcAtual,cpcTcosAtual,null);
+  const elems=[total,conducoes,tcosProduzidos,veiculosRecuperadosKpi];
+  elems.forEach(function(el,i){
+    const titulo=el.closest('.kpi')?.querySelector('label');
+    if(titulo)titulo.textContent=cards[i].rotulo;
+    el.textContent=EstatisticaIndicadores.formatar(cards[i]);
+    const subtitulo=[totalSub,conducoesSub,tcosSub,veiculosSub][i];
+    if(u)subtitulo.textContent=cards[i].fonte||'Fonte não informada';
+  });
+  if(!u)return;
+  const anteriores=metricasCpcUnidade(u,'anterior');
+  comparativoMes.innerHTML=cards.map(function(k,i){
+    const ant=anteriores[i],ok=k.valor!==null&&k.valor!==undefined&&ant?.valor!==null&&ant?.valor!==undefined;
+    return '<div class="compareItem"><span>'+escHome(k.rotulo)+'</span><div class="compareValues"><strong>'+
+      escHome(EstatisticaIndicadores.formatar(k))+'</strong><small>vs. '+escHome(EstatisticaIndicadores.formatar(ant||{valor:null}))+
+      '</small></div><b class="delta neutral">'+(ok?'Comparativo':'Aguardando dados')+'</b></div>';
+  }).join('');
+  resumoInteligente.textContent='Panorama estatístico de '+siglaHome(u.sigla)+': '+
+    cards.map(function(k){return k.rotulo+': '+EstatisticaIndicadores.formatar(k)}).join(' · ')+
+    '. Serviços, abordagens e fiscalizações não são somados às ocorrências policiais.';
+}
+function renderUnidadesCpc(){
+  var principais=unidadesCpcPrincipais(),selecionada=unidadePorId(filtroCpcUnidade),pai=selecionada&&unidadePorId(selecionada.parent_id),agregador=selecionada&&filhosUnidadeCpc(selecionada.id).length?selecionada:(pai&&filhosUnidadeCpc(pai.id).length?pai:null),detalhe=agregador?filhosUnidadeCpc(agregador.id):[],cards=[{id:"",sigla:"TODAS",nome:"Todas as unidades subordinadas"}].concat(principais);
+  detalhe.forEach(function(u){if(!cards.some(function(x){return String(x.id)===String(u.id)}))cards.push(u)});
+  cpcUnidadesGrid.innerHTML=cards.map(function(u){
+    const metricas=metricasCpcUnidade(u,'atual');
+    const active=String(filtroCpcUnidade)===String(u.id),filha=!!(u.id&&u.parent_id&&unidadePorId(u.parent_id));
+    const tipo=String(u.sigla||'').toUpperCase(),status=cpcEspecializados.atual[tipo]?.status;
+    const observacao=tiposEspecializadosCpc.includes(tipo)&&status==='erro'
+      ?'<small class="cpcDataNote">Dados especializados indisponíveis. Verifique as permissões e a consulta.</small>'
+      :tiposEspecializadosCpc.includes(tipo)&&!status
+      ?'<small class="cpcDataNote">Carregando indicadores específicos...</small>':'';
+    return '<button type="button" class="cpcUnitCard'+(active?' active':'')+'" data-cpc-unit="'+escHome(u.id)+
+      '"><b>'+escHome((filha?'↳ ':'')+(u.id?siglaHome(u.sigla):'Todas as unidades'))+'</b><small>'+
+      escHome(u.nome+(u.id&&filhosUnidadeCpc(u.id).length?' · consolidado':''))+
+      '</small><div class="cpcUnitMetrics">'+metricas.map(function(k){
+        return '<span title="'+escHome(k.fonte||'Indicador estatístico')+'"><strong>'+
+          escHome(EstatisticaIndicadores.formatar(k))+'</strong>'+escHome(k.rotulo)+'</span>';
+      }).join('')+'</div>'+observacao+'</button>';
+  }).join('');
+  cpcUnidadesGrid.querySelectorAll('[data-cpc-unit]').forEach(function(btn){btn.onclick=function(){
+    filtroCpcUnidade=this.dataset.cpcUnit||'';
+    renderCpcAtual();
+    if(unidadeMapa){unidadeMapa.value=filtroCpcUnidade;atualizarAreaValores();carregarMapa()}
+  }});
+  var u=unidadePorId(filtroCpcUnidade);
+  cpcFiltroAtivo.textContent='Abrangência atual: '+(u?siglaHome(u.sigla)+' — '+u.nome+
+    (filhosUnidadeCpc(u.id).length?' (consolidado)':''):'todas as unidades subordinadas.');
+}
+function renderCpcAtual(){var hoje=new Date(),pc=periodoMesAnterior(hoje),d=dadosPorUnidade(cpcAtual,filtroCpcUnidade),dAnt=dadosPorUnidade(cpcAnterior,filtroCpcUnidade),t=dadosPorUnidade(cpcTcosAtual,filtroCpcUnidade),tAnt=dadosPorUnidade(cpcTcosAnterior,filtroCpcUnidade),u=unidadePorId(filtroCpcUnidade);total.textContent=d.length;conducoes.textContent=somar(d,"conducoes_operacionais");tcosProduzidos.textContent=t.length;veiculosRecuperadosKpi.textContent=somar(d,"veiculos_recuperados");totalSub.textContent=u?"registros do "+siglaHome(u.sigla):unidadesCpcPrincipais().map(function(x){return siglaHome(x.sigla)+": "+dadosPorUnidade(cpcAtual,x.id).length}).join(" · ");conducoesSub.textContent=u?"conduções do "+siglaHome(u.sigla):"somatório das unidades subordinadas";tcosSub.textContent=u?"TCOs do "+siglaHome(u.sigla):unidadesCpcPrincipais().map(function(x){return siglaHome(x.sigla)+": "+dadosPorUnidade(cpcTcosAtual,x.id).length}).join(" · ");veiculosSub.textContent=u?"recuperados pelo "+siglaHome(u.sigla):"resultado consolidado das unidades";renderResumoComparativo(d,t,dAnt,tAnt,hoje,pc);draw("topOcorrencias",rank(d,"ocorrencia","crime"),[["#0e4f8a","#18a0ae"],["#2469a3","#44b7bc"],["#3a7fad","#74c6c8"],["#5794b8","#8fd0ce"],["#75a9c5","#acdcd7"]]);draw("topBairros",rank(d,"bairro","localidade"),[["#d36b36","#ef9f25"],["#d77e3e","#f2af3e"],["#dc9250","#f4bd59"],["#dfa562","#f6ca75"],["#e5b77b","#f8d794"]]);atualizarCardsPrincipaisCpc(u);renderUnidadesCpc()}
 var mapa=L.map("mapa",{scrollWheelZoom:false}).setView([2.8235,-60.6758],12),camadaPontos=L.layerGroup().addTo(mapa),camadaCalor=L.heatLayer([],{radius:34,blur:28,minOpacity:.2,maxZoom:18,gradient:{.18:"#2563eb",.4:"#22c55e",.62:"#facc15",.82:"#f97316",1:"#dc2626"}}),dadosMapaAtuais=[],abordagensMapaAtuais=[];
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"&copy; OpenStreetMap"}).addTo(mapa);
-var legenda=L.control({position:"bottomright"});legenda.onAdd=function(){var div=L.DomUtil.create("div","mapLegend");div.innerHTML='<b>Camadas</b><span><i style="background:#dc2626"></i>Roubo</span><br><span><i style="background:#f59e0b"></i>Furto</span><br><span><i style="background:#8b5cf6"></i>Violência doméstica</span><br><span><i style="background:#2563eb"></i>Trânsito</span><br><span><i style="background:#16a34a"></i>Drogas</span><br><span><i style="background:#64748b"></i>Outras ocorrências</span><br><span id="legendaGiroAbordagem" style="display:none"><span class="motoLegend">🏍️</span>Abordagem GIRO</span>';return div};legenda.addTo(mapa);
+var legenda=L.control({position:"bottomright"});legenda.onAdd=function(){var div=L.DomUtil.create("div","mapLegend");div.id="legendaMapaPrincipal";return div};legenda.addTo(mapa);
+
+function atualizarLegendaMapa(){
+  const painel=document.getElementById('legendaMapaPrincipal');
+  if(!painel)return;
+  if(modoCpc){
+    painel.innerHTML='<b>Unidades responsáveis</b>'+
+      Object.keys(EstatisticaIndicadores.corUnidade).map(function(sigla){
+        return '<span><i style="background:'+EstatisticaIndicadores.corUnidade[sigla]+'"></i>'+escHome(siglaHome(sigla))+'</span><br>';
+      }).join('')+'<span id="legendaGiroAbordagem" style="display:inline"><span class="motoLegend">🏍️</span>Abordagem GIRO (filtro)</span>';
+    return;
+  }
+  painel.innerHTML='<b>Naturezas</b><span><i style="background:#dc2626"></i>Roubo</span><br><span><i style="background:#f59e0b"></i>Furto</span><br><span><i style="background:#8b5cf6"></i>Violência doméstica</span><br><span><i style="background:#2563eb"></i>Trânsito</span><br><span><i style="background:#16a34a"></i>Drogas</span><br><span><i style="background:#64748b"></i>Outras ocorrências</span><br><span id="legendaGiroAbordagem" style="display:none"><span class="motoLegend">🏍️</span>Abordagem GIRO</span>';
+}
+function iconeUnidadeCpc(sigla){
+  const unidade=String(sigla||'').toUpperCase(),cor=EstatisticaIndicadores.corUnidade[unidade]||'#475569';
+  const brasao=EstatisticaIndicadores.brasaoUnidade[unidade];
+  const imagem=brasao?'<img src="'+escHome(brasao)+'" alt="">':'';
+  return L.divIcon({
+    className:'cpcUnitPin',
+    html:'<span class="pinInner" style="--unit-color:'+cor+'"><span class="pinFallback">●</span>'+imagem+'</span>',
+    iconSize:[26,26],iconAnchor:[13,13],popupAnchor:[0,-13]
+  });
+}
+function normalizarBairroCpc(valor){return String(valor||'').trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase()}
+function filtrarTerritorioAbordagensCpc(registros){
+  const tipo=areaTipoMapa.value,valor=areaValorMapa.value;
+  if(!tipo||!valor)return registros;
+  if(tipo==='COMPANHIA')return [];
+  const bairros=cpcTerritorio.bairros||[],setores=cpcTerritorio.setores||[],sisc=cpcTerritorio.sisc||[],aisc=cpcTerritorio.aisc||[];
+  return registros.filter(function(x){
+    if(tipo==='BAIRRO')return normalizarBairroCpc(x.bairro)===normalizarBairroCpc(valor);
+    const bairro=bairros.find(b=>normalizarBairroCpc(b.nome)===normalizarBairroCpc(x.bairro));
+    if(!bairro)return false;
+    const setor=setores.find(y=>String(y.id)===String(bairro.setor_id));
+    if(tipo==='SETOR')return normalizarBairroCpc(setor?.codigo)===normalizarBairroCpc(valor);
+    const sub=sisc.find(y=>String(y.id)===String(setor?.sisc_id));
+    if(tipo==='SISC')return normalizarBairroCpc(sub?.codigo)===normalizarBairroCpc(valor);
+    const area=aisc.find(y=>String(y.id)===String(sub?.aisc_id));
+    return tipo==='AISC'&&normalizarBairroCpc(area?.codigo)===normalizarBairroCpc(valor);
+  });
+}
 function categoriaMapa(valor){var t=String(valor||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase();if(t.includes("ROUBO"))return["ROUBO","#dc2626"];if(t.includes("FURTO"))return["FURTO","#f59e0b"];if(t.includes("MARIA DA PENHA")||t.includes("VIOLENCIA DOMESTICA"))return["VIOLÊNCIA DOMÉSTICA","#8b5cf6"];if(t.includes("TRANSITO")||t.includes("ACIDENTE"))return["TRÂNSITO","#2563eb"];if(t.includes("DROGA")||t.includes("ENTORPECENTE")||t.includes("TRAFICO"))return["DROGAS","#16a34a"];return["OUTRAS","#64748b"]}
 function atualizarDestaquePontos(){var calor=visualizacaoMapa.value==="calor",zoom=mapa.getZoom(),destaque=!calor||zoom>=14;camadaPontos.eachLayer(function(pt){if(typeof pt.setRadius==="function")pt.setRadius(destaque?8:3);if(typeof pt.setStyle==="function")pt.setStyle({color:destaque?"#fff":"transparent",weight:destaque?2:0,fillOpacity:destaque?.92:.16,opacity:destaque?1:.2});if(pt.getElement&&pt.getElement())pt.getElement().style.opacity=destaque?"1":".72";if(destaque&&pt.bringToFront)pt.bringToFront()})}
 function rotuloAbordagemGiro(v){return v==="A_PE"?"A PÉ":v==="MOTO"?"MOTO":v==="VEICULO"?"VEÍCULO":v}
 function renderizarMapa(){
   camadaPontos.clearLayers();
   if(mapa.hasLayer(camadaCalor))mapa.removeLayer(camadaCalor);
-  var limites=[],usarOcorrencias=!modoGiro||camadaGiroMapa.value!=="abordagens",usarAbordagens=modoGiro&&camadaGiroMapa.value!=="ocorrencias";
+  var limites=[],usarOcorrencias=!(modoGiro||modoCpc)||camadaGiroMapa.value!=="abordagens",usarAbordagens=(modoGiro||modoCpc)&&camadaGiroMapa.value!=="ocorrencias";
   var ocorrencias=usarOcorrencias?dadosMapaAtuais:[],abordagens=usarAbordagens?abordagensMapaAtuais:[];
   if(visualizacaoMapa.value==="calor"){
     var calorDados=ocorrencias.map(function(x){return[Number(x.latitude),Number(x.longitude),.72]}).concat(abordagens.map(function(x){return[Number(x.latitude),Number(x.longitude),.72]}));
     camadaCalor.setLatLngs(calorDados);camadaCalor.addTo(mapa)
   }
   ocorrencias.forEach(function(x){
-    var cat=categoriaMapa(x.ocorrencia||x.crime),unidade=modoCpc&&x.unidade_sigla?'<br><b>Unidade: '+escHome(siglaHome(x.unidade_sigla))+'</b>':"",bo=x.numero_bo?'<br>BO: '+escHome(x.numero_bo):"",pt=L.circleMarker([x.latitude,x.longitude],{radius:8,color:"#fff",weight:2,fillColor:cat[1],fillOpacity:.9}).bindPopup("<b>"+escHome(x.ocorrencia||x.crime||"Ocorrência")+"</b><br><span style='color:"+cat[1]+";font-weight:700'>"+cat[0]+"</span>"+unidade+bo+"<br>"+escHome(x.endereco||"Endereço não informado")+"<br>"+escHome(x.bairro||"")+"<br>"+fmt(new Date(x.data_ocorrencia+"T12:00:00")));
+    var cat=categoriaMapa(x.ocorrencia||x.crime),unidade=modoCpc&&x.unidade_sigla?'<br><b>Unidade: '+escHome(siglaHome(x.unidade_sigla))+'</b>':"",bo=x.numero_bo?'<br>BO: '+escHome(x.numero_bo):"",pt=(modoCpc?L.marker([Number(x.latitude),Number(x.longitude)],{icon:iconeUnidadeCpc(x.unidade_sigla),title:"Ocorrência "+siglaHome(x.unidade_sigla)}):L.circleMarker([x.latitude,x.longitude],{radius:8,color:"#fff",weight:2,fillColor:cat[1],fillOpacity:.9})).bindPopup("<b>"+escHome(x.ocorrencia||x.crime||"Ocorrência")+"</b><br><span style='color:"+cat[1]+";font-weight:700'>"+cat[0]+"</span>"+unidade+bo+"<br>"+escHome(x.endereco||"Endereço não informado")+"<br>"+escHome(x.bairro||"")+"<br>"+fmt(new Date(x.data_ocorrencia+"T12:00:00")));
     pt.addTo(camadaPontos);limites.push([x.latitude,x.longitude])
   });
   var gruposAbordagens={};
@@ -266,7 +411,7 @@ function renderizarMapa(){
   if(limites.length)mapa.fitBounds(limites,{padding:[8,8],maxZoom:18});else mapa.setView([2.8235,-60.6758],12);
   atualizarDestaquePontos();
   var u=modoCpc?unidadePorId(unidadeMapa.value):null,escopo=u?siglaHome(u.sigla):modoCpc?"todas as unidades":"unidade ativa";
-  if(modoGiro){
+  if(modoGiro||modoCpc){
     mapStatus.textContent=ocorrencias.length+" ocorrência(s) · "+abordagens.length+" abordagem(ns) GIRO — "+(visualizacaoMapa.value==="calor"?"mapa de calor; use +/− para ajustar o zoom.":"pontos no mapa; use +/− para ajustar o zoom.");
   }else{
     mapStatus.textContent=ocorrencias.length?ocorrencias.length+" ocorrência(s) georreferenciada(s) · "+escopo+" — "+(visualizacaoMapa.value==="calor"?"mapa de calor; use +/− para ajustar o zoom.":"pontos por natureza; use +/− para ajustar o zoom."):"Nenhuma ocorrência com coordenadas neste período e filtro.";
@@ -281,11 +426,19 @@ async function carregarMapa(){
   var r,g=null;
   if(modoCpc){
     r=await db.rpc("obter_mapa_cpc_territorial",{data_inicio:p[0],data_fim:p[1],p_unidade_id:unidadeMapa.value||null,p_tipo_filtro:tipoMapa.value||null,p_aisc:areaTipoMapa.value==="AISC"?(areaValorMapa.value||null):null,p_sisc:areaTipoMapa.value==="SISC"?(areaValorMapa.value||null):null,p_setor:areaTipoMapa.value==="SETOR"?(areaValorMapa.value||null):null,p_bairro:areaTipoMapa.value==="BAIRRO"?(areaValorMapa.value||null):null});
+    if(camadaGiroMapa.value!=='ocorrencias'){
+      const unidadeEscolhida=unidadePorId(unidadeMapa.value);
+      const outraUnidade=unidadeEscolhida&&String(unidadeEscolhida.sigla||'').toUpperCase()!=='GIRO';
+      if(!outraUnidade){
+        const ab=await consultarRegistrosHome('giro_abordagens','id,unidade_id,registrado_em,tipo_abordagem,quantidade_pessoas,latitude,longitude,endereco,bairro,municipio','registrado_em',p[0]+'T00:00:00-04:00',p[1]+'T23:59:59.999-04:00');
+        g=ab.error?ab:{data:filtrarTerritorioAbordagensCpc(ab.data||[]),error:null};
+      }
+    }
   }else{
     if(modoGiro){
       var rr=await Promise.all([
         db.rpc("obter_ocorrencias_mapa",{data_inicio:p[0],data_fim:p[1],tipo_filtro:tipoMapa.value||null}),
-        db.from("giro_abordagens").select("id,registrado_em,tipo_abordagem,quantidade_pessoas,latitude,longitude,endereco,bairro,municipio").gte("registrado_em",p[0]+"T00:00:00-04:00").lte("registrado_em",p[1]+"T23:59:59.999-04:00")
+        consultarRegistrosHome("giro_abordagens","id,unidade_id,registrado_em,tipo_abordagem,quantidade_pessoas,latitude,longitude,endereco,bairro,municipio","registrado_em",p[0]+"T00:00:00-04:00",p[1]+"T23:59:59.999-04:00")
       ]);
       r=rr[0];g=rr[1];
     }else{
@@ -294,8 +447,8 @@ async function carregarMapa(){
   }
   if(r.error){mapStatus.textContent="Não foi possível carregar o mapa: "+r.error.message;return}
   if(g&&g.error){mapStatus.textContent="Não foi possível carregar as abordagens: "+g.error.message;return}
-  dadosMapaAtuais=(r.data||[]).filter(function(x){return Number.isFinite(Number(x.latitude))&&Number.isFinite(Number(x.longitude))});
-  abordagensMapaAtuais=(g?.data||[]).filter(function(x){return Number.isFinite(Number(x.latitude))&&Number.isFinite(Number(x.longitude))});
+  dadosMapaAtuais=(r.data||[]).filter(function(x){return x.latitude!=null&&x.longitude!=null&&Number.isFinite(Number(x.latitude))&&Number.isFinite(Number(x.longitude))&&Math.abs(Number(x.latitude))<=90&&Math.abs(Number(x.longitude))<=180});
+  abordagensMapaAtuais=(g?.data||[]).filter(function(x){return x.latitude!=null&&x.longitude!=null&&Number.isFinite(Number(x.latitude))&&Number.isFinite(Number(x.longitude))&&Math.abs(Number(x.latitude))<=90&&Math.abs(Number(x.longitude))<=180});
   renderizarMapa()
 }
 // Consulta especializada com paginação: evita truncamento silencioso no limite padrão do PostgREST.
@@ -311,11 +464,11 @@ async function consultarRegistrosHome(tabela,campos,campoData,inicio,fim){
   }
   return {data:null,error:new Error("A consulta de "+tabela+" ultrapassou o limite de paginação. Reduza o período.")};
 }
-async function carregar(){var authReady=window.SistemaAuth&&window.SistemaAuth.ready,auth=authReady?await authReady:window.SistemaAuth;modoCpc=auth&&auth.contexto&&auth.contexto.tipo==="COMANDO";var siglaAtiva=String(auth?.contexto?.sigla||auth?.perfil?.unidades?.sigla||"").toUpperCase();modo2Bpm=!modoCpc&&siglaAtiva==="2BPM";modoCiptur=!modoCpc&&siglaAtiva==="CIPTUR";modoCipa=!modoCpc&&siglaAtiva==="CIPA";modoCipg=!modoCpc&&siglaAtiva==="CIPG";modoGiro=!modoCpc&&siglaAtiva==="GIRO";modoCavalaria=!modoCpc&&siglaAtiva==="CAVALARIA";modoBope=!modoCpc&&siglaAtiva==="BOPE";if(modoCpc)aplicarModoCpc();if(modo2Bpm)aplicarModo2Bpm();if(modoCiptur)aplicarModoCiptur();if(modoCipa)CipaHome.preparar();if(modoCipg){CipgHome.preparar();var linkCipg=document.getElementById('atalhoCadastroPrincipal');if(linkCipg){linkCipg.href='cipg-produtividade.html';linkCipg.innerHTML='<span>＋</span>Registrar serviço no caderno da CIPG';}}if(modoGiro)aplicarModoGiro();if(modoCavalaria)aplicarModoCavalaria();if(modoBope)aplicarModoBope();var hoje=new Date(),inicio=new Date(hoje.getFullYear(),hoje.getMonth(),1),fim=new Date(hoje),pc=periodoMesAnterior(hoje);periodoSemana.textContent=modoCpc?"1º a "+hoje.getDate()+" de "+nomeMes(hoje)+" de "+hoje.getFullYear()+" · visão consolidada":hoje.toLocaleDateString("pt-BR",{day:"2-digit",month:"long",year:"numeric"});if(modoCpc){var rr=await Promise.all([db.rpc("obter_home_cpc_territorial",{data_inicio:iso(inicio),data_fim:iso(fim)}),db.rpc("obter_home_cpc_territorial",{data_inicio:iso(pc[0]),data_fim:iso(pc[1])}),db.rpc("obter_catalogos_cadastro")]);if(rr[0].error||rr[1].error){resumoInteligente.textContent="Não foi possível carregar a visão consolidada do CPC.";console.error(rr[0].error||rr[1].error);return}if(!rr[0].data||!rr[0].data.autorizado){resumoInteligente.textContent=(rr[0].data&&rr[0].data.erro)||"Acesso não autorizado ao panorama CPC.";return}cpcUnidades=rr[0].data.unidades||[];cpcAtual=rr[0].data.ocorrencias||[];cpcTcosAtual=rr[0].data.tcos||[];cpcAnterior=rr[1].data.ocorrencias||[];cpcTcosAnterior=rr[1].data.tcos||[];cpcTerritorio=rr[0].data.territorio||{};var cats=rr[2].data||{};cpcEscopoHero.textContent="Abrangência: "+(cpcUnidades.length?unidadesCpcPrincipais().map(function(u){return siglaHome(u.sigla)}).join(" · "):"nenhuma unidade subordinada ativa");popularFiltrosMapaCpc();tipoMapa.innerHTML='<option value="">Todos os tipos de ocorrência</option>'+((cats.tipos||[]).map(function(t){return '<option>'+escHome(t.nome)+'</option>'}).join(""));renderCpcAtual();carregarMapa();return}
+async function carregar(){var authReady=window.SistemaAuth&&window.SistemaAuth.ready,auth=authReady?await authReady:window.SistemaAuth;modoCpc=auth&&auth.contexto&&auth.contexto.tipo==="COMANDO";var siglaAtiva=String(auth?.contexto?.sigla||auth?.perfil?.unidades?.sigla||"").toUpperCase();modo2Bpm=!modoCpc&&siglaAtiva==="2BPM";modoCiptur=!modoCpc&&siglaAtiva==="CIPTUR";modoCipa=!modoCpc&&siglaAtiva==="CIPA";modoCipg=!modoCpc&&siglaAtiva==="CIPG";modoGiro=!modoCpc&&siglaAtiva==="GIRO";modoCavalaria=!modoCpc&&siglaAtiva==="CAVALARIA";modoBope=!modoCpc&&siglaAtiva==="BOPE";if(modoCpc)aplicarModoCpc();if(modo2Bpm)aplicarModo2Bpm();if(modoCiptur)aplicarModoCiptur();if(modoCipa)CipaHome.preparar();if(modoCipg){CipgHome.preparar();var linkCipg=document.getElementById('atalhoCadastroPrincipal');if(linkCipg){linkCipg.href='cipg-produtividade.html';linkCipg.innerHTML='<span>＋</span>Registrar serviço no caderno da CIPG';}}if(modoGiro)aplicarModoGiro();if(modoCavalaria)aplicarModoCavalaria();if(modoBope)aplicarModoBope();atualizarLegendaMapa();var hoje=new Date(),inicio=new Date(hoje.getFullYear(),hoje.getMonth(),1),fim=new Date(hoje),pc=periodoMesAnterior(hoje);periodoSemana.textContent=modoCpc?"1º a "+hoje.getDate()+" de "+nomeMes(hoje)+" de "+hoje.getFullYear()+" · visão consolidada":hoje.toLocaleDateString("pt-BR",{day:"2-digit",month:"long",year:"numeric"});if(modoCpc){var rr=await Promise.all([db.rpc("obter_home_cpc_territorial",{data_inicio:iso(inicio),data_fim:iso(fim)}),db.rpc("obter_home_cpc_territorial",{data_inicio:iso(pc[0]),data_fim:iso(pc[1])}),db.rpc("obter_catalogos_cadastro")]);if(rr[0].error||rr[1].error){resumoInteligente.textContent="Não foi possível carregar a visão consolidada do CPC.";console.error(rr[0].error||rr[1].error);return}if(!rr[0].data||!rr[0].data.autorizado){resumoInteligente.textContent=(rr[0].data&&rr[0].data.erro)||"Acesso não autorizado ao panorama CPC.";return}cpcUnidades=rr[0].data.unidades||[];cpcAtual=rr[0].data.ocorrencias||[];cpcTcosAtual=rr[0].data.tcos||[];cpcAnterior=rr[1].data.ocorrencias||[];cpcTcosAnterior=rr[1].data.tcos||[];cpcTerritorio=rr[0].data.territorio||{};var cats=rr[2].data||{};cpcEscopoHero.textContent="Abrangência: "+(cpcUnidades.length?unidadesCpcPrincipais().map(function(u){return siglaHome(u.sigla)}).join(" · "):"nenhuma unidade subordinada ativa");popularFiltrosMapaCpc();tipoMapa.innerHTML='<option value="">Todos os tipos de ocorrência</option>'+((cats.tipos||[]).map(function(t){return '<option>'+escHome(t.nome)+'</option>'}).join(""));cpcEspecializados={atual:{},anterior:{}};renderCpcAtual();carregarMapa();await carregarEspecializadosCpc(inicio,fim,pc);return}
 var calls=[db.rpc("obter_dados_dashboard",{data_inicio:iso(inicio),data_fim:iso(fim)}),db.rpc("obter_tcos_dashboard",{data_inicio:iso(inicio),data_fim:iso(fim)}),db.rpc("obter_catalogos_cadastro"),db.rpc("obter_dados_dashboard",{data_inicio:iso(pc[0]),data_fim:iso(pc[1])}),db.rpc("obter_tcos_dashboard",{data_inicio:iso(pc[0]),data_fim:iso(pc[1])})];if(modoCiptur){calls.push(consultarRegistrosHome("ciptur_autos_infracao","id,houve_remocao,tipo_veiculo_removido","data_infracao",iso(inicio),iso(fim)));calls.push(consultarRegistrosHome("ciptur_autos_infracao","id,houve_remocao,tipo_veiculo_removido","data_infracao",iso(pc[0]),iso(pc[1])))}if(modoGiro){calls.push(consultarRegistrosHome("giro_abordagens","id,quantidade_pessoas","registrado_em",iso(inicio)+"T00:00:00-04:00",iso(fim)+"T23:59:59.999-04:00"));calls.push(consultarRegistrosHome("giro_abordagens","id,quantidade_pessoas","registrado_em",iso(pc[0])+"T00:00:00-04:00",iso(pc[1])+"T23:59:59.999-04:00"))}if(modoCipa){calls.push(CipaHome.consultar(db,iso(inicio),iso(fim)).catch(e=>({error:e})));calls.push(CipaHome.consultar(db,iso(pc[0]),iso(pc[1])).catch(e=>({error:e})))}if(modoCipg){calls.push(CipgHome.consultar(db,iso(inicio),iso(fim)).catch(e=>({error:e})));calls.push(CipgHome.consultar(db,iso(pc[0]),iso(pc[1])).catch(e=>({error:e})))}if(modoCavalaria){calls.push(consultarRegistrosHome("cavalaria_servicos_produtividade","id,data_servico,tipo_policiamento,contexto_atividade,localidade,abordagens_pessoas,abordagens_motos,abordagens_carros,rops_produzidos,veiculos_removidos,foragidos_presos,armas_apreendidas","data_servico",iso(inicio),iso(fim)));calls.push(consultarRegistrosHome("cavalaria_servicos_produtividade","id,data_servico,tipo_policiamento,contexto_atividade,localidade,abordagens_pessoas,abordagens_motos,abordagens_carros,rops_produzidos,veiculos_removidos,foragidos_presos,armas_apreendidas","data_servico",iso(pc[0]),iso(pc[1])))}var rr=await Promise.all(calls);var falhaBase=rr.slice(0,5).find(function(x){return x&&x.error});if(falhaBase){console.error("Falha nos dados estatísticos da visão rápida:",falhaBase.error);[total,conducoes,tcosProduzidos,veiculosRecuperadosKpi].forEach(function(el){el.textContent="—"});resumoInteligente.textContent="Não foi possível consultar os dados estatísticos deste período: "+(falhaBase.error.message||falhaBase.error);return}var d=rr[0].data||[],tcos=rr[1].data||[],cats=rr[2].data||{},dAnt=rr[3].data||[],tcosAnt=rr[4].data||[];total.textContent=d.length;conducoes.textContent=somar(d,"conducoes_operacionais");tcosProduzidos.textContent=tcos.length;veiculosRecuperadosKpi.textContent=somar(d,"veiculos_recuperados");renderResumoComparativo(d,tcos,dAnt,tcosAnt,hoje,pc);if(modoCiptur){if(rr[5]?.error||rr[6]?.error){console.error(rr[5]?.error||rr[6]?.error);tcosProduzidos.textContent="—";veiculosRecuperadosKpi.textContent="—";tcosSub.textContent="não foi possível carregar os A.I.";veiculosSub.textContent="não foi possível carregar as remoções"}else renderResumoCiptur(d,dAnt,rr[5].data||[],rr[6].data||[],hoje,pc)}if(modoGiro){if(rr[5]?.error||rr[6]?.error){console.error(rr[5]?.error||rr[6]?.error);tcosProduzidos.textContent="—";veiculosRecuperadosKpi.textContent="—";tcosSub.textContent="não foi possível carregar as abordagens";veiculosSub.textContent="não foi possível carregar pessoas abordadas"}else renderResumoGiro(d,dAnt,rr[5].data||[],rr[6].data||[],hoje,pc)}if(modoCipa){if(rr[5]?.error||rr[6]?.error)CipaHome.falha(rr[5]?.error||rr[6]?.error);else CipaHome.renderizar(d,dAnt,rr[5],rr[6],hoje,pc)}if(modoCipg){if(rr[5]?.error||rr[6]?.error)CipgHome.falha(rr[5]?.error||rr[6]?.error);else CipgHome.renderizar(rr[5],rr[6],hoje,pc)}if(modoCavalaria){if(rr[5]?.error||rr[6]?.error){console.error(rr[5]?.error||rr[6]?.error);total.textContent="—";conducoes.textContent="—";tcosProduzidos.textContent="—";veiculosRecuperadosKpi.textContent="—";resumoInteligente.textContent="Não foi possível carregar a produtividade da Cavalaria."}else renderResumoCavalaria(rr[5].data||[],rr[6].data||[],hoje,pc)}if(!modoCavalaria){draw("topOcorrencias",rank(d,"ocorrencia","crime"),[["#0e4f8a","#18a0ae"],["#2469a3","#44b7bc"],["#3a7fad","#74c6c8"],["#5794b8","#8fd0ce"],["#75a9c5","#acdcd7"]]);draw("topBairros",rank(d,"bairro","localidade"),[["#d36b36","#ef9f25"],["#d77e3e","#f2af3e"],["#dc9250","#f4bd59"],["#dfa562","#f6ca75"],["#e5b77b","#f8d794"]])}if(modoCipg&&rr[5]?.eventos){
  draw("topOcorrencias",rank(rr[5].eventos,"tipo_evento",""),[["#175b48","#3a9a70"],["#236d53","#5ab18d"],["#367a62","#73c2a0"],["#4c8a75","#8bd1b4"],["#629884","#a3dcc6"]]);
  draw("topBairros",rank(rr[5].servicos||[],"posto_codigo","instituicao"),[["#0d5273","#1b90a0"],["#266b86","#40a5b1"],["#3d8297","#63b6bd"],["#5897aa","#81c7ca"],["#76aebb","#a0d5d6"]]);
 }tipoMapa.innerHTML='<option value="">Todos os tipos de ocorrência</option>'+((cats.tipos||[]).map(function(t){return '<option>'+escHome(t.nome)+'</option>'}).join(""));carregarMapa()}
-periodoMapa.onchange=function(){var custom=this.value==="personalizado";mapaInicio.style.display=custom?"inline-block":"none";mapaFim.style.display=custom?"inline-block":"none";if(!custom)carregarMapa()};tipoMapa.onchange=carregarMapa;camadaGiroMapa.onchange=renderizarMapa;visualizacaoMapa.onchange=renderizarMapa;aplicarMapa.onclick=carregarMapa;unidadeMapa.onchange=function(){atualizarAreaValores();carregarMapa()};areaTipoMapa.onchange=function(){atualizarAreaValores();carregarMapa()};areaValorMapa.onchange=carregarMapa;mapaInicio.style.display="none";mapaFim.style.display="none";carregar();
+periodoMapa.onchange=function(){var custom=this.value==="personalizado";mapaInicio.style.display=custom?"inline-block":"none";mapaFim.style.display=custom?"inline-block":"none";if(!custom)carregarMapa()};tipoMapa.onchange=carregarMapa;camadaGiroMapa.onchange=function(){if(modoCpc)carregarMapa();else renderizarMapa()};visualizacaoMapa.onchange=renderizarMapa;aplicarMapa.onclick=carregarMapa;unidadeMapa.onchange=function(){atualizarAreaValores();carregarMapa()};areaTipoMapa.onchange=function(){atualizarAreaValores();carregarMapa()};areaValorMapa.onchange=carregarMapa;mapaInicio.style.display="none";mapaFim.style.display="none";carregar();
 (async()=>{const authReady=window.SistemaAuth?.ready,auth=authReady?await authReady:window.SistemaAuth;const sigla=String(auth?.contexto?.sigla||auth?.perfil?.unidades?.sigla||'').toUpperCase();if(sigla==='1BPM')aplicarModo1Bpm()})();
 </script></body></html>

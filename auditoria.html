@@ -52,6 +52,15 @@ function nivelMax(lista){return lista.some(x=>x.nivel==='alta')?'alta':lista.som
 function rotuloNivel(n){return n==='alta'?'CRÍTICA':n==='media'?'IMPORTANTE':'AVISO'}
 function render(){
  pendencias=[];dados.forEach(auditarRegistro);
+ const vistos=new Map();
+ dados.forEach(function(o){
+   const numero=chave(o.numero_bo),ano=String(o.data_ocorrencia||'').slice(0,4);
+   if(!numero||!ano||!o.unidade_id)return;
+   const k=String(o.unidade_id)+'|'+ano+'|'+numero;
+   if(vistos.has(k)){
+     add(o,'media','Possível repetição de BO','Mesmo número de BO, ano e unidade presentes em outro registro. Verifique se são registros legítimos antes de corrigir.');
+   }else vistos.set(k,o.id);
+ });
  let grupos=new Map();pendencias.forEach(p=>{let k=chaveRegistro(p.o);if(!grupos.has(k))grupos.set(k,{o:p.o,itens:[]});grupos.get(k).itens.push(p)});
  let todos=[...grupos.values()],altas=pendencias.filter(p=>p.nivel==='alta').length,medias=pendencias.filter(p=>p.nivel==='media').length,ok=Math.max(0,dados.length-todos.length),qualidade=dados.length?Math.round(ok*100/dados.length):100;
  $('kRegistros').textContent=dados.length;$('kPendentes').textContent=todos.length;$('kAltas').textContent=altas;$('kMedias').textContent=medias;$('kOk').textContent=ok;$('score').textContent=qualidade+'%';
@@ -63,10 +72,22 @@ function render(){
  let corrigido=new URLSearchParams(location.search).get('corrigido');$('status').className='status'+(corrigido?' ok':'');$('status').textContent=(corrigido?'BO '+corrigido+' salvo. Auditoria recalculada. ':'Auditoria concluída. ')+(fonteAtual?'Fonte: '+fonteAtual+'. ':'')+'Atualizado em '+new Date().toLocaleString('pt-BR')+'.';$('loading').style.display='none';
 }
 async function lerFonte(args){
- let q=db.from('ocorrencias').select('*');if(args.data_inicio)q=q.gte('data_ocorrencia',args.data_inicio);if(args.data_fim)q=q.lte('data_ocorrencia',args.data_fim);q=q.order('data_ocorrencia',{ascending:false});
- const [direto,rpc]=await Promise.all([q,db.rpc('obter_dados_dashboard',args)]);
- if(!direto.error&&Array.isArray(direto.data)&&direto.data.length)return {dados:direto.data,fonte:'tabela real'};
- if(rpc.error)throw rpc.error;return {dados:rpc.data||[],fonte:'RPC de compatibilidade'};
+ const todos=[],passo=1000;let erroDireto=null;
+ for(let pagina=0;pagina<200;pagina++){
+   let q=db.from('ocorrencias').select('*');
+   if(args.data_inicio)q=q.gte('data_ocorrencia',args.data_inicio);
+   if(args.data_fim)q=q.lte('data_ocorrencia',args.data_fim);
+   q=q.order('id',{ascending:true}).range(pagina*passo,(pagina+1)*passo-1);
+   const r=await q;
+   if(r.error){erroDireto=r.error;break}
+   const lote=r.data||[];todos.push(...lote);
+   if(lote.length<passo)return {dados:todos,fonte:'tabela real paginada'};
+   if(pagina===199)throw Error('Limite da auditoria excedido; selecione intervalo menor.');
+ }
+ if(!erroDireto)return {dados:todos,fonte:'tabela real paginada'};
+ const rpc=await db.rpc('obter_dados_dashboard',args);
+ if(rpc.error)throw rpc.error;
+ return {dados:rpc.data||[],fonte:'RPC de compatibilidade (consulta à tabela indisponível)'};
 }
 async function lerRegistro(id){
  const direto=await db.from('ocorrencias').select('*').eq('id',id).maybeSingle();if(!direto.error&&direto.data)return direto.data;

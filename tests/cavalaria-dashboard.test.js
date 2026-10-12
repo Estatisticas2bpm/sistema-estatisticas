@@ -7,7 +7,7 @@ const index=fs.readFileSync(path.join(root,'index.html'),'utf8');
 const dash=fs.readFileSync(path.join(root,'dashboard.html'),'utf8');
 
 assert.match(index,/modoCavalaria/);
-assert.match(index,/Visão rápida — Cavalaria/);
+assert.match(index,/Panorama Estatístico da Cavalaria/);
 assert.match(index,/cavalaria_servicos_produtividade/);
 assert.match(index,/Modalidades de Policiamento/);
 assert.match(index,/Locais com Mais Atividades/);

@@ -16,7 +16,7 @@ assert.match(home,/classList\.add\("modo-1bpm"\)/);
 assert.match(home,/body\.modo-1bpm \.hero/);
 assert.match(home,/assets\/banners\/1bpm-home-banner\.png\?v=20261009-1bpm-banner1/);
 assert.match(home,/body\.modo-1bpm \.hero\{[^}]*background-size:100% 100%,contain/);
-assert.match(home,/Visão rápida — 1º BPM/);
+assert.match(home,/Panorama Estatístico do 1º BPM/);
 
 assert.match(dashboard,/function ehPrimeiroBpm\(\)\{return siglaUnidadeAtiva\(\)==='1BPM'\}/);
 assert.match(dashboard,/function configurarModuloPrimeiroBpm\(\)/);
