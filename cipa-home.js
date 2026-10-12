@@ -35,7 +35,7 @@
     const resultados=await Promise.all(specs.map(async ([tabela,data,campo])=>{
       const linhas=[],passo=1000;
       for(let offset=0;;offset+=passo){
-        const r=await db.from(tabela).select('id,'+campo).gte(data,ini).lte(data,fim)
+        const r=await db.from(tabela).select('id,'+data+','+campo).gte(data,ini).lte(data,fim)
           .order('id',{ascending:true}).range(offset,offset+passo-1);
         if(r.error)throw Error(tabela+': '+r.error.message);
         const lote=r.data||[];
