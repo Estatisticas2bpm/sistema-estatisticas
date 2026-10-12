@@ -1,0 +1,17 @@
+const fs=require('fs');
+const assert=require('assert');
+const index=fs.readFileSync('index.html','utf8');
+const dashboard=fs.readFileSync('dashboard.html','utf8');
+const home=fs.readFileSync('cipg-home.js','utf8');
+const asset='assets/banners/cipg-home-banner.png';
+assert.ok(fs.existsSync(asset),'banner da CIPG deve existir');
+assert.ok(fs.statSync(asset).size>100000,'banner da CIPG deve manter qualidade');
+assert.match(index,/body\.modo-cipg \.hero/,'home deve possuir estilo exclusivo da CIPG');
+assert.match(index,/cipg-home-banner\.png\?v=20261009-cipg-banner1/,'home deve usar o novo banner');
+assert.match(index,/background-size:100% 100%,contain/,'home deve preservar a imagem completa');
+assert.match(home,/classList\.add\('modo-cipg'\)/,'home deve ativar modo CIPG');
+assert.match(dashboard,/body\.modo-cipg header/,'dashboard deve possuir estilo exclusivo da CIPG');
+assert.match(dashboard,/classList\.toggle\('modo-cipg',ativo\)/,'dashboard deve ativar o modo somente para CIPG');
+assert.match(dashboard,/cipg-home-banner\.png\?v=20261009-cipg-banner1/,'dashboard deve usar o novo banner');
+for(const modo of ['modo-cavalaria','modo-cipa','modo-bope','modo-1bpm'])assert.ok(index.includes(modo)&&dashboard.includes(modo),`modo ${modo} deve permanecer preservado`);
+console.log('CIPG banner: testes aprovados.');
