@@ -17,7 +17,7 @@
     'CAVALARIA':'assets/logos/cavalaria-brasao.jpg',
     'CIPA':'assets/logos/cipa-brasao-relatorio.jpg',
     'CIPG':'assets/logos/cipg-brasao.png',
-    'CIPTUR':'assets/logos/ciptur-escudo-v2.png',
+    'CIPTUR':'assets/logos/ciptur-brasao.svg',
     'GIRO':'assets/logos/giro-brasao.svg'
   };
   const numero=v=>Number(v||0).toLocaleString('pt-BR',{maximumFractionDigits:2});
