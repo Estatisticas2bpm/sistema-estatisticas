@@ -1,6 +1,6 @@
 # Plano de refinamento do SIE-CPC
 
-**Versão:** 1.4 — 12/10/2026  
+**Versão:** 1.5 — 12/10/2026  
 **Estado:** em execução; homologação pendente.  
 **Escopo:** CPC, 1º BPM, 2º BPM, BOPE, Cavalaria, CIPA, CIPG, CIPTUR e GIRO.
 
@@ -30,7 +30,7 @@ Transformar os painéis, mapas, consultas, auditorias e relatórios PDF em um co
 **Aceite:** título correto conforme unidade ativa; nenhum impacto negativo na autenticação, filtro por unidade ou nos números do período.
 
 ### Fase 2 — Visão rápida especializada em todas as unidades
-- [ ] Revisar fonte, período, agregação e comparativo de cada um dos quatro cartões.
+- [ ] Revisar fonte, período, agregação e comparativo de cada um dos quatro cartões em TODAS as unidades (a revisão técnica de CIPA, CIPG, GIRO, Cavalaria e CIPTUR avançou; BOPE e BPMs carecem de aceite).
 - [ ] Conferir CIPA e CIPG com seus próprios relatórios/cadernos; Cavalaria com serviços e atividades; CIPTUR com A.I. e remoções; GIRO com abordagens; BOPE e BPMs conforme suas naturezas.
 - [ ] Rever estados de carregamento, ausência de dados e falhas (em andamento: corrigida a exibição indevida de zero quando consultas básicas da visão rápida falham; ainda faltam estados por módulo e testes).
 - [x] Inspecionar no Supabase as colunas e tipos das tabelas especializadas da CIPA, CIPG, GIRO, Cavalaria e CIPTUR.
@@ -45,40 +45,46 @@ Transformar os painéis, mapas, consultas, auditorias e relatórios PDF em um co
 - [ ] Homologar os números com o acesso real de cada unidade, inclusive políticas RLS e os filtros do painel, e obter documentos de referência.
 - [ ] Confirmar com a CIPTUR se existe forma de contabilizar **veículos únicos removidos**, diferente de autos sinalizados com remoção.
 - [ ] Validar período, comparativo e correção dos cartões especializados da CIPA, CIPG e Cavalaria com registros representativos (essas tabelas estavam vazias em 12/10/2026).
+- [x] Centralizar `GIRO`, `CAVALARIA` e `CIPTUR` em `estatistica-indicadores.js`, com as mesmas fórmulas na visão rápida individual e no CPC.
+- [x] Criar testes de regressão dos cinco contratos especializados, distinguindo **erro** de **zero**, eventos sobrepostos e autos com remoção (arquivo `tests/estatistica-indicadores.test.cjs`); adicionar arquivos CJS à rotina CI.
+- [ ] Executar homologação manual dos cartões e comparativos com login real nos nove perfis de unidade.
 **Aceite:** cartões e comparativos validados contra consultas aos registros, unidade a unidade.
 
 ### Fase 3 — "Unidades em números" no CPC
-- [ ] Substituir o modelo homogêneo atual (ocorrências, conduções, TCOs, veículos) por quatro KPIs específicos por unidade.
-- [ ] Criar serviço de agregação por unidade, com mesmo contrato da visão rápida; buscar fontes especializadas conforme cada tipo.
+- [x] Implementar a substituição do modelo homogêneo na página inicial do CPC pelos quatro KPIs específicos de cada unidade (BOPE permanece com contrato genérico até homologação).
+- [x] Criar serviço de leitura especializado no CPC que reutiliza os contratos de CIPA/CIPG/GIRO/Cavalaria/CIPTUR com paginação e isolamento das falhas por unidade.
 - [ ] Aplicar período único, comparações e hierarquia de unidades; preservar filtros e links para detalhes.
-- [ ] Diferenciar "não disponível" de zero e registrar a origem dos números.
+- [x] Diferenciar visualmente dados especializados indisponíveis/carregando (`—`) de zero legítimo e registrar fontes nas descrições dos cartões.
 **Aceite:** para cada unidade, os quatro números do CPC coincidem com a visão rápida individual no mesmo período e escopo.
 
 ### Fase 4 — Mapa estatístico do CPC
-- [ ] Alterar **somente no modo CPC** a simbologia principal de natureza da ocorrência para **unidade responsável**; manter filtros por natureza como atributos secundários.
-- [ ] Usar uma cor por unidade e estudar mini-brasões como `divIcon`/ícones de mapa, com fallback simples e performance adequada.
-- [ ] Adicionar camada opcional **Abordagens GIRO** desmarcada por padrão; permitir "ocorrências", "abordagens", "ambos".
-- [ ] Harmonizar período, geolocalização, permissões, legenda, agrupamentos e exportação.
+- [x] Implementar **somente no modo CPC** a identificação visual principal pela **unidade responsável** no mapa resumido e no completo; manter filtros de natureza como atributos secundários.
+- [ ] Mini-brasões e cores por unidade implementados com `divIcon` e fallback colorido; faltam testes de carregamento, desempenho e legibilidade em celulares.
+- [x] Implementar camada opcional **Abordagens GIRO** desmarcada por padrão no mapa CPC, com modos "ocorrências", "abordagens", "ambos" e consulta autorizada e paginada.
+- [ ] Harmonizar integralmente período, geolocalização, permissões, legenda, agrupamentos e exportação (fuso UTC−04 e filtros territoriais por bairro implementados, mas testes práticos, agrupamento/exportação pendentes).
 **Aceite:** o mapa CPC distingue unidades e, ao ativar o filtro, exibe apenas abordagens reais do GIRO; mapas individuais seguem intactos.
 
 ### Fase 5 — Dashboard completo, consultas e séries temporais
-- [ ] Expor seletor de unidade no modo CPC e blocos especializados condicionais.
+- [x] Acrescentar no `dashboard-cpc.html` bloco de quatro indicadores específicos por unidade e manter seletor de unidade existente, com mesmas regras de cálculo da visão rápida.
 - [ ] Preservar visão transversal e permitir aprofundamento (drill-down) com registro fonte.
-- [ ] Incluir produtividade, fiscalizações, serviços, abordagens, distribuição espacial e séries temporais onde couber.
+- [ ] Integrar plenamente produtividade, fiscalizações, serviços, abordagens, distribuição espacial e séries temporais (seção especializada e camada cartográfica iniciais implementadas; gráficos adicionais pendentes).
 - [ ] Conferir período e critérios estatísticos em consultas, rankings e gráficos.
 **Aceite:** os valores e detalhes conciliam entre visão rápida, dashboard e bases; filtros não vazam dados.
 
 ### Fase 6 — Relatórios PDF
-- [ ] Elaborar template por unidade, com identificação e seções próprias (não um PDF genérico).
+- [ ] Elaborar template personalizado e homologado para todas as unidades (CIPA, GIRO, CIPTUR e 2º BPM já tinham versões específicas; CIPG e Cavalaria receberam novos modelos; conferir BOPE e 1º BPM).
 - [ ] Incluir metodologia (origem, período, data de referência e critérios), gráficos, tabelas e resultados sem duplicações.
-- [ ] Ajustar paginação A4, cabeçalho, numeração e legibilidade; validar download/impressão.
+- [ ] Ajustar e homologar paginação A4, cabeçalho, numeração e legibilidade; validar impressão/download em navegadores e telefones (paginação de CONSULTAS de dados dos PDFs GIRO/CIPTUR corrigida, testes visuais pendentes).
 - [ ] Comparar amostras de diferentes períodos com os indicadores de tela.
+- [x] Criar relatórios por fontes próprias para **CIPG (livro de guarda)** e **Cavalaria (produtividade dos serviços)**, com metodologia, comparativos e tratamento de períodos sem registros.
+- [x] Impedir truncamento silencioso de consultas dos relatórios **GIRO** e **CIPTUR** (paginação), corrigindo o termo da CIPTUR para **autos com indicação de remoção**, sem afirmar veículos distintos.
+- [ ] Testar visualmente a impressão A4 dos relatórios CIPG/Cavalaria e conferir seus valores com dados reais e responsáveis.
 **Aceite:** PDF fiel aos mesmos filtros/dados e às especificidades da unidade; conferência por amostragem registrada.
 
 ### Fase 7 — Auditoria e integridade
-- [ ] Identificar duplicações, registros incompletos, problemas de classificação, datas inconsistentes e eventuais erros de georreferência.
-- [ ] Criar trilha de divergências e validação documental, sem corrigir silenciosamente o banco.
-- [ ] Verificar acessos e consultas por perfis.
+- [ ] Identificar e homologar duplicações, registros incompletos, problemas de classificação, datas inconsistentes e eventuais erros geográficos (levantamento inicial e indicador de suspeita implementados, triagem humana pendente).
+- [ ] Criar trilha completa de divergências e validação documental, sem corrigir silenciosamente o banco (auditoria passa a sinalizar BO potencialmente repetido dentro da mesma unidade e ano).
+- [ ] Verificar acessos e consultas com **usuários de perfis reais**; auditoria de RLS no esquema já efetuada, mas não equivale a homologação de sessão.
 **Aceite:** relatório de divergências reproduzível, sem perda de dados.
 
 ### Fase 8 — Homologação e entrega
@@ -92,7 +98,7 @@ Transformar os painéis, mapas, consultas, auditorias e relatórios PDF em um co
 **Legenda:** [x] implementado e conferido no código; [ ] pendente ou parcialmente executado. Implementação não equivale a homologação em navegador/banco.
 
 - **Fase 1:** 3/5 itens implementados; dois itens aguardam revisão ampla e confirmação com unidades. Aceite pendente.
-- **Fase 2:** em andamento; contratos reutilizáveis CIPA/CIPG implementados; estrutura e políticas RLS verificadas; paginação e conferência SQL GIRO/CIPTUR concluídas; regressão lógica em JS aprovada. Testes com perfis reais, navegador e documentos de origem ainda pendentes.
+- **Fase 2:** contratos reutilizáveis CIPA/CIPG/GIRO/Cavalaria/CIPTUR e regressões implementadas; pendem perfis reais, documentos de origem e definição especializada do BOPE.
 - **Fases 3 a 8:** não homologadas; manter os itens não concluídos desmarcados.
 
 ## Inventário inicial de módulos (código)
@@ -119,7 +125,23 @@ Transformar os painéis, mapas, consultas, auditorias e relatórios PDF em um co
 | CIPTUR | Ocorrências; conduções; autos de infração; autos com indicação de remoção | RPC territorial e `ciptur_autos_infracao`; distinguir remoções de autos dos BOs |
 | GIRO | Ocorrências; conduções; abordagens; pessoas abordadas | RPC territorial e `giro_abordagens`; pessoas abordadas podem ser maiores que abordagens registradas |
 
-**Atenção:** a linha CIPTUR refere-se a **autos marcados com remoção**, não necessariamente a veículos removidos distintos. Esta tabela é o levantamento inicial baseado no código; não representa homologação dos números e regras. O BOPE necessita definição de KPIs mais especializados. O cartão do CPC atualmente usa modelo genérico para todas as unidades — fase 3 ainda não implementada.
+**Atenção:** a linha CIPTUR refere-se a **autos marcados com remoção**, não necessariamente a veículos removidos distintos. Esta tabela é o levantamento inicial baseado no código; não representa homologação dos números e regras. O BOPE necessita definição de KPIs mais especializados. Os cartões da visão rápida do CPC foram adaptados na ramificação de refinamento para as cinco unidades especializadas; BOPE ainda usa indicadores policiais genéricos. Fase 3 implementada parcialmente, mas não homologada.
+
+## Auditoria quantitativa preliminar — 12/10/2026
+
+Consultas SQL **somente leitura**, sobre o banco de produção, não executam exclusões ou correções automáticas:
+
+- Total de ocorrências: **4.602**; sem unidade: **0**; sem data: **0**; sem número de BO: **0**.
+- Ocorrências sem ao menos uma coordenada: **3.883**. Esses registros continuam participando das estatísticas tabulares, mas não geram pontos no mapa.
+- Verificação exploratória por unidade + número de BO, sem considerar ano: **18 grupos**, **19 registros excedentes**. Ao refinar a regra para **unidade + ano da ocorrência + número de BO**, o resultado caiu para **3 grupos** e **3 registros excedentes**. **Todos permanecem pendências potenciais**, não duplicidades confirmadas.
+- Abordagens GIRO: **6**, nenhuma sem coordenadas ou quantidade de pessoas.
+- Recomenda-se revisão documental das 3 coincidências por unidade/ano/BO e orientação gradual para registro de coordenadas; não apagar, unir nem recadastrar automaticamente.
+
+## Progresso da ramificação de validação — 12/10/2026
+
+As alterações da **Fase 3 (cartões CPC), Fase 4 (mapa), Fase 5 (seção de indicadores executivos), Fase 6 (PDFs CIPG e Cavalaria)** e Fase 7 (auditoria paginada) foram **implementadas na ramificação de trabalho** `refinamento-cpc-20261012-indicadores-mapa`. As marcações [x] significam **implementação/revisão de código**, NÃO homologação institucional. A publicação em `main` depende de integração e testes automáticos.
+
+**Pendências humanas não elimináveis por código:** homologação com sessões autenticadas de cada unidade, amostras de cadernos/PPEs e serviços ainda não cadastrados, definição de veículos únicos efetivamente removidos, revisão de possíveis duplicidades e validação visual dos PDFs em impressão real.
 
 ## Registro de progresso
 
