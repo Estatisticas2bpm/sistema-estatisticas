@@ -1,6 +1,6 @@
 # Plano de refinamento do SIE-CPC
 
-**Versão:** 1.5 — 12/10/2026  
+**Versão:** 1.6 — 12/10/2026  
 **Estado:** em execução; homologação pendente.  
 **Escopo:** CPC, 1º BPM, 2º BPM, BOPE, Cavalaria, CIPA, CIPG, CIPTUR e GIRO.
 
@@ -67,7 +67,7 @@ Transformar os painéis, mapas, consultas, auditorias e relatórios PDF em um co
 ### Fase 5 — Dashboard completo, consultas e séries temporais
 - [x] Acrescentar no `dashboard-cpc.html` bloco de quatro indicadores específicos por unidade e manter seletor de unidade existente, com mesmas regras de cálculo da visão rápida.
 - [ ] Preservar visão transversal e permitir aprofundamento (drill-down) com registro fonte.
-- [ ] Integrar plenamente produtividade, fiscalizações, serviços, abordagens, distribuição espacial e séries temporais (seção especializada e camada cartográfica iniciais implementadas; gráficos adicionais pendentes).
+- [ ] Integrar plenamente produtividade, fiscalizações, serviços, abordagens, distribuição espacial e séries temporais (mini-séries por unidade especializada implementadas; gráficos analíticos/exportações comparativas e homologação ainda pendentes).
 - [ ] Conferir período e critérios estatísticos em consultas, rankings e gráficos.
 **Aceite:** os valores e detalhes conciliam entre visão rápida, dashboard e bases; filtros não vazam dados.
 
@@ -143,6 +143,13 @@ As alterações da **Fase 3 (cartões CPC), Fase 4 (mapa), Fase 5 (seção de in
 
 **Pendências humanas não elimináveis por código:** homologação com sessões autenticadas de cada unidade, amostras de cadernos/PPEs e serviços ainda não cadastrados, definição de veículos únicos efetivamente removidos, revisão de possíveis duplicidades e validação visual dos PDFs em impressão real.
 
+## Série temporal especializada da Central Executiva — 12/10/2026
+
+- [x] Incorporar a data de origem aos datasets especializados usados no CPC, preservando o contrato de cálculo (CIPA: `data_registro`, CIPG/Cavalaria: `data_servico`, CIPTUR: `data_infracao`, GIRO: `registrado_em` em Boa Vista).
+- [x] Construir uma série de evolução **independente por unidade**, por dia (período curto) ou mês (período longo). A série da CIPA representa animais registrados, a da CIPG serviços, a da Cavalaria serviços, a da CIPTUR autos e a do GIRO abordagens. **Não comparar diretamente unidades de medida distintas**.
+- [x] Cobrir por testes de regressão períodos vazios, fuso de Roraima, dias sem atividade, séries mensais e erros versus zero (`tests/cpc-series-especializadas.test.cjs`).
+- [ ] Validar as séries no navegador CPC e amostras de dados por perfil, principalmente CIPA/CIPG/Cavalaria sem registros na base em 12/10/2026.
+
 ## Registro de progresso
 
 - **12/10/2026:** fases e contratos documentados; complementada a padronização de CIPA e CIPG.
@@ -153,4 +160,5 @@ As alterações da **Fase 3 (cartões CPC), Fase 4 (mapa), Fase 5 (seção de in
 - **12/10/2026:** descrição do quarto indicador da CIPTUR alterada para "Autos com remoção", incluindo comparativo e resumo; a unidade ainda deve confirmar método de apuração de veículos efetivamente removidos.
 - **12/10/2026:** verificação de RLS habilitado nas oito tabelas especializadas: políticas SELECT vinculam registros às unidades acessíveis, inclusive via ocorrência (CIPA) e serviço de guarda (CIPG). Não houve simulação de autenticação real.
 - **12/10/2026:** fórmulas CIPA/CIPG centralizadas em `indicadores(...)`, com reuso no painel da unidade e preparação para a fase de consolidação CPC; datas de referência explicitadas; arquivo de testes de regressão criado e cenários testados com interpretação JavaScript isolada.
+- **12/10/2026:** PR #68 integrado ao main com CI aprovado. A ramificação posterior implementa mini-séries especializadas do dashboard executivo, com indicadores e datas por unidade.
 - **Próximo trabalho:** validar os números e consultas sob sessões autenticadas de cada unidade (incluindo permissões e filtros); reunir amostras reais de CIPA/CIPG/Cavalaria; prosseguir com contratos estatísticos para GIRO/Cavalaria/CIPTUR antes da consolidação CPC.

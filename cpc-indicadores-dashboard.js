@@ -36,9 +36,9 @@
     if(tipo==='CIPA')return global.CipaHome.consultar(db,ini,fim);
     if(tipo==='CIPG')return global.CipgHome.consultar(db,ini,fim);
     const specs={
-      GIRO:['giro_abordagens','id,unidade_id,quantidade_pessoas','registrado_em'],
-      CAVALARIA:['cavalaria_servicos_produtividade','id,unidade_id,tipo_policiamento,contexto_atividade,abordagens_pessoas','data_servico'],
-      CIPTUR:['ciptur_autos_infracao','id,unidade_id,houve_remocao,tipo_veiculo_removido','data_infracao']
+      GIRO:['giro_abordagens','id,unidade_id,registrado_em,quantidade_pessoas','registrado_em'],
+      CAVALARIA:['cavalaria_servicos_produtividade','id,unidade_id,data_servico,tipo_policiamento,contexto_atividade,abordagens_pessoas','data_servico'],
+      CIPTUR:['ciptur_autos_infracao','id,unidade_id,data_infracao,houve_remocao,tipo_veiculo_removido','data_infracao']
     };
     const s=specs[tipo];
     if(!s)throw Error('Fonte desconhecida');
@@ -46,7 +46,61 @@
     const b=tipo==='GIRO'?fim+'T23:59:59.999-04:00':fim;
     return listar(db,s[0],s[1],s[2],a,b);
   }
-  function renderizarPainel(unidades,home,extras,unidadeSelecionada){
+  // Série temporal independente por tipo de produtividade; não soma medidas distintas.
+  function serieEspecializada(tipo,fonte,inicio,fim){
+    if(!fonte||fonte.status!=='ok')return null;
+    const spec={
+      CIPA:{rows:fonte.data?.fauna||[],data:'data_registro',rotulo:'Animais registrados',quantidade:'quantidade'},
+      CIPG:{rows:fonte.data?.servicos||[],data:'data_servico',rotulo:'Serviços prestados'},
+      GIRO:{rows:fonte.data||[],data:'registrado_em',rotulo:'Abordagens'},
+      CAVALARIA:{rows:fonte.data||[],data:'data_servico',rotulo:'Serviços realizados'},
+      CIPTUR:{rows:fonte.data||[],data:'data_infracao',rotulo:'Autos de infração'}
+    }[tipo];
+    if(!spec)return null;
+    const inicioData=new Date(inicio+'T12:00:00Z'),fimData=new Date(fim+'T12:00:00Z');
+    if(Number.isNaN(inicioData.getTime())||Number.isNaN(fimData.getTime())||fimData<inicioData)return null;
+    const dias=Math.round((fimData-inicioData)/86400000)+1,porMes=dias>45;
+    const counts=new Map();
+    const chaveData=valor=>{
+      if(!valor)return null;
+      if(tipo==='GIRO'){
+        const d=new Date(valor);
+        if(Number.isNaN(d.getTime()))return null;
+        return new Date(d.getTime()-4*3600000).toISOString().slice(0,10);
+      }
+      return String(valor).slice(0,10);
+    };
+    (spec.rows||[]).forEach(item=>{
+      const dia=chaveData(item[spec.data]);
+      if(!dia||dia<inicio||dia>fim)return;
+      const chave=porMes?dia.slice(0,7):dia;
+      counts.set(chave,(counts.get(chave)||0)+(spec.quantidade?(Number(item[spec.quantidade])||0):1));
+    });
+    const series=[];
+    if(!porMes){
+      for(let d=new Date(inicioData);d<=fimData;d.setUTCDate(d.getUTCDate()+1)){
+        const dia=d.toISOString().slice(0,10);
+        series.push({data:dia,valor:counts.get(dia)||0});
+      }
+    }else{
+      const primeiro=new Date(Date.UTC(inicioData.getUTCFullYear(),inicioData.getUTCMonth(),1));
+      for(let d=primeiro;d<=fimData;d.setUTCMonth(d.getUTCMonth()+1)){
+        const mes=d.toISOString().slice(0,7);
+        series.push({data:mes,valor:counts.get(mes)||0});
+      }
+    }
+    return {rotulo:spec.rotulo,agrupamento:porMes?'mês':'dia',series};
+  }
+  function desenharSerie(serie){
+    if(!serie)return '';
+    const max=Math.max(1,...serie.series.map(p=>p.valor));
+    const total=serie.series.reduce((a,p)=>a+p.valor,0);
+    return '<div class="cpcMiniSerie"><strong>'+esc(serie.rotulo)+' — evolução por '+serie.agrupamento+'</strong>'+
+      '<div class="cpcMiniBars" role="img" aria-label="'+esc(serie.rotulo+': '+total+' no período')+'">'+
+      serie.series.map((p,i)=>'<span style="height:'+Math.max(4,Math.round(p.valor/max*100))+'%" title="'+esc(p.data+' · '+numero(p.valor))+'"></span>').join('')+
+      '</div><small>'+numero(total)+' no período · barras demonstram distribuição, não comparação entre unidades</small></div>';
+  }
+  function renderizarPainel(unidades,home,extras,unidadeSelecionada,inicio,fim){
     const destino=$('cpcIndicadoresEspecificos');
     if(!destino)return;
     const cpc=unidades.find(u=>String(u.sigla).toUpperCase()==='CPC');
@@ -65,7 +119,7 @@
       const err=extra.status==='erro'&&['CIPA','CIPG','GIRO','CAVALARIA','CIPTUR'].includes(sigla);
       return '<article class="cpcSpecialCard"><h3>'+esc(nome(sigla))+'</h3><p>'+esc(u.nome||'')+'</p><div class="cpcSpecialValues">'+
         cards.map(k=>'<div title="'+esc(k.fonte||'')+'"><strong>'+esc(global.EstatisticaIndicadores.formatar(k))+'</strong><span>'+esc(k.rotulo)+'</span></div>').join('')+
-        '</div>'+(err?'<small class="cpcSpecialWarning">Dados especializados indisponíveis. Consulte a unidade/permissões.</small>':'')+'</article>';
+        '</div>'+desenharSerie(serieEspecializada(sigla,extra,inicio,fim))+(err?'<small class="cpcSpecialWarning">Dados especializados indisponíveis. Consulte a unidade/permissões.</small>':'')+'</article>';
     }).join('');
   }
   async function carregar(db,args,unidades){
@@ -87,9 +141,9 @@
     }
     const extras={};
     resultados.forEach(x=>{extras[x.tipo]=x});
-    renderizarPainel(unidades,home.data,extras,args.p_unidade_id);
+    renderizarPainel(unidades,home.data,extras,args.p_unidade_id,args.data_inicio,args.data_fim);
     const texto=$('cpcIndicadoresNota');
     if(texto)texto.textContent='Período: '+args.data_inicio+' a '+args.data_fim+'. Valores de serviços, abordagens e fiscalizações utilizam suas próprias datas e fontes, sem serem somados às ocorrências. Filtros de natureza, turno, companhia e área das ocorrências não se aplicam automaticamente aos registros especializados.';
   }
-  global.CpcIndicadoresDashboard=Object.freeze({carregar});
+  global.CpcIndicadoresDashboard=Object.freeze({carregar,serieEspecializada});
 })(window);
