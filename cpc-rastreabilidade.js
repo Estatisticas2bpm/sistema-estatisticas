@@ -39,8 +39,11 @@ function registros(tipo,ocorrencias,tcos,dados){
   }
   if(s==='CAVALARIA')for(const x of lista)registrar(linhas,'Cavalaria · serviço',x.data_servico,x.numero_documento||x.id,
     [x.tipo_policiamento,x.contexto_atividade,x.localidade||x.bairro].filter(Boolean).join(' · '),x.abordagens_pessoas,'pessoas abordadas','data_servico');
-  if(s==='CIPTUR')for(const x of lista)registrar(linhas,'CIPTUR · auto de infração',x.data_infracao,x.codigo_infracao||x.id,
-    'Código '+(x.codigo_infracao||'não informado')+(x.houve_remocao?' · auto com remoção indicada':''),1,'auto','data_infracao');
+  // Código de infração = tipificação, NÃO número exclusivo do auto.
+  // A tabela de autos ainda não possui número do auto: usar chave técnica (UUID)
+  // para identificar cada linha sem confundir códigos repetidos com duplicidades.
+  if(s==='CIPTUR')for(const x of lista)registrar(linhas,'CIPTUR · auto de infração',x.data_infracao,x.id,
+    'Código da infração: '+(x.codigo_infracao||'não informado')+(x.houve_remocao?' · auto com remoção indicada':''),1,'auto','data_infracao');
   if(s==='GIRO')for(const x of lista)registrar(linhas,'GIRO · abordagem',localGiro(x.registrado_em),x.id,
     [x.tipo_abordagem,x.bairro].filter(Boolean).join(' · ')||'Abordagem',x.quantidade_pessoas,'pessoas abordadas','registrado_em · UTC−04');
   return linhas.sort((a,b)=>b.data.localeCompare(a.data)||a.fonte.localeCompare(b.fonte)||a.referencia.localeCompare(b.referencia));
