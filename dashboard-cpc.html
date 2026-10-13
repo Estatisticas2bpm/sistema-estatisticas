@@ -62,7 +62,7 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
 .cpcOrigemDetalhesTabela th{background:#e6f1f9;color:#123958;white-space:nowrap;font-weight:800}
 .cpcOrigemDetalhesTabela tr:nth-child(even) td{background:#f8fbfd}
 .cpcOrigemDetalhesTabela td:first-child{white-space:nowrap;font-variant-numeric:tabular-nums}
-.cpcOrigemReferencia{font-weight:700;max-width:190px}
+.cpcOrigemReferencia{font-weight:650;max-width:220px;overflow-wrap:anywhere;word-break:break-word;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:11px;line-height:1.55}.cpcOrigemOrientacao{font-size:12px;line-height:1.6;padding:10px 12px;border-left:3px solid #176e9c;border-radius:6px;background:#e7f2fa;color:#16466b;margin:10px 0 13px}.cpcOrigemOrientacao strong{color:#103955}
 .cpcOrigemMedida{white-space:nowrap}
 .cpcOrigemSemResultados{text-align:center!important;color:#657b8c;padding:22px!important}
 .cpcOrigemRodape{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px}
@@ -128,6 +128,7 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
       <button id="cpcOrigemFechar" class="cpcOrigemFechar" type="button">Fechar painel ✕</button>
     </div>
     <p class="cpcOrigemNota">Registros provenientes de consultas autorizadas. As datas de ocorrência, serviço, autuação, embargo e abordagem podem ter critérios diferentes. Não some medidas de naturezas distintas.</p>
+    <p id="cpcOrigemIdentificacaoCiptur" class="cpcOrigemOrientacao" hidden><strong>CIPTUR — identificação dos autos:</strong> o cadastro atual não dispõe de campo para o número individual do auto de infração. Por isso, a coluna Documento / ID apresenta o <strong>ID técnico exclusivo do registro</strong>. Já o código de infração identifica o enquadramento e pode se repetir em autos diferentes. Os autos não são somados às ocorrências policiais.</p>
     <p id="cpcOrigemAlerta" class="cpcOrigemAlerta" role="alert" hidden></p>
     <div class="cpcOrigemFerramentas">
       <label for="cpcOrigemBusca">Pesquisar documento, BO, natureza ou data
