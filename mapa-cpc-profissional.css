@@ -1,0 +1,36 @@
+/* SIE-CPC — cartografia compacta e responsiva do modo CPC */
+.sieCpcPin,.sieCpcCluster{background:transparent!important;border:0!important;box-shadow:none!important}
+.sieCpcDot{width:12px;height:12px;display:flex;align-items:center;justify-content:center;background:var(--unit-color);border:1.8px solid #fff;border-radius:50%;box-shadow:0 1px 4px #122d4766;box-sizing:border-box}
+.sieCpcDot.detalhado{width:22px;height:22px;color:#fff;font:800 9px/1 Inter,Arial,sans-serif;border:2px solid #fff;letter-spacing:-.2px;box-shadow:0 1px 6px #122d4780}
+.sieCpcClusterBubble{display:flex;align-items:center;justify-content:center;width:100%;height:100%;box-sizing:border-box;border-radius:50%;border:3px solid #fff;background:var(--cluster-color);color:#fff;font:800 12px/1 Inter,Arial,sans-serif;box-shadow:0 1px 9px #0c26375e}
+.sieCpcClusterBubble.misto{border-color:#e1eaf1;outline:2px solid #778da5}
+.sieCpcPopup{min-width:190px;max-width:310px;color:#183148;font:12px/1.5 Inter,Segoe UI,Arial,sans-serif}
+.sieCpcPopupHeader{display:flex;gap:9px;align-items:center;padding:0 0 9px;margin-bottom:8px;border-bottom:1px solid #e0e7ef}
+.sieCpcPopupHeader small{display:block;color:#677c91;font-size:10px;font-weight:700;letter-spacing:.3px}
+.sieCpcPopupHeader strong{display:block;color:#102c45;font-size:14px}
+.sieCpcPopupLogo{position:relative;width:38px;height:38px;flex:none;display:grid;place-items:center;border:1px solid #e0e7ed;border-radius:9px;background:#f3f6f9;overflow:hidden}
+.sieCpcPopupLogo img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#f8fafc}
+.sieCpcPopupLogo span{display:grid;place-items:center;color:var(--unit-color);font-weight:900}
+.sieCpcPopupDados b{color:#193d5a}
+.sieCpcLegendaTit{color:#163650;font-size:12px;font-weight:900;margin-bottom:7px;white-space:normal}
+.sieCpcLegendaTit small{font-weight:700;color:#64748b}
+.sieCpcLegendaLinhas{display:grid;grid-template-columns:1fr;gap:1px;max-height:235px;overflow-y:auto;scrollbar-width:thin}
+.sieCpcLegendaUnidade{width:100%;display:grid;grid-template-columns:10px minmax(72px,1fr) auto;gap:8px;align-items:center;border:0;border-radius:6px;background:transparent;text-align:left;color:#334155;font:600 11px/1.4 Inter,Arial,sans-serif;padding:4px 5px;cursor:pointer}
+.sieCpcLegendaUnidade i{width:10px;height:10px;border:1px solid #fff;border-radius:50%;box-shadow:0 0 0 1px #cbd5e1}
+.sieCpcLegendaUnidade b{color:#173858;font:800 11px Inter,Arial,sans-serif;font-variant-numeric:tabular-nums}
+button.sieCpcLegendaUnidade:hover,button.sieCpcLegendaUnidade:focus-visible{background:#eaf3fa;outline:1px solid #b3cee4}
+.sieCpcLegendaUnidade[aria-pressed=true]{background:#e2edf8}
+.sieCpcEscalaCalor{height:9px;border-radius:6px;background:linear-gradient(90deg,#2563eb,#22c55e,#facc15,#f97316,#dc2626);margin:8px 0 2px}
+.sieCpcEscalaRotulos{display:flex;justify-content:space-between;font-size:10px;color:#64748b}
+#legendaMapaPrincipal .sieCpcLegendaLinhas,#legendaMapaCompleto .sieCpcLegendaLinhas{max-height:235px}
+#legendaMapaPrincipal>small,#legendaMapaCompleto>small{display:block;margin-top:7px;color:#64748b;font-size:10px;max-width:215px}
+.sieCpcExportar[hidden]{display:none!important}
+.sieCpcExportar{background:#eef5fb!important;border-color:#c0d6e8!important;color:#164b73!important}
+.sieCpcCluster .leaflet-interactive{cursor:pointer}
+@media(max-width:600px){
+  .sieCpcLegendaLinhas{max-height:132px!important}
+  #legendaMapaPrincipal,#legendaMapaCompleto{max-width:152px!important;font-size:10px!important;padding:8px!important}
+  .sieCpcLegendaUnidade{grid-template-columns:9px minmax(40px,1fr) auto;gap:5px;font-size:10px}
+  #legendaMapaPrincipal>small,#legendaMapaCompleto>small{font-size:9px}
+  .sieCpcPopup{min-width:160px}
+}
