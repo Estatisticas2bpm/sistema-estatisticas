@@ -58,7 +58,7 @@ for(const arquivo of ['index.html','mapa-criminal.html']){
  const html=read(arquivo);
  assert.match(html,/leaflet\.markercluster@1\.5\.3/);
  assert.match(html,/mapa-cpc-profissional\.css/);
- assert.match(html,/value="agrupado"/);
+ assert.match(html,/value="agrupado" hidden disabled/,'Agrupamento oculto por padrão fora do CPC');
  assert.match(html,/MapaCpcProfissional\.exportarVisao/);
  assert.match(html,/MapaCpcProfissional\.legenda/);
  assert.match(html,/MapaCpcProfissional\.criarMarcador/);
