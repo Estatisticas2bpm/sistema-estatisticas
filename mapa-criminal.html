@@ -214,7 +214,7 @@ document.querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>periodo(b.da
 $('atualizar').onclick=carregar;
 $('exportarVisaoCpc').onclick=function(){
   const fonte=$('fonte').value,ocorr=fonte==='abordagens'?[]:filtrarOcorrencias(),abordagens=fonte==='ocorrencias'?[]:filtrarAbordagens();
-  const quant=MapaCpcProfissional.exportarVisao(mapa,ocorr,abordagens,modoCpc?'sie-cpc-mapa-completo':'sie-mapa-'+(unidadeAtivaMapa.toLowerCase()||'unidade'));
+  const exportOcc=modoCpc?ocorr:ocorr.map(x=>Object.assign({},x,{unidade_sigla:unidadeAtivaMapa||x.unidade_sigla}));const quant=MapaCpcProfissional.exportarVisao(mapa,exportOcc,abordagens,modoCpc?'sie-cpc-mapa-completo':'sie-mapa-'+(unidadeAtivaMapa.toLowerCase()||'unidade'));
   $('status').textContent=quant+' registro(s) da área visível exportados em CSV, respeitando os filtros selecionados.';
 };
 mapa.on('zoomend',function(){
