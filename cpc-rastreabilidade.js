@@ -25,7 +25,7 @@ function registros(tipo,ocorrencias,tcos,dados){
   if(s==='CIPA'){
     for(const f of origem.fauna||[])registrar(linhas,'CIPA · fauna',f.data_registro,f.numero_tr||f.id,f.nome_comum||'Registro de fauna',f.quantidade,'animais','data_registro',['Animais envolvidos']);
     for(const e of origem.embargos||[])registrar(linhas,'CIPA · embargo',e.data_embargo,e.numero||e.id,'Termo de embargo',e.area_embargada_ha,'ha','data_embargo',['Área embargada (ha)']);
-    for(const a of origem.autos||[])registrar(linhas,'CIPA · auto de infração',a.data_autuacao,a.numero||a.id,a.descricao_infracao||'Multa ambiental',a.valor_multa,'R
+    for(const a of origem.autos||[])registrar(linhas,'CIPA · auto de infração',a.data_autuacao,a.numero||a.id,a.descricao_infracao||'Multa ambiental',a.valor_multa,'R$','data_autuacao',['Multas aplicadas (R$)']);
   }
   if(s==='CIPG'){
     const servicos=origem.servicos||[],porId=new Map(servicos.map(x=>[String(x.id),x]));
