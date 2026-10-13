@@ -16,7 +16,7 @@ assert.match(sql,/left join mapa t on t\.bairro=x\.item->>'bairro'/);
 assert.doesNotMatch(sql,/left join lateral\s*\(select public\.territorio_por_bairro/i);
 assert.match(sql,/public\.obter_home_cpc\(data_inicio,data_fim\)/);
 assert.match(sql,/public\.obter_catalogo_territorial_cpc\(\)/);
-assert.match(html,/cpc-indicadores-dashboard\.js\?v=20261012-escopo-anual2/);
+assert.match(html,/cpc-indicadores-dashboard\.js\?v=20261013-indicadores1/);
 
 const elements={
   cpcIndicadoresEspecificos:{innerHTML:''},
