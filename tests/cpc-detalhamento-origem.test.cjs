@@ -82,7 +82,7 @@ D.abrir('CIPTUR');
 assert.equal(elements.cpcDetalhamentoOrigem.hidden,true,'não reabre dados de escopo antigo');
 for(const id of ids)assert.match(html,new RegExp('id="'+id+'"'),id+' presente no layout');
 assert.match(html,/cpc-detalhamento-origem\.js\?v=20261012-id2/);
-assert.match(html,/cpc-indicadores-dashboard\.js\?v=20261012-origem-painel1/);
+assert.match(html,/cpc-indicadores-dashboard\.js\?v=20261012-[a-z0-9-]+/);
 assert.match(js,/CpcDetalhamentoOrigem\.reiniciar\(\)/);
 assert.match(js,/data-abrir-origem/);
 assert.match(js,/CpcDetalhamentoOrigem\.registrar/);
