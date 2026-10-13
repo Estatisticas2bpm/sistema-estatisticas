@@ -10,11 +10,11 @@ const normalizar=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,''
 const displayName=s=>String(s||'').replace(/^(\d+)BPM$/i,(_,n)=>n+'º BPM');
 const documentos=new Map();
 const tamanhoPagina=12;
-let atual='',pagina=0,termo='',fonte='',iniciado=false;
+let atual='',pagina=0,termo='',fonte='',indicador='',iniciado=false;
 function linhasAtuais(){
   const todos=documentos.get(atual)?.linhas||[];
   const t=normalizar(termo);
-  return todos.filter(x=>(!fonte||x.fonte===fonte)&&(!t||[
+  return todos.filter(x=>(!fonte||x.fonte===fonte)&&(!indicador||(x.indicadores||[]).includes(indicador))&&(!t||[
     x.data,x.fonte,x.referencia,x.descricao,x.quantidade,x.unidade,x.criterio
   ].some(v=>normalizar(v).includes(t))));
 }
@@ -37,19 +37,19 @@ function montar(){
     '<td>'+esc(x.descricao)+'</td><td class="cpcOrigemMedida">'+valorMedida(x)+'</td>'+
     '<td>'+esc(x.criterio)+'</td></tr>'
   ).join('')||'<tr><td colspan="6" class="cpcOrigemSemResultados">Nenhum registro corresponde à pesquisa.</td></tr>';
-  $('cpcOrigemQuantidade').textContent=filtradas.length+' registro(s) no filtro · '+d.linhas.length+' registro(s) de origem';
+  $('cpcOrigemQuantidade').textContent=filtradas.length+' registro(s) relacionado(s) ao indicador · '+d.linhas.length+' registro(s) de origem. Valores somados podem diferir da quantidade de documentos.';
   $('cpcOrigemPagina').textContent='Página '+(pagina+1)+' de '+totalPaginas;
   $('cpcOrigemAnterior').disabled=pagina===0;
   $('cpcOrigemProximo').disabled=pagina===totalPaginas-1;
   $('cpcOrigemExportar').disabled=!filtradas.length;
 }
-function abrir(sigla){
+function abrir(sigla,indicadorSelecionado=''){
   if(!documentos.has(sigla))return;
   inicializar();
-  atual=sigla;pagina=0;termo='';fonte='';
+  atual=sigla;pagina=0;termo='';fonte='';indicador=String(indicadorSelecionado||'');
   const d=documentos.get(sigla);
   const painel=$('cpcDetalhamentoOrigem');
-  $('cpcOrigemTitulo').textContent='Registros de origem — '+displayName(sigla);
+  $('cpcOrigemTitulo').textContent=(indicador?'Registros relacionados a '+indicador+' — ':'Registros de origem — ')+displayName(sigla);
   $('cpcOrigemPeriodo').textContent='Período: '+d.inicio+' a '+d.fim+
     ' · as fontes especializadas utilizam suas próprias datas de referência.';
   const identificacaoCiptur=$('cpcOrigemIdentificacaoCiptur');
@@ -68,7 +68,7 @@ function abrir(sigla){
 function fechar(){
   const painel=$('cpcDetalhamentoOrigem');
   if(painel)painel.hidden=true;
-  atual='';pagina=0;termo='';fonte='';
+  atual='';pagina=0;termo='';fonte='';indicador='';
 }
 function registrar(sigla,linhas,parcial,inicio,fim){
   documentos.set(String(sigla),{

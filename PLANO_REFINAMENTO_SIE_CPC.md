@@ -1,6 +1,6 @@
 # Plano de refinamento do SIE-CPC
 
-**Versão:** 2.7 — 12/10/2026  
+**Versão:** 2.8 — 13/10/2026  
 **Estado:** em execução; homologação pendente.  
 **Escopo:** CPC, 1º BPM, 2º BPM, BOPE, Cavalaria, CIPA, CIPG, CIPTUR e GIRO.
 
@@ -295,6 +295,16 @@ As alterações da **Fase 3 (cartões CPC), Fase 4 (mapa), Fase 5 (seção de in
 
 - [ ] Auditar 11 ocorrências do 1º BPM com `veiculos_recuperados >= 100` no intervalo 01/01–12/10/2026; **somam 2.515** dos **2.537** veículos exibidos pelo CPC. Uma ocorrência está registrada com **1.000 veículos**. Suspeita de importação/mapeamento, não é duplicidade ou erro confirmado.
 - [ ] Conferir os documentos e a planilha histórica de origem antes de qualquer alteração. **Não houve correção automática dos valores.**
+
+## Fase de refinamento — navegação executiva CPC somente leitura (13/10/2026)
+
+- [x] Tornar os quatro indicadores de cada cartão subordinado clicáveis e acessíveis (botões com rótulos e foco visível).
+- [x] Filtrar a conferência de registros de origem pelo indicador selecionado, mantendo pesquisa, paginação, período e exportação CSV.
+- [x] Separar **quantidade de documentos contribuintes** da **medida agregada** (animais, hectares, multas, conduções, veículos, efetivo).
+- [x] Reutilizar exclusivamente os dados autorizados já carregados, sem operações de escrita; alinhar regras de serviço sem alteração e entrada hospitalar à CIPG.
+- [ ] Abrir BO, relato/histórico e anexos originais em visualizador autenticado, quando existentes; não presumir acesso ao documento a partir do número.
+- [ ] Implementar e testar permissões CPC somente leitura também no banco/storage, incluindo bloqueio de inserção, atualização e exclusão em todas as fontes.
+- [ ] Homologar visualmente todos os indicadores por unidade e a correspondência entre cada indicador e os registros exibidos.
 
 ## Registro de progresso
 

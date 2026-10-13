@@ -133,11 +133,14 @@
       const err=extra.status==='erro'&&['CIPA','CIPG','GIRO','CAVALARIA','CIPTUR'].includes(sigla);
       const linhas=global.CpcRastreabilidade.registros(sigla,linhasOcorrencias,linhasTcos,extra.status==='ok'?extra.data:null);
       return '<article class="cpcSpecialCard"><h3>'+esc(nome(sigla))+'</h3><p>'+esc(u.nome||'')+'</p><div class="cpcSpecialValues">'+
-        cards.map(k=>'<div title="'+esc(k.fonte||'')+'"><strong>'+esc(global.EstatisticaIndicadores.formatar(k))+'</strong><span>'+esc(k.rotulo)+'</span></div>').join('')+
+        cards.map(k=>'<button type="button" class="cpcIndicadorAbrir" data-abrir-indicador="'+esc(k.rotulo)+'" data-unidade-indicador="'+esc(sigla)+'" title="'+esc((k.fonte||'')+' · Abrir registros relacionados, somente leitura')+'" aria-label="Conferir registros relacionados a '+esc(k.rotulo)+' de '+esc(nome(sigla))+'"'+(k.valor==null?' disabled':'')+'><strong>'+esc(global.EstatisticaIndicadores.formatar(k))+'</strong><span>'+esc(k.rotulo)+'</span></button>').join('')+
         '</div>'+desenharSerie(serieEspecializada(sigla,extra,inicio,fim))+
         (err?'<small class="cpcSpecialWarning">Dados especializados indisponíveis. Consulte a unidade/permissões.</small>':'')+
         renderizarTrilha(sigla,linhas,inicio,fim,err)+'</article>';
     }).join('');
+    destino.querySelectorAll('[data-abrir-indicador]').forEach(botao=>{
+      botao.addEventListener('click',()=>global.CpcDetalhamentoOrigem.abrir(botao.dataset.unidadeIndicador,botao.dataset.abrirIndicador));
+    });
     destino.querySelectorAll('[data-abrir-origem]').forEach(botao=>{
       botao.addEventListener('click',()=>global.CpcDetalhamentoOrigem.abrir(botao.dataset.abrirOrigem));
     });

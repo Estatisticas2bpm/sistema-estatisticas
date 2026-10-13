@@ -45,7 +45,7 @@ assert.ok(csv.startsWith('\uFEFF'));
 assert.ok(csv.includes('"\'=SOMA(1;1)"'),'CSV deve impedir execução de fórmula');
 assert.ok(csv.includes('"Animal; fauna"'),'CSV deve preservar ponto-e-vírgula');
 const documento=read('dashboard-cpc.html');
-assert.match(documento,/cpc-rastreabilidade\.js\?v=20261012-id2/);
+assert.match(documento,/cpc-rastreabilidade\.js\?v=20261013-indicadores1/);
 assert.match(documento,/CpcRastreabilidade\.localGiro\(x\.registrado_em\)/);
 const script=read('cpc-indicadores-dashboard.js');
 assert.match(script,/renderizarTrilha\(sigla,linhas,inicio,fim,err\)/);
