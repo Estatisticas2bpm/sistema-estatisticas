@@ -378,15 +378,19 @@ function filtrarTerritorioAbordagensCpc(registros){
 function categoriaMapa(valor){var t=String(valor||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase();if(t.includes("ROUBO"))return["ROUBO","#dc2626"];if(t.includes("FURTO"))return["FURTO","#f59e0b"];if(t.includes("MARIA DA PENHA")||t.includes("VIOLENCIA DOMESTICA"))return["VIOLÊNCIA DOMÉSTICA","#8b5cf6"];if(t.includes("TRANSITO")||t.includes("ACIDENTE"))return["TRÂNSITO","#2563eb"];if(t.includes("DROGA")||t.includes("ENTORPECENTE")||t.includes("TRAFICO"))return["DROGAS","#16a34a"];return["OUTRAS","#64748b"]}
 function atualizarDestaquePontos(){var calor=visualizacaoMapa.value==="calor",zoom=mapa.getZoom(),destaque=!calor||zoom>=14;camadaPontos.eachLayer(function(pt){if(typeof pt.setRadius==="function")pt.setRadius(destaque?8:3);if(typeof pt.setStyle==="function")pt.setStyle({color:destaque?"#fff":"transparent",weight:destaque?2:0,fillOpacity:destaque?.92:.16,opacity:destaque?1:.2});if(pt.getElement&&pt.getElement())pt.getElement().style.opacity=destaque?"1":".72";if(destaque&&pt.bringToFront)pt.bringToFront()})}
 function rotuloAbordagemGiro(v){return v==="A_PE"?"A PÉ":v==="MOTO"?"MOTO":v==="VEICULO"?"VEÍCULO":v}
-function renderizarMapa(){
-  camadaPontos.clearLayers();
+function renderizarMapa(ajustarVista=true){
+  camadaPontos.clearLayers();camadaAgrupadaCpc.clearLayers();
+  if(mapa.hasLayer(camadaAgrupadaCpc))mapa.removeLayer(camadaAgrupadaCpc);
   if(mapa.hasLayer(camadaCalor))mapa.removeLayer(camadaCalor);
+  marcadoresCpcAtuais=[];
   var limites=[],usarOcorrencias=!(modoGiro||modoCpc)||camadaGiroMapa.value!=="abordagens",usarAbordagens=(modoGiro||modoCpc)&&camadaGiroMapa.value!=="ocorrencias";
   var ocorrencias=usarOcorrencias?dadosMapaAtuais:[],abordagens=usarAbordagens?abordagensMapaAtuais:[];
-  if(visualizacaoMapa.value==="calor"){
-    var calorDados=ocorrencias.map(function(x){return[Number(x.latitude),Number(x.longitude),.72]}).concat(abordagens.map(function(x){return[Number(x.latitude),Number(x.longitude),.72]}));
-    camadaCalor.setLatLngs(calorDados);camadaCalor.addTo(mapa)
+  var mapaCalor=visualizacaoMapa.value==="calor";
+  if(mapaCalor){
+    var calorDados=ocorrencias.map(x=>[Number(x.latitude),Number(x.longitude),.72]).concat(abordagens.map(x=>[Number(x.latitude),Number(x.longitude),.72]));
+    camadaCalor.setLatLngs(calorDados);camadaCalor.addTo(mapa);
   }
+  if(!modoCpc){
   ocorrencias.forEach(function(x){
     var cat=categoriaMapa(x.ocorrencia||x.crime),unidade=modoCpc&&x.unidade_sigla?'<br><b>Unidade: '+escHome(siglaHome(x.unidade_sigla))+'</b>':"",bo=x.numero_bo?'<br>BO: '+escHome(x.numero_bo):"",pt=(modoCpc?L.marker([Number(x.latitude),Number(x.longitude)],{icon:iconeUnidadeCpc(x.unidade_sigla),title:"Ocorrência "+siglaHome(x.unidade_sigla)}):L.circleMarker([x.latitude,x.longitude],{radius:8,color:"#fff",weight:2,fillColor:cat[1],fillOpacity:.9})).bindPopup("<b>"+escHome(x.ocorrencia||x.crime||"Ocorrência")+"</b><br><span style='color:"+cat[1]+";font-weight:700'>"+cat[0]+"</span>"+unidade+bo+"<br>"+escHome(x.endereco||"Endereço não informado")+"<br>"+escHome(x.bairro||"")+"<br>"+fmt(new Date(x.data_ocorrencia+"T12:00:00")));
     pt.addTo(camadaPontos);limites.push([x.latitude,x.longitude])
@@ -406,16 +410,57 @@ function renderizarMapa(){
       .bindPopup("<b>ABORDAGEM GIRO</b><br><span style='color:#111;font-weight:800'>🏍️ "+escHome(rotuloAbordagemGiro(x.tipo_abordagem))+"</span><br>"+Number(x.quantidade_pessoas||0)+" pessoa(s) abordada(s)<br>"+escHome(local)+"<br>"+escHome(dataHora));
     pt.addTo(camadaPontos);limites.push([Number(x.latitude),Number(x.longitude)])
   });
-  if(limites.length)mapa.fitBounds(limites,{padding:[8,8],maxZoom:18});else mapa.setView([2.8235,-60.6758],12);
-  atualizarDestaquePontos();
-  var u=modoCpc?unidadePorId(unidadeMapa.value):null,escopo=u?siglaHome(u.sigla):modoCpc?"todas as unidades":"unidade ativa";
-  if(modoGiro||modoCpc){
-    mapStatus.textContent=ocorrencias.length+" ocorrência(s) · "+abordagens.length+" abordagem(ns) GIRO — "+(visualizacaoMapa.value==="calor"?"mapa de calor; use +/− para ajustar o zoom.":"pontos no mapa; use +/− para ajustar o zoom.");
+
   }else{
-    mapStatus.textContent=ocorrencias.length?ocorrencias.length+" ocorrência(s) georreferenciada(s) · "+escopo+" — "+(visualizacaoMapa.value==="calor"?"mapa de calor; use +/− para ajustar o zoom.":"pontos por natureza; use +/− para ajustar o zoom."):"Nenhuma ocorrência com coordenadas neste período e filtro.";
+    // A densidade e os marcadores jamais são exibidos simultaneamente no CPC.
+    limites=ocorrencias.concat(abordagens).map(x=>[Number(x.latitude),Number(x.longitude)]);
+    if(!mapaCalor){
+      ocorrencias.forEach(function(x){
+        const cat=categoriaMapa(x.ocorrencia||x.crime);
+        const conteudo='<b>'+escHome(x.ocorrencia||x.crime||"Ocorrência")+'</b>'+
+          '<br><span style="color:'+cat[1]+';font-weight:700">'+escHome(cat[0])+'</span>'+
+          (x.numero_bo?'<br><b>BO:</b> '+escHome(x.numero_bo):'')+
+          '<br>'+escHome(x.endereco||"Endereço não informado")+
+          (x.bairro?'<br>'+escHome(x.bairro):'')+
+          '<br>'+escHome(x.data_ocorrencia||'');
+        marcadoresCpcAtuais.push(MapaCpcProfissional.criarMarcador(L,x,conteudo,mapa.getZoom()));
+      });
+      abordagens.forEach(function(x){
+        const data=x.registrado_em?new Date(x.registrado_em).toLocaleString('pt-BR',{timeZone:'America/Boa_Vista',dateStyle:'short',timeStyle:'short'}):'';
+        const conteudo='<b>Abordagem GIRO</b><br>'+escHome(rotuloAbordagemGiro(x.tipo_abordagem))+
+          '<br>'+Number(x.quantidade_pessoas||0)+' pessoa(s) abordada(s)'+
+          '<br>'+escHome([x.endereco,x.bairro,x.municipio].filter(Boolean).join(' · ')||'Local GPS')+
+          '<br>'+escHome(data);
+        marcadoresCpcAtuais.push(MapaCpcProfissional.criarMarcador(L,Object.assign({},x,{unidade_sigla:'GIRO'}),conteudo,mapa.getZoom()));
+      });
+      if(visualizacaoMapa.value==="agrupado"){
+        camadaAgrupadaCpc.addLayers?camadaAgrupadaCpc.addLayers(marcadoresCpcAtuais):marcadoresCpcAtuais.forEach(m=>camadaAgrupadaCpc.addLayer(m));
+        camadaAgrupadaCpc.addTo(mapa);
+      }else marcadoresCpcAtuais.forEach(m=>m.addTo(camadaPontos));
+    }
+    atualizarLegendaMapa(ocorrencias,abordagens);
+  }
+  if(ajustarVista){
+    if(limites.length)mapa.fitBounds(limites,{padding:[18,18],maxZoom:modoCpc?13:18});
+    else mapa.setView([2.8235,-60.6758],12);
+  }
+  if(!modoCpc)atualizarDestaquePontos();
+  const u=modoCpc?unidadePorId(unidadeMapa.value):null;
+  const escopo=u?siglaHome(u.sigla):modoCpc?"todas as unidades":"unidade ativa";
+  if(modoCpc){
+    const visao=mapaCalor?"densidade sem pontos":visualizacaoMapa.value==="agrupado"?(agrupamentoCpc.disponivel?"agrupamento automático":"pontos (agrupamento indisponível)"):"pontos pequenos por unidade";
+    mapStatus.textContent=ocorrencias.length+" ocorrência(s) georreferenciada(s) · "+abordagens.length+" abordagem(ns) GIRO · "+visao+" · "+escopo+".";
+  }else if(modoGiro){
+    mapStatus.textContent=ocorrencias.length+" ocorrência(s) · "+abordagens.length+" abordagem(ns) GIRO — "+(mapaCalor?"mapa de calor":"pontos no mapa")+"; use +/− para ajustar o zoom.";
+  }else{
+    mapStatus.textContent=ocorrencias.length?ocorrencias.length+" ocorrência(s) georreferenciada(s) · "+escopo+" — "+(mapaCalor?"mapa de calor":"pontos por natureza")+"; use +/− para ajustar o zoom.":"Nenhuma ocorrência com coordenadas neste período e filtro.";
   }
 }
-mapa.on("zoomend",atualizarDestaquePontos);
+mapa.on("zoomend",function(){
+  if(!modoCpc){atualizarDestaquePontos();return}
+  if(visualizacaoMapa.value==="calor")return;
+  marcadoresCpcAtuais.forEach(pt=>pt.setIcon(MapaCpcProfissional.iconePonto(L,pt.options.unidadeSieCpc,mapa.getZoom())));
+});
 function intervaloMapa(){var h=new Date(),i,f=new Date(h);if(periodoMapa.value==="hoje")i=new Date(h);else if(periodoMapa.value==="7dias"){i=new Date(h);i.setDate(h.getDate()-6)}else if(periodoMapa.value==="semana"){i=new Date(h);var d=h.getDay(),dif=d===0?-6:1-d;i.setDate(h.getDate()+dif)}else if(periodoMapa.value==="personalizado"){return [mapaInicio.value,mapaFim.value]}else i=new Date(h.getFullYear(),h.getMonth(),1);return[iso(i),iso(f)]}
 async function carregarMapa(){
   var p=intervaloMapa();
