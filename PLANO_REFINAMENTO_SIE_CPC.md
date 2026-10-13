@@ -278,7 +278,8 @@ As alterações da **Fase 3 (cartões CPC), Fase 4 (mapa), Fase 5 (seção de in
 - [x] Preparar migração reversível para materializar a correspondência territorial por bairro, reutilizada em BOs e TCOs; sem modificar registros, contagens, RLS ou permissões.
 - [x] Atualizar interface para ocultar cartões/gráficos da consulta anterior em caso de timeout ou datas inválidas, exibir erro e confirmar período consultado; preservar proteção contra respostas assíncronas fora de ordem.
 - [x] Criar teste de regressão para consultas simultâneas, falha, intervalo inválido e cache territorial.
-- [ ] Confirmar a execução da migração em produção e validar a resposta da RPC autenticada para o ano completo.
+- [x] Aplicar migração no Supabase de produção e verificar por SQL a presença dos dois joins com cache, segurança invoker e permissões (authenticated=true, anon=false). **Consulta autenticada do período anual ainda pendente.**
+- [ ] Validar a resposta da RPC em sessão CPC autenticada para o ano completo (1º BPM 1.649; 2º BPM 1.883; total 3.598 no banco em 01/01–12/10/2026).
 - [ ] Homologar os filtros combinados (unidade, AISC/SISC/setor, turno, companhia, natureza, bairro), inclusive com registros especializados e RLS de perfis reais.
 
 ## Registro de progresso
