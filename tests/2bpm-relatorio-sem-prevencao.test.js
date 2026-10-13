@@ -5,7 +5,7 @@ const path=require('node:path');
 const root=path.resolve(__dirname,'..');
 const relatorio=fs.readFileSync(path.join(root,'relatorio.html'),'utf8');
 
-assert.ok(relatorio.includes("const semProgramasPrevencao=eh2BpmRel();"));
+assert.ok(relatorio.includes("const semProgramasPrevencao=eh2BpmRel()||(ehBopeRel()&&Boolean($('subunidadeBope').value));"));
 assert.ok(relatorio.includes("if(!semProgramasPrevencao)toc.push(['4. RESULTADOS DE PROGRAMAS DE PREVENÇÃO À CRIMINALIDADE','prevention'],['Visitas Comunitárias, Solidárias, Palestras e Anexos','prevention']);"));
 assert.ok(relatorio.includes("toc.push([(semProgramasPrevencao?'4. ':'5. ')+'MÍDIAS DE DADOS ESTATÍSTICOS DE PRODUTIVIDADE','final']"));
 assert.ok(relatorio.includes("let actionPage='',annexes='';"));
