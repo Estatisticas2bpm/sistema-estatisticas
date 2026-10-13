@@ -6,6 +6,7 @@
 (function(global){
   'use strict';
   let versao=0;
+  const evidenciasAtuais=new Map();
   const $=id=>document.getElementById(id);
   const numero=val=>Number(val||0).toLocaleString('pt-BR');
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -100,6 +101,36 @@
       serie.series.map((p,i)=>'<span style="height:'+Math.max(4,Math.round(p.valor/max*100))+'%" title="'+esc(p.data+' · '+numero(p.valor))+'"></span>').join('')+
       '</div><small>'+numero(total)+' no período · barras demonstram distribuição, não comparação entre unidades</small></div>';
   }
+  function exportarEvidencias(sigla,periodo){
+    const linhas=evidenciasAtuais.get(sigla)||[];
+    if(!linhas.length)return;
+    const csv=global.CpcRastreabilidade.csv(linhas);
+    const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+    const link=document.createElement('a');
+    link.href=url;
+    link.download='sie-cpc-origem-'+String(sigla||'unidade').toLowerCase()+'-'+periodo.replaceAll('-','')+'.csv';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1500);
+  }
+  function renderizarTrilha(sigla,linhas,periodo,parcial){
+    evidenciasAtuais.set(sigla,linhas);
+    const previa=linhas.slice(0,30);
+    const detalhe=previa.length?'<div class="cpcOrigemScroll"><table class="cpcOrigemTabela"><thead><tr>'+
+      '<th>Data</th><th>Fonte</th><th>Documento / ID</th><th>Registro</th><th>Medida</th></tr></thead><tbody>'+
+      previa.map(x=>'<tr><td>'+esc(x.data)+'</td><td>'+esc(x.fonte)+'</td>'+
+        '<td title="'+esc(x.referencia)+'">'+esc(x.referencia)+'</td><td>'+esc(x.descricao)+'</td>'+
+        '<td>'+esc(x.quantidade)+' '+esc(x.unidade)+'</td></tr>').join('')+
+      '</tbody></table></div>':'<p class="cpcOrigemNota">Nenhum registro de origem disponível para este recorte.</p>';
+    return '<details class="cpcOrigem"><summary>Conferir registros de origem ('+linhas.length+')</summary>'+
+      (parcial?'<p class="cpcSpecialWarning">Uma consulta especializada falhou. A trilha está incompleta; não interprete registros ausentes como zero.</p>':'')+
+      '<p class="cpcOrigemNota">Fonte, referência documental e data usada. O período e a unidade são aplicados; filtros criminais e territoriais do quadro principal não se aplicam a este detalhamento.</p>'+
+      detalhe+
+      (linhas.length>30?'<p class="cpcOrigemNota">Exibindo 30 de '+linhas.length+'. Use a exportação para conferir todos.</p>':'')+
+      (linhas.length?'<button class="cpcOrigemExportar" type="button" data-export-origem="'+esc(sigla)+'">Exportar origem (CSV)</button>':'')+
+      '</details>';
+  }
   function renderizarPainel(unidades,home,extras,unidadeSelecionada,inicio,fim){
     const destino=$('cpcIndicadoresEspecificos');
     if(!destino)return;
@@ -107,6 +138,7 @@
     const selecionada=unidades.find(u=>String(u.id)===String(unidadeSelecionada));
     const visiveis=selecionada?[selecionada]:unidades.filter(u=>String(u.parent_id)===String(cpc?.id));
     const occ=home?.ocorrencias||[],tcos=home?.tcos||[];
+    evidenciasAtuais.clear();
     if(!visiveis.length){destino.innerHTML='<p class="empty">Nenhuma unidade disponível para este filtro.</p>';return}
     destino.innerHTML=visiveis.map(u=>{
       const ids=idsDescendentes(u.id,unidades),filtrar=rows=>(rows||[]).filter(x=>ids.has(String(x.unidade_id)));
@@ -114,13 +146,27 @@
       let extra=extras[sigla]||{status:'carregando'};
       if(extra.status==='ok'&&Array.isArray(extra.data)){
         extra={status:'ok',data:filtrar(extra.data)};
+      }else if(extra.status==='ok'&&sigla==='CIPG'&&extra.data?.servicos){
+        const servicos=filtrar(extra.data.servicos);
+        const servicosIds=new Set(servicos.map(x=>String(x.id)));
+        extra={status:'ok',data:{servicos,eventos:(extra.data.eventos||[]).filter(x=>servicosIds.has(String(x.servico_id)))}};
       }
-      const cards=global.EstatisticaIndicadores.cards(sigla,filtrar(occ),filtrar(tcos),extra);
+      const linhasOcorrencias=filtrar(occ),linhasTcos=filtrar(tcos);
+      const cards=global.EstatisticaIndicadores.cards(sigla,linhasOcorrencias,linhasTcos,extra);
       const err=extra.status==='erro'&&['CIPA','CIPG','GIRO','CAVALARIA','CIPTUR'].includes(sigla);
+      const linhas=global.CpcRastreabilidade.registros(sigla,linhasOcorrencias,linhasTcos,extra.status==='ok'?extra.data:null);
       return '<article class="cpcSpecialCard"><h3>'+esc(nome(sigla))+'</h3><p>'+esc(u.nome||'')+'</p><div class="cpcSpecialValues">'+
         cards.map(k=>'<div title="'+esc(k.fonte||'')+'"><strong>'+esc(global.EstatisticaIndicadores.formatar(k))+'</strong><span>'+esc(k.rotulo)+'</span></div>').join('')+
-        '</div>'+desenharSerie(serieEspecializada(sigla,extra,inicio,fim))+(err?'<small class="cpcSpecialWarning">Dados especializados indisponíveis. Consulte a unidade/permissões.</small>':'')+'</article>';
+        '</div>'+desenharSerie(serieEspecializada(sigla,extra,inicio,fim))+
+        (err?'<small class="cpcSpecialWarning">Dados especializados indisponíveis. Consulte a unidade/permissões.</small>':'')+
+        renderizarTrilha(sigla,linhas,inicio,err)+'</article>';
     }).join('');
+    destino.querySelectorAll('[data-export-origem]').forEach(botao=>{
+      botao.addEventListener('click',e=>{
+        e.preventDefault();
+        exportarEvidencias(botao.dataset.exportOrigem,inicio);
+      });
+    });
   }
   async function carregar(db,args,unidades){
     const estaVersao=++versao;
@@ -145,5 +191,5 @@
     const texto=$('cpcIndicadoresNota');
     if(texto)texto.textContent='Período: '+args.data_inicio+' a '+args.data_fim+'. Valores de serviços, abordagens e fiscalizações utilizam suas próprias datas e fontes, sem serem somados às ocorrências. Filtros de natureza, turno, companhia e área das ocorrências não se aplicam automaticamente aos registros especializados.';
   }
-  global.CpcIndicadoresDashboard=Object.freeze({carregar,serieEspecializada});
+  global.CpcIndicadoresDashboard=Object.freeze({carregar,serieEspecializada,renderizarPainel});
 })(window);
