@@ -1,6 +1,6 @@
 # Plano de refinamento do SIE-CPC
 
-**Versão:** 2.0 — 12/10/2026  
+**Versão:** 2.1 — 12/10/2026  
 **Estado:** em execução; homologação pendente.  
 **Escopo:** CPC, 1º BPM, 2º BPM, BOPE, Cavalaria, CIPA, CIPG, CIPTUR e GIRO.
 
@@ -105,7 +105,7 @@ Transformar os painéis, mapas, consultas, auditorias e relatórios PDF em um co
 
 
 ### Fase 6 — Relatórios PDF
-- [ ] Elaborar template personalizado e homologado para todas as unidades (CIPA, GIRO, CIPTUR e 2º BPM já tinham versões específicas; CIPG e Cavalaria receberam novos modelos; conferir BOPE e 1º BPM).
+- [ ] Homologar modelo personalizado para todas as unidades. CIPA/GIRO/CIPTUR/2º BPM e CIPG/Cavalaria possuem versões próprias; BOPE e 1º BPM agora têm anexos específicos e filtros institucionais, mas ainda precisam de amostras e conferência visual de PDF.
 - [ ] Incluir metodologia (origem, período, data de referência e critérios), gráficos, tabelas e resultados sem duplicações.
 - [ ] Ajustar e homologar paginação A4, cabeçalho, numeração e legibilidade; validar impressão/download em navegadores e telefones (paginação de CONSULTAS de dados dos PDFs GIRO/CIPTUR corrigida, testes visuais pendentes).
 - [ ] Comparar amostras de diferentes períodos com os indicadores de tela.
@@ -113,6 +113,15 @@ Transformar os painéis, mapas, consultas, auditorias e relatórios PDF em um co
 - [x] Impedir truncamento silencioso de consultas dos relatórios **GIRO** e **CIPTUR** (paginação), corrigindo o termo da CIPTUR para **autos com indicação de remoção**, sem afirmar veículos distintos.
 - [ ] Testar visualmente a impressão A4 dos relatórios CIPG/Cavalaria e conferir seus valores com dados reais e responsáveis.
 **Aceite:** PDF fiel aos mesmos filtros/dados e às especificidades da unidade; conferência por amostragem registrada.
+
+- [x] Habilitar no relatório PDF **BOPE** o seletor de subunidades oficiais `FORCA_TATICA`, `CHOQUE`, `CANIL`, `GATE`, com filtros aplicados tanto aos BOs quanto aos TCOs vinculados; a procedência foi verificada nas consultas territoriais do banco.
+- [x] Incluir anexo técnico do BOPE com ocorrências por subunidade, campo para registros não classificados e total conciliável, sem alocar automaticamente ocorrências sem vínculo.
+- [x] Incluir anexo técnico do 1º BPM com distribuição por SISC e companhia, esclarecendo que são **duas leituras dos mesmos registros**, e não valores para somar.
+- [x] Retirar dos PDFs genéricos a referência fixa a **PR6 e VTR AME** nas ações preventivas, usando título compatível com a fonte real; retirar a indicação fixa **Tático Setorial — Área Oeste** dos relatórios não pertencentes ao 2º BPM.
+- [x] Impedir PDF genérico aparentemente completo quando falharem consultas comparativas, TCOs ou atividades preventivas; exibir erro explícito, sem substituir falha por zero silenciosamente.
+- [x] Cobrir escopo e semântica dos anexos em `tests/relatorio-bope-1bpm-especifico.test.cjs`, com testes de subunidade e filtros territoriais.
+- [ ] Homologar visualmente A4, numeração, recortes com mais de uma página e conciliar os resultados com documentos representativos das duas unidades.
+
 
 ### Fase 7 — Auditoria e integridade
 - [ ] Identificar e homologar duplicações, registros incompletos, problemas de classificação, datas inconsistentes e eventuais erros geográficos (levantamento inicial e indicador de suspeita implementados, triagem humana pendente).
@@ -207,6 +216,14 @@ As alterações da **Fase 3 (cartões CPC), Fase 4 (mapa), Fase 5 (seção de in
 - O CSV da trilha exporta todos os registros retornados pelas fontes autorizadas, mesmo quando a prévia de tela mostra no máximo 30 registros, com proteção contra fórmulas.
 - A série de abordagens GIRO no dashboard completo passa a usar o dia de Boa Vista (UTC−04), coerente com o cadastro e a visão mensal.
 - **Homologação pendente:** conferência visual, testes com sessões reais e confronto documental, inclusive quando houver filtros territoriais/criminais que não se aplicam à fonte especializada.
+
+## Fase 6 — compatibilidade de relatórios BOPE e 1º BPM (12/10/2026)
+
+- BOPE: filtro de Força Tática, Choque, Canil e GATE passou a ser exibido; contagens derivadas de `subunidade_operacional_sigla` que já integra as RPCs territoriais. São preservados registros sem classificação em grupo próprio.
+- 1º BPM: anexo de SISC/companhia não confunde divisão territorial com volume adicional de produção.
+- Relatórios genéricos: título de prevenção deixou de fazer referência fixa a programas de outra unidade; ocorrências de Tático Setorial ficam identificadas apenas onde o campo estiver configurado para o tipo de relatório.
+- Consulta incompleta ou erro de RPC não é mascarado como `0` no PDF. **Sem edição de dados originais no banco**.
+- Ainda pendem conferência por perfis reais, amostras históricas e inspeção visual do PDF em A4.
 
 ## Registro de progresso
 
