@@ -1,6 +1,6 @@
 # Plano de refinamento do SIE-CPC
 
-**Versão:** 1.9 — 12/10/2026  
+**Versão:** 2.0 — 12/10/2026  
 **Estado:** em execução; homologação pendente.  
 **Escopo:** CPC, 1º BPM, 2º BPM, BOPE, Cavalaria, CIPA, CIPG, CIPTUR e GIRO.
 
@@ -91,10 +91,18 @@ Transformar os painéis, mapas, consultas, auditorias e relatórios PDF em um co
 
 ### Fase 5 — Dashboard completo, consultas e séries temporais
 - [x] Acrescentar no `dashboard-cpc.html` bloco de quatro indicadores específicos por unidade e manter seletor de unidade existente, com mesmas regras de cálculo da visão rápida.
-- [ ] Preservar visão transversal e permitir aprofundamento (drill-down) com registro fonte.
+- [x] Preservar visão transversal e permitir aprofundamento (drill-down) dos cartões por unidade, com **documento/ID, fonte de origem, data de referência, medida e exportação CSV** dos registros autorizados; histórico mostrado em lista limitada a 30 linhas e CSV completo.
 - [ ] Integrar plenamente produtividade, fiscalizações, serviços, abordagens, distribuição espacial e séries temporais (mini-séries por unidade especializada implementadas; gráficos analíticos/exportações comparativas e homologação ainda pendentes).
-- [ ] Conferir período e critérios estatísticos em consultas, rankings e gráficos.
+- [ ] Conferir período e critérios estatísticos em todas as consultas, rankings e gráficos (série de abordagens GIRO do CPC corrigida para o dia UTC−04 e testes de trilha documental incluídos; demais filtros/rankings pendentes de homologação).
 **Aceite:** os valores e detalhes conciliam entre visão rápida, dashboard e bases; filtros não vazam dados.
+
+- [x] Disponibilizar `cpc-rastreabilidade.js`, unificando a trilha verificável dos registros especializados: **CIPA** (fauna, embargo, multas), **CIPG** (serviços e eventos), **Cavalaria** (serviços), **CIPTUR** (autos) e **GIRO** (abordagens), além de BO e TCO por unidade.
+- [x] Acrescentar os campos de identificação documental às consultas especializadas do CPC, preservando os critérios estatísticos, as fontes e as políticas RLS existentes.
+- [x] Evitar exibição de zero falso e preservar os BOs/TCOs da unidade quando uma consulta especializada falhar; marcar trilha parcial.
+- [x] Corrigir a série temporal de abordagens GIRO da Central Executiva para o **dia civil de Boa Vista (UTC−04)**, eliminando troca indevida de dia perto da meia-noite UTC.
+- [x] Proteger exportação CSV contra valores interpretáveis como fórmulas por programas de planilha; incluir regressões automatizadas das fontes e períodos em `tests/cpc-rastreabilidade.test.cjs`.
+- [ ] Conciliar em navegador e com amostras documentais as trilhas com PDFs e indicadores de cada unidade; a aplicação automática de filtros adicionais de natureza, turno, companhia e território nas fontes especializadas ainda depende de contrato específico.
+
 
 ### Fase 6 — Relatórios PDF
 - [ ] Elaborar template personalizado e homologado para todas as unidades (CIPA, GIRO, CIPTUR e 2º BPM já tinham versões específicas; CIPG e Cavalaria receberam novos modelos; conferir BOPE e 1º BPM).
@@ -191,6 +199,14 @@ As alterações da **Fase 3 (cartões CPC), Fase 4 (mapa), Fase 5 (seção de in
 - Mesmo padrão profissional para os mapas disponíveis das unidades: clusterização por natureza/atividade, símbolos discretos, calor isolado e brasão no popup.
 - Respeitadas as fontes de dados e limites espaciais do cadastro. Não gerar coordenadas a partir de texto livre ou do endereço de uma instituição sem georreferenciamento validado.
 - `mapa-tv.html` atualizado para o 2º BPM. Testes de código não equivalem à validação em produção por unidade.
+
+## Fase 5 — rastreabilidade dos indicadores executivos (12/10/2026)
+
+- No **Dashboard Geral do CPC**, cada cartão de unidade passa a disponibilizar a opção **Conferir registros de origem**: as fontes autorizadas são listadas com data, referência documental/ID, critério temporal e quantidade de medida, sem exibir dados pessoais sensíveis.
+- A fonte CIPA distingue separadamente `cipa_fauna`, `cipa_termos_embargo` e `cipa_autos_infracao` para não somar animais, hectares e reais como se fossem ocorrências. A CIPG distingue eventos de serviços; a CIPTUR identifica autos com remoção indicada sem afirmá-los como veículos efetivamente removidos.
+- O CSV da trilha exporta todos os registros retornados pelas fontes autorizadas, mesmo quando a prévia de tela mostra no máximo 30 registros, com proteção contra fórmulas.
+- A série de abordagens GIRO no dashboard completo passa a usar o dia de Boa Vista (UTC−04), coerente com o cadastro e a visão mensal.
+- **Homologação pendente:** conferência visual, testes com sessões reais e confronto documental, inclusive quando houver filtros territoriais/criminais que não se aplicam à fonte especializada.
 
 ## Registro de progresso
 
