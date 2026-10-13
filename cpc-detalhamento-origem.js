@@ -52,6 +52,8 @@ function abrir(sigla){
   $('cpcOrigemTitulo').textContent='Registros de origem — '+displayName(sigla);
   $('cpcOrigemPeriodo').textContent='Período: '+d.inicio+' a '+d.fim+
     ' · as fontes especializadas utilizam suas próprias datas de referência.';
+  const identificacaoCiptur=$('cpcOrigemIdentificacaoCiptur');
+  if(identificacaoCiptur)identificacaoCiptur.hidden=sigla!=='CIPTUR';
   const aviso=$('cpcOrigemAlerta');
   aviso.hidden=!d.parcial;
   aviso.textContent=d.parcial?'A consulta de uma fonte especializada falhou. A trilha está incompleta; não interprete dados ausentes como zero.':'';
