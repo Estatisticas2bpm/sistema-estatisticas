@@ -1,6 +1,6 @@
 # Plano de refinamento do SIE-CPC
 
-**Versão:** 2.2 — 12/10/2026  
+**Versão:** 2.3 — 12/10/2026  
 **Estado:** em execução; homologação pendente.  
 **Escopo:** CPC, 1º BPM, 2º BPM, BOPE, Cavalaria, CIPA, CIPG, CIPTUR e GIRO.
 
@@ -140,6 +140,9 @@ Transformar os painéis, mapas, consultas, auditorias e relatórios PDF em um co
 - [ ] Testar todas as unidades, perfis, browsers, celular, tablets e PDFs.
 - [ ] Testes de regressão e desempenho por intervalo curto e longo.
 - [ ] Registrar aprovação por unidade, versão publicada e instruções operacionais.
+- [x] Criar o documento `HOMOLOGACAO_SIE_CPC_2026.md` com matriz de aceite do CPC e oito unidades, roteiros de amostra, permissões, mapas, PDFs, compatibilidade e registro de divergências.
+- [x] Adicionar pré-homologação estática automatizada de recursos locais, scripts embutidos e oito contratos de unidade (`tests/prehomologacao-recursos.test.cjs`), integrada à suíte CI.
+- [ ] Confirmar execução e cobertura da suíte após integração; homologar perfis e dados reais antes de declarar a fase concluída.
 **Aceite:** checklist assinado/confirmado pelos responsáveis e versão estável em produção.
 
 ## Acompanhamento de execução
@@ -239,6 +242,12 @@ As alterações da **Fase 3 (cartões CPC), Fase 4 (mapa), Fase 5 (seção de in
 - Coordenadas geográficas fora de uma faixa ampla que cobre Roraima e datas futuras em UTC−04 são destacadas, sem inferir localização verdadeira ou invalidar registros sem conferência.
 - A interface mantém a ação manual de corrigir com o operador, mas a exportação apenas lê o escopo já autorizado.
 - A avaliação de regras em JavaScript é automatizável; a homologação documental e o teste com sessões reais são pendências institucionais.
+
+## Fase 8 — preparação de homologação (12/10/2026)
+
+- Criado [Roteiro de Homologação Institucional 2026](HOMOLOGACAO_SIE_CPC_2026.md), com critérios de aceite, evidências e responsáveis por unidade; **todas as aprovações permanecem pendentes**.
+- Adicionado teste estático das páginas centrais, scripts, brasões e links locais ao GitHub Actions; isso não substitui acesso autenticado ou inspeção de PDF A4.
+- Encerramento condicionado a testes reais do CPC e das unidades subordinadas, inclusive registros de CIPA, CIPG e Cavalaria quando disponíveis.
 
 ## Registro de progresso
 
