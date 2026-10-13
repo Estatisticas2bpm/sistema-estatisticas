@@ -7,7 +7,7 @@ for(const file of pages){
  const html=fs.readFileSync(path.join(root,file),'utf8');
  for(const m of html.matchAll(/<(?:script|img|link|a)\b[^>]*?(?:src|href)="([^"]+)"/gi)){
   const uri=m[1].trim().split('?')[0].split('#')[0];
-  if(!uri||/^(https?:|data:|javascript:|mailto:|tel:|#|\/\/)/i.test(uri)||uri.includes(String.fromCharCode(36,123))||uri.startsWith('/'))continue;
+  if(!uri||/^(https?:|data:|javascript:|mailto:|tel:|#|\/\/)/i.test(uri)||uri.includes(String.fromCharCode(36,123))||uri.startsWith("'+")||uri.includes("+'")||uri.startsWith('/'))continue;
   const target=path.resolve(root,uri);
   if(!target.startsWith(root+path.sep)||!fs.existsSync(target))errors.push(file+' → '+uri);
   else locals.add(uri);
