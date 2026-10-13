@@ -117,11 +117,11 @@ assert.match(home,/abordagensMapaAtuais/);
 assert.match(home,/consultarRegistrosHome\("giro_abordagens"/);
 assert.match(home,/Abordagem GIRO/);
 assert.match(home,/camadaGiroMapa\.onchange=function\(\)\{if\(modoCpc\)carregarMapa\(\);else renderizarMapa\(\)\}/);
-assert.match(home,/giro-moto-marker/);
-assert.match(home,/gruposAbordagens/);
-assert.match(home,/deslocamento=grupo\.length>1/);
-assert.match(home,/iconAnchor:\[13-deslocamento,13\]/);
-assert.match(home,/typeof pt\.setRadius==="function"/);
+assert.match(home,/MapaUnidadeProfissional\.criarMarcador/);
+assert.match(home,/marcadoresUnidadeAtuais/);
+assert.match(home,/MapaUnidadeProfissional\.agregador/);
+assert.match(home,/camadaAgrupadaUnidade/);
+assert.match(home,/if\(!mapaCalor\)/);
 assert.match(home,/🏍️/);
 
 console.log('GIRO: módulo de abordagens mobile, painéis, mapa e acesso validados.');
