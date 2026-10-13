@@ -34,3 +34,8 @@ button.sieCpcLegendaUnidade:hover,button.sieCpcLegendaUnidade:focus-visible{back
   #legendaMapaPrincipal>small,#legendaMapaCompleto>small{font-size:9px}
   .sieCpcPopup{min-width:160px}
 }
+
+/* Identidade temática dos mapas individuais das unidades. */
+.sieUnidadeTipo{display:flex;gap:7px;align-items:center;margin:4px 0 7px;color:var(--tipo-cor);font-size:12px}
+.sieUnidadeTipo i{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--tipo-cor);box-shadow:0 0 0 1px #dce5ee}
+.sieUnidadePin .sieCpcDot{box-shadow:0 1px 5px #1d30485e}
