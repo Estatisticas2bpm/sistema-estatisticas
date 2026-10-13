@@ -36,9 +36,44 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
 .cpcOrigemExportar{border:1px solid #b9d5e9;background:#e7f3fb;color:#12517e;font-size:11px;font-weight:800;border-radius:7px;padding:7px 10px;cursor:pointer;margin-top:8px}
 .cpcOrigemExportar:hover{background:#d8edfa}
 .cpcOrigemExportar:focus-visible,.cpcOrigem summary:focus-visible{outline:2px solid #186ca2;outline-offset:2px}
+
+/* Conferência documental ocupa a largura da Central Executiva; não cresce dentro dos KPIs. */
+.cpcOrigemAbrir{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;margin-top:12px;padding:10px 9px;border:1px solid #bdd7e9;border-radius:8px;background:#eff7fd;color:#115381;text-align:left;font-size:11px;font-weight:800;cursor:pointer}
+.cpcOrigemAbrir:hover{background:#dceffc}
+.cpcOrigemAbrir:focus-visible,.cpcOrigemPainel button:focus-visible,.cpcOrigemPainel select:focus-visible,.cpcOrigemPainel input:focus-visible{outline:2px solid #136ba5;outline-offset:2px}
+.cpcOrigemContagem{margin-left:auto;border-radius:20px;padding:3px 8px;color:#0f436b;background:#d5e9f8;white-space:nowrap}
+.cpcOrigemPainel{margin-top:16px;padding:20px;border:1px solid #9bc8e6;border-radius:14px;background:#f4f9fd;scroll-margin-top:20px}
+.cpcOrigemCabecalho{display:flex;align-items:start;justify-content:space-between;gap:14px}
+.cpcOrigemCabecalho h3{margin:3px 0 6px;color:#112e4a;font-size:19px}
+.cpcOrigemCabecalho p{margin:0;color:#4f6478;font-size:12px;line-height:1.55}
+.cpcOrigemEyebrow{font-size:10px;font-weight:900;letter-spacing:.8px;color:#306d9a}
+.cpcOrigemFechar,.cpcOrigemPainel button{background:#fff;border:1px solid #b7cedf;border-radius:8px;color:#164971;padding:9px 12px;font-size:12px;font-weight:800;cursor:pointer}
+.cpcOrigemFechar:hover,.cpcOrigemPainel button:hover:not(:disabled){background:#e7f3fc}
+.cpcOrigemPainel button:disabled{opacity:.5;cursor:not-allowed}
+.cpcOrigemPainel .cpcOrigemNota{margin:12px 0;color:#516579;font-size:12px;line-height:1.55}
+.cpcOrigemAlerta{color:#9a3412;background:#fff4e8;border:1px solid #f2ca92;border-radius:7px;padding:10px;font-size:12px}
+.cpcOrigemFerramentas{display:grid;grid-template-columns:minmax(180px,2fr) minmax(160px,1fr);gap:12px;margin:14px 0}
+.cpcOrigemFerramentas label{display:block;font-size:11px;font-weight:800;color:#314b63}
+.cpcOrigemFerramentas input,.cpcOrigemFerramentas select{display:block;box-sizing:border-box;width:100%;margin-top:5px;padding:10px;border-radius:8px;border:1px solid #b7cbdc;background:#fff;font-size:12px;color:#123755}
+.cpcOrigemQuantidade{margin:8px 0;font-size:12px;font-weight:700;color:#315873}
+.cpcOrigemTabelaWrap{max-width:100%;overflow-x:auto;border:1px solid #d1e0eb;border-radius:9px;background:#fff}
+.cpcOrigemDetalhesTabela{width:100%;min-width:690px;border-collapse:collapse;font-size:12px;line-height:1.45}
+.cpcOrigemDetalhesTabela th,.cpcOrigemDetalhesTabela td{padding:11px 12px;text-align:left;vertical-align:top;border-bottom:1px solid #e4edf4;overflow-wrap:anywhere}
+.cpcOrigemDetalhesTabela th{background:#e6f1f9;color:#123958;white-space:nowrap;font-weight:800}
+.cpcOrigemDetalhesTabela tr:nth-child(even) td{background:#f8fbfd}
+.cpcOrigemDetalhesTabela td:first-child{white-space:nowrap;font-variant-numeric:tabular-nums}
+.cpcOrigemReferencia{font-weight:700;max-width:190px}
+.cpcOrigemMedida{white-space:nowrap}
+.cpcOrigemSemResultados{text-align:center!important;color:#657b8c;padding:22px!important}
+.cpcOrigemRodape{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px}
+.cpcOrigemPaginacao{display:flex;align-items:center;gap:8px}
+.cpcOrigemPaginacao span{font-size:12px;color:#42576b;white-space:nowrap}
+.cpcOrigemPainel #cpcOrigemExportar{background:#185b86;color:#fff;border-color:#185b86}
+.cpcOrigemPainel #cpcOrigemExportar:hover:not(:disabled){background:#0a406b}
+@media(max-width:600px){.cpcOrigemPainel{padding:12px}.cpcOrigemCabecalho h3{font-size:16px}.cpcOrigemFerramentas{grid-template-columns:1fr}.cpcOrigemDetalhesTabela{min-width:680px}.cpcOrigemRodape{align-items:stretch}.cpcOrigemRodape>button{width:100%}}
 </style>
 <script src="auth-config.js"></script>
-<script src="auth-guard.js"></script><script src="estatistica-indicadores.js?v=20261012-1"></script><script src="cipa-home.js?v=20261012-rastreabilidade3"></script><script src="cipg-home.js?v=20261012-rastreabilidade3"></script><script src="cpc-rastreabilidade.js?v=20261012-v1"></script><script src="cpc-indicadores-dashboard.js?v=20261012-rastreabilidade3"></script>
+<script src="auth-guard.js"></script><script src="estatistica-indicadores.js?v=20261012-1"></script><script src="cipa-home.js?v=20261012-rastreabilidade3"></script><script src="cipg-home.js?v=20261012-rastreabilidade3"></script><script src="cpc-rastreabilidade.js?v=20261012-v1"></script><script src="cpc-detalhamento-origem.js?v=20261012-v1"></script><script src="cpc-indicadores-dashboard.js?v=20261012-origem-painel1"></script>
 </head>
 <body>
 <div id="loading" class="loading">Carregando central executiva do CPC...</div>
@@ -82,8 +117,42 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
   </section>
 
   <section class="panel" id="secIndicadoresCpc">
-  <div class="sectionTitle"><div><h2>Indicadores estatísticos por unidade</h2><p>Resultados especializados das subordinadas, com critérios próprios, séries temporais e conferência dos documentos que compõem os resultados.</p></div><span class="tag">SIE-CPC</span></div>
+  <div class="sectionTitle"><div><h2>Indicadores estatísticos por unidade</h2><p>Indicadores por unidade com critérios próprios; selecione “Conferir registros de origem” para abrir os documentos em uma tabela ampla, pesquisável e paginada.</p></div><span class="tag">SIE-CPC</span></div>
   <div id="cpcIndicadoresEspecificos" class="cpcSpecialGrid"><p class="empty">Consultando indicadores por unidade...</p></div>
+  <section id="cpcDetalhamentoOrigem" class="cpcOrigemPainel" aria-labelledby="cpcOrigemTitulo" hidden>
+    <div class="cpcOrigemCabecalho">
+      <div><span class="cpcOrigemEyebrow">CONFERÊNCIA DOCUMENTAL · CPC</span>
+        <h3 id="cpcOrigemTitulo">Registros de origem</h3>
+        <p id="cpcOrigemPeriodo"></p>
+      </div>
+      <button id="cpcOrigemFechar" class="cpcOrigemFechar" type="button">Fechar painel ✕</button>
+    </div>
+    <p class="cpcOrigemNota">Registros provenientes de consultas autorizadas. As datas de ocorrência, serviço, autuação, embargo e abordagem podem ter critérios diferentes. Não some medidas de naturezas distintas.</p>
+    <p id="cpcOrigemAlerta" class="cpcOrigemAlerta" role="alert" hidden></p>
+    <div class="cpcOrigemFerramentas">
+      <label for="cpcOrigemBusca">Pesquisar documento, BO, natureza ou data
+        <input id="cpcOrigemBusca" type="search" autocomplete="off" placeholder="Ex.: 58155, trânsito, 2026-10-04">
+      </label>
+      <label for="cpcOrigemFonte">Fonte dos registros
+        <select id="cpcOrigemFonte"><option value="">Todas as fontes</option></select>
+      </label>
+    </div>
+    <p id="cpcOrigemQuantidade" class="cpcOrigemQuantidade" aria-live="polite"></p>
+    <div class="cpcOrigemTabelaWrap" role="region" aria-label="Tabela de registros de origem" tabindex="0">
+      <table class="cpcOrigemDetalhesTabela">
+        <thead><tr><th>Data de referência</th><th>Fonte</th><th>Documento / ID</th><th>Natureza / descrição</th><th>Medida</th><th>Critério de data</th></tr></thead>
+        <tbody id="cpcOrigemCorpo"></tbody>
+      </table>
+    </div>
+    <div class="cpcOrigemRodape">
+      <button id="cpcOrigemExportar" type="button">Exportar resultados filtrados (CSV)</button>
+      <div class="cpcOrigemPaginacao">
+        <button id="cpcOrigemAnterior" type="button">← Anterior</button>
+        <span id="cpcOrigemPagina">Página 1 de 1</span>
+        <button id="cpcOrigemProximo" type="button">Próxima →</button>
+      </div>
+    </div>
+  </section>
   <p id="cpcIndicadoresNota" class="cpcSpecialNote">Dados especializados utilizam a unidade e período selecionados.</p>
 </section>
 <section class="panel executive"><h2>Leitura executiva do período</h2><p id="resumoExecutivo">Analisando os indicadores selecionados...</p></section><section class="panel" id="secAbordagensGiroCpc">
