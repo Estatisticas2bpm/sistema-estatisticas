@@ -65,39 +65,3 @@ function csv(linhas){
 }
 global.CpcRastreabilidade=Object.freeze({registros,csv,titulos,localGiro});
 })(window);
-,'data_autuacao',['Multas aplicadas (R$)']);
-  }
-  if(s==='CIPG'){
-    const servicos=origem.servicos||[],porId=new Map(servicos.map(x=>[String(x.id),x]));
-    for(const servico of servicos)registrar(linhas,'CIPG · serviço',servico.data_servico,servico.documento_referencia||servico.numero_sei||servico.id,
-      [servico.posto_codigo||servico.instituicao,servico.situacao].filter(Boolean).join(' · ')||'Serviço de guarda',
-      num(servico.efetivo_ordinario)+num(servico.efetivo_svi),'empregos de efetivo','data_servico');
-    for(const evento of origem.eventos||[]){
-      const servico=porId.get(String(evento.servico_id));
-      registrar(linhas,'CIPG · evento',evento.data_evento||servico?.data_servico,servico?.documento_referencia||evento.id,
-        evento.tipo_evento||'Evento de serviço',1,'evento','serviço vinculado');
-    }
-  }
-  if(s==='CAVALARIA')for(const x of lista)registrar(linhas,'Cavalaria · serviço',x.data_servico,x.numero_documento||x.id,
-    [x.tipo_policiamento,x.contexto_atividade,x.localidade||x.bairro].filter(Boolean).join(' · '),x.abordagens_pessoas,'pessoas abordadas','data_servico');
-  // Código de infração = tipificação, NÃO número exclusivo do auto.
-  // A tabela de autos ainda não possui número do auto: usar chave técnica (UUID)
-  // para identificar cada linha sem confundir códigos repetidos com duplicidades.
-  if(s==='CIPTUR')for(const x of lista)registrar(linhas,'CIPTUR · auto de infração',x.data_infracao,x.id,
-    'Código da infração: '+(x.codigo_infracao||'não informado')+(x.houve_remocao?' · auto com remoção indicada':''),1,'auto','data_infracao');
-  if(s==='GIRO')for(const x of lista)registrar(linhas,'GIRO · abordagem',localGiro(x.registrado_em),x.id,
-    [x.tipo_abordagem,x.bairro].filter(Boolean).join(' · ')||'Abordagem',x.quantidade_pessoas,'pessoas abordadas','registrado_em · UTC−04');
-  return linhas.sort((a,b)=>b.data.localeCompare(a.data)||a.fonte.localeCompare(b.fonte)||a.referencia.localeCompare(b.referencia));
-}
-const titulos=['Fonte de origem','Data de referência','Documento/ID','Registro','Quantidade','Unidade de medida','Critério temporal'];
-function csv(linhas){
-  const seguro=v=>{
-    let t=txt(v).replace(/[\r\n]+/g,' ');
-    if(/^[\s]*[=+@\-]/.test(t))t="'"+t;
-    return '"'+t.replace(/"/g,'""')+'"';
-  };
-  const conteudo=[titulos,...(linhas||[]).map(x=>[x.fonte,x.data,x.referencia,x.descricao,x.quantidade,x.unidade,x.criterio])];
-  return '\uFEFF'+conteudo.map(l=>l.map(seguro).join(';')).join('\r\n');
-}
-global.CpcRastreabilidade=Object.freeze({registros,csv,titulos,localGiro});
-})(window);
