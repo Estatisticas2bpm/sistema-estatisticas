@@ -142,10 +142,30 @@
       botao.addEventListener('click',()=>global.CpcDetalhamentoOrigem.abrir(botao.dataset.abrirOrigem));
     });
   }
+  function falhaEscopo(destino,nota,args,erro){
+    const mensagem=String(erro?.message||erro||'');
+    const codigo=String(erro?.code||'').slice(0,24);
+    const timeout=/timeout|time.?out|57014/i.test(mensagem+' '+codigo);
+    const naoAutorizado=/acesso restrito|sem autoriza|não autorizado/i.test(mensagem);
+    const descricao=timeout
+      ?'A consulta do escopo estatístico do CPC excedeu o tempo limite.'
+      :naoAutorizado
+        ?'O perfil atual não possui autorização para consultar os indicadores por unidade.'
+        :'Não foi possível consultar o escopo estatístico do CPC.';
+    destino.innerHTML='<p class="empty" role="alert">'+esc(descricao)+
+      (codigo?' (código '+esc(codigo)+')':'')+
+      ' Os indicadores por unidade não foram carregados para o período solicitado.</p>';
+    if(nota)nota.textContent='Período solicitado: '+args.data_inicio+' a '+args.data_fim+
+      '. Consulta especializada não concluída. Nenhum resultado de outro período foi reutilizado.';
+    console.error('Falha no escopo estatístico CPC:',erro);
+  }
   async function carregar(db,args,unidades){
     const estaVersao=++versao;
     const destino=$('cpcIndicadoresEspecificos');
     if(!destino)return;
+    const nota=$('cpcIndicadoresNota');
+    if(nota)nota.textContent='Período solicitado: '+args.data_inicio+' a '+args.data_fim+
+      '. Consultando indicadores específicos por unidade...';
     global.CpcDetalhamentoOrigem.reiniciar();
     destino.innerHTML='<p class="empty">Consultando indicadores por unidade...</p>';
     const especializadas=['CIPA','CIPG','GIRO','CAVALARIA','CIPTUR'];
@@ -154,17 +174,22 @@
       try{return {tipo,status:'ok',data:await consultar(db,tipo,args.data_inicio,args.data_fim)}}
       catch(e){console.error('Indicador executivo CPC '+tipo,e);return {tipo,status:'erro'}}
     });
-    const [home, ...resultados]=await Promise.all([homePromise,...pedidos]);
+    let home,resultados;
+    try{
+      [home, ...resultados]=await Promise.all([homePromise,...pedidos]);
+    }catch(e){
+      if(estaVersao===versao)falhaEscopo(destino,nota,args,e);
+      return;
+    }
     if(estaVersao!==versao)return;
-    if(home.error||!home.data?.autorizado){
-      destino.innerHTML='<p class="empty">Não foi possível consultar o escopo estatístico do CPC.</p>';
+    if(home?.error||!home?.data?.autorizado){
+      falhaEscopo(destino,nota,args,home?.error||home?.data?.erro||'Resposta sem autorização.');
       return;
     }
     const extras={};
     resultados.forEach(x=>{extras[x.tipo]=x});
     renderizarPainel(unidades,home.data,extras,args.p_unidade_id,args.data_inicio,args.data_fim);
-    const texto=$('cpcIndicadoresNota');
-    if(texto)texto.textContent='Período: '+args.data_inicio+' a '+args.data_fim+'. Valores de serviços, abordagens e fiscalizações utilizam suas próprias datas e fontes, sem serem somados às ocorrências. Filtros de natureza, turno, companhia e área das ocorrências não se aplicam automaticamente aos registros especializados.';
+    if(nota)nota.textContent='Período: '+args.data_inicio+' a '+args.data_fim+'. Valores de serviços, abordagens e fiscalizações utilizam suas próprias datas e fontes, sem serem somados às ocorrências. Filtros de natureza, turno, companhia e área das ocorrências não se aplicam automaticamente aos registros especializados.';
   }
   global.CpcIndicadoresDashboard=Object.freeze({carregar,serieEspecializada,renderizarPainel});
 })(window);
