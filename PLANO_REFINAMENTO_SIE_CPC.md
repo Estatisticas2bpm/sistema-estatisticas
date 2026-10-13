@@ -1,6 +1,6 @@
 # Plano de refinamento do SIE-CPC
 
-**Versão:** 2.5 — 12/10/2026  
+**Versão:** 2.6 — 12/10/2026  
 **Estado:** em execução; homologação pendente.  
 **Escopo:** CPC, 1º BPM, 2º BPM, BOPE, Cavalaria, CIPA, CIPG, CIPTUR e GIRO.
 
@@ -93,7 +93,7 @@ Transformar os painéis, mapas, consultas, auditorias e relatórios PDF em um co
 - [x] Acrescentar no `dashboard-cpc.html` bloco de quatro indicadores específicos por unidade e manter seletor de unidade existente, com mesmas regras de cálculo da visão rápida.
 - [x] Preservar visão transversal e permitir aprofundamento (drill-down) dos cartões por unidade, com **documento/ID, fonte de origem, data de referência, medida e exportação CSV** dos registros autorizados; histórico mostrado em lista limitada a 30 linhas e CSV completo.
 - [ ] Integrar plenamente produtividade, fiscalizações, serviços, abordagens, distribuição espacial e séries temporais (mini-séries por unidade especializada implementadas; gráficos analíticos/exportações comparativas e homologação ainda pendentes).
-- [ ] Conferir período e critérios estatísticos em todas as consultas, rankings e gráficos (série de abordagens GIRO do CPC corrigida para o dia UTC−04 e testes de trilha documental incluídos; demais filtros/rankings pendentes de homologação).
+- [ ] Conferir período e critérios estatísticos em todas as consultas, rankings e gráficos (série de abordagens GIRO do CPC corrigida para o dia UTC−04 e testes de trilha documental incluídos; **filtro anual CPC: timeout identificado, otimização SQL e tratamento visual implementados; homologação autenticada pendente**).
 **Aceite:** os valores e detalhes conciliam entre visão rápida, dashboard e bases; filtros não vazam dados.
 
 - [x] Disponibilizar `cpc-rastreabilidade.js`, unificando a trilha verificável dos registros especializados: **CIPA** (fauna, embargo, multas), **CIPG** (serviços e eventos), **Cavalaria** (serviços), **CIPTUR** (autos) e **GIRO** (abordagens), além de BO e TCO por unidade.
@@ -268,6 +268,18 @@ As alterações da **Fase 3 (cartões CPC), Fase 4 (mapa), Fase 5 (seção de in
 - [x] Corrigir interpretação do campo `codigo_infracao`: **não é número identificador de auto**; a consulta da fonte não dispõe de número individual de AIT. A coluna de identificação passa a usar o UUID próprio de cada cadastro, enquanto o código de infração permanece na descrição, preservando os 28 autos e as 53 ocorrências e sem alteração do banco.
 - [x] Adicionar explicação contextual ao conferir a CIPTUR e testes para dois autos distintos com o mesmo código, diferenciando corretamente repetição de enquadramento e repetição do mesmo documento.
 - [ ] Verificar com o operador da CIPTUR se existe um número de AIT/PDF que precise ser cadastrado de forma específica no futuro, separado de `codigo_infracao`; não atribuir o UUID como se fosse o número oficial do AIT.
+
+## Fase 5 — correção do filtro anual e prevenção de dados antigos (12/10/2026)
+
+- [x] Confirmar que o banco contém **1.649 ocorrências do 1º BPM e 1.883 do 2º BPM** entre 01/01 e 12/10/2026; a Central Executiva não pode permanecer com 1 e 33 (somente outubro).
+- [x] Diagnosticar captura de erro: `canceling statement due to statement timeout` ao filtrar o ano. Os 88 registros vistos na tela eram os últimos resultados carregados, **não o total anual**.
+- [x] Conferir que a RPC `obter_painel_cpc_territorial` recebe datas, unidade, AISC, SISC, setor, natureza, bairro, companhia e turno e que o SQL aplica esses filtros. Não equivale a testes de todas as combinações autenticadas.
+- [x] Testar consulta territorial original e otimizada por bairro em leitura: **3.598 ocorrências no ano, zero divergências de informações territoriais**; plano de execução comparativo: aproximadamente **441 ms contra 19 ms** para agregação territorial isolada.
+- [x] Preparar migração reversível para materializar a correspondência territorial por bairro, reutilizada em BOs e TCOs; sem modificar registros, contagens, RLS ou permissões.
+- [x] Atualizar interface para ocultar cartões/gráficos da consulta anterior em caso de timeout ou datas inválidas, exibir erro e confirmar período consultado; preservar proteção contra respostas assíncronas fora de ordem.
+- [x] Criar teste de regressão para consultas simultâneas, falha, intervalo inválido e cache territorial.
+- [ ] Confirmar a execução da migração em produção e validar a resposta da RPC autenticada para o ano completo.
+- [ ] Homologar os filtros combinados (unidade, AISC/SISC/setor, turno, companhia, natureza, bairro), inclusive com registros especializados e RLS de perfis reais.
 
 ## Registro de progresso
 
