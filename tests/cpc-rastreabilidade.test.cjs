@@ -30,7 +30,7 @@ const autosCiptur=R.registros('CIPTUR',[],[],[
   {id:'auto-uuid-02',data_infracao:'2026-10-05',codigo_infracao:'51.691',houve_remocao:false}
 ]);
 assert.equal(autosCiptur.length,2,'dois autos permanecem dois registros distintos');
-assert.deepEqual(autosCiptur.map(x=>x.referencia).sort(),['auto-uuid-01','auto-uuid-02']);
+assert.deepEqual(Array.from(autosCiptur,x=>x.referencia).sort(),['auto-uuid-01','auto-uuid-02']);
 assert.ok(autosCiptur.every(x=>x.descricao.includes('51.691')),'código de infração preservado como classificação');
 assert.ok(autosCiptur.some(x=>x.descricao.includes('remoção indicada')));
 assert.ok(R.csv(autosCiptur).includes('auto-uuid-02'),'CSV exporta ID único em vez de código repetido');
