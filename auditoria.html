@@ -6,14 +6,14 @@
 <title>SIE-CPC — Auditoria de Dados</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-*{box-sizing:border-box}:root{--navy:#0b2239;--blue:#1f5a8a;--green:#39705a;--amber:#b7791f;--red:#a63d40;--steel:#496b86;--bg:#eef2f6;--line:#d7e0e8;--muted:#667085}body{margin:0;font:14px Inter,Segoe UI,Arial,sans-serif;background:var(--bg);color:#172033}header{background:linear-gradient(120deg,#071a2b,#0b2239 58%,#173b57);color:#fff;padding:24px}.head,main{width:min(1380px,96%);margin:auto}.head{display:flex;justify-content:space-between;align-items:center;gap:15px}.head h1{margin:0;font-size:26px}.head p{margin:5px 0 0;color:#dbeafe}.head a{color:#fff;text-decoration:none;border:1px solid #ffffff66;border-radius:9px;padding:10px 14px;font-weight:700}main{padding:20px 0 50px}.panel{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 5px 22px #18354d0d;margin-bottom:18px;padding:18px}.filters{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end}.filters label{font-size:11px;font-weight:800;color:#52677a;text-transform:uppercase}.filters input,.filters select{display:block;width:100%;margin-top:5px;border:1px solid #cdd8e5;border-radius:8px;padding:10px;background:#fff}.btn{border:0;border-radius:9px;padding:11px 15px;background:var(--blue);color:#fff;font-weight:800;cursor:pointer}.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px}.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;position:relative;overflow:hidden}.card:before{content:"";position:absolute;inset:0 auto 0 0;width:5px;background:var(--blue)}.card.red:before{background:var(--red)}.card.amber:before{background:var(--amber)}.card.green:before{background:var(--green)}.card.steel:before{background:var(--steel)}.card small{color:var(--muted);font-weight:800}.card strong{display:block;font-size:28px;color:var(--navy);margin-top:7px}.summary{display:grid;grid-template-columns:1.2fr .8fr;gap:18px}.quality{display:flex;align-items:center;gap:18px}.score{width:92px;height:92px;border-radius:50%;display:grid;place-items:center;background:#f3f7fa;border:9px solid #dbe5ed;font-size:24px;font-weight:900;color:var(--navy)}.quality h2{margin:0 0 6px}.quality p{margin:0;color:var(--muted);line-height:1.55}.issues{display:flex;gap:7px;flex-wrap:wrap}.chip{border:1px solid #d6e0e8;background:#f8fafc;border-radius:999px;padding:7px 10px;font-size:12px;font-weight:800;color:#40566c}.tablewrap{overflow:auto;max-height:660px}table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid #e7edf3;text-align:left;vertical-align:top}th{background:#f4f7fa;color:#445b70;position:sticky;top:0;z-index:1}.sev{display:inline-block;border-radius:999px;padding:5px 8px;font-size:11px;font-weight:900}.sev.alta{background:#fff0f0;color:var(--red);border:1px solid #efc5c5}.sev.media{background:#fff7e8;color:#956117;border:1px solid #ead5a6}.sev.baixa{background:#eef5fa;color:var(--steel);border:1px solid #cfdae3}.edit{display:inline-block;border:1px solid var(--blue);background:#fff;color:var(--blue);border-radius:8px;padding:7px 10px;font-weight:800;cursor:pointer;white-space:nowrap}.edit:hover{background:var(--blue);color:#fff}.edit:disabled{opacity:.55;cursor:wait}.pend-list{display:grid;gap:5px;min-width:280px}.pend-item{line-height:1.35}.pend-item b{color:#334155}.pend-item span{color:#667085}.empty{text-align:center;color:var(--muted);padding:28px}.status{color:var(--muted);font-size:12px;margin:10px 0 0}.status.ok{color:#276749;font-weight:700}.loading{position:fixed;inset:0;background:#ffffffdd;display:grid;place-items:center;z-index:10;font-size:18px;font-weight:800;color:var(--navy)}@media(max-width:900px){.cards{grid-template-columns:1fr 1fr}.summary{grid-template-columns:1fr}.filters{grid-template-columns:1fr 1fr}}@media(max-width:560px){.cards,.filters{grid-template-columns:1fr}.head{align-items:flex-start;flex-direction:column}.quality{align-items:flex-start;flex-direction:column}}
+*{box-sizing:border-box}:root{--navy:#0b2239;--blue:#1f5a8a;--green:#39705a;--amber:#b7791f;--red:#a63d40;--steel:#496b86;--bg:#eef2f6;--line:#d7e0e8;--muted:#667085}body{margin:0;font:14px Inter,Segoe UI,Arial,sans-serif;background:var(--bg);color:#172033}header{background:linear-gradient(120deg,#071a2b,#0b2239 58%,#173b57);color:#fff;padding:24px}.head,main{width:min(1380px,96%);margin:auto}.head{display:flex;justify-content:space-between;align-items:center;gap:15px}.head h1{margin:0;font-size:26px}.head p{margin:5px 0 0;color:#dbeafe}.head a{color:#fff;text-decoration:none;border:1px solid #ffffff66;border-radius:9px;padding:10px 14px;font-weight:700}main{padding:20px 0 50px}.panel{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 5px 22px #18354d0d;margin-bottom:18px;padding:18px}.filters{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end}.filters label{font-size:11px;font-weight:800;color:#52677a;text-transform:uppercase}.filters input,.filters select{display:block;width:100%;margin-top:5px;border:1px solid #cdd8e5;border-radius:8px;padding:10px;background:#fff}.btn{border:0;border-radius:9px;padding:11px 15px;background:var(--blue);color:#fff;font-weight:800;cursor:pointer}.btn:disabled{opacity:.55;cursor:not-allowed}#exportarAuditoria{background:#14775f}.filters{grid-template-columns:repeat(3,minmax(145px,1fr)) auto auto}.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px}.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;position:relative;overflow:hidden}.card:before{content:"";position:absolute;inset:0 auto 0 0;width:5px;background:var(--blue)}.card.red:before{background:var(--red)}.card.amber:before{background:var(--amber)}.card.green:before{background:var(--green)}.card.steel:before{background:var(--steel)}.card small{color:var(--muted);font-weight:800}.card strong{display:block;font-size:28px;color:var(--navy);margin-top:7px}.summary{display:grid;grid-template-columns:1.2fr .8fr;gap:18px}.quality{display:flex;align-items:center;gap:18px}.score{width:92px;height:92px;border-radius:50%;display:grid;place-items:center;background:#f3f7fa;border:9px solid #dbe5ed;font-size:24px;font-weight:900;color:var(--navy)}.quality h2{margin:0 0 6px}.quality p{margin:0;color:var(--muted);line-height:1.55}.issues{display:flex;gap:7px;flex-wrap:wrap}.chip{border:1px solid #d6e0e8;background:#f8fafc;border-radius:999px;padding:7px 10px;font-size:12px;font-weight:800;color:#40566c}.tablewrap{overflow:auto;max-height:660px}table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid #e7edf3;text-align:left;vertical-align:top}th{background:#f4f7fa;color:#445b70;position:sticky;top:0;z-index:1}.sev{display:inline-block;border-radius:999px;padding:5px 8px;font-size:11px;font-weight:900}.sev.alta{background:#fff0f0;color:var(--red);border:1px solid #efc5c5}.sev.media{background:#fff7e8;color:#956117;border:1px solid #ead5a6}.sev.baixa{background:#eef5fa;color:var(--steel);border:1px solid #cfdae3}.edit{display:inline-block;border:1px solid var(--blue);background:#fff;color:var(--blue);border-radius:8px;padding:7px 10px;font-weight:800;cursor:pointer;white-space:nowrap}.edit:hover{background:var(--blue);color:#fff}.edit:disabled{opacity:.55;cursor:wait}.pend-list{display:grid;gap:5px;min-width:280px}.pend-item{line-height:1.35}.pend-item b{color:#334155}.pend-item span{color:#667085}.empty{text-align:center;color:var(--muted);padding:28px}.status{color:var(--muted);font-size:12px;margin:10px 0 0}.status.ok{color:#276749;font-weight:700}.loading{position:fixed;inset:0;background:#ffffffdd;display:grid;place-items:center;z-index:10;font-size:18px;font-weight:800;color:var(--navy)}@media(max-width:900px){.cards{grid-template-columns:1fr 1fr}.summary{grid-template-columns:1fr}.filters{grid-template-columns:1fr 1fr}}@media(max-width:560px){.cards,.filters{grid-template-columns:1fr}.head{align-items:flex-start;flex-direction:column}.quality{align-items:flex-start;flex-direction:column}}
 </style>
-<script src="auth-config.js"></script><script src="auth-guard.js"></script></head>
+<script src="auditoria-exportacao.js?v=20261012-v1"></script><script src="auth-config.js"></script><script src="auth-guard.js"></script></head>
 <body>
 <div class="loading" id="loading">Auditando a base de dados...</div>
 <header><div class="head"><div><h1>Auditoria de Dados</h1><p>Controle de qualidade dos registros estatísticos da unidade ativa</p></div><a href="index.html">← Página inicial</a></div></header>
 <main>
-<section class="panel"><div class="filters"><label>Data inicial<input id="ini" type="date"></label><label>Data final<input id="fim" type="date"></label><label>Exibir<select id="filtro"><option value="">Todas as pendências</option><option value="alta">Somente críticas</option><option value="media">Somente importantes</option><option value="baixa">Somente avisos</option></select></label><button id="atualizar" class="btn">Atualizar auditoria</button></div><div id="status" class="status"></div></section>
+<section class="panel"><div class="filters"><label>Data inicial<input id="ini" type="date"></label><label>Data final<input id="fim" type="date"></label><label>Exibir<select id="filtro"><option value="">Todas as pendências</option><option value="alta">Somente críticas</option><option value="media">Somente importantes</option><option value="baixa">Somente avisos</option></select></label><button id="atualizar" class="btn">Atualizar auditoria</button><button id="exportarAuditoria" class="btn" type="button" disabled>Exportar pendências (CSV)</button></div><div id="status" class="status"></div></section>
 <section class="cards"><div class="card steel"><small>Registros analisados</small><strong id="kRegistros">0</strong></div><div class="card red"><small>Ocorrências com pendência</small><strong id="kPendentes">0</strong></div><div class="card red"><small>Pendências críticas</small><strong id="kAltas">0</strong></div><div class="card amber"><small>Pendências importantes</small><strong id="kMedias">0</strong></div><div class="card green"><small>Registros sem alerta</small><strong id="kOk">0</strong></div></section>
 <section class="panel summary"><div class="quality"><div class="score" id="score">—</div><div><h2>Qualidade da base</h2><p id="textoQualidade">Calculando a consistência dos registros...</p></div></div><div><h2 style="margin:0 0 10px">Principais pendências</h2><div class="issues" id="chips"></div></div></section>
 <section class="panel"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap"><div><h2 style="margin:0 0 5px">Registros que precisam de revisão</h2><p style="margin:0 0 16px;color:var(--muted)">Cada ocorrência aparece uma única vez. As pendências restantes ficam agrupadas na mesma linha.</p></div><span id="contadorTabela" class="chip">0 ocorrência(s)</span></div><div class="tablewrap"><table><thead><tr><th>Prioridade</th><th>Data</th><th>BO</th><th>Ocorrência</th><th>Bairro</th><th>Pendências restantes</th><th>Ação</th></tr></thead><tbody id="tabela"></tbody></table></div></section>
@@ -23,7 +23,7 @@ const db=supabase.createClient('https://jppmhhukujigxupgskdk.supabase.co','sb_pu
 const $=id=>document.getElementById(id);let dados=[],pendencias=[],fonteAtual='';
 function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function fmt(v){if(!v)return '—';let p=String(v).split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:v}
-function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]))}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function chave(v){return String(v??'').trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase()}
 function vazio(v){let k=chave(v);return !k||['NI','N/I','N','NA','NAO INFORMADO','NÃO INFORMADO','NULL','UNDEFINED'].includes(k)}
 function numero(v){let n=Number(v);return Number.isFinite(n)?n:0}
@@ -32,6 +32,17 @@ function geoParcial(o){return !vazio(o.latitude)!==!vazio(o.longitude)}
 function chaveRegistro(o){return String(o.id||[o.data_ocorrencia||'',o.numero_bo||'',o.ocorrencia||'',o.crime||''].join('|'))}
 function add(o,nivel,tipo,texto){pendencias.push({o,nivel,tipo,texto})}
 function auditarRegistro(o){
+ if(geoPreenchido(o)){
+  const lat=Number(o.latitude),lon=Number(o.longitude);
+  if(!Number.isFinite(lat)||!Number.isFinite(lon)||lat< -2||lat>6||lon< -66||lon> -58){
+    add(o,'media','Coordenadas fora da área de referência',
+      'Coordenadas informadas fora de Roraima (latitude −2 a 6, longitude −66 a −58) ou não numéricas. Conferir no documento.');
+  }
+ }
+ const dia=String(o.data_ocorrencia||'').slice(0,10);
+ const hojeRr=new Date(Date.now()-4*3600000).toISOString().slice(0,10);
+ if(/^\d{4}-\d{2}-\d{2}$/.test(dia)&&dia>hojeRr)add(o,'media','Data futura','Data da ocorrência posterior ao dia atual de Roraima.');
+
  if(vazio(o.numero_bo))add(o,'alta','Número do documento','Número do BO não informado.');
  if(vazio(o.ocorrencia)&&vazio(o.crime))add(o,'alta','Natureza','Natureza da ocorrência não informada.');
  if(vazio(o.data_ocorrencia))add(o,'alta','Data','Data da ocorrência não informada.');
@@ -52,21 +63,26 @@ function nivelMax(lista){return lista.some(x=>x.nivel==='alta')?'alta':lista.som
 function rotuloNivel(n){return n==='alta'?'CRÍTICA':n==='media'?'IMPORTANTE':'AVISO'}
 function render(){
  pendencias=[];dados.forEach(auditarRegistro);
- const vistos=new Map();
+ const candidatos=new Map();
  dados.forEach(function(o){
-   const numero=chave(o.numero_bo),ano=String(o.data_ocorrencia||'').slice(0,4);
-   if(!numero||!ano||!o.unidade_id)return;
-   const k=String(o.unidade_id)+'|'+ano+'|'+numero;
-   if(vistos.has(k)){
-     add(o,'media','Possível repetição de BO','Mesmo número de BO, ano e unidade presentes em outro registro. Verifique se são registros legítimos antes de corrigir.');
-   }else vistos.set(k,o.id);
+   const bo=chave(o.numero_bo),ano=String(o.data_ocorrencia||'').slice(0,4);
+   if(!bo||!/^\d{4}$/.test(ano)||!o.unidade_id)return;
+   const grupo=String(o.unidade_id)+'|'+ano+'|'+bo;
+   if(!candidatos.has(grupo))candidatos.set(grupo,new Map());
+   candidatos.get(grupo).set(chaveRegistro(o),o);
+ });
+ candidatos.forEach(mapa=>{
+   if(mapa.size<2)return;
+   const linhas=[...mapa.values()];
+   linhas.forEach(o=>add(o,'media','Possível repetição de BO',
+      'Mesmo número de BO, ano e unidade em '+linhas.length+' registros distintos. Necessária conferência documental; não confirma duplicidade.'));
  });
  let grupos=new Map();pendencias.forEach(p=>{let k=chaveRegistro(p.o);if(!grupos.has(k))grupos.set(k,{o:p.o,itens:[]});grupos.get(k).itens.push(p)});
  let todos=[...grupos.values()],altas=pendencias.filter(p=>p.nivel==='alta').length,medias=pendencias.filter(p=>p.nivel==='media').length,ok=Math.max(0,dados.length-todos.length),qualidade=dados.length?Math.round(ok*100/dados.length):100;
  $('kRegistros').textContent=dados.length;$('kPendentes').textContent=todos.length;$('kAltas').textContent=altas;$('kMedias').textContent=medias;$('kOk').textContent=ok;$('score').textContent=qualidade+'%';
  $('textoQualidade').textContent=qualidade>=95?'Base com excelente nível de completude no período.':qualidade>=85?'Base com boa qualidade, mas ainda existem registros que merecem revisão.':qualidade>=70?'Há um volume relevante de registros incompletos; recomenda-se revisar as pendências prioritárias.':'A base possui muitas pendências no período e precisa de revisão antes de análises conclusivas.';
  let cont={};pendencias.forEach(p=>cont[p.tipo]=(cont[p.tipo]||0)+1);$('chips').innerHTML=Object.entries(cont).sort((a,b)=>b[1]-a[1]).slice(0,8).map(x=>'<span class="chip">'+esc(x[0])+': '+x[1]+'</span>').join('')||'<span class="chip">Nenhuma pendência encontrada</span>';
- let filtro=$('filtro').value,vis=todos.filter(g=>!filtro||g.itens.some(p=>p.nivel===filtro));$('contadorTabela').textContent=vis.length+' ocorrência(s)';
+ let filtro=$('filtro').value,vis=todos.filter(g=>!filtro||g.itens.some(p=>p.nivel===filtro));$('contadorTabela').textContent=vis.length+' ocorrência(s)';$('exportarAuditoria').disabled=!pendencias.some(p=>!filtro||p.nivel===filtro);
  $('tabela').innerHTML=vis.map((g,i)=>{let n=nivelMax(g.itens),itens=filtro?g.itens.filter(p=>p.nivel===filtro):g.itens;return '<tr><td><span class="sev '+n+'">'+rotuloNivel(n)+'</span></td><td>'+fmt(g.o.data_ocorrencia)+'</td><td>'+esc(g.o.numero_bo||'—')+'</td><td>'+esc(g.o.ocorrencia||g.o.crime||'—')+'</td><td>'+esc(g.o.bairro||'—')+'</td><td><div class="pend-list">'+itens.map(p=>'<div class="pend-item"><b>'+esc(p.tipo)+':</b> <span>'+esc(p.texto)+'</span></div>').join('')+'</div></td><td><button class="edit">Corrigir</button></td></tr>'}).join('')||'<tr><td colspan="7" class="empty">Nenhuma pendência encontrada para este filtro.</td></tr>';
  Array.from($('tabela').querySelectorAll('.edit')).forEach((b,i)=>b._registro=vis[i].o);
  let corrigido=new URLSearchParams(location.search).get('corrigido');$('status').className='status'+(corrigido?' ok':'');$('status').textContent=(corrigido?'BO '+corrigido+' salvo. Auditoria recalculada. ':'Auditoria concluída. ')+(fonteAtual?'Fonte: '+fonteAtual+'. ':'')+'Atualizado em '+new Date().toLocaleString('pt-BR')+'.';$('loading').style.display='none';
@@ -109,6 +125,16 @@ async function carregar(){
   render();
  }catch(err){console.error(err);$('loading').textContent='Não foi possível executar a auditoria: '+(err.message||err)}
 }
+$('exportarAuditoria').onclick=()=>{
+ const selecionadas=window.AuditoriaCsv.linhas(pendencias,$('filtro').value);
+ if(!selecionadas.length)return;
+ const conteudo=window.AuditoriaCsv.csv(selecionadas,{inicio:$('ini').value,fim:$('fim').value,fonte:fonteAtual});
+ const url=URL.createObjectURL(new Blob([conteudo],{type:'text/csv;charset=utf-8'}));
+ const link=document.createElement('a');link.href=url;
+ link.download='sie-cpc-auditoria-'+$('ini').value+'-a-'+$('fim').value+'.csv';
+ document.body.appendChild(link);link.click();link.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),1500);
+};
 $('atualizar').onclick=()=>{let u=new URL(location.href);u.searchParams.set('ini',$('ini').value);u.searchParams.set('fim',$('fim').value);u.searchParams.set('filtro',$('filtro').value);u.searchParams.delete('corrigido');u.searchParams.delete('corrigido_id');history.replaceState(null,'',u);carregar()};$('filtro').onchange=render;
 let qs=new URLSearchParams(location.search),h=new Date();$('ini').value=qs.get('ini')||iso(new Date(h.getFullYear(),0,1));$('fim').value=qs.get('fim')||iso(h);$('filtro').value=qs.get('filtro')||'';carregar();
 </script>
