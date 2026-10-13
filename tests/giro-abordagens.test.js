@@ -70,14 +70,14 @@ assert.match(cpc,/db\.from\('giro_abordagens'\)/);
 
 // Mapa: camadas separadas.
 assert.match(mapa,/Somente abordagens GIRO/);
-assert.match(mapa,/ABORDAGEM GIRO/);
+assert.match(mapa,/Abordagem GIRO/);
 assert.match(mapa,/function filtrarAbordagens\(\)/);
 assert.match(mapa,/baseAbordagens/);
-assert.match(mapa,/giro-moto-marker/);
-assert.match(mapa,/gruposAbordagens/);
-assert.match(mapa,/deslocamento=grupo\.length>1/);
-assert.match(mapa,/L\.divIcon/);
-assert.match(mapa,/🏍️/);
+assert.match(mapa,/MapaUnidadeProfissional\.criarMarcador/);
+assert.match(mapa,/grupoProfissionalUnidade/);
+assert.match(mapa,/MapaUnidadeProfissional\.agregador/);
+assert.match(mapa,/mapa-unidade-profissional\.js/);
+assert.match(mapa,/abords\.forEach/);
 
 // Administração do acesso compartilhado.
 assert.match(usuarios,/Acesso compartilhado — GIRO Abordagens/);
