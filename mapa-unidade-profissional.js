@@ -54,7 +54,7 @@
     return tipo==='abordagem'?classificarAbordagem(registro):classificarOcorrencia(registro,unidade);
   }
   function icone(L,tema,zoom){
-    const grande=zoom>=16,tamanho=grande?20:12;
+    const grande=zoom>=16,tamanho=grande?22:12;
     return L.divIcon({className:'sieCpcPin sieUnidadePin',
       html:'<span class="sieCpcDot'+(grande?' detalhado':'')+'" style="--unit-color:'+tema.cor+'" aria-hidden="true">'+(grande?esc(tema.abreviacao):'')+'</span>',
       iconSize:[tamanho,tamanho],iconAnchor:[tamanho/2,tamanho/2],popupAnchor:[0,-tamanho/2]
