@@ -25,7 +25,15 @@ assert.equal(clin.length,2);
 assert.equal(clin.find(r=>r.fonte==='CIPG · serviço').quantidade,3,'empregos de efetivo, não PM únicos');
 assert.equal(clin.find(r=>r.fonte==='CIPG · evento').data,'2026-10-02');
 assert.equal(R.registros('CAVALARIA',[],[],[{id:'srv2',data_servico:'2026-10-12',numero_documento:'PPE-2',abordagens_pessoas:17}])[0].quantidade,17);
-assert.equal(R.registros('CIPTUR',[],[],[{id:'x',data_infracao:'2026-10-04',codigo_infracao:'A-23',houve_remocao:true}])[0].referencia,'A-23');
+const autosCiptur=R.registros('CIPTUR',[],[],[
+  {id:'auto-uuid-01',data_infracao:'2026-10-04',codigo_infracao:'51.691',houve_remocao:true},
+  {id:'auto-uuid-02',data_infracao:'2026-10-05',codigo_infracao:'51.691',houve_remocao:false}
+]);
+assert.equal(autosCiptur.length,2,'dois autos permanecem dois registros distintos');
+assert.deepEqual(autosCiptur.map(x=>x.referencia).sort(),['auto-uuid-01','auto-uuid-02']);
+assert.ok(autosCiptur.every(x=>x.descricao.includes('51.691')),'código de infração preservado como classificação');
+assert.ok(autosCiptur.some(x=>x.descricao.includes('remoção indicada')));
+assert.ok(R.csv(autosCiptur).includes('auto-uuid-02'),'CSV exporta ID único em vez de código repetido');
 const giro=R.registros('GIRO',[],[],[{id:'g',registrado_em:'2026-10-02T01:00:00Z',tipo_abordagem:'MOTO',quantidade_pessoas:2}]);
 assert.equal(giro[0].data,'2026-10-01 21:00','data exibida deve ser UTC−04 em Roraima');
 assert.equal(giro[0].quantidade,2);
