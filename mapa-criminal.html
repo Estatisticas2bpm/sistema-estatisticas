@@ -86,7 +86,61 @@ function filtrarAbordagens(){
   });
 }
 function rotuloTipoAbordagem(v){return v==='A_PE'?'A PÉ':v==='MOTO'?'MOTO':v==='VEICULO'?'VEÍCULO':v}
-function render(){
+function renderCpc(ajustarVista){
+  const fonte=$('fonte')?.value||'ocorrencias';
+  const ocorr=fonte==='abordagens'?[]:filtrarOcorrencias();
+  const abords=fonte==='ocorrencias'?[]:filtrarAbordagens();
+  pontos.clearLayers();grupoProfissionalCpc.camada.clearLayers();
+  if(mapa.hasLayer(grupoProfissionalCpc.camada))mapa.removeLayer(grupoProfissionalCpc.camada);
+  if(mapa.hasLayer(calor))mapa.removeLayer(calor);
+  pontosProfissionaisCpc.length=0;
+  const todos=ocorr.concat(abords);
+  const lim=todos.map(x=>[Number(x.latitude),Number(x.longitude)]);
+  if($('visual').value==='calor'){
+    // Densidade isolada: nenhum ponto ou brasão sobreposto à mancha de calor.
+    calor.setLatLngs(todos.map(x=>[Number(x.latitude),Number(x.longitude),.72]));
+    calor.addTo(mapa);
+  }else{
+    ocorr.forEach(function(x){
+      const ct=cat(x.ocorrencia||x.crime);
+      const territorio=[x.aisc,x.sisc,x.setor?'Setor '+x.setor:''].filter(Boolean).join(' · ');
+      const conteudo='<b>'+esc(x.ocorrencia||x.crime||'Ocorrência')+'</b>'+
+        '<br><span style="color:'+ct[1]+';font-weight:700">'+esc(ct[0])+'</span>'+
+        (x.numero_bo?'<br><b>BO:</b> '+esc(x.numero_bo):'')+
+        (territorio?'<br><b>Território:</b> '+esc(territorio):'')+
+        (x.cipa_area_tipo?'<br><b>Área:</b> '+esc(x.cipa_area_tipo):'')+
+        '<br>'+esc(localOcorrencia(x))+
+        (x.bairro?'<br>'+esc(x.bairro):'')+
+        '<br>'+esc(x.data_ocorrencia||'')+' '+esc(x.hora_inicial||'');
+      pontosProfissionaisCpc.push(MapaCpcProfissional.criarMarcador(L,x,conteudo,mapa.getZoom()));
+    });
+    abords.forEach(function(x){
+      const data=x.registrado_em?new Date(x.registrado_em).toLocaleString('pt-BR',{
+        timeZone:'America/Boa_Vista',dateStyle:'short',timeStyle:'short'
+      }):'';
+      const conteudo='<b>Abordagem GIRO</b><br>'+esc(rotuloTipoAbordagem(x.tipo_abordagem))+
+        '<br>'+Number(x.quantidade_pessoas||0)+' pessoa(s) abordada(s)'+
+        '<br>'+esc(x.endereco||'Localização GPS')+
+        (x.bairro?'<br>'+esc(x.bairro):'')+'<br>'+esc(data);
+      pontosProfissionaisCpc.push(MapaCpcProfissional.criarMarcador(L,Object.assign({},x,{unidade_sigla:'GIRO'}),conteudo,mapa.getZoom()));
+    });
+    if($('visual').value==='agrupado'){
+      if(grupoProfissionalCpc.camada.addLayers)grupoProfissionalCpc.camada.addLayers(pontosProfissionaisCpc);
+      else pontosProfissionaisCpc.forEach(p=>grupoProfissionalCpc.camada.addLayer(p));
+      grupoProfissionalCpc.camada.addTo(mapa);
+    }else pontosProfissionaisCpc.forEach(p=>p.addTo(pontos));
+  }
+  atualizarLegenda(ocorr,abords);
+  if(ajustarVista){
+    if(lim.length===1)mapa.setView(lim[0],14);
+    else if(lim.length>1)mapa.fitBounds(lim,{padding:[18,18],maxZoom:13});
+    else mapa.setView([2.8235,-60.6758],12);
+  }
+  const visao=$('visual').value==='calor'?'densidade sem marcadores':$('visual').value==='agrupado'?(grupoProfissionalCpc.disponivel?'agrupamento por proximidade':'pontos; serviço de agrupamento indisponível'):'pontos individuais por cor';
+  $('status').textContent=ocorr.length+' ocorrência(s) georreferenciada(s) · '+abords.length+' abordagem(ns) GIRO · '+visao+'.';
+}
+function render(ajustarVista=false){
+  if(modoCpc)return renderCpc(ajustarVista);
   const fonte=$('fonte')?.value||'ocorrencias';
   const ocorr=fonte==='abordagens'?[]:filtrarOcorrencias();
   const abords=fonte==='ocorrencias'?[]:filtrarAbordagens();
@@ -107,11 +161,21 @@ async function carregar(){
   ]);
   if(r.error){$('status').textContent='Erro ao carregar georreferenciamento: '+r.error.message;return}
   if(g.error){$('status').textContent='Erro ao carregar abordagens: '+g.error.message;return}
-  base=(r.data||[]).filter(coordValida);baseAbordagens=(g.data||[]).filter(coordValida);popularUnidades();render()
+  base=(r.data||[]).filter(coordValida);baseAbordagens=(g.data||[]).filter(coordValida);popularUnidades();render(true)
 }
 function periodo(p){let h=new Date(),i=new Date(h);if(p==='7dias')i.setDate(h.getDate()-6);else if(p==='mes')i=new Date(h.getFullYear(),h.getMonth(),1);else if(p==='semana'){let d=h.getDay(),dif=d===0?-6:1-d;i.setDate(h.getDate()+dif)}$('ini').value=iso(i);$('fim').value=iso(h);document.querySelectorAll('[data-period]').forEach(x=>x.classList.toggle('active',x.dataset.period===p));carregar()}
 document.querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>periodo(b.dataset.period));document.querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>{categoriaRapida=b.dataset.cat;document.querySelectorAll('[data-cat]').forEach(x=>x.classList.toggle('active',x===b));render()});
-$('atualizar').onclick=carregar;$('visual').onchange=render;$('fonte').onchange=render;$('turno').onchange=render;$('bairro').oninput=render;$('unidade').onchange=render;$('aisc').onchange=()=>{$('sisc').value='';$('setor').value='';popularTerritorio();render()};$('sisc').onchange=()=>{$('setor').value='';popularTerritorio();render()};$('setor').onchange=render;$('tipo').oninput=()=>{categoriaRapida='';document.querySelectorAll('[data-cat]').forEach(x=>x.classList.toggle('active',x.dataset.cat===''));render()};
+$('atualizar').onclick=carregar;
+$('exportarVisaoCpc').onclick=function(){
+  if(!modoCpc)return;
+  const fonte=$('fonte').value,ocorr=fonte==='abordagens'?[]:filtrarOcorrencias(),abordagens=fonte==='ocorrencias'?[]:filtrarAbordagens();
+  const quant=MapaCpcProfissional.exportarVisao(mapa,ocorr,abordagens,'sie-cpc-mapa-completo');
+  $('status').textContent=quant+' registro(s) da área visível exportados em CSV, respeitando os filtros selecionados.';
+};
+mapa.on('zoomend',function(){
+  if(!modoCpc||$('visual').value==='calor')return;
+  pontosProfissionaisCpc.forEach(pt=>pt.setIcon(MapaCpcProfissional.iconePonto(L,pt.options.unidadeSieCpc,mapa.getZoom())));
+});$('visual').onchange=render;$('fonte').onchange=render;$('turno').onchange=render;$('bairro').oninput=render;$('unidade').onchange=render;$('aisc').onchange=()=>{$('sisc').value='';$('setor').value='';popularTerritorio();render()};$('sisc').onchange=()=>{$('setor').value='';popularTerritorio();render()};$('setor').onchange=render;$('tipo').oninput=()=>{categoriaRapida='';document.querySelectorAll('[data-cat]').forEach(x=>x.classList.toggle('active',x.dataset.cat===''));render()};
 let h=new Date();$('ini').value=iso(new Date(h.getFullYear(),h.getMonth(),1));$('fim').value=iso(h);
 (async()=>{if(window.SistemaAuth?.ready)await window.SistemaAuth.ready;const contexto=window.SistemaAuth?.contexto||{};modoCpc=contexto.tipo==='COMANDO';podeAbordagens=String(contexto.sigla||'').toUpperCase()==='GIRO'||modoCpc;document.body.classList.toggle('modo-cpc',modoCpc);$('fonteWrap').hidden=!podeAbordagens;if(modoCpc||!podeAbordagens)$('fonte').value='ocorrencias';if(modoCpc){$('visual').value='agrupado';$('exportarVisaoCpc').hidden=false;$('tituloMapa').textContent='Mapa Estatístico Consolidado do CPC';$('subtituloMapa').textContent='Identificação dos registros por unidade responsável; abordagens do GIRO sob filtro próprio';}atualizarLegenda();let tr=await db.rpc('obter_catalogo_territorial_cpc');if(!tr.error){catalogoTerritorial=tr.data||{};popularTerritorio()}else console.error('Falha ao carregar matriz territorial:',tr.error);carregar()})();
 </script></body></html>
