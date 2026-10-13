@@ -1,6 +1,6 @@
 # Plano de refinamento do SIE-CPC
 
-**Versão:** 2.1 — 12/10/2026  
+**Versão:** 2.2 — 12/10/2026  
 **Estado:** em execução; homologação pendente.  
 **Escopo:** CPC, 1º BPM, 2º BPM, BOPE, Cavalaria, CIPA, CIPG, CIPTUR e GIRO.
 
@@ -129,6 +129,13 @@ Transformar os painéis, mapas, consultas, auditorias e relatórios PDF em um co
 - [ ] Verificar acessos e consultas com **usuários de perfis reais**; auditoria de RLS no esquema já efetuada, mas não equivale a homologação de sessão.
 **Aceite:** relatório de divergências reproduzível, sem perda de dados.
 
+- [x] Criar relatório de divergências **exportável em CSV** sem dados pessoais, com ID do registro, unidade, BO, data, tipo, descrição, gravidade e origem do levantamento; respeitar período/filtro de severidade.
+- [x] Identificar todos os registros de **grupos de possível repetição de BO** por unidade/ano/número em vez de sinalizar somente o segundo registro; esclarecer que são suspeitas e não duplicidades confirmadas.
+- [x] Acrescentar alertas de coordenadas numéricas fora dos limites aproximados de Roraima e de datas de ocorrência futuras no dia civil UTC−04, sem corrigir automaticamente.
+- [x] Adicionar regressão `tests/auditoria-exportacao.test.cjs` cobrindo rastreabilidade, filtro de severidade, segurança CSV e regras geográficas.
+- [ ] Homologar as divergências com as unidades mediante comparação dos documentos originais; qualquer correção demanda revisão humana e autorização.
+
+
 ### Fase 8 — Homologação e entrega
 - [ ] Testar todas as unidades, perfis, browsers, celular, tablets e PDFs.
 - [ ] Testes de regressão e desempenho por intervalo curto e longo.
@@ -224,6 +231,14 @@ As alterações da **Fase 3 (cartões CPC), Fase 4 (mapa), Fase 5 (seção de in
 - Relatórios genéricos: título de prevenção deixou de fazer referência fixa a programas de outra unidade; ocorrências de Tático Setorial ficam identificadas apenas onde o campo estiver configurado para o tipo de relatório.
 - Consulta incompleta ou erro de RPC não é mascarado como `0` no PDF. **Sem edição de dados originais no banco**.
 - Ainda pendem conferência por perfis reais, amostras históricas e inspeção visual do PDF em A4.
+
+## Fase 7 — exportação de auditoria e suspeitas reproduzíveis (12/10/2026)
+
+- A auditoria gera CSV com campos reproduzíveis e metadados do período/fonte RLS, sem nomes de pessoas ou dados de saúde.
+- Se dois ou mais registros coincidirem em unidade, ano e número de BO, **todos os envolvidos** são sinalizados para conferência; não há fusão nem exclusão automática.
+- Coordenadas geográficas fora de uma faixa ampla que cobre Roraima e datas futuras em UTC−04 são destacadas, sem inferir localização verdadeira ou invalidar registros sem conferência.
+- A interface mantém a ação manual de corrigir com o operador, mas a exportação apenas lê o escopo já autorizado.
+- A avaliação de regras em JavaScript é automatizável; a homologação documental e o teste com sessões reais são pendências institucionais.
 
 ## Registro de progresso
 
