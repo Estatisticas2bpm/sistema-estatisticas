@@ -51,7 +51,7 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
   pending[0].resolve(result(pending[0]));await a;
   assert.deepEqual(rendered,['2026-01-01'],'resposta antiga não substitui período anual');
   assert.equal(main.classList.contains('cpcConsultaSemResultado'),false);
-  assert.match(elements.status.textContent,/3\\.598/);
+  assert.match(elements.status.textContent,/3\.598/);
 
   elements.ini.value='2026-02-01';
   const erro=context.carregar();await tick();
