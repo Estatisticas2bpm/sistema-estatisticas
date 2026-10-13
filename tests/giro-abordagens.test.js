@@ -122,6 +122,6 @@ assert.match(home,/marcadoresUnidadeAtuais/);
 assert.match(home,/MapaUnidadeProfissional\.agregador/);
 assert.match(home,/camadaAgrupadaUnidade/);
 assert.match(home,/if\(!mapaCalor\)/);
-assert.match(home,/🏍️/);
+assert.match(home,/rotuloAbordagemGiro/);
 
 console.log('GIRO: módulo de abordagens mobile, painéis, mapa e acesso validados.');
