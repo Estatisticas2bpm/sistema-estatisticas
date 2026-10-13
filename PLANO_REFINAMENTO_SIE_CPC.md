@@ -1,6 +1,6 @@
 # Plano de refinamento do SIE-CPC
 
-**Versão:** 1.8 — 12/10/2026  
+**Versão:** 1.9 — 12/10/2026  
 **Estado:** em execução; homologação pendente.  
 **Escopo:** CPC, 1º BPM, 2º BPM, BOPE, Cavalaria, CIPA, CIPG, CIPTUR e GIRO.
 
@@ -69,6 +69,25 @@ Transformar os painéis, mapas, consultas, auditorias e relatórios PDF em um co
 
 - [ ] Homologar integralmente filtros territoriais, unidades, data/hora, geolocalização e segurança com perfil CPC real; exportação CSV da área visível, legenda dinâmica e agrupamento já implementados e cobertos por testes de contrato.
 **Aceite:** o mapa CPC distingue unidades e, ao ativar o filtro, exibe apenas abordagens reais do GIRO; mapas individuais seguem intactos.
+
+### Fase 4B — Padronização cartográfica das unidades (expansão solicitada)
+
+**Escopo implementado no código:** os mapas `index.html` (panorama individual), `mapa-criminal.html` (mapa analítico) e `mapa-tv.html` (TV do 2º BPM) reutilizam o núcleo profissional. A cartografia do CPC mantém a identificação por **unidade responsável**, enquanto os mapas individuais passam a mostrar **natureza/atividade** por cor.
+
+- [x] Extrair o componente temático reutilizável `mapa-unidade-profissional.js`, aproveitando o núcleo Leaflet/MarkerCluster e os estilos já aplicados no CPC.
+- [x] Aplicar aos mapas individuais do **1º BPM** e do **2º BPM** (natureza da ocorrência; agrupamento, pontos e calor).
+- [x] Aplicar ao mapa individual do **BOPE**, preservando a fonte territorial já autorizada e o popup por natureza.
+- [x] Aplicar ao mapa individual do **GIRO**, incluindo ocorrências e abordagens, com categorias discretas por tipo de abordagem.
+- [x] Aplicar ao mapa individual da **CIPTUR** para ocorrências georreferenciadas por natureza. **Autos de infração/remoções não ganham marcador sem coordenada de origem.**
+- [x] Aplicar ao mapa individual da **CIPA** para ocorrências ambientais georreferenciadas, diferenciando fauna, embargo e fiscalização **quando esses atributos estiverem no registro**.
+- [x] Aplicar ao mapa de **Cavalaria** para registros de ocorrência georreferenciados. **Serviços/eventos do cadastro especializado não possuem lat/long na fonte e não foram convertidos artificialmente em pontos.**
+- [x] Reutilizar o estilo no mapa analítico das unidades, incluindo a **CIPG** para eventuais registros autorizados com coordenadas; o panorama CIPG continua sem mapa de postos/serviços por ausência de coordenadas nos registros de guarda.
+- [x] Adaptar o mapa de TV do 2º BPM com agrupamento temático e marcadores discretos, mantendo atualização automática.
+- [x] Incluir testes de regressão de cores por natureza, tipos de abordagem, agrupamento, ponto de 12px, calor sem pontos, identificação no popup e exportação.
+- [ ] Verificar os mapas com sessões reais de **cada unidade** (desktop, celular, RLS), checar filtro por período/natureza/bairro e exportação CSV; não declarar homologação sem esses testes.
+- [ ] Habilitar futuramente camadas geográficas de **serviços de Cavalaria, CIPG, autuações CIPTUR e embargos CIPA**, caso cada tipo de cadastro passe a armazenar coordenadas confiáveis ou geometrias e receba autorização específica.
+
+**Aceite parcial:** código compartilhado, regras estatísticas preservadas e testes automatizados aprovados. A homologação visual e as fontes especializadas sem localização continuam pendentes.
 
 ### Fase 5 — Dashboard completo, consultas e séries temporais
 - [x] Acrescentar no `dashboard-cpc.html` bloco de quatro indicadores específicos por unidade e manter seletor de unidade existente, com mesmas regras de cálculo da visão rápida.
@@ -166,6 +185,12 @@ As alterações da **Fase 3 (cartões CPC), Fase 4 (mapa), Fase 5 (seção de in
 - Preservados filtros existentes; camada de abordagens GIRO opcional; exportação CSV dos registros georreferenciados **visíveis no enquadramento**, respeitando os filtros.
 - Biblioteca de clusterização com fallback para pontos simples em caso de indisponibilidade; ambos os mapas compartilham a mesma simbologia.
 - Pendências: testes reais de usabilidade, impressão/captura do mapa, eventuais limites de exportação e verificação da densidade em grandes períodos.
+
+## Expansão dos mapas individuais — 12/10/2026
+
+- Mesmo padrão profissional para os mapas disponíveis das unidades: clusterização por natureza/atividade, símbolos discretos, calor isolado e brasão no popup.
+- Respeitadas as fontes de dados e limites espaciais do cadastro. Não gerar coordenadas a partir de texto livre ou do endereço de uma instituição sem georreferenciamento validado.
+- `mapa-tv.html` atualizado para o 2º BPM. Testes de código não equivalem à validação em produção por unidade.
 
 ## Registro de progresso
 

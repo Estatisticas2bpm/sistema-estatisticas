@@ -70,14 +70,14 @@ assert.match(cpc,/db\.from\('giro_abordagens'\)/);
 
 // Mapa: camadas separadas.
 assert.match(mapa,/Somente abordagens GIRO/);
-assert.match(mapa,/ABORDAGEM GIRO/);
+assert.match(mapa,/Abordagem GIRO/);
 assert.match(mapa,/function filtrarAbordagens\(\)/);
 assert.match(mapa,/baseAbordagens/);
-assert.match(mapa,/giro-moto-marker/);
-assert.match(mapa,/gruposAbordagens/);
-assert.match(mapa,/deslocamento=grupo\.length>1/);
-assert.match(mapa,/L\.divIcon/);
-assert.match(mapa,/🏍️/);
+assert.match(mapa,/MapaUnidadeProfissional\.criarMarcador/);
+assert.match(mapa,/grupoProfissionalUnidade/);
+assert.match(mapa,/MapaUnidadeProfissional\.agregador/);
+assert.match(mapa,/mapa-unidade-profissional\.js/);
+assert.match(mapa,/abords\.forEach/);
 
 // Administração do acesso compartilhado.
 assert.match(usuarios,/Acesso compartilhado — GIRO Abordagens/);
@@ -115,13 +115,13 @@ assert.match(home,/id="camadaGiroMapa"/);
 assert.match(home,/Ocorrências \+ abordagens/);
 assert.match(home,/abordagensMapaAtuais/);
 assert.match(home,/consultarRegistrosHome\("giro_abordagens"/);
-assert.match(home,/ABORDAGEM GIRO/);
+assert.match(home,/Abordagem GIRO/);
 assert.match(home,/camadaGiroMapa\.onchange=function\(\)\{if\(modoCpc\)carregarMapa\(\);else renderizarMapa\(\)\}/);
-assert.match(home,/giro-moto-marker/);
-assert.match(home,/gruposAbordagens/);
-assert.match(home,/deslocamento=grupo\.length>1/);
-assert.match(home,/iconAnchor:\[13-deslocamento,13\]/);
-assert.match(home,/typeof pt\.setRadius==="function"/);
-assert.match(home,/🏍️/);
+assert.match(home,/MapaUnidadeProfissional\.criarMarcador/);
+assert.match(home,/marcadoresUnidadeAtuais/);
+assert.match(home,/MapaUnidadeProfissional\.agregador/);
+assert.match(home,/camadaAgrupadaUnidade/);
+assert.match(home,/if\(!mapaCalor\)/);
+assert.match(home,/rotuloAbordagemGiro/);
 
 console.log('GIRO: módulo de abordagens mobile, painéis, mapa e acesso validados.');
