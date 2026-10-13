@@ -24,6 +24,7 @@ button.sieCpcLegendaUnidade:hover,button.sieCpcLegendaUnidade:focus-visible{back
 .sieCpcEscalaRotulos{display:flex;justify-content:space-between;font-size:10px;color:#64748b}
 #legendaMapaPrincipal .sieCpcLegendaLinhas,#legendaMapaCompleto .sieCpcLegendaLinhas{max-height:235px}
 #legendaMapaPrincipal>small,#legendaMapaCompleto>small{display:block;margin-top:7px;color:#64748b;font-size:10px;max-width:215px}
+.sieCpcExportar[hidden]{display:none!important}
 .sieCpcExportar{background:#eef5fb!important;border-color:#c0d6e8!important;color:#164b73!important}
 .sieCpcCluster .leaflet-interactive{cursor:pointer}
 @media(max-width:600px){
