@@ -1,6 +1,6 @@
 # Plano de refinamento do SIE-CPC
 
-**Versão:** 2.3 — 12/10/2026  
+**Versão:** 2.4 — 12/10/2026  
 **Estado:** em execução; homologação pendente.  
 **Escopo:** CPC, 1º BPM, 2º BPM, BOPE, Cavalaria, CIPA, CIPG, CIPTUR e GIRO.
 
@@ -102,6 +102,11 @@ Transformar os painéis, mapas, consultas, auditorias e relatórios PDF em um co
 - [x] Corrigir a série temporal de abordagens GIRO da Central Executiva para o **dia civil de Boa Vista (UTC−04)**, eliminando troca indevida de dia perto da meia-noite UTC.
 - [x] Proteger exportação CSV contra valores interpretáveis como fórmulas por programas de planilha; incluir regressões automatizadas das fontes e períodos em `tests/cpc-rastreabilidade.test.cjs`.
 - [ ] Conciliar em navegador e com amostras documentais as trilhas com PDFs e indicadores de cada unidade; a aplicação automática de filtros adicionais de natureza, turno, companhia e território nas fontes especializadas ainda depende de contrato específico.
+
+
+- [x] Refatorar após inspeção em navegador a conferência dos documentos no CPC: os cartões não devem conter tabelas longas em colunas estreitas; abrir painel de largura completa abaixo dos KPIs com **pesquisa, seleção de fonte, paginação de 12 registros, metadados e CSV do conjunto filtrado**.
+- [x] Acrescentar regressões de 33 registros, navegação entre páginas, pesquisa tolerante a acentos, filtro por fonte, exportação integral do filtro, proteção contra HTML inserido e limpeza de consulta ao alterar escopo.
+- [ ] Revalidar visualmente a versão ampliada no navegador autenticado, em desktop e celular, inclusive com registros de CIPTUR, GIRO e CIPA (captura anterior confirmou dados presentes, mas revelou tabelas excessivamente estreitas).
 
 
 ### Fase 6 — Relatórios PDF
@@ -248,6 +253,13 @@ As alterações da **Fase 3 (cartões CPC), Fase 4 (mapa), Fase 5 (seção de in
 - Criado [Roteiro de Homologação Institucional 2026](HOMOLOGACAO_SIE_CPC_2026.md), com critérios de aceite, evidências e responsáveis por unidade; **todas as aprovações permanecem pendentes**.
 - Adicionado teste estático das páginas centrais, scripts, brasões e links locais ao GitHub Actions; isso não substitui acesso autenticado ou inspeção de PDF A4.
 - Encerramento condicionado a testes reais do CPC e das unidades subordinadas, inclusive registros de CIPA, CIPG e Cavalaria quando disponíveis.
+
+## Fase 5 — revisão visual da rastreabilidade CPC (12/10/2026)
+
+- **Evidência recebida:** captura do dashboard executivo autenticado no CPC, período 1º a 12/10/2026. Mostrou os quatro indicadores por unidade e abertura da opção *Conferir registros de origem* para unidades com dados.
+- **Problema visual constatado:** tabela de origem embutida em cartões estreitos; longas listas comprimiam colunas e esticavam desnecessariamente a altura dos cartões.
+- **Correção implementada:** conferência documental movida para seção independente na largura do dashboard, com tabela de seis colunas, busca por BO/natureza/data, filtro por fonte, navegação em páginas de 12 linhas e exportação de todos os registros filtrados. Cartões permanecem resumidos.
+- **Limite do aceite:** a captura comprova a renderização inicial e presença de registros, mas não a conciliação com documentação de origem nem a responsividade da nova seção; exigem nova validação.
 
 ## Registro de progresso
 
