@@ -32,10 +32,11 @@
       ['cipa_termos_embargo','data_embargo','area_embargada_ha'],
       ['cipa_autos_infracao','data_autuacao','valor_multa']
     ];
+    const extras={cipa_fauna:',ocorrencia_id,numero_tr,nome_comum',cipa_termos_embargo:',ocorrencia_id,numero',cipa_autos_infracao:',ocorrencia_id,numero,descricao_infracao'};
     const resultados=await Promise.all(specs.map(async ([tabela,data,campo])=>{
       const linhas=[],passo=1000;
       for(let offset=0;;offset+=passo){
-        const r=await db.from(tabela).select('id,'+data+','+campo).gte(data,ini).lte(data,fim)
+        const r=await db.from(tabela).select('id,'+data+','+campo+(extras[tabela]||'')).gte(data,ini).lte(data,fim)
           .order('id',{ascending:true}).range(offset,offset+passo-1);
         if(r.error)throw Error(tabela+': '+r.error.message);
         const lote=r.data||[];
