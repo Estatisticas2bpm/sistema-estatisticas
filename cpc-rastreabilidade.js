@@ -29,15 +29,16 @@ function registros(tipo,ocorrencias,tcos,dados){
   }
   if(s==='CIPG'){
     const servicos=origem.servicos||[],porId=new Map(servicos.map(x=>[String(x.id),x]));
+    const comEvento=new Set((origem.eventos||[]).map(x=>String(x.servico_id)));
     for(const servico of servicos)registrar(linhas,'CIPG · serviço',servico.data_servico,servico.documento_referencia||servico.numero_sei||servico.id,
       [servico.posto_codigo||servico.instituicao,servico.situacao].filter(Boolean).join(' · ')||'Serviço de guarda',
       num(servico.efetivo_ordinario)+num(servico.efetivo_svi),'empregos de efetivo','data_servico',
-      ['Relatórios de serviço','Empregos de efetivo',...(String(servico.situacao||'').toUpperCase().includes('SEM ALTERA')?['Serviços sem alteração']:[])]);
+      ['Relatórios de serviço','Empregos de efetivo',...(servico.situacao==='SEM ALTERACAO'&&!comEvento.has(String(servico.id))?['Serviços sem alteração']:[])]);
     for(const evento of origem.eventos||[]){
       const servico=porId.get(String(evento.servico_id));
       registrar(linhas,'CIPG · evento',evento.data_evento||servico?.data_servico,servico?.documento_referencia||evento.id,
         evento.tipo_evento||'Evento de serviço',1,'evento','serviço vinculado',
-        /ENTRADA|HOSPITAL/i.test(String(evento.tipo_evento||''))?['Entradas de PM no hospital']:[]);
+        evento.tipo_evento==='ENTRADA DE PM NO HOSPITAL'?['Entradas de PM no hospital']:[]);
     }
   }
   if(s==='CAVALARIA')for(const x of lista)registrar(linhas,'Cavalaria · serviço',x.data_servico,x.numero_documento||x.id,
