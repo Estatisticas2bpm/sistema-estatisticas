@@ -60,9 +60,22 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
   assert.match(elements.status.textContent,/timeout/);
   assert.match(elements.status.textContent,/resultados do período anterior foram ocultados/i);
 
+  elements.ini.value='2026-01-01';elements.fim.value='2026-10-12';
+  const campos={unidade:'uuid-da-unidade',aisc:'AISC 1',sisc:'SISC 1',setor:'1.1',ocorrencia:'SINISTRO',bairro:'CENTRO',companhia:'1ª CIA',turno:'NOITE'};
+  for(const [id,valor] of Object.entries(campos))elements[id].value=valor;
+  const combinado=context.carregar();await tick();
+  assert.equal(calls.length,4);
+  assert.deepEqual(JSON.parse(JSON.stringify(calls[3])),{
+    data_inicio:'2026-01-01',data_fim:'2026-10-12',
+    p_unidade_id:'uuid-da-unidade',p_aisc:'AISC 1',p_sisc:'SISC 1',p_setor:'1.1',
+    p_ocorrencia:'SINISTRO',p_bairro:'CENTRO',p_companhia:'1ª CIA',p_turno:'NOITE'
+  },'todos os dez filtros devem ser transmitidos integralmente à RPC');
+  pending[3].resolve(result(pending[3]));await combinado;
+  assert.equal(main.classList.contains('cpcConsultaSemResultado'),false);
+  for(const id of Object.keys(campos))elements[id].value='';
   elements.ini.value='2026-12-01';elements.fim.value='2026-01-01';
   await context.carregar();
-  assert.equal(calls.length,3,'datas inválidas não consultam o banco');
+  assert.equal(calls.length,4,'datas inválidas não consultam o banco');
   assert.match(elements.status.textContent,/Período inválido/);
   console.log('PASS: filtro anual CPC, concorrência, timeout, intervalo inválido e cache territorial.');
 })().catch(e=>{console.error(e);process.exitCode=1});
