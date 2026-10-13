@@ -1,6 +1,6 @@
 # Plano de refinamento do SIE-CPC
 
-**Versão:** 2.6 — 12/10/2026  
+**Versão:** 2.7 — 12/10/2026  
 **Estado:** em execução; homologação pendente.  
 **Escopo:** CPC, 1º BPM, 2º BPM, BOPE, Cavalaria, CIPA, CIPG, CIPTUR e GIRO.
 
@@ -281,6 +281,20 @@ As alterações da **Fase 3 (cartões CPC), Fase 4 (mapa), Fase 5 (seção de in
 - [x] Aplicar migração no Supabase de produção e verificar por SQL a presença dos dois joins com cache, segurança invoker e permissões (authenticated=true, anon=false). **Consulta autenticada do período anual ainda pendente.**
 - [ ] Validar a resposta da RPC em sessão CPC autenticada para o ano completo (1º BPM 1.649; 2º BPM 1.883; total 3.598 no banco em 01/01–12/10/2026).
 - [ ] Homologar os filtros combinados (unidade, AISC/SISC/setor, turno, companhia, natureza, bairro), inclusive com registros especializados e RLS de perfis reais.
+
+## Fase 5 — indicadores por unidade após filtro anual (12/10/2026)
+
+- [x] Captura autenticada confirmou **3.598 BOs** carregados no Painel CPC, sem timeout no resumo geral.
+- [x] Identificada segunda consulta independente: `cpc-indicadores-dashboard.js` chama `obter_home_cpc_territorial`, que ainda calculava `territorio_por_bairro` para cada BO do ano, sem reutilizar a otimização do painel principal.
+- [x] Preparada migração SQL da RPC secundária para materializar o JSON autorizado e resolver território apenas por bairro distinto, sem alterar registros ou permissões. Equivalência de 3.598 ocorrências: **zero divergências**; teste isolado do plano territorial: **609 ms → 26 ms**, sujeito a cache/carga.
+- [x] Atualizada a nota dos indicadores especializados ao **iniciar** cada consulta; falhas exibem período solicitado e erro/timeout, sem manter a data de um filtro anterior.
+- [x] Adicionada versão do script para atualização do cache e teste automatizado de sucesso, timeout, falta de autorização, erro de rede e consultas concorrentes.
+- [ ] Homologar no navegador autenticado o carregamento anual de todos os cartões especializados e suas trilhas documentais; checar a consistência de filtros combinados e permissões.
+
+### Alerta de qualidade — veículos recuperados no 1º BPM
+
+- [ ] Auditar 11 ocorrências do 1º BPM com `veiculos_recuperados >= 100` no intervalo 01/01–12/10/2026; **somam 2.515** dos **2.537** veículos exibidos pelo CPC. Uma ocorrência está registrada com **1.000 veículos**. Suspeita de importação/mapeamento, não é duplicidade ou erro confirmado.
+- [ ] Conferir os documentos e a planilha histórica de origem antes de qualquer alteração. **Não houve correção automática dos valores.**
 
 ## Registro de progresso
 
