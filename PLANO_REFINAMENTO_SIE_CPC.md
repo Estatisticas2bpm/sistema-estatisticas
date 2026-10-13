@@ -286,7 +286,7 @@ As alterações da **Fase 3 (cartões CPC), Fase 4 (mapa), Fase 5 (seção de in
 
 - [x] Captura autenticada confirmou **3.598 BOs** carregados no Painel CPC, sem timeout no resumo geral.
 - [x] Identificada segunda consulta independente: `cpc-indicadores-dashboard.js` chama `obter_home_cpc_territorial`, que ainda calculava `territorio_por_bairro` para cada BO do ano, sem reutilizar a otimização do painel principal.
-- [x] Preparada migração SQL da RPC secundária para materializar o JSON autorizado e resolver território apenas por bairro distinto, sem alterar registros ou permissões. Equivalência de 3.598 ocorrências: **zero divergências**; teste isolado do plano territorial: **609 ms → 26 ms**, sujeito a cache/carga.
+- [x] Migração SQL da RPC secundária **aplicada no Supabase de produção**, materializando o JSON autorizado e resolvendo território apenas por bairro distinto, sem alterar registros ou permissões. Equivalência de 3.598 ocorrências: **zero divergências**; teste isolado do plano territorial: **609 ms → 26 ms**, sujeito a cache/carga. Pós-aplicação: SECURITY INVOKER preservado, authenticated=true, anon=false.
 - [x] Atualizada a nota dos indicadores especializados ao **iniciar** cada consulta; falhas exibem período solicitado e erro/timeout, sem manter a data de um filtro anterior.
 - [x] Adicionada versão do script para atualização do cache e teste automatizado de sucesso, timeout, falta de autorização, erro de rede e consultas concorrentes.
 - [ ] Homologar no navegador autenticado o carregamento anual de todos os cartões especializados e suas trilhas documentais; checar a consistência de filtros combinados e permissões.
