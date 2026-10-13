@@ -282,8 +282,42 @@ async function consultarGiroCpcPaginado(inicio,fim){
   }
   return {data:null,error:new Error('Muitos registros de abordagens. Reduza o período.')};
 }
-async function carregar(){const ready=window.SistemaAuth?.ready;if(ready)await ready;$('loading').style.display='grid';$('status').textContent='Consultando dados consolidados...';try{const args={data_inicio:$('ini').value||null,data_fim:$('fim').value||null,p_unidade_id:$('unidade').value||null,p_aisc:$('aisc').value||null,p_sisc:$('sisc').value||null,p_setor:$('setor').value||null,p_ocorrencia:$('ocorrencia').value.trim()||null,p_bairro:$('bairro').value.trim()||null,p_companhia:$('companhia').value||null,p_turno:$('turno').value||null};const [r,ga]=await Promise.all([consultarPainelCpc(args),consultarGiroCpcPaginado($('ini').value||'1900-01-01',$('fim').value||'2999-12-31')]);if(r.error)throw r.error;if(ga.error)throw ga.error;if(!r.data?.autorizado)throw new Error(r.data?.erro||'Acesso não autorizado ao Painel CPC.');abordagensGiroCpc=ga.data||[];popularUnidades();if(!args.p_unidade_id&&$('unidade').value){return carregar()}render(r.data);window.CpcIndicadoresDashboard.carregar(db,args,hierarquiaUnidades).catch(function(e){console.error(e);$('cpcIndicadoresEspecificos').textContent='Erro ao consultar indicadores especializados.'});$('status').textContent='Painel policial atualizado. Os indicadores especializados possuem critérios próprios descritos abaixo.'}catch(e){console.error(e);$('status').textContent='Não foi possível carregar a Central Executiva do CPC: '+e.message}finally{$('loading').style.display='none'}}
-function periodo(tipo){const h=new Date(),f=new Date(h),i=new Date(h);if(tipo==='hoje'){}else if(tipo==='7dias')i.setDate(h.getDate()-6);else if(tipo==='30dias')i.setDate(h.getDate()-29);else if(tipo==='ano')i.setMonth(0,1);else i.setDate(1);$('ini').value=iso(i);$('fim').value=iso(f);carregar()}
+let versaoConsultaCpc=0;
+async function carregar(){
+  const versao=++versaoConsultaCpc;
+  const ready=window.SistemaAuth?.ready;
+  if(ready)await ready;
+  if(versao!==versaoConsultaCpc)return;
+  const inicio=$('ini').value,fim=$('fim').value;
+  if(!inicio||!fim||inicio>fim){
+    $('status').textContent='Período inválido: informe data inicial e final, com a inicial anterior ou igual à final.';
+    return;
+  }
+  const args={data_inicio:inicio,data_fim:fim,p_unidade_id:$('unidade').value||null,p_aisc:$('aisc').value||null,p_sisc:$('sisc').value||null,p_setor:$('setor').value||null,p_ocorrencia:$('ocorrencia').value.trim()||null,p_bairro:$('bairro').value.trim()||null,p_companhia:$('companhia').value||null,p_turno:$('turno').value||null};
+  $('loading').style.display='grid';
+  $('status').textContent='Consultando dados de '+br(inicio)+' a '+br(fim)+'...';
+  try{
+    const [r,ga]=await Promise.all([consultarPainelCpc(args),consultarGiroCpcPaginado(inicio,fim)]);
+    if(versao!==versaoConsultaCpc)return;
+    if(r.error)throw r.error;
+    if(ga.error)throw ga.error;
+    if(!r.data?.autorizado)throw new Error(r.data?.erro||'Acesso não autorizado ao Painel CPC.');
+    if((r.data?.periodo?.inicio&&r.data.periodo.inicio!==inicio)||(r.data?.periodo?.fim&&r.data.periodo.fim!==fim))throw new Error('A consulta retornou um período diferente do solicitado.');
+    abordagensGiroCpc=ga.data||[];
+    popularUnidades();
+    if(!args.p_unidade_id&&$('unidade').value){carregar();return}
+    render(r.data);
+    window.CpcIndicadoresDashboard.carregar(db,args,hierarquiaUnidades).catch(function(e){console.error(e);if(versao===versaoConsultaCpc)$('cpcIndicadoresEspecificos').textContent='Erro ao consultar indicadores especializados.'});
+    $('status').textContent='Filtro aplicado: '+br(inicio)+' a '+br(fim)+' · '+n(r.data.resumo?.total_ocorrencias).toLocaleString('pt-BR')+' ocorrências policiais no escopo. Os indicadores especializados possuem critérios próprios descritos abaixo.';
+  }catch(e){
+    if(versao!==versaoConsultaCpc)return;
+    console.error(e);
+    $('status').textContent='Não foi possível carregar a Central Executiva do CPC: '+e.message;
+  }finally{
+    if(versao===versaoConsultaCpc)$('loading').style.display='none';
+  }
+}
+function periodo(tipo){const h=new Date(),f=new Date(h),i=new Date(h);if(tipo==='hoje'){}else if(tipo==='7dias')i.setDate(h.getDate()-6);else if(tipo==='30dias')i.setDate(h.getDate()-29);else if(tipo==='ano'){i.setMonth(0);i.setDate(1)}else i.setDate(1);$('ini').value=iso(i);$('fim').value=iso(f);carregar()}
 document.querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>periodo(b.dataset.period));$('atualizar').onclick=carregar;
 $('aisc').onchange=()=>{ $('sisc').value='';$('setor').value='';popularTerritorio(); };
 $('sisc').onchange=()=>{ $('setor').value='';popularTerritorio(); };
