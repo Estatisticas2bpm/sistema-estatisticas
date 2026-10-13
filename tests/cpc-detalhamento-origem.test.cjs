@@ -4,7 +4,7 @@ const root=path.join(__dirname,'..'),read=f=>fs.readFileSync(path.join(root,f),'
 const html=read('dashboard-cpc.html'),js=read('cpc-indicadores-dashboard.js');
 const ids=['cpcDetalhamentoOrigem','cpcOrigemTitulo','cpcOrigemPeriodo','cpcOrigemAlerta',
   'cpcOrigemBusca','cpcOrigemFonte','cpcOrigemCorpo','cpcOrigemQuantidade','cpcOrigemPagina',
-  'cpcOrigemAnterior','cpcOrigemProximo','cpcOrigemExportar','cpcOrigemFechar'];
+  'cpcOrigemAnterior','cpcOrigemProximo','cpcOrigemExportar','cpcOrigemFechar','cpcOrigemIdentificacaoCiptur'];
 const elements={};
 for(const id of ids){
   const events={};
@@ -43,6 +43,7 @@ D.registrar('CIPTUR',rows,false,'2026-10-01','2026-10-12');
 D.abrir('CIPTUR');
 assert.equal(elements.cpcDetalhamentoOrigem.hidden,false);
 assert.equal(elements.cpcOrigemTitulo.textContent,'Registros de origem — CIPTUR');
+assert.equal(elements.cpcOrigemIdentificacaoCiptur.hidden,false,'explicação CIPTUR visível');
 assert.equal(elements.cpcDetalhamentoOrigem.scrolled,true);
 assert.match(elements.cpcOrigemQuantidade.textContent,/33 registro/);
 assert.equal((elements.cpcOrigemCorpo.innerHTML.match(/<tr>/g)||[]).length,12,'12 linhas por página');
@@ -73,6 +74,7 @@ assert.equal(downloads.at(-1).length,17,'exporta TODAS as linhas da fonte filtra
 D.registrar('CIPA',[],true,'2026-10-01','2026-10-12');
 D.abrir('CIPA');
 assert.equal(elements.cpcOrigemAlerta.hidden,false,'fonte parcial identificada');
+assert.equal(elements.cpcOrigemIdentificacaoCiptur.hidden,true,'explicação CIPTUR oculta em outras unidades');
 assert.equal(elements.cpcOrigemExportar.disabled,true);
 D.reiniciar();
 assert.equal(elements.cpcDetalhamentoOrigem.hidden,true,'mudança de período fecha dados da consulta anterior');
