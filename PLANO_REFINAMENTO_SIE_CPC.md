@@ -1,6 +1,6 @@
 # Plano de refinamento do SIE-CPC
 
-**Versão:** 1.7 — 12/10/2026  
+**Versão:** 1.8 — 12/10/2026  
 **Estado:** em execução; homologação pendente.  
 **Escopo:** CPC, 1º BPM, 2º BPM, BOPE, Cavalaria, CIPA, CIPG, CIPTUR e GIRO.
 
@@ -59,9 +59,15 @@ Transformar os painéis, mapas, consultas, auditorias e relatórios PDF em um co
 
 ### Fase 4 — Mapa estatístico do CPC
 - [x] Implementar **somente no modo CPC** a identificação visual principal pela **unidade responsável** no mapa resumido e no completo; manter filtros de natureza como atributos secundários.
-- [ ] Mini-brasões e cores por unidade implementados com `divIcon` e fallback colorido; faltam testes de carregamento, desempenho e legibilidade em celulares.
+- [ ] Homologar legibilidade, desempenho, expansão dos grupos e visualização dos popups em computador/celular. Os brasões agora aparecem **apenas no popup**, os pontos são círculos de **12 px** e a sigla aparece somente no zoom elevado.
 - [x] Implementar camada opcional **Abordagens GIRO** desmarcada por padrão no mapa CPC, com modos "ocorrências", "abordagens", "ambos" e consulta autorizada e paginada.
-- [ ] Harmonizar integralmente período, geolocalização, permissões, legenda, agrupamentos e exportação (fuso UTC−04 e filtros territoriais por bairro implementados, mas testes práticos, agrupamento/exportação pendentes).
+- [x] Separar rigidamente as visualizações em **Agrupamento automático (padrão CPC)**, **Pontos por unidade** e **Mapa de calor limpo (sem pontos/brasões)** nos mapas resumido e completo.
+- [x] Implementar clusterização com Leaflet.markercluster (com fallback), expansão ao clicar, contadores em clusters, distinção visual de grupos mistos e sigla em zoom alto.
+- [x] Exibir brasão apenas no popup de identificação da ocorrência, com natureza, BO, local e data; manter a mini-marca discreta (12 px) no mapa.
+- [x] Incluir contadores na legenda conforme filtros, botão para filtrar unidade e exportação CSV limitada à área e aos filtros visíveis em ambos os mapas.
+- [x] Criar regressões de simbologia, legenda, agrupamento e modo calor (`tests/mapa-cpc-profissional.test.cjs`); adaptar teste da CIPTUR para verificar escudo no popup.
+
+- [ ] Homologar integralmente filtros territoriais, unidades, data/hora, geolocalização e segurança com perfil CPC real; exportação CSV da área visível, legenda dinâmica e agrupamento já implementados e cobertos por testes de contrato.
 **Aceite:** o mapa CPC distingue unidades e, ao ativar o filtro, exibe apenas abordagens reais do GIRO; mapas individuais seguem intactos.
 
 ### Fase 5 — Dashboard completo, consultas e séries temporais
@@ -149,6 +155,17 @@ As alterações da **Fase 3 (cartões CPC), Fase 4 (mapa), Fase 5 (seção de in
 - [x] Construir uma série de evolução **independente por unidade**, por dia (período curto) ou mês (período longo). A série da CIPA representa animais registrados, a da CIPG serviços, a da Cavalaria serviços, a da CIPTUR autos e a do GIRO abordagens. **Não comparar diretamente unidades de medida distintas**.
 - [x] Cobrir por testes de regressão períodos vazios, fuso de Roraima, dias sem atividade, séries mensais e erros versus zero (`tests/cpc-series-especializadas.test.cjs`).
 - [ ] Validar as séries no navegador CPC e amostras de dados por perfil, principalmente CIPA/CIPG/Cavalaria sem registros na base em 12/10/2026.
+
+## Revisão de cartografia CPC — 12/10/2026
+
+**Solicitação do Comando:** reduzir drasticamente a poluição visual dos escudos, manter identificação por unidade e aproximar a interface de mapas de geointeligência.
+
+- Agrupamento automático por proximidade como modo inicial do CPC, cor da unidade para grupos homogêneos e tom neutro para grupos mistos.
+- Pontos coloridos compactos (12 px) e siglas apenas em zoom alto; mini-brasão transferido para popup com dados estatísticos.
+- Mapa de calor isolado, sem pontos sobrepostos; legenda contextual (concentração vs. unidades, com totais).
+- Preservados filtros existentes; camada de abordagens GIRO opcional; exportação CSV dos registros georreferenciados **visíveis no enquadramento**, respeitando os filtros.
+- Biblioteca de clusterização com fallback para pontos simples em caso de indisponibilidade; ambos os mapas compartilham a mesma simbologia.
+- Pendências: testes reais de usabilidade, impressão/captura do mapa, eventuais limites de exportação e verificação da densidade em grandes períodos.
 
 ## Registro de progresso
 
