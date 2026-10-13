@@ -17,7 +17,7 @@
       const grupo=ids.slice(i,i+150);
       for(let pagina=0;pagina<maxPaginas;pagina++){
         const r=await db.from('cipg_eventos_guarda')
-          .select('id,servico_id,tipo_evento')
+          .select('id,servico_id,tipo_evento,data_evento')
           .in('servico_id',grupo)
           .order('id',{ascending:true})
           .range(pagina*passo,(pagina+1)*passo-1);
@@ -57,7 +57,7 @@
     const rows=[],limite=1000;
     for(let pagina=0;;pagina++){
       const r=await db.from('cipg_servicos_guarda')
-       .select('id,data_servico,instituicao,posto_codigo,tipo_local,modalidade,situacao,efetivo_ordinario,efetivo_svi,rondas_realizadas,intercorrencias')
+       .select('id,unidade_id,data_servico,instituicao,posto_codigo,tipo_local,modalidade,situacao,efetivo_ordinario,efetivo_svi,rondas_realizadas,intercorrencias,documento_referencia,numero_sei')
        .gte('data_servico',inicio).lte('data_servico',fim).order('id',{ascending:true})
        .range(pagina*limite,(pagina+1)*limite-1);
       if(r.error)throw Error('Falha ao consultar serviços da CIPG: '+r.error.message);
