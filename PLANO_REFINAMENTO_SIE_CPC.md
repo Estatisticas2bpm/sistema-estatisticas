@@ -1,6 +1,6 @@
 # Plano de refinamento do SIE-CPC
 
-**Versão:** 2.4 — 12/10/2026  
+**Versão:** 2.5 — 12/10/2026  
 **Estado:** em execução; homologação pendente.  
 **Escopo:** CPC, 1º BPM, 2º BPM, BOPE, Cavalaria, CIPA, CIPG, CIPTUR e GIRO.
 
@@ -260,6 +260,14 @@ As alterações da **Fase 3 (cartões CPC), Fase 4 (mapa), Fase 5 (seção de in
 - **Problema visual constatado:** tabela de origem embutida em cartões estreitos; longas listas comprimiam colunas e esticavam desnecessariamente a altura dos cartões.
 - **Correção implementada:** conferência documental movida para seção independente na largura do dashboard, com tabela de seis colunas, busca por BO/natureza/data, filtro por fonte, navegação em páginas de 12 linhas e exportação de todos os registros filtrados. Cartões permanecem resumidos.
 - **Limite do aceite:** a captura comprova a renderização inicial e presença de registros, mas não a conciliação com documentação de origem nem a responsividade da nova seção; exigem nova validação.
+
+## Fase 5 / Fase 7 — inspeção da conferência documental CIPTUR (12/10/2026)
+
+- [x] **Validação visual parcial** do Dashboard CPC, registrada por novas capturas com todos os cartões e painel de registros de origem aberto, pesquisa/colunas e paginação legíveis. Continuidade de testes em celular, filtros, exportação e fidelidade ao documento original permanece pendente.
+- [x] Confirmar por consulta SQL **somente leitura** o período 01–12/10/2026: 28 linhas diferentes na tabela `ciptur_autos_infracao`, com 28 IDs únicos e somente 5 valores diferentes de `codigo_infracao`. A conferência exibe 81 linhas (53 ocorrências policiais + 28 autos), sem que isso represente 81 ocorrências.
+- [x] Corrigir interpretação do campo `codigo_infracao`: **não é número identificador de auto**; a consulta da fonte não dispõe de número individual de AIT. A coluna de identificação passa a usar o UUID próprio de cada cadastro, enquanto o código de infração permanece na descrição, preservando os 28 autos e as 53 ocorrências e sem alteração do banco.
+- [x] Adicionar explicação contextual ao conferir a CIPTUR e testes para dois autos distintos com o mesmo código, diferenciando corretamente repetição de enquadramento e repetição do mesmo documento.
+- [ ] Verificar com o operador da CIPTUR se existe um número de AIT/PDF que precise ser cadastrado de forma específica no futuro, separado de `codigo_infracao`; não atribuir o UUID como se fosse o número oficial do AIT.
 
 ## Registro de progresso
 
