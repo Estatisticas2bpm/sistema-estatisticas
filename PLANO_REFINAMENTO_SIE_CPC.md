@@ -1,6 +1,6 @@
 # Plano de refinamento do SIE-CPC
 
-**Versão:** 2.8 — 13/10/2026  
+**Versão:** 2.9 — 14/10/2026  
 **Estado:** em execução; homologação pendente.  
 **Escopo:** CPC, 1º BPM, 2º BPM, BOPE, Cavalaria, CIPA, CIPG, CIPTUR e GIRO.
 
@@ -305,6 +305,20 @@ As alterações da **Fase 3 (cartões CPC), Fase 4 (mapa), Fase 5 (seção de in
 - [ ] Abrir BO, relato/histórico e anexos originais em visualizador autenticado, quando existentes; não presumir acesso ao documento a partir do número.
 - [ ] Implementar e testar permissões CPC somente leitura também no banco/storage, incluindo bloqueio de inserção, atualização e exclusão em todas as fontes.
 - [ ] Homologar visualmente todos os indicadores por unidade e a correspondência entre cada indicador e os registros exibidos.
+
+## Fase de refinamento — visualizador documental CPC (14/10/2026)
+
+- [x] Inspecionada a RPC `obter_ocorrencia_publica`: SECURITY INVOKER, retorna o cadastro completo, incluindo `historico_resumido`, `detalhes` e observações; aplica RLS de `ocorrencias`.
+- [x] Vincular as linhas da conferência estatística aos UUIDs de origem, com tabela permitida e vínculo ao BO ou serviço quando existente.
+- [x] Implementar visualizador somente leitura para BO, TCO, fauna, autos e embargos da CIPA, serviços e eventos CIPG, serviços da Cavalaria, autos CIPTUR e abordagens GIRO.
+- [x] Permitir abrir o BO/serviço vinculado, quando houver referência, sempre por nova consulta autenticada sujeita a RLS.
+- [x] Exigir contexto ativo `COMANDO`, `somente_leitura_operacional=true` e módulo `PAINEL_CPC` antes de consultar documento.
+- [x] Exibir histórico e campos complementares sem executar HTML fornecido pelo cadastro; não implementar operações de escrita ou links de edição.
+- [x] Verificar metadados do Storage: **não existe bucket privado de PDFs de BO** neste momento. O visualizador exibe dados salvos; não inventa anexos ou URLs para arquivos originais.
+- [ ] Homologar em sessão CPC autenticada a abertura real dos documentos, a correspondência dos UUIDs e os vínculos entre registros de todas as unidades.
+- [ ] Revisar a política de INSERT de `giro_abordagens` com acesso compartilhado: a regra atual não exige contexto operacional, diferentemente das demais tabelas. Bloquear gravação sob contexto `COMANDO` sem impedir o fluxo legítimo de usuários do GIRO.
+- [ ] Testar negações de escrita com perfis reais CPC e operadores, sem executar exclusões destrutivas; auditar outras RPCs de escrita.
+- [ ] Definir fluxo de armazenamento privado e autorização de PDFs originais, caso a unidade decida preservar os documentos enviados.
 
 ## Registro de progresso
 
