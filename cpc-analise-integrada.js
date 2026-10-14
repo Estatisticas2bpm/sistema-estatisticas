@@ -14,7 +14,7 @@ const inteiro=v=>Math.max(0,num(v));
 const fmt=v=>num(v).toLocaleString('pt-BR',{maximumFractionDigits:2});
 const uuid=v=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v||''));
 const dataBr=v=>String(v||'').slice(0,10).split('-').reverse().join('/');
-let db=null,config=null,versao=0,carregou=false,iniciado=false,linhas=[],grupos=[],indicadores=[];
+let db=null,config=null,versao=0,carregou=false,iniciado=false,linhas=[],grupos=[],indicadores=[],comparando=false;
 function hierarquiaIds(id,unidades){
   if(!id)return null;
   const ids=new Set(),fila=[String(id)];
@@ -126,9 +126,18 @@ function gerarGrupos(registros){
     const itens=(campo,legado)=>Array.isArray(o[campo])&&o[campo].length?o[campo].reduce((s,i)=>s+inteiro(i.quantidade),0):inteiro(o[legado]);
     somar('Armas registradas',o,itens('armas_itens','quantidade_armas'));
     somar('Munições registradas',o,itens('municoes_itens','quantidade_municoes'));
+    const armas=Array.isArray(o.armas_itens)&&o.armas_itens.length?o.armas_itens:[{tipo:o.armas,quantidade:o.quantidade_armas}];
+    armas.forEach(i=>{const q=inteiro(i.quantidade);if(q)somar('Armas por tipo · '+(ni(i.tipo)?'Não informado':norm(i.tipo)),o,q)});
+    const municoes=Array.isArray(o.municoes_itens)&&o.municoes_itens.length?o.municoes_itens:[{calibre:o.municoes,quantidade:o.quantidade_municoes}];
+    municoes.forEach(i=>{const q=inteiro(i.quantidade);if(q)somar('Munições por calibre · '+(ni(i.calibre)?'Não informado':norm(i.calibre)),o,q)});
     const drogas=(Array.isArray(o.entorpecentes_itens)&&o.entorpecentes_itens.some(i=>inteiro(i.quantidade)>0))||
       ['maconha','cocaina','pasta_base','crack','skank'].some(k=>inteiro(o[k])>0)||chave(o.entorpecentes)==='SIM';
     if(drogas)somar('Ocorrências com entorpecentes',o);
+    const tipos=new Set();
+    (Array.isArray(o.entorpecentes_itens)?o.entorpecentes_itens:[]).forEach(i=>{if(inteiro(i.quantidade)>0)tipos.add(ni(i.tipo)?'Não informado':norm(i.tipo))});
+    [['Maconha','maconha'],['Cocaína','cocaina'],['Pasta base','pasta_base'],['Crack','crack'],['Skank','skank']].forEach(([tipo,campo])=>{if(inteiro(o[campo])>0)tipos.add(tipo)});
+    if(drogas&&!tipos.size)tipos.add('Não informado');
+    tipos.forEach(tipo=>somar('Entorpecentes por tipo · '+tipo,o,1));
     (Array.isArray(o.bens_subtraidos)?o.bens_subtraidos:[]).forEach(b=>{
       const cat=ni(b.categoria)?'Não informada':norm(b.categoria);
       somar('Bens subtraídos · '+cat,o,Math.max(1,inteiro(b.quantidade)),norm(b.descricao)||norm(o.ocorrencia));
@@ -170,6 +179,9 @@ function render(registros,escopo,esperado){
   cards(dados.totais);
   tabelaRanking('cpcAnaliseComandantes',pares(dados.totais,'Comandante · '),'Comandante · ');
   tabelaRanking('cpcAnaliseBens',pares(dados.totais,'Bens subtraídos · '),'Bens subtraídos · ');
+  tabelaRanking('cpcAnaliseArmasTipos',pares(dados.totais,'Armas por tipo · '),'Armas por tipo · ');
+  tabelaRanking('cpcAnaliseMunicoesCalibres',pares(dados.totais,'Munições por calibre · '),'Munições por calibre · ');
+  tabelaRanking('cpcAnaliseDrogasTipos',pares(dados.totais,'Entorpecentes por tipo · '),'Entorpecentes por tipo · ');
   ['Infratores','Vítimas'].forEach(tipo=>{
     const id=tipo==='Infratores'?'Infratores':'Vitimas';
     tabelaRanking('cpcAnalise'+id+'Sexo',pares(dados.totais,tipo+' · Sexo · '),tipo+' · Sexo · ');
@@ -188,6 +200,9 @@ function render(registros,escopo,esperado){
 function resetar(){
   ++versao;carregou=false;linhas=[];grupos=[];indicadores=[];
   const conteudo=$('cpcAnaliseConteudo'),status=$('cpcAnaliseStatus'),botao=$('cpcAnaliseCarregar');
+  comparando=false;
+  if($('cpcAnaliseComparacao'))$('cpcAnaliseComparacao').hidden=true;
+  if($('cpcAnaliseComparar')){$('cpcAnaliseComparar').disabled=false;$('cpcAnaliseComparar').textContent='Comparar períodos'}
   if(conteudo)conteudo.hidden=true;
   if(status)status.textContent='Aplique os filtros e clique em “Carregar análise detalhada”.';
   if(botao){botao.disabled=false;botao.textContent='Carregar análise detalhada'}
@@ -224,9 +239,58 @@ async function carregar(){
     if(v===versao){botao.disabled=false;botao.textContent='Recarregar análise detalhada'}
   }
 }
+function periodoAnterior(a,tipo){
+  const inicio=new Date(a.data_inicio+'T12:00:00Z'),fim=new Date(a.data_fim+'T12:00:00Z');
+  if(Number.isNaN(inicio.getTime())||Number.isNaN(fim.getTime())||fim<inicio)throw Error('Período inválido');
+  if(tipo==='ano'){
+    const data=d=>{const x=new Date(d);x.setUTCFullYear(x.getUTCFullYear()-1);return x.toISOString().slice(0,10)};
+    return {inicio:data(inicio),fim:data(fim)};
+  }
+  const dias=Math.round((fim-inicio)/86400000)+1;
+  const anteriorFim=new Date(inicio.getTime()-86400000);
+  const anteriorInicio=new Date(anteriorFim.getTime()-(dias-1)*86400000);
+  return {inicio:anteriorInicio.toISOString().slice(0,10),fim:anteriorFim.toISOString().slice(0,10)};
+}
+async function comparar(){
+  if(!carregou||!db||!config||comparando||!global.CpcDocumentoLeitura?.autorizado())return;
+  const v=versao,btn=$('cpcAnaliseComparar'),a=config.args,opcao=$('cpcAnaliseCompararTipo').value;
+  const anterior=periodoAnterior(a,opcao);
+  comparando=true;btn.disabled=true;btn.textContent='Comparando...';
+  $('cpcAnaliseStatus').textContent='Consultando período comparado de '+dataBr(anterior.inicio)+' a '+dataBr(anterior.fim)+'...';
+  try{
+    const r=await db.rpc('obter_dados_dashboard_territorial',{data_inicio:anterior.inicio,data_fim:anterior.fim});
+    if(v!==versao)return;
+    if(r.error)throw r.error;
+    if(!Array.isArray(r.data))throw Error('Consulta comparativa sem lista válida.');
+    const ids=hierarquiaIds(a.p_unidade_id,config.unidades);
+    const anteriorFiltrado=r.data.filter(o=>filtro(o,a,ids));
+    const atual=sumarizar(linhas),antes=sumarizar(anteriorFiltrado);
+    const metadados=[['BOs cadastrados','total'],['Conduções operacionais','conducoes'],
+      ['Veículos recuperados','veiculos'],['Foragidos localizados','foragidos'],
+      ['Armas registradas','armas'],['Munições registradas','municoes'],
+      ['Ocorrências com entorpecentes','drogas'],['Bens subtraídos','bens']];
+    $('cpcAnaliseComparacaoTabela').innerHTML=metadados.map(([nome,k])=>{
+      const delta=atual[k]-antes[k];
+      return '<tr><td>'+esc(nome)+'</td><td>'+fmt(atual[k])+'</td><td>'+fmt(antes[k])+'</td><td>'+esc((delta>0?'+':'')+fmt(delta))+'</td></tr>';
+    }).join('');
+    $('cpcAnaliseComparacaoPeriodo').textContent='Período atual: '+dataBr(a.data_inicio)+' a '+dataBr(a.data_fim)+
+      ' · comparação: '+dataBr(anterior.inicio)+' a '+dataBr(anterior.fim)+'. Mesmo filtro de unidade e território, aplicável a BOs.';
+    $('cpcAnaliseComparacao').hidden=false;
+    $('cpcAnaliseStatus').textContent='Comparação concluída. As diferenças são variações absolutas; não representam percentuais.';
+  }catch(e){
+    if(v!==versao)return;
+    console.error('Comparação CPC indisponível:',e);
+    $('cpcAnaliseComparacao').hidden=true;
+    $('cpcAnaliseStatus').textContent='Não foi possível comparar os períodos: '+(e?.message||'falha de consulta');
+  }finally{
+    comparando=false;
+    if(v===versao){btn.disabled=false;btn.textContent='Comparar períodos'}
+  }
+}
 function iniciar(){
   if(iniciado)return;iniciado=true;
   $('cpcAnaliseCarregar')?.addEventListener('click',carregar);
+  $('cpcAnaliseComparar')?.addEventListener('click',comparar);
   $('cpcAnaliseIntegrada')?.addEventListener('click',e=>{
     const botao=e.target.closest('[data-analise-indicador]');
     if(!botao||!carregou||!config)return;
@@ -236,5 +300,5 @@ function iniciar(){
     global.CpcDetalhamentoOrigem?.abrir('ANALISE',indicador);
   });
 }
-global.CpcAnaliseIntegrada=Object.freeze({iniciar,configurar,carregar,resetar,filtro,hierarquiaIds,pessoas,sumarizar,gerarGrupos});
+global.CpcAnaliseIntegrada=Object.freeze({iniciar,configurar,carregar,comparar,periodoAnterior,resetar,filtro,hierarquiaIds,pessoas,sumarizar,gerarGrupos});
 })(window);
