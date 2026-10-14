@@ -1,6 +1,6 @@
 # Plano de refinamento do SIE-CPC
 
-**Versão:** 3.0 — 14/10/2026  
+**Versão:** 3.1 — 14/10/2026  
 **Estado:** em execução; homologação pendente.  
 **Escopo:** CPC, 1º BPM, 2º BPM, BOPE, Cavalaria, CIPA, CIPG, CIPTUR e GIRO.
 
@@ -314,6 +314,7 @@ As alterações da **Fase 3 (cartões CPC), Fase 4 (mapa), Fase 5 (seção de in
 - [x] Permitir abrir o BO/serviço vinculado, quando houver referência, sempre por nova consulta autenticada sujeita a RLS.
 - [x] Exigir contexto ativo `COMANDO`, `somente_leitura_operacional=true` e módulo `PAINEL_CPC` antes de consultar documento.
 - [x] Exibir histórico e campos complementares sem executar HTML fornecido pelo cadastro; não implementar operações de escrita ou links de edição.
+- [x] Fechar automaticamente o documento aberto quando período, filtros ou escopo da conferência mudarem, impedindo a permanência de dados de consulta anterior; preservar foco ao abrir BO vinculado.
 - [x] Verificar metadados do Storage: **não existe bucket privado de PDFs de BO** neste momento. O visualizador exibe dados salvos; não inventa anexos ou URLs para arquivos originais.
 - [ ] Homologar em sessão CPC autenticada a abertura real dos documentos, a correspondência dos UUIDs e os vínculos entre registros de todas as unidades.
 - [x] Auditar a política de INSERT compartilhado de `giro_abordagens`: identificada exceção ao bloqueio de escrita em contexto `COMANDO`.
