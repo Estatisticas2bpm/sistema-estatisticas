@@ -577,7 +577,7 @@ function idOcorrenciaDrill(o){return String(o?.ocorrencia_id||o?.id||'')}
 function documentoDrill(o){return o?._doc||o?.tipo_registro||(o?.numero_tco?'TCO':'BO')}
 function referenciaDrill(o){let doc=documentoDrill(o);if(doc==='TCO'&&o.numero_tco)return 'TCO '+norm(o.numero_tco)+(o.numero_bo?' · BO '+norm(o.numero_bo):'');return doc+' '+norm(o?.numero_bo)}
 function documentosPeriodo(registros,tcos){return [...registros.map(o=>({...o,_doc:o.tipo_registro||'BO'})),...tcos.map(t=>({...t,_doc:'TCO'}))]}
-const uuidDrill=v=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v||''))||/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v||''));
+const uuidDrill=v=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v||''));
 let linhasDrillAtuais=[];
 function contextoCpcSomenteLeitura(){return window.CpcDocumentoLeitura?.autorizado()===true}
 function documentoOrigemDrill(o){
