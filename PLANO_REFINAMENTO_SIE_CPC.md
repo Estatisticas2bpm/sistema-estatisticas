@@ -1,6 +1,6 @@
 # Plano de refinamento do SIE-CPC
 
-**Versão:** 3.1 — 14/10/2026  
+**Versão:** 3.2 — 14/10/2026  
 **Estado:** em execução; homologação pendente.  
 **Escopo:** CPC, 1º BPM, 2º BPM, BOPE, Cavalaria, CIPA, CIPG, CIPTUR e GIRO.
 
@@ -305,6 +305,16 @@ As alterações da **Fase 3 (cartões CPC), Fase 4 (mapa), Fase 5 (seção de in
 - [ ] Abrir BO, relato/histórico e anexos originais em visualizador autenticado, quando existentes; não presumir acesso ao documento a partir do número.
 - [ ] Implementar e testar permissões CPC somente leitura também no banco/storage, incluindo bloqueio de inserção, atualização e exclusão em todas as fontes.
 - [ ] Homologar visualmente todos os indicadores por unidade e a correspondência entre cada indicador e os registros exibidos.
+
+## Correção de usabilidade — Dashboard Completo CPC (14/10/2026)
+
+- [x] Identificar a tela exata relatada: `dashboard.html`, com detalhamento de 149 BOs em 01/10/2026–14/10/2026; a coluna Referência estava em texto e o link "Ver ocorrência" abria `consulta.html` operacional.
+- [x] Tornar o número de BO da coluna Referência um botão clicável no contexto CPC, sem navegar à consulta operacional.
+- [x] Abrir o cadastro completo e histórico no visualizador CPC autenticado, sem TCO, edição ou exclusão.
+- [x] Ocultar a coluna Ação e o atalho "Abrir esta lista em Ocorrências" no contexto CPC somente leitura; manter fluxo legado das unidades operacionais.
+- [x] Usar `<dialog>` nativo para o visualizador aparecer sobre o diálogo de lista, sem perder a posição dos 149 registros.
+- [x] Preservar o UUID próprio do TCO ao gerar lista mista de documentos, permitindo consultar o TCO correto e abrir seu BO vinculado.
+- [ ] Homologar no navegador autenticado CPC o clique em números de BO reais e confirmar que o histórico é exibido, sem controles operacionais.
 
 ## Fase de refinamento — visualizador documental CPC (14/10/2026)
 
