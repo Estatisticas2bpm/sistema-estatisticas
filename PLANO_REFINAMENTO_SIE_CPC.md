@@ -1,6 +1,6 @@
 # Plano de refinamento do SIE-CPC
 
-**Versão:** 3.3 — 14/10/2026  
+**Versão:** 3.4 — 14/10/2026  
 **Estado:** em execução; homologação pendente.  
 **Escopo:** CPC, 1º BPM, 2º BPM, BOPE, Cavalaria, CIPA, CIPG, CIPTUR e GIRO.
 
@@ -320,6 +320,17 @@ As alterações da **Fase 3 (cartões CPC), Fase 4 (mapa), Fase 5 (seção de in
 - [ ] Validar diferenças entre os contratos de filtro de `obter_painel_cpc_territorial` e `obter_dados_dashboard_territorial` e aprimorar quando necessário.
 - [ ] Integrar em fase posterior gráficos analíticos adicionais (se forem necessários após a homologação), preservando o desempenho anual.
 - [ ] Após homologação, decidir sobre o redirecionamento de links antigos do CPC ao painel integrado sem afetar as unidades.
+
+## Ampliação do painel único CPC — dia/turno, documentos e territórios (14/10/2026)
+
+- [x] Reaproveitar a consulta detalhada sob demanda do Painel Estatístico Integrado, sem disparar novas RPCs automaticamente.
+- [x] Incorporar contagem por tipo de documento registrado em ocorrências (BO/ROP/outros); **TCO permanece no indicador separado** para evitar contagem indevida.
+- [x] Incorporar rankings clicáveis de naturezas (BO distinto por natureza), bairros e logradouros, com rastreabilidade para o BO e histórico.
+- [x] Incorporar matriz de dia da semana por turno e gráfico de evolução semanal; preservar BOs sem turno na coluna "Não informado", sem reduzir artificialmente o total.
+- [x] Reutilizar filtro global por unidade, data e território já disponível no Painel Integrado; indicadores especializados mantêm critérios próprios.
+- [x] Manter o antigo `dashboard.html` disponível aos usuários operacionais, sem atalho duplicado na página inicial do CPC.
+- [ ] Homologar com comandante autenticado os filtros por unidade, total de BOs, matriz, rankings e abertura de documentos.
+- [ ] Conferir a equivalência entre totais das duas RPCs territoriais, especialmente quando houver natureza múltipla e filtros de companhia/turno.
 
 ## Correção de usabilidade — Dashboard Completo CPC (14/10/2026)
 
