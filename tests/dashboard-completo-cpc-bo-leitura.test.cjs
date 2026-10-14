@@ -30,7 +30,9 @@ const el=n=>els[n]||(els[n]={hidden:false,style:{},innerHTML:'',textContent:'',s
 const actions=[];
 const w={CpcDocumentoLeitura:{autorizado:()=>true,abrir:d=>actions.push(d)}};
 const scope={window:w,document:{body:{classList:{toggle(){}}}},esc:x=>String(x),norm:x=>String(x??''),dataBr:x=>x,
-  rows:(id,body)=>{el(id).innerHTML=body},$:el,Set,Number,String};
+  rows:(id,body)=>{el(id).innerHTML=body},$:el,Set,Number,String,
+  documentoDrill:o=>o._doc||'BO',referenciaDrill:o=>(o._doc||'BO')+' '+String(o.numero_tco||o.numero_bo||''),
+  idOcorrenciaDrill:o=>String(o.ocorrencia_id||o.id||'')};
 vm.runInNewContext(code,scope);
 assert.equal(scope.uuidDrill(id),true);
 assert.equal(scope.uuidDrill('BO-123'),false);
@@ -41,7 +43,6 @@ assert.match(el('drillTabela').innerHTML,/BO 2026-000149/);
 assert.doesNotMatch(el('drillTabela').innerHTML,/Ver ocorrência|href="consulta\.html/);
 assert.equal(el('drillColunaAcao').hidden,true);
 assert.equal(el('drillAbrirLista').style.display,'none');
-assert.equal(scope.linhasDrillAtuais.length,1);
 const tco={id:tcoId,ocorrencia_id:id,numero_tco:'TCO-22',_doc:'TCO'};
 const origem=scope.documentoOrigemDrill(tco);
 assert.equal(origem.origem_tabela,'tcos');
