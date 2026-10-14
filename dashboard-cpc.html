@@ -405,7 +405,7 @@ async function consultarGiroCpcPaginado(inicio,fim){
 let versaoConsultaCpc=0;
 async function carregar(){
   const versao=++versaoConsultaCpc;
-  window.CpcAnaliseIntegrada.resetar();
+  window.CpcAnaliseIntegrada?.resetar();
   const ready=window.SistemaAuth?.ready;
   if(ready)await ready;
   if(versao!==versaoConsultaCpc)return;
@@ -434,7 +434,7 @@ async function carregar(){
     popularUnidades();
     if(!args.p_unidade_id&&$('unidade').value){carregar();return}
     render(r.data);
-    window.CpcAnaliseIntegrada.configurar(db,args,hierarquiaUnidades,r.data.resumo?.total_ocorrencias);
+    window.CpcAnaliseIntegrada?.configurar(db,args,hierarquiaUnidades,r.data.resumo?.total_ocorrencias);
     document.querySelector('main').classList.remove('cpcConsultaSemResultado');
     window.CpcIndicadoresDashboard.carregar(db,args,hierarquiaUnidades).catch(function(e){console.error(e);if(versao===versaoConsultaCpc)$('cpcIndicadoresEspecificos').textContent='Erro ao consultar indicadores especializados.'});
     $('status').textContent='Filtro aplicado: '+br(inicio)+' a '+br(fim)+' · '+n(r.data.resumo?.total_ocorrencias).toLocaleString('pt-BR')+' ocorrências policiais no escopo. Os indicadores especializados possuem critérios próprios descritos abaixo.';
