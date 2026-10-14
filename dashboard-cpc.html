@@ -120,10 +120,18 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
 .cpcAnaliseLinha:focus-visible,.cpcAnaliseCartao:focus-visible{outline:3px solid #327ca9;outline-offset:2px}
 @media(max-width:860px){.cpcAnaliseCartoes{grid-template-columns:repeat(2,minmax(0,1fr))}.cpcAnaliseGrade{grid-template-columns:1fr}}
 @media(max-width:480px){.cpcAnaliseCartoes{grid-template-columns:1fr}}
+.cpcAnaliseMatriz{overflow-x:auto;max-width:100%;margin:12px 0}
+.cpcAnaliseMatriz table{border-collapse:collapse;width:100%;min-width:670px;font-size:12px}
+.cpcAnaliseMatriz th,.cpcAnaliseMatriz td{padding:10px 8px;border:1px solid #dbe5ef;text-align:center}
+.cpcAnaliseMatriz th{background:#eef5fb;color:#183d60;font-weight:800}
+.cpcAnaliseNumero{border:1px solid #b8d6e9;background:#f0f8ff;color:#0a5485;font:inherit;font-weight:800;cursor:pointer;border-radius:6px;padding:5px 9px}
+.cpcAnaliseNumero:hover{background:#dcefff}.cpcAnaliseNumero:focus-visible{outline:3px solid #1b7ba6;outline-offset:2px}
+.cpcAnaliseZero{color:#8b9baa}.cpcAnaliseGrafico{height:230px;position:relative;margin:10px 0}
+
 
 </style>
 <script src="auth-config.js"></script>
-<script src="auth-guard.js"></script><script src="estatistica-indicadores.js?v=20261012-1"></script><script src="cipa-home.js?v=20261012-rastreabilidade3"></script><script src="cipg-home.js?v=20261012-rastreabilidade3"></script><script src="cpc-rastreabilidade.js?v=20261014-documento1"></script><script src="cpc-detalhamento-origem.js?v=20261014-documento2"></script><script src="cpc-documento-leitura.js?v=20261014-documento2"></script><script src="cpc-indicadores-dashboard.js?v=20261013-indicadores1"></script><script src="cpc-analise-integrada.js?v=20261014-unificado1"></script>
+<script src="auth-guard.js"></script><script src="estatistica-indicadores.js?v=20261012-1"></script><script src="cipa-home.js?v=20261012-rastreabilidade3"></script><script src="cipg-home.js?v=20261012-rastreabilidade3"></script><script src="cpc-rastreabilidade.js?v=20261014-documento1"></script><script src="cpc-detalhamento-origem.js?v=20261014-documento2"></script><script src="cpc-documento-leitura.js?v=20261014-documento2"></script><script src="cpc-indicadores-dashboard.js?v=20261013-indicadores1"></script><script src="cpc-analise-integrada.js?v=20261014-unificado2"></script>
 </head>
 <body>
 <div id="loading" class="loading">Carregando central executiva do CPC...</div>
@@ -249,6 +257,10 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
     <div id="cpcAnaliseProdutividade" class="cpcAnaliseCartoes"></div>
     <div class="cpcAnaliseGrade">
       <div class="cpcAnaliseBox"><h3>Ocorrências por comandante de viatura</h3><p>BOs associados ao comandante informado.</p><div id="cpcAnaliseComandantes"></div></div>
+      <div class="cpcAnaliseBox"><h3>Documentos produzidos</h3><p>Tipos registrados nos BOs. Os TCOs possuem indicador próprio no resumo executivo e não são somados nesta lista.</p><div id="cpcAnaliseDocumentos"></div></div>
+      <div class="cpcAnaliseBox"><h3>Naturezas das ocorrências</h3><p>Um BO pode ter mais de uma natureza; cada natureza conta o BO uma vez.</p><div id="cpcAnaliseNaturezas"></div></div>
+      <div class="cpcAnaliseBox"><h3>Bairros com maior incidência</h3><p>Distribuição por bairro informado no BO.</p><div id="cpcAnaliseBairros"></div></div>
+      <div class="cpcAnaliseBox"><h3>Logradouros com maior incidência</h3><p>Ruas e avenidas conforme endereço cadastrado, sem padronização automática.</p><div id="cpcAnaliseLogradouros"></div></div>
       <div class="cpcAnaliseBox"><h3>Bens subtraídos</h3><p>Quantidade de itens por categoria, não BOs distintos.</p><div id="cpcAnaliseBens"></div></div>
       <div class="cpcAnaliseBox"><h3>Armas por tipo</h3><p>Quantidade de armas por tipo informado.</p><div id="cpcAnaliseArmasTipos"></div></div>
       <div class="cpcAnaliseBox"><h3>Munições por calibre</h3><p>Quantidade de munições por calibre informado.</p><div id="cpcAnaliseMunicoesCalibres"></div></div>
@@ -270,6 +282,12 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
       <div class="cpcAnaliseBox"><h3>Perfil das vítimas — nacionalidade</h3><div id="cpcAnaliseVitimasNacionalidade"></div></div>
       <div class="cpcAnaliseBox"><h3>Perfil dos infratores — faixa etária</h3><div id="cpcAnaliseInfratoresIdade"></div></div>
       <div class="cpcAnaliseBox"><h3>Perfil das vítimas — faixa etária</h3><div id="cpcAnaliseVitimasIdade"></div></div>
+    </div>
+    <div class="cpcAnaliseBox" style="margin-top:18px">
+      <h3>Ocorrências por dia da semana e turno</h3>
+      <p>A matriz contabiliza BOs por data da ocorrência e turno cadastrado. Registros sem turno identificado permanecem na coluna “Não informado”. Clique em uma quantidade para consultar os BOs correspondentes.</p>
+      <div class="cpcAnaliseMatriz"><table><thead id="cpcAnaliseMatrizCabecalho"></thead><tbody id="cpcAnaliseMatrizTurnos"></tbody></table></div>
+      <div class="cpcAnaliseGrafico"><canvas id="cpcAnaliseGraficoDias" aria-label="Ocorrências por dia da semana" role="img"></canvas></div>
     </div>
     <p class="status">Clique em qualquer quantidade ou categoria para conferir os BOs de origem e abrir seu histórico em modo de consulta.</p>
   </div>
