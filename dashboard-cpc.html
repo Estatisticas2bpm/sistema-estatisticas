@@ -98,8 +98,10 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
 
 
 .cpcNavIntegrado{width:min(1440px,96%);margin:0 auto 15px;display:flex;gap:8px;flex-wrap:wrap}
-.cpcNavIntegrado a{border:1px solid #cbd7e3;border-radius:9px;background:#fff;color:#16496f;font-size:12px;font-weight:850;text-decoration:none;padding:10px 13px}
-.cpcNavIntegrado a:hover,.cpcNavIntegrado a:focus-visible{background:#e5f2fa;outline-offset:2px}
+.cpcNavIntegrado button{border:1px solid #cbd7e3;border-radius:9px;background:#fff;color:#16496f;font:850 12px Inter,Segoe UI,Arial,sans-serif;padding:10px 13px;cursor:pointer}
+.cpcNavIntegrado button:hover,.cpcNavIntegrado button:focus-visible{background:#e5f2fa;outline:3px solid #8fc4e7;outline-offset:2px}
+.cpcNavIntegrado button[aria-selected="true"]{background:var(--navy);border-color:var(--navy);color:#fff;box-shadow:0 5px 16px #102e4a2c}
+.cpcTabOculto{display:none!important}.cpcTabTitulo{width:min(1440px,96%);margin:0 auto 10px;color:#40566c;font-size:12px}.cpcTabTitulo strong{color:var(--navy)}
 .cpcAnaliseChamada{display:flex;justify-content:space-between;gap:15px;align-items:center;flex-wrap:wrap;background:#f0f6fc;border:1px solid #c9ddeb;border-radius:11px;padding:14px;margin:12px 0}
 .cpcAnaliseChamada p{margin:5px 0 0;font-size:12px;color:#536c81;max-width:780px}
 .cpcAnaliseCartoes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:16px 0}
@@ -138,7 +140,7 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
 <header>
   <div class="head">
     <div class="brand"><img src="brasao-pmrr.png" alt="Brasão da PMRR"><div><b>SIE-CPC</b><small>Sistema Integrado de Estatística do CPC</small></div></div>
-    <div class="headActions"><a href="mapa-criminal.html">⌖ Mapa criminal</a><a href="#cpcAnaliseIntegrada">▥ Análises completas</a><a href="index.html">← Página inicial</a></div>
+    <div class="headActions"><a id="linkMapaTopoCpc" href="mapa-criminal.html">⌖ Mapa criminal</a><a href="#produtividade">▥ Análises completas</a><a href="index.html">← Página inicial</a></div>
   </div>
   <div class="hero">
     <div><div class="eyebrow">Comando de Policiamento da Capital · gestão estratégica · somente leitura</div><h1>Painel Estatístico Integrado do CPC</h1><p>Leitura consolidada das unidades subordinadas, com comparação operacional, evolução temporal e filtros para aprofundar a análise sem sair do contexto do Comando.</p></div>
@@ -151,7 +153,9 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
     <div class="filters">
       <label>Data inicial<input id="ini" type="date"></label>
       <label>Data final<input id="fim" type="date"></label>
-      <label>Unidade<select id="unidade"><option value="">Todas as unidades</option></select></label>
+      <label>Ano<select id="anoFiltro"><option value="">Personalizado</option></select></label>
+      <label>Mês<select id="mesFiltro"><option value="">Ano inteiro / personalizado</option></select></label>
+      <label>Unidade policial<select id="unidade"><option value="">Todas as unidades — CPC</option></select></label>
       <label>AISC<select id="aisc"><option value="">Todas</option></select></label>
       <label>SISC<select id="sisc"><option value="">Todas</option></select></label>
       <label>Setor<select id="setor"><option value="">Todos</option></select></label>
@@ -163,16 +167,17 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
     <div class="filterActions" style="margin-top:12px"><button id="atualizar" class="btn" type="button">Aplicar filtros</button><button id="limpar" class="btn secondary" type="button">Limpar filtros</button></div>
     <div id="scope" class="filterScope">Abrangência · todas as unidades</div><div id="status" class="status" role="status" aria-live="polite"></div>
   </section>
-  <nav class="cpcNavIntegrado" aria-label="Seções do painel estatístico integrado">
-    <a href="#secIndicadoresCpc">Indicadores por unidade</a>
-    <a href="#cpcAnaliseIntegrada">Perfis e produtividade</a>
-    <a href="#secAbordagensGiroCpc">GIRO</a>
-    <a href="#cpcQuadroUnidades">Comparativo de unidades</a>
-    <a href="#cpcNaturezasUnidades">Naturezas</a>
+  <nav class="cpcNavIntegrado" role="tablist" aria-label="Áreas do painel estatístico integrado">
+    <button id="tab-visao-geral" role="tab" aria-selected="true" data-cpc-tab="visao-geral" type="button">Visão geral</button>
+    <button id="tab-produtividade" role="tab" aria-selected="false" data-cpc-tab="produtividade" type="button">Produtividade operacional</button>
+    <button id="tab-perfis" role="tab" aria-selected="false" data-cpc-tab="perfis" type="button">Vítimas e infratores</button>
+    <button id="tab-territorial" role="tab" aria-selected="false" data-cpc-tab="territorial" type="button">Análise territorial</button>
+    <button id="tab-comparativos" role="tab" aria-selected="false" data-cpc-tab="comparativos" type="button">Comparativos estatísticos</button>
   </nav>
+  <p id="cpcTabDescricao" class="cpcTabTitulo" role="status"><strong>Visão geral:</strong> síntese executiva, indicadores gerais e resultados especializados das unidades.</p>
 
 
-  <section class="kpis">
+  <section class="kpis" data-cpc-areas="visao-geral">
     <div class="kpi" style="--accent:var(--blue)"><small>Ocorrências</small><strong id="kOcorrencias">0</strong><em>registros no período</em></div>
     <div class="kpi" style="--accent:var(--steel)"><small>Conduções</small><strong id="kConducoes">0</strong><em>pessoas conduzidas</em></div>
     <div class="kpi" style="--accent:var(--red)"><small>Prisões</small><strong id="kPrisoes">0</strong><em>registros informados</em></div>
@@ -182,7 +187,7 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
     <div class="kpi" style="--accent:var(--green)"><small>Com drogas</small><strong id="kDrogas">0</strong><em>ocorrências com registro</em></div>
   </section>
 
-  <section class="panel" id="secIndicadoresCpc">
+  <section class="panel" id="secIndicadoresCpc" data-cpc-areas="visao-geral">
   <div class="sectionTitle"><div><h2>Indicadores estatísticos por unidade</h2><p>Indicadores por unidade com critérios próprios; clique em um indicador para conferir os registros de origem e selecione o número do documento para consultar o cadastro completo, sem edição.</p></div><span class="tag">SIE-CPC</span></div>
   <div id="cpcIndicadoresEspecificos" class="cpcSpecialGrid"><p class="empty">Consultando indicadores por unidade...</p></div>
   <section id="cpcDetalhamentoOrigem" class="cpcOrigemPainel" aria-labelledby="cpcOrigemTitulo" hidden>
@@ -238,7 +243,7 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
     </div>
   </div>
 </section>
-<section class="panel" id="cpcAnaliseIntegrada">
+<section class="panel" id="cpcAnaliseIntegrada" data-cpc-areas="produtividade perfis territorial comparativos">
   <div class="sectionTitle">
     <div><h2>Análises completas — produtividade, pessoas e bens</h2>
       <p>Informações do Dashboard Completo integradas aos filtros de unidade, período e território do CPC. Os dados de BO são separados das atividades especializadas.</p></div>
@@ -253,19 +258,19 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
   <p id="cpcAnaliseConferencia" class="cpcAnaliseAviso" role="alert" hidden></p>
   <div id="cpcAnaliseConteudo" hidden>
     <p class="filterScope"><span id="cpcAnaliseEscopo">Escopo selecionado</span> · <strong id="cpcAnaliseTotal">0</strong> BO(s) analisados</p>
-    <h3>Resumo da produtividade operacional</h3>
-    <div id="cpcAnaliseProdutividade" class="cpcAnaliseCartoes"></div>
+    <h3 data-cpc-analise-area="produtividade">Resumo da produtividade operacional</h3>
+    <div id="cpcAnaliseProdutividade" class="cpcAnaliseCartoes" data-cpc-analise-area="produtividade"></div>
     <div class="cpcAnaliseGrade">
-      <div class="cpcAnaliseBox"><h3>Ocorrências por comandante de viatura</h3><p>BOs associados ao comandante informado.</p><div id="cpcAnaliseComandantes"></div></div>
-      <div class="cpcAnaliseBox"><h3>Documentos produzidos</h3><p>Tipos registrados nos BOs. Os TCOs possuem indicador próprio no resumo executivo e não são somados nesta lista.</p><div id="cpcAnaliseDocumentos"></div></div>
-      <div class="cpcAnaliseBox"><h3>Naturezas das ocorrências</h3><p>Um BO pode ter mais de uma natureza; cada natureza conta o BO uma vez.</p><div id="cpcAnaliseNaturezas"></div></div>
-      <div class="cpcAnaliseBox"><h3>Bairros com maior incidência</h3><p>Distribuição por bairro informado no BO.</p><div id="cpcAnaliseBairros"></div></div>
-      <div class="cpcAnaliseBox"><h3>Logradouros com maior incidência</h3><p>Ruas e avenidas conforme endereço cadastrado, sem padronização automática.</p><div id="cpcAnaliseLogradouros"></div></div>
-      <div class="cpcAnaliseBox"><h3>Bens subtraídos</h3><p>Quantidade de itens por categoria, não BOs distintos.</p><div id="cpcAnaliseBens"></div></div>
-      <div class="cpcAnaliseBox"><h3>Armas por tipo</h3><p>Quantidade de armas por tipo informado.</p><div id="cpcAnaliseArmasTipos"></div></div>
-      <div class="cpcAnaliseBox"><h3>Munições por calibre</h3><p>Quantidade de munições por calibre informado.</p><div id="cpcAnaliseMunicoesCalibres"></div></div>
-      <div class="cpcAnaliseBox"><h3>Entorpecentes por tipo</h3><p>Incidência por BO, sem somar pesos ou unidades diferentes.</p><div id="cpcAnaliseDrogasTipos"></div></div>
-      <div class="cpcAnaliseBox"><h3>Comparativo de produtividade</h3>
+      <div class="cpcAnaliseBox" data-cpc-analise-area="produtividade"><h3>Ocorrências por comandante de viatura</h3><p>BOs associados ao comandante informado.</p><div id="cpcAnaliseComandantes"></div></div>
+      <div class="cpcAnaliseBox" data-cpc-analise-area="produtividade"><h3>Documentos produzidos</h3><p>Tipos registrados nos BOs. Os TCOs possuem indicador próprio no resumo executivo e não são somados nesta lista.</p><div id="cpcAnaliseDocumentos"></div></div>
+      <div class="cpcAnaliseBox" data-cpc-analise-area="produtividade"><h3>Naturezas das ocorrências</h3><p>Um BO pode ter mais de uma natureza; cada natureza conta o BO uma vez.</p><div id="cpcAnaliseNaturezas"></div></div>
+      <div class="cpcAnaliseBox" data-cpc-analise-area="territorial"><h3>Bairros com maior incidência</h3><p>Distribuição por bairro informado no BO.</p><div id="cpcAnaliseBairros"></div></div>
+      <div class="cpcAnaliseBox" data-cpc-analise-area="territorial"><h3>Logradouros com maior incidência</h3><p>Ruas e avenidas conforme endereço cadastrado, sem padronização automática.</p><div id="cpcAnaliseLogradouros"></div></div>
+      <div class="cpcAnaliseBox" data-cpc-analise-area="produtividade"><h3>Bens subtraídos</h3><p>Quantidade de itens por categoria, não BOs distintos.</p><div id="cpcAnaliseBens"></div></div>
+      <div class="cpcAnaliseBox" data-cpc-analise-area="produtividade"><h3>Armas por tipo</h3><p>Quantidade de armas por tipo informado.</p><div id="cpcAnaliseArmasTipos"></div></div>
+      <div class="cpcAnaliseBox" data-cpc-analise-area="produtividade"><h3>Munições por calibre</h3><p>Quantidade de munições por calibre informado.</p><div id="cpcAnaliseMunicoesCalibres"></div></div>
+      <div class="cpcAnaliseBox" data-cpc-analise-area="produtividade"><h3>Entorpecentes por tipo</h3><p>Incidência por BO, sem somar pesos ou unidades diferentes.</p><div id="cpcAnaliseDrogasTipos"></div></div>
+      <div class="cpcAnaliseBox" data-cpc-analise-area="comparativos"><h3>Comparativo de produtividade</h3>
         <p>Consulta opcional do período anterior, com os mesmos filtros e sem misturar produtividade especializada.</p>
         <label for="cpcAnaliseCompararTipo">Comparar com</label>
         <select id="cpcAnaliseCompararTipo"><option value="anterior">Período imediatamente anterior</option><option value="ano">Mesmo período do ano anterior</option></select>
@@ -276,23 +281,23 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
           <tbody id="cpcAnaliseComparacaoTabela"></tbody></table></div>
         </div>
       </div>
-      <div class="cpcAnaliseBox"><h3>Perfil dos infratores — sexo</h3><div id="cpcAnaliseInfratoresSexo"></div></div>
-      <div class="cpcAnaliseBox"><h3>Perfil das vítimas — sexo</h3><div id="cpcAnaliseVitimasSexo"></div></div>
-      <div class="cpcAnaliseBox"><h3>Perfil dos infratores — nacionalidade</h3><div id="cpcAnaliseInfratoresNacionalidade"></div></div>
-      <div class="cpcAnaliseBox"><h3>Perfil das vítimas — nacionalidade</h3><div id="cpcAnaliseVitimasNacionalidade"></div></div>
-      <div class="cpcAnaliseBox"><h3>Perfil dos infratores — faixa etária</h3><div id="cpcAnaliseInfratoresIdade"></div></div>
-      <div class="cpcAnaliseBox"><h3>Perfil das vítimas — faixa etária</h3><div id="cpcAnaliseVitimasIdade"></div></div>
+      <div class="cpcAnaliseBox" data-cpc-analise-area="perfis"><h3>Perfil dos infratores — sexo</h3><div id="cpcAnaliseInfratoresSexo"></div></div>
+      <div class="cpcAnaliseBox" data-cpc-analise-area="perfis"><h3>Perfil das vítimas — sexo</h3><div id="cpcAnaliseVitimasSexo"></div></div>
+      <div class="cpcAnaliseBox" data-cpc-analise-area="perfis"><h3>Perfil dos infratores — nacionalidade</h3><div id="cpcAnaliseInfratoresNacionalidade"></div></div>
+      <div class="cpcAnaliseBox" data-cpc-analise-area="perfis"><h3>Perfil das vítimas — nacionalidade</h3><div id="cpcAnaliseVitimasNacionalidade"></div></div>
+      <div class="cpcAnaliseBox" data-cpc-analise-area="perfis"><h3>Perfil dos infratores — faixa etária</h3><div id="cpcAnaliseInfratoresIdade"></div></div>
+      <div class="cpcAnaliseBox" data-cpc-analise-area="perfis"><h3>Perfil das vítimas — faixa etária</h3><div id="cpcAnaliseVitimasIdade"></div></div>
     </div>
-    <div class="cpcAnaliseBox" style="margin-top:18px">
+    <div class="cpcAnaliseBox" style="margin-top:18px" data-cpc-analise-area="produtividade">
       <h3>Ocorrências por dia da semana e turno</h3>
       <p>A matriz contabiliza BOs por data da ocorrência e turno cadastrado. Registros sem turno identificado permanecem na coluna “Não informado”. Clique em uma quantidade para consultar os BOs correspondentes.</p>
       <div class="cpcAnaliseMatriz"><table><thead id="cpcAnaliseMatrizCabecalho"></thead><tbody id="cpcAnaliseMatrizTurnos"></tbody></table></div>
       <div class="cpcAnaliseGrafico"><canvas id="cpcAnaliseGraficoDias" aria-label="Ocorrências por dia da semana" role="img"></canvas></div>
     </div>
-    <p class="status">Clique em qualquer quantidade ou categoria para conferir os BOs de origem e abrir seu histórico em modo de consulta.</p>
+    <p class="status" data-cpc-analise-area="produtividade perfis territorial comparativos">Clique em qualquer quantidade ou categoria para conferir os BOs de origem e abrir seu histórico em modo de consulta.</p>
   </div>
 </section>
-<section class="panel executive"><h2>Leitura executiva do período</h2><p id="resumoExecutivo">Analisando os indicadores selecionados...</p></section><section class="panel" id="secAbordagensGiroCpc">
+<section class="panel executive" data-cpc-areas="visao-geral"><h2>Leitura executiva do período</h2><p id="resumoExecutivo">Analisando os indicadores selecionados...</p></section><section class="panel" id="secAbordagensGiroCpc" data-cpc-areas="produtividade">
   <div class="sectionTitle"><div><h2>Abordagens preventivas — GIRO</h2><p>Produtividade de abordagens registrada pelas equipes do GIRO. Este bloco considera período e unidade; filtros criminais/territoriais de BO não alteram estes números.</p></div><span class="tag">GIRO</span></div>
   <div class="kpis" style="margin-bottom:16px">
     <div class="kpi"><small>Abordagens</small><strong id="cpcGiroAbordagens">0</strong></div>
@@ -304,7 +309,7 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
   <div class="chartbox"><canvas id="chartCpcGiroAbordagens"></canvas></div>
 </section>
 
-  <section class="panel">
+  <section class="panel" id="secTerritorioCpc" data-cpc-areas="territorial">
     <div class="sectionTitle"><div><h2>Distribuição territorial oficial</h2><p>Incidência conforme AISC, SISC e Setores definidos no Decreto nº 22.414-E/2017</p></div><a class="tag" href="territorio-cpc.html" style="text-decoration:none">ABRIR MATRIZ TERRITORIAL</a></div>
     <div class="territoryGrid">
       <div class="territoryBox"><h3>Por AISC</h3><div id="territorioAisc" class="rankList"></div></div>
@@ -313,27 +318,27 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
     </div>
   </section>
 
-  <div class="grid2">
-    <section class="panel"><div class="sectionTitle"><div><h2>Distribuição entre unidades</h2><p>Volume de ocorrências conforme os filtros aplicados</p></div><span class="tag">UNIDADES</span></div><div class="chartbox"><canvas id="chartUnidades"></canvas></div></section>
-    <section class="panel"><div class="sectionTitle"><div><h2>Evolução diária</h2><p>Comportamento das ocorrências ao longo do período</p></div><span class="tag">TENDÊNCIA</span></div><div class="chartbox"><canvas id="chartSerie"></canvas></div></section>
+  <div class="grid2" data-cpc-areas="visao-geral comparativos">
+    <section class="panel" data-cpc-areas="comparativos"><div class="sectionTitle"><div><h2>Distribuição entre unidades</h2><p>Volume de ocorrências conforme os filtros aplicados</p></div><span class="tag">UNIDADES</span></div><div class="chartbox"><canvas id="chartUnidades"></canvas></div></section>
+    <section class="panel" data-cpc-areas="visao-geral comparativos"><div class="sectionTitle"><div><h2>Evolução diária</h2><p>Comportamento das ocorrências ao longo do período</p></div><span class="tag">TENDÊNCIA</span></div><div class="chartbox"><canvas id="chartSerie"></canvas></div></section>
   </div>
 
-  <div class="grid2">
-    <section class="panel"><div class="sectionTitle"><div><h2>Principais ocorrências</h2><p>Top 10 naturezas no escopo selecionado</p></div><span class="tag">NATUREZAS</span></div><div id="topNaturezasGeral" class="rankList"></div></section>
-    <section class="panel"><div class="sectionTitle"><div><h2>Principais bairros</h2><p>Top 10 concentrações territoriais no período</p></div><span class="tag">TERRITÓRIO</span></div><div id="topBairros" class="rankList"></div></section>
+  <div class="grid2" data-cpc-areas="visao-geral territorial">
+    <section class="panel" data-cpc-areas="visao-geral"><div class="sectionTitle"><div><h2>Principais ocorrências</h2><p>Top 10 naturezas no escopo selecionado</p></div><span class="tag">NATUREZAS</span></div><div id="topNaturezasGeral" class="rankList"></div></section>
+    <section class="panel" data-cpc-areas="territorial"><div class="sectionTitle"><div><h2>Principais bairros</h2><p>Top 10 concentrações territoriais no período</p></div><span class="tag">TERRITÓRIO</span></div><div id="topBairros" class="rankList"></div></section>
   </div>
 
-  <section class="panel">
+  <section class="panel" data-cpc-areas="comparativos">
     <div class="sectionTitle"><div><h2 id="cpcQuadroUnidades">Quadro comparativo operacional</h2><p>Indicadores por unidade subordinada dentro dos filtros ativos</p></div><span class="tag">CONSOLIDADO</span></div>
     <div class="tableWrap"><table><thead><tr><th>Unidade</th><th>Ocorrências</th><th>Conduções</th><th>Prisões</th><th>TCOs</th><th>Veículos rec.</th><th>Com armas</th><th>Com drogas</th></tr></thead><tbody id="tbodyUnidades"></tbody></table></div>
   </section>
 
-  <section class="panel">
+  <section class="panel" data-cpc-areas="comparativos">
     <div class="sectionTitle"><div><h2 id="cpcNaturezasUnidades">Principais ocorrências por unidade</h2><p>Top 5 naturezas de cada unidade no escopo selecionado</p></div><span class="tag">DRILL-DOWN</span></div>
     <div id="naturezas" class="naturezas"></div>
   </section>
 
-  <section class="panel"><div class="sectionTitle"><div><h2>Aprofundar análise</h2><p>Abra as ferramentas especializadas mantendo o contexto CPC</p></div><span class="tag">ATALHOS</span></div><div class="quick"><a href="territorio-cpc.html">Matriz territorial <span>→</span></a><a href="#cpcAnaliseIntegrada">Análises completas <span>→</span></a><a href="mapa-criminal.html">Mapa criminal <span>→</span></a><a href="analise-temporal.html">Análise temporal <span>→</span></a><a href="relatorio.html">Gerar relatório <span>→</span></a></div></section>
+  <section class="panel" data-cpc-areas="visao-geral"><div class="sectionTitle"><div><h2>Aprofundar análise</h2><p>Abra as ferramentas especializadas preservando unidade e período selecionados</p></div><span class="tag">ATALHOS</span></div><div class="quick"><a id="linkTerritorioCpc" href="territorio-cpc.html">Matriz territorial <span>→</span></a><a href="#produtividade">Análises completas <span>→</span></a><a id="linkMapaCpc" href="mapa-criminal.html">Mapa criminal <span>→</span></a><a id="linkTemporalCpc" href="analise-temporal.html">Análise temporal <span>→</span></a><a id="linkRelatorioCpc" href="relatorio.html">Relatório consolidado <span>→</span></a></div></section>
 </main>
 <footer>SIE-CPC — Polícia Militar de Roraima · Comando de Policiamento da Capital</footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -344,6 +349,14 @@ window.CpcDocumentoLeitura.configurar(db);
 window.CpcAnaliseIntegrada.iniciar();
 const $=id=>document.getElementById(id);
 let charts={},unidadesCarregadas=false,catalogoTerritorial=null,abordagensGiroCpc=[],hierarquiaUnidades=[];
+let abaCpcAtiva='visao-geral';
+const descricoesAbasCpc={
+  'visao-geral':['Visão geral','síntese executiva, indicadores gerais e resultados especializados das unidades.'],
+  produtividade:['Produtividade operacional','atuações, documentos, apreensões, bens, comandantes e resultados próprios das unidades.'],
+  perfis:['Vítimas e infratores','sexo, nacionalidade e faixa etária, preservando a categoria “não informado”.'],
+  territorial:['Análise territorial','bairros, logradouros, AISC, SISC, setores e acesso ao mapa com o mesmo recorte.'],
+  comparativos:['Comparativos estatísticos','evolução temporal, comparação entre unidades e entre períodos equivalentes.']
+};
 function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function br(v){return v?String(v).split('-').reverse().join('/'):'—'}
 function n(v){return Number(v)||0}
@@ -379,8 +392,39 @@ function popularTerritorio(){
   $('setor').innerHTML='<option value="">Todos</option>'+setores.map(x=>'<option>'+esc(x.codigo)+'</option>').join('');
   if(setores.some(x=>x.codigo===setorAtual))$('setor').value=setorAtual;
 }
-function popularUnidades(){if(unidadesCarregadas)return;const atual=new URLSearchParams(location.search).get('unidade')||'',lista=ordenarHierarquiaCpc();$('unidade').innerHTML='<option value="">Todas as unidades</option>'+lista.map(x=>'<option value="'+esc(x.u.id)+'">'+esc((x.nivel?'↳ '.repeat(Math.min(x.nivel,2)):'')+sigla(x.u.sigla)+' — '+x.u.nome+(x.u.agrega_descendentes?' · CONSOLIDADO':''))+'</option>').join('');if(lista.some(x=>String(x.u.id)===String(atual)))$('unidade').value=atual;unidadesCarregadas=true}
-function atualizarUrl(){const p=new URLSearchParams();[['ini','ini'],['fim','fim'],['unidade','unidade']].forEach(([id,k])=>{if($(id).value)p.set(k,$(id).value)});history.replaceState(null,'',location.pathname+(p.toString()?'?'+p.toString():''))}
+function popularUnidades(){if(unidadesCarregadas)return;const atual=new URLSearchParams(location.search).get('unidade')||'',lista=ordenarHierarquiaCpc();$('unidade').innerHTML='<option value="">Todas as unidades — CPC</option>'+lista.map(x=>'<option value="'+esc(x.u.id)+'">'+esc((x.nivel?'↳ '.repeat(Math.min(x.nivel,2)):'')+sigla(x.u.sigla)+' — '+x.u.nome+(x.u.agrega_descendentes?' · CONSOLIDADO':''))+'</option>').join('');if(lista.some(x=>String(x.u.id)===String(atual)))$('unidade').value=atual;unidadesCarregadas=true}
+function atualizarUrl(){const p=new URLSearchParams();[['ini','ini'],['fim','fim'],['unidade','unidade']].forEach(([id,k])=>{if($(id).value)p.set(k,$(id).value)});const hash=abaCpcAtiva==='visao-geral'?'':'#'+abaCpcAtiva;history.replaceState(null,'',location.pathname+(p.toString()?'?'+p.toString():'')+hash)}
+function selecionarAbaCpc(aba,atualizarHistorico=true){
+  if(!descricoesAbasCpc[aba])aba='visao-geral';abaCpcAtiva=aba;
+  document.querySelectorAll('[data-cpc-tab]').forEach(b=>{const ativa=b.dataset.cpcTab===aba;b.setAttribute('aria-selected',String(ativa));b.tabIndex=ativa?0:-1});
+  document.querySelectorAll('[data-cpc-areas]').forEach(el=>el.classList.toggle('cpcTabOculto',!String(el.dataset.cpcAreas||'').split(/\s+/).includes(aba)));
+  document.querySelectorAll('[data-cpc-analise-area]').forEach(el=>el.classList.toggle('cpcTabOculto',!String(el.dataset.cpcAnaliseArea||'').split(/\s+/).includes(aba)));
+  const d=descricoesAbasCpc[aba];$('cpcTabDescricao').innerHTML='<strong>'+d[0]+':</strong> '+d[1];
+  requestAnimationFrame(()=>Object.values(charts).forEach(c=>c?.resize?.()));
+  if(atualizarHistorico)atualizarUrl();
+}
+function popularAnoMes(){
+  const hoje=new Date(),anoAtual=hoje.getFullYear();
+  $('anoFiltro').innerHTML='<option value="">Personalizado</option>'+Array.from({length:10},(_,i)=>anoAtual-i).map(a=>'<option value="'+a+'">'+a+'</option>').join('');
+  const meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  $('mesFiltro').innerHTML='<option value="">Ano inteiro / personalizado</option>'+meses.map((m,i)=>'<option value="'+(i+1)+'">'+m+'</option>').join('');
+}
+function sincronizarAnoMes(){
+  const i=$('ini').value?new Date($('ini').value+'T12:00:00'):null,f=$('fim').value?new Date($('fim').value+'T12:00:00'):null;
+  if(!i||!f||i.getFullYear()!==f.getFullYear()){$('anoFiltro').value='';$('mesFiltro').value='';return}
+  $('anoFiltro').value=String(i.getFullYear());$('mesFiltro').value=i.getMonth()===f.getMonth()?String(i.getMonth()+1):'';
+}
+function aplicarAnoMes(){
+  const ano=Number($('anoFiltro').value),mes=Number($('mesFiltro').value),hoje=new Date();if(!ano)return;
+  const inicio=mes?new Date(ano,mes-1,1):new Date(ano,0,1),fimNatural=mes?new Date(ano,mes,0):new Date(ano,11,31),fim=fimNatural>hoje?hoje:fimNatural;
+  $('ini').value=iso(inicio);$('fim').value=iso(fim<inicio?inicio:fim);
+}
+function parametrosGlobaisCpc(){const p=new URLSearchParams();[['ini','ini'],['fim','fim'],['unidade','unidade'],['aisc','aisc'],['sisc','sisc'],['setor','setor'],['turno','turno'],['ocorrencia','tipo'],['bairro','bairro']].forEach(([id,k])=>{const v=$(id)?.value?.trim?.()||$(id)?.value;if(v)p.set(k,v)});return p}
+function atualizarAtalhosCpc(){
+  const p=parametrosGlobaisCpc(),qs=p.toString(),pRel=new URLSearchParams();['ini','fim'].forEach(k=>{if(p.get(k))pRel.set(k,p.get(k))});
+  [['linkMapaTopoCpc','mapa-criminal.html'],['linkMapaCpc','mapa-criminal.html'],['linkTemporalCpc','analise-temporal.html'],['linkTerritorioCpc','territorio-cpc.html']].forEach(([id,pagina])=>{const el=$(id);if(el)el.href=pagina+(qs?'?'+qs:'')});
+  if($('linkRelatorioCpc'))$('linkRelatorioCpc').href='relatorio.html'+(pRel.toString()?'?'+pRel.toString():'');
+}
 function renderResumo(d){const r=d.resumo||{},u=d.unidades||[],topN=(d.top_naturezas_geral||[])[0],topB=(d.top_bairros||[])[0];let partes=[];const total=n(r.total_ocorrencias);if(!total){$('resumoExecutivo').textContent='Não há ocorrências no recorte selecionado. Ajuste o período ou os filtros para ampliar a consulta.';return}
 partes.push('Foram registradas '+total+' ocorrência'+(total===1?'':'s')+' no período selecionado.');
 if(u.length>1){const maior=[...u].sort((a,b)=>n(b.total_ocorrencias)-n(a.total_ocorrencias))[0];if(maior&&n(maior.total_ocorrencias)>0){const pct=(n(maior.total_ocorrencias)*100/total).toFixed(1).replace('.0','');partes.push(sigla(maior.sigla)+' concentra '+n(maior.total_ocorrencias)+' registros ('+pct+'% do total consultado).')}}
@@ -407,7 +451,7 @@ chart('chartUnidades','bar',grupos.map(x=>sigla(x.sigla)),[{label:'Ocorrências'
 const datas=[...new Set(serie.map(x=>x.data))].sort(),units=[...new Set(serie.map(x=>x.sigla))],mapa=new Map(serie.map(x=>[x.data+'|'+x.sigla,n(x.total)]));const datasets=units.map(s=>({label:sigla(s),data:datas.map(dt=>mapa.get(dt+'|'+s)||0),tension:.25,fill:false}));chart('chartSerie','line',datas.map(br),datasets,{interaction:{mode:'index',intersect:false},scales:{y:{beginAtZero:true,ticks:{precision:0}}}});
 rankList('topNaturezasGeral',d.top_naturezas_geral||[],'natureza');rankList('topBairros',d.top_bairros||[],'bairro');rankList('territorioAisc',d.territorio?.aisc||[],'codigo');rankList('territorioSisc',d.territorio?.sisc||[],'codigo');rankList('territorioSetores',d.territorio?.setores||[],'codigo');
 $('naturezas').innerHTML=top.length?top.map(x=>'<div class="naturezaBox"><h3>'+esc(sigla(x.sigla))+'</h3>'+((x.itens||[]).length?(x.itens||[]).map((i,idx)=>'<div class="rank"><i>'+(idx+1)+'º</i><span title="'+esc(i.natureza)+'">'+esc(i.natureza)+'</span><b>'+n(i.total)+'</b></div>').join(''):'<div class="status">Sem ocorrências no período.</div>')+'</div>').join(''):'<div class="empty">Sem dados para exibir.</div>';
-renderAbordagensGiroCpc();renderResumo({...d,unidades:grupos});const selecionada=(d.unidades_disponiveis||[]).find(x=>x.id===$('unidade').value);$('scope').textContent='Abrangência · '+(selecionada?sigla(selecionada.sigla)+' — '+selecionada.nome:'todas as unidades subordinadas');$('heroScope').textContent=selecionada?sigla(selecionada.sigla)+' — '+selecionada.nome:'Todas as unidades subordinadas';$('heroPeriod').textContent=br($('ini').value)+' a '+br($('fim').value);atualizarUrl()}
+  renderAbordagensGiroCpc();renderResumo({...d,unidades:grupos});const selecionada=(d.unidades_disponiveis||[]).find(x=>x.id===$('unidade').value);$('scope').textContent='Abrangência · '+(selecionada?sigla(selecionada.sigla)+' — '+selecionada.nome:'todas as unidades subordinadas');$('heroScope').textContent=selecionada?sigla(selecionada.sigla)+' — '+selecionada.nome:'Todas as unidades subordinadas';$('heroPeriod').textContent=br($('ini').value)+' a '+br($('fim').value);sincronizarAnoMes();atualizarAtalhosCpc();atualizarUrl()}
 async function consultarGiroCpcPaginado(inicio,fim){
   const dados=[],passo=1000;
   for(let pagina=0;pagina<200;pagina++){
@@ -466,12 +510,17 @@ async function carregar(){
     if(versao===versaoConsultaCpc)$('loading').style.display='none';
   }
 }
-function periodo(tipo){const h=new Date(),f=new Date(h),i=new Date(h);if(tipo==='hoje'){}else if(tipo==='7dias')i.setDate(h.getDate()-6);else if(tipo==='30dias')i.setDate(h.getDate()-29);else if(tipo==='ano'){i.setMonth(0);i.setDate(1)}else i.setDate(1);$('ini').value=iso(i);$('fim').value=iso(f);carregar()}
+function periodo(tipo){const h=new Date(),f=new Date(h),i=new Date(h);if(tipo==='hoje'){}else if(tipo==='7dias')i.setDate(h.getDate()-6);else if(tipo==='30dias')i.setDate(h.getDate()-29);else if(tipo==='ano'){i.setMonth(0);i.setDate(1)}else i.setDate(1);$('ini').value=iso(i);$('fim').value=iso(f);sincronizarAnoMes();carregar()}
 document.querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>periodo(b.dataset.period));$('atualizar').onclick=carregar;
+$('anoFiltro').onchange=()=>{if(!$('anoFiltro').value){$('mesFiltro').value='';return}$('mesFiltro').disabled=false;aplicarAnoMes()};
+$('mesFiltro').onchange=()=>{if(!$('anoFiltro').value)$('anoFiltro').value=String(new Date().getFullYear());aplicarAnoMes()};
+$('ini').onchange=sincronizarAnoMes;$('fim').onchange=sincronizarAnoMes;
+document.querySelectorAll('[data-cpc-tab]').forEach((b,indice,abas)=>{b.onclick=()=>selecionarAbaCpc(b.dataset.cpcTab);b.onkeydown=e=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;e.preventDefault();let proximo=e.key==='Home'?0:e.key==='End'?abas.length-1:(indice+(e.key==='ArrowRight'?1:-1)+abas.length)%abas.length;abas[proximo].focus();selecionarAbaCpc(abas[proximo].dataset.cpcTab)}});
+window.addEventListener('hashchange',()=>selecionarAbaCpc(location.hash.slice(1)||'visao-geral',false));
 $('aisc').onchange=()=>{ $('sisc').value='';$('setor').value='';popularTerritorio(); };
 $('sisc').onchange=()=>{ $('setor').value='';popularTerritorio(); };
 $('limpar').onclick=()=>{$('unidade').value='';$('aisc').value='';$('sisc').value='';$('setor').value='';$('ocorrencia').value='';$('bairro').value='';$('companhia').value='';$('turno').value='';popularTerritorio();periodo('mes')};
-const qp=new URLSearchParams(location.search),h=new Date();$('ini').value=qp.get('ini')||iso(new Date(h.getFullYear(),h.getMonth(),1));$('fim').value=qp.get('fim')||iso(h);
+const qp=new URLSearchParams(location.search),h=new Date();popularAnoMes();$('ini').value=qp.get('ini')||iso(new Date(h.getFullYear(),h.getMonth(),1));$('fim').value=qp.get('fim')||iso(h);sincronizarAnoMes();selecionarAbaCpc(location.hash.slice(1)||'visao-geral',false);
 (async()=>{const ready=window.SistemaAuth?.ready;if(ready)await ready;const [tr,ur]=await Promise.all([db.rpc('obter_catalogo_territorial_cpc'),db.from('unidades').select('id,sigla,nome,tipo,parent_id,aceita_registro_operacional,agrega_descendentes').eq('ativo',true).order('sigla')]);if(!tr.error){catalogoTerritorial=tr.data||{};popularTerritorio()}else console.error('Falha ao carregar catálogo territorial:',tr.error);if(!ur.error){hierarquiaUnidades=ur.data||[];popularUnidades()}else console.error('Falha ao carregar hierarquia de unidades:',ur.error);carregar()})();
 </script>
 </body>
