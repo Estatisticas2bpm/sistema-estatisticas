@@ -119,7 +119,7 @@ async function abrir(linha){
   if(!$('cpcDocumentoLeitura'))return;
   const tabela=String(linha?.origem_tabela||''),id=String(linha?.registro_id||'');
   const token=++versao;
-  anteriorFoco=document.activeElement;
+  if($('cpcDocumentoLeitura').hidden)anteriorFoco=document.activeElement;
   ativo=null;
   $('cpcDocumentoLeitura').hidden=false;
   $('cpcDocFechar').focus();
