@@ -139,7 +139,8 @@ async function abrir(linha){
     if(!r.data)throw Error('Registro não encontrado ou acesso não autorizado.');
     const doc=r.data;
     if(doc.id!==id)throw Error('Identificador de origem não corresponde ao registro.');
-    ativo={...linha};
+    ativo={...linha,ocorrencia_id:doc.ocorrencia_id||linha.ocorrencia_id,
+      servico_id:doc.servico_id||linha.servico_id};
     const resumo=campos(doc,k=>!historicos.has(k));
     const historico=campos(doc,k=>historicos.has(k));
     $('cpcDocConteudo').innerHTML=grupo('Informações cadastradas',resumo)+grupo('Relato, histórico e observações',historico)+
