@@ -33,18 +33,18 @@ const scope={window:w,document:{body:{classList:{toggle(){}}}},esc:x=>String(x),
   rows:(id,body)=>{el(id).innerHTML=body},$:el,Set,Number,String,
   documentoDrill:o=>o._doc||'BO',referenciaDrill:o=>(o._doc||'BO')+' '+String(o.numero_tco||o.numero_bo||''),
   idOcorrenciaDrill:o=>String(o.ocorrencia_id||o.id||'')};
-vm.runInNewContext(code,scope);
-assert.equal(scope.uuidDrill(id),true);
-assert.equal(scope.uuidDrill('BO-123'),false);
+vm.runInNewContext(code+'\nthis.__test={uuidDrill,abrirDetalhes,documentoOrigemDrill};',scope);
+assert.equal(scope.__test.uuidDrill(id),true);
+assert.equal(scope.__test.uuidDrill('BO-123'),false);
 const bo={id,numero_bo:'2026-000149',data_ocorrencia:'2026-10-14',ocorrencia:'FURTO',bairro:'CENTRO',comandante:'PM'};
-scope.abrirDetalhes('Ocorrências',[bo]);
+scope.__test.abrirDetalhes('Ocorrências',[bo]);
 assert.match(el('drillTabela').innerHTML,/data-cpc-doc-index="0"/);
 assert.match(el('drillTabela').innerHTML,/BO 2026-000149/);
 assert.doesNotMatch(el('drillTabela').innerHTML,/Ver ocorrência|href="consulta\.html/);
 assert.equal(el('drillColunaAcao').hidden,true);
 assert.equal(el('drillAbrirLista').style.display,'none');
 const tco={id:tcoId,ocorrencia_id:id,numero_tco:'TCO-22',_doc:'TCO'};
-const origem=scope.documentoOrigemDrill(tco);
+const origem=scope.__test.documentoOrigemDrill(tco);
 assert.equal(origem.origem_tabela,'tcos');
 assert.equal(origem.registro_id,tcoId);
 assert.equal(origem.ocorrencia_id,id);
