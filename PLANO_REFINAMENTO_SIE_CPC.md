@@ -1,6 +1,6 @@
 # Plano de refinamento do SIE-CPC
 
-**Versão:** 2.9 — 14/10/2026  
+**Versão:** 3.0 — 14/10/2026  
 **Estado:** em execução; homologação pendente.  
 **Escopo:** CPC, 1º BPM, 2º BPM, BOPE, Cavalaria, CIPA, CIPG, CIPTUR e GIRO.
 
@@ -316,7 +316,9 @@ As alterações da **Fase 3 (cartões CPC), Fase 4 (mapa), Fase 5 (seção de in
 - [x] Exibir histórico e campos complementares sem executar HTML fornecido pelo cadastro; não implementar operações de escrita ou links de edição.
 - [x] Verificar metadados do Storage: **não existe bucket privado de PDFs de BO** neste momento. O visualizador exibe dados salvos; não inventa anexos ou URLs para arquivos originais.
 - [ ] Homologar em sessão CPC autenticada a abertura real dos documentos, a correspondência dos UUIDs e os vínculos entre registros de todas as unidades.
-- [ ] Revisar a política de INSERT de `giro_abordagens` com acesso compartilhado: a regra atual não exige contexto operacional, diferentemente das demais tabelas. Bloquear gravação sob contexto `COMANDO` sem impedir o fluxo legítimo de usuários do GIRO.
+- [x] Auditar a política de INSERT compartilhado de `giro_abordagens`: identificada exceção ao bloqueio de escrita em contexto `COMANDO`.
+- [x] Preparar migração e rollback para negar INSERT compartilhado do GIRO em contexto `COMANDO`, preservando a regra original para acessos GIRO autorizados, inclusive usuários sem unidade principal.
+- [ ] Confirmar a aplicação da migração e o predicado RLS final no Supabase de produção.
 - [ ] Testar negações de escrita com perfis reais CPC e operadores, sem executar exclusões destrutivas; auditar outras RPCs de escrita.
 - [ ] Definir fluxo de armazenamento privado e autorização de PDFs originais, caso a unidade decida preservar os documentos enviados.
 
