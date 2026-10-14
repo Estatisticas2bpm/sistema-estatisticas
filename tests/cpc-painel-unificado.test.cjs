@@ -7,10 +7,11 @@ for(const id of ['cpcAnaliseIntegrada','cpcAnaliseCarregar','cpcAnaliseStatus','
   'cpcAnaliseInfratoresIdade','cpcAnaliseVitimasIdade','cpcAnaliseInfratoresNacionalidade',
   'cpcAnaliseVitimasNacionalidade','cpcAnaliseArmasTipos','cpcAnaliseMunicoesCalibres',
   'cpcAnaliseDrogasTipos','cpcAnaliseComparar','cpcAnaliseCompararTipo','cpcAnaliseComparacaoTabela',
-  'cpcAnaliseConferencia'])assert.match(html,new RegExp('id="'+id+'"'),id);
+  'cpcAnaliseConferencia','cpcAnaliseDocumentos','cpcAnaliseNaturezas','cpcAnaliseBairros',
+  'cpcAnaliseLogradouros','cpcAnaliseMatrizCabecalho','cpcAnaliseMatrizTurnos','cpcAnaliseGraficoDias'])assert.match(html,new RegExp('id="'+id+'"'),id);
 assert.match(html,/Painel Estatístico Integrado do CPC/);
 assert.match(html,/<main>\s*<section class="panel">/,'filtros continuam visíveis durante o carregamento');
-assert.match(html,/cpc-analise-integrada\.js\?v=20261014-unificado1/);
+assert.match(html,/cpc-analise-integrada\.js\?v=20261014-unificado2/);
 assert.match(html,/CpcAnaliseIntegrada\?\.configurar\(db,args,hierarquiaUnidades,r\.data\.resumo\?\.total_ocorrencias\)/);
 assert.match(html,/CpcAnaliseIntegrada\?\.resetar\(\)/);
 assert.doesNotMatch(html,/<a href="dashboard\.html">/,'CPC não aponta para dashboard duplicado');
@@ -36,7 +37,8 @@ const r1={id:boA,unidade_id:unidadeFilha,numero_bo:'BO 1',data_ocorrencia:'2026-
   ocorrencia:'FURTO',bairro:'CENTRO',aisc:'AISC 1',comandante:'PM Silva',conducoes_operacionais:2,numero_prisoes:1,
   quantidade_armas:1,armas:'PISTOLA',quantidade_municoes:4,municoes:'9MM',entorpecentes:'SIM',
   maconha:1,entorpecentes_tipos_legados:['MACONHA'],bens_subtraidos:[{categoria:'CELULAR',quantidade:2}],vitima_sexo:'F',vitima_idade:25,
-  infrator_sexo:'M',infrator_idade:32};
+  infrator_sexo:'M',infrator_idade:32,tipo_registro:'BO',turno:'MANHÃ',
+  endereco:'Rua A',naturezas_itens:[{nome:'FURTO'},{nome:'FURTO'},{nome:'DANO'}]};
 const r2={id:boB,unidade_id:unidadeB,numero_bo:'BO 2',data_ocorrencia:'2026-10-02',ocorrencia:'ROUBO',bairro:'CENTRO'};
 assert.equal(a.filtro(r1,{p_aisc:'AISC 1',p_bairro:'centro',p_ocorrencia:'furto'},ids),true);
 assert.equal(a.filtro(r2,{},ids),false);
@@ -60,6 +62,21 @@ assert.equal(soma('Munições por calibre · 9MM'),4);
 assert.equal(soma('Entorpecentes por tipo · MACONHA'),1);
 assert.equal(soma('Bens subtraídos · CELULAR'),2);
 assert.equal(soma('Comandante · PM Silva'),1);
+assert.equal(soma('Documentos · BO'),1);
+assert.equal(soma('Naturezas · FURTO'),1,'a mesma natureza em um BO não duplica o documento');
+assert.equal(soma('Naturezas · DANO'),1);
+assert.equal(soma('Bairros · CENTRO'),1);
+assert.equal(soma('Logradouros · Rua A'),1);
+assert.equal(soma('Dia e turno · Quinta-feira · MANHÃ'),1);
+assert.equal(soma('Dias da semana · Quinta-feira'),1);
+assert.equal(a.diaSemana('2026-10-01'),4);
+assert.equal(a.turnoAnalise('manhã'),'MANHÃ');
+assert.equal(a.turnoAnalise(''),'NÃO INFORMADO');
+assert.equal(a.tipoDocumento(null),'BO (tipo não informado)');
+assert.equal(a.naturezas(r1).length,2);
+a.renderizarMatriz(grupos.totais);
+assert.match(element('cpcAnaliseMatrizTurnos').innerHTML,/data-analise-indicador="Dia e turno · Quinta-feira · MANHÃ"/);
+assert.match(element('cpcAnaliseMatrizTurnos').innerHTML,/Não informado|NÃO INFORMADO|Quinta-feira/);
 assert.equal(soma('Vítimas · Sexo · Feminino'),1);
 assert.equal(soma('Infratores · Sexo · Masculino'),1);
 assert.equal(soma('Vítimas · Idade · 18–29 anos'),1);
