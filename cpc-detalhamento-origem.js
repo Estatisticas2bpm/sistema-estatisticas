@@ -82,6 +82,7 @@ function registrar(sigla,linhas,parcial,inicio,fim){
 function reiniciar(){
   documentos.clear();
   fechar();
+  global.CpcDocumentoLeitura?.fechar();
 }
 function exportar(){
   if(!atual)return;
