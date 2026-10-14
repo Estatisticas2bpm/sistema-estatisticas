@@ -26,7 +26,7 @@ assert.ok(start>0&&end>start);
 const code=html.slice(start,end);
 const id='11111111-2222-4333-8444-555555555555',tcoId='22222222-3333-4333-8444-666666666666';
 const els={};
-const el=n=>els[n]||(els[n]={hidden:false,style:{},innerHTML:'',textContent:'',showModal(){this.open=true}});
+const el=n=>els[n]||(els[n]={hidden:false,style:{},innerHTML:'',textContent:'',handlers:{},addEventListener(t,fn){this.handlers[t]=fn},showModal(){this.open=true}});
 const actions=[];
 const w={CpcDocumentoLeitura:{autorizado:()=>true,abrir:d=>actions.push(d)}};
 const scope={window:w,document:{body:{classList:{toggle(){}}}},esc:x=>String(x),norm:x=>String(x??''),dataBr:x=>x,
