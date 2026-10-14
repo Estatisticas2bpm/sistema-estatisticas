@@ -9,6 +9,7 @@ for(const id of ['cpcAnaliseIntegrada','cpcAnaliseCarregar','cpcAnaliseStatus','
   'cpcAnaliseDrogasTipos','cpcAnaliseComparar','cpcAnaliseCompararTipo','cpcAnaliseComparacaoTabela',
   'cpcAnaliseConferencia'])assert.match(html,new RegExp('id="'+id+'"'),id);
 assert.match(html,/Painel Estatístico Integrado do CPC/);
+assert.match(html,/<main>\s*<section class="panel">/,'filtros continuam visíveis durante o carregamento');
 assert.match(html,/cpc-analise-integrada\.js\?v=20261014-unificado1/);
 assert.match(html,/CpcAnaliseIntegrada\.configurar\(db,args,hierarquiaUnidades,r\.data\.resumo\?\.total_ocorrencias\)/);
 assert.match(html,/CpcAnaliseIntegrada\.resetar\(\)/);
