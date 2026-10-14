@@ -1,6 +1,6 @@
 # Plano de refinamento do SIE-CPC
 
-**Versão:** 3.2 — 14/10/2026  
+**Versão:** 3.3 — 14/10/2026  
 **Estado:** em execução; homologação pendente.  
 **Escopo:** CPC, 1º BPM, 2º BPM, BOPE, Cavalaria, CIPA, CIPG, CIPTUR e GIRO.
 
@@ -305,6 +305,21 @@ As alterações da **Fase 3 (cartões CPC), Fase 4 (mapa), Fase 5 (seção de in
 - [ ] Abrir BO, relato/histórico e anexos originais em visualizador autenticado, quando existentes; não presumir acesso ao documento a partir do número.
 - [ ] Implementar e testar permissões CPC somente leitura também no banco/storage, incluindo bloqueio de inserção, atualização e exclusão em todas as fontes.
 - [ ] Homologar visualmente todos os indicadores por unidade e a correspondência entre cada indicador e os registros exibidos.
+
+## Integração do Painel Estatístico do CPC — fase 1 (14/10/2026)
+
+- [x] Adotar `dashboard-cpc.html` como **Painel Estatístico Integrado do CPC**, mantendo os dashboards operacionais das unidades independentes.
+- [x] Usar o filtro existente de **unidade**, inclusive unidades subordinadas e agrupamentos hierárquicos, com período, AISC, SISC, setor, natureza, bairro, companhia e turno.
+- [x] Incorporar análises do Dashboard Completo ao CPC: perfis agregados de vítimas e infratores (sexo, nacionalidade, idade), ocorrências por comandante de viatura, produtividade (conduções, veículos, foragidos), apreensões de armas e munições, incidência de drogas e bens subtraídos.
+- [x] Disponibilizar comparação opcional entre períodos, com mesma unidade e filtros, sem obrigar consulta histórica em cada carregamento.
+- [x] Permitir clicar nas quantidades/categorias analíticas e abrir a conferência de BOs de origem com visualizador somente leitura.
+- [x] Implementar **consulta aprofundada sob demanda**, para não repetir automaticamente as RPCs de detalhe em períodos longos.
+- [x] Exibir alerta quando o número de BOs da consulta detalhada divergir do resumo consolidado, evitando apresentar totais incompatíveis como equivalentes.
+- [x] Eliminar o atalho duplicado do Dashboard Completo na navegação do contexto CPC, preservando-o para usuários operacionais e mantendo `dashboard.html` acessível como módulo legado.
+- [ ] Homologar os filtros, perfis e comparativos em sessão autenticada do CPC com dados reais; confrontar totais com as fontes oficiais.
+- [ ] Validar diferenças entre os contratos de filtro de `obter_painel_cpc_territorial` e `obter_dados_dashboard_territorial` e aprimorar quando necessário.
+- [ ] Integrar em fase posterior gráficos analíticos adicionais (se forem necessários após a homologação), preservando o desempenho anual.
+- [ ] Após homologação, decidir sobre o redirecionamento de links antigos do CPC ao painel integrado sem afetar as unidades.
 
 ## Correção de usabilidade — Dashboard Completo CPC (14/10/2026)
 

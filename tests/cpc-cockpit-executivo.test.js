@@ -24,7 +24,7 @@ assert.match(index, /auth\.contexto&&auth\.contexto\.tipo==="COMANDO"/);
 assert.match(index, /cpcPrimary/);
 assert.match(index, /Todas as unidades subordinadas/);
 
-assert.match(painel, /Central Executiva do CPC/);
+assert.match(painel, /Painel Estatístico Integrado do CPC/);
 assert.match(painel, /id="unidade"/);
 assert.match(painel, /id="ocorrencia"/);
 assert.match(painel, /id="bairro"/);
