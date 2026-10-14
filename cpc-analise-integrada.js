@@ -14,7 +14,30 @@ const inteiro=v=>Math.max(0,num(v));
 const fmt=v=>num(v).toLocaleString('pt-BR',{maximumFractionDigits:2});
 const uuid=v=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v||''));
 const dataBr=v=>String(v||'').slice(0,10).split('-').reverse().join('/');
-let db=null,config=null,versao=0,carregou=false,iniciado=false,linhas=[],grupos=[],indicadores=[],comparando=false;
+let db=null,config=null,versao=0,carregou=false,iniciado=false,linhas=[],grupos=[],indicadores=[],comparando=false,graficoDias=null;
+const diasSemana=['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+const turnos=['MADRUGADA','MANHÃ','TARDE','NOITE','NÃO INFORMADO'];
+function diaSemana(valor){
+  const data=String(valor||'').slice(0,10);
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(data))return null;
+  const d=new Date(data+'T12:00:00Z');
+  return Number.isNaN(d.getTime())||d.toISOString().slice(0,10)!==data?null:d.getUTCDay();
+}
+function turnoAnalise(valor){
+  const t=chave(valor);
+  return ['MADRUGADA','MANHA','TARDE','NOITE'].includes(t)?(t==='MANHA'?'MANHÃ':t):'NÃO INFORMADO';
+}
+function tipoDocumento(valor){
+  const t=chave(valor);
+  return !t?'BO (tipo não informado)':t==='BO'||t==='B.O.'?'BO':norm(valor);
+}
+function naturezas(o){
+  const arr=Array.isArray(o.naturezas_itens)?o.naturezas_itens:[];
+  const encontrados=arr.map(x=>typeof x==='string'?x:(x?.nome||x?.natureza||x?.descricao||'')).filter(x=>!ni(x));
+  if(!encontrados.length&&!ni(o.ocorrencia))encontrados.push(o.ocorrencia);
+  if(!encontrados.length&&!ni(o.crime))encontrados.push(o.crime);
+  return [...new Set(encontrados.map(x=>chave(x)))];
+}
 function hierarquiaIds(id,unidades){
   if(!id)return null;
   const ids=new Set(),fila=[String(id)];
@@ -118,6 +141,17 @@ function gerarGrupos(registros){
     if(!uuid(o.id))return;
     const nome=norm(o.comandante);
     if(!ni(nome))somar('Comandante · '+nome,o);
+    somar('Documentos · '+tipoDocumento(o.tipo_registro),o);
+    naturezas(o).forEach(n=>somar('Naturezas · '+n,o));
+    if(!ni(o.bairro))somar('Bairros · '+chave(o.bairro),o);
+    const endereco=norm(o.endereco)||norm(o.endereco_formatado);
+    if(!ni(endereco))somar('Logradouros · '+endereco,o);
+    const dia=diaSemana(o.data_ocorrencia);
+    if(dia!==null){
+      const d=diasSemana[dia],turno=turnoAnalise(o.turno);
+      somar('Dias da semana · '+d,o);
+      somar('Dia e turno · '+d+' · '+turno,o);
+    }
     const medidas=[
       ['Conduções operacionais',inteiro(o.conducoes_operacionais)],
       ['Prisões informadas',inteiro(o.numero_prisoes)],
@@ -169,6 +203,40 @@ function pares(totais,prefixo){
   return [...totais].filter(([k])=>k.startsWith(prefixo)).map(([k,v])=>[k.slice(prefixo.length),v])
     .sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],'pt-BR'));
 }
+function renderizarMatriz(totais){
+  const tbody=$('cpcAnaliseMatrizTurnos');
+  if(!tbody)return;
+  const cabecalhos=turnos.map(t=>'<th scope="col">'+esc(t==='NÃO INFORMADO'?'Não informado':t[0]+t.slice(1).toLowerCase())+'</th>').join('');
+  const thead=$('cpcAnaliseMatrizCabecalho');
+  if(thead)thead.innerHTML='<tr><th scope="col">Dia</th>'+cabecalhos+'<th scope="col">Total</th></tr>';
+  const botao=(nome,valor)=>{
+    if(!valor)return '<span class="cpcAnaliseZero">0</span>';
+    return '<button type="button" class="cpcAnaliseNumero" data-analise-indicador="'+esc(nome)+'" aria-label="Consultar '+esc(nome)+'">'+fmt(valor)+'</button>';
+  };
+  tbody.innerHTML=diasSemana.map(d=>{
+    const celulas=turnos.map(t=>{
+      const k='Dia e turno · '+d+' · '+t;
+      return '<td>'+botao(k,totais.get(k)||0)+'</td>';
+    }).join('');
+    const k='Dias da semana · '+d;
+    return '<tr><th scope="row">'+esc(d)+'</th>'+celulas+'<td>'+botao(k,totais.get(k)||0)+'</td></tr>';
+  }).join('');
+  const canvas=$('cpcAnaliseGraficoDias');
+  if(graficoDias){graficoDias.destroy();graficoDias=null}
+  if(canvas&&typeof global.Chart==='function'){
+    graficoDias=new global.Chart(canvas,{type:'bar',data:{
+      labels:diasSemana.map(d=>d.replace('-feira','')),
+      datasets:[{label:'Ocorrências policiais',data:diasSemana.map(d=>totais.get('Dias da semana · '+d)||0),backgroundColor:'#236a9d'}]
+    },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      onClick:(evento,elementos)=>{if(!elementos?.length)return;const k='Dias da semana · '+diasSemana[elementos[0].index];abrirIndicador(k)}
+    }});
+  }
+}
+function abrirIndicador(indicador){
+  if(!carregou||!config||!indicadores.some(([k])=>k===indicador))return;
+  global.CpcDetalhamentoOrigem?.registrar('ANALISE',grupos,false,config.args.data_inicio,config.args.data_fim);
+  global.CpcDetalhamentoOrigem?.abrir('ANALISE',indicador);
+}
 function cards(totais){
   const spec=[['Conduções operacionais','Conduções operacionais'],['Prisões informadas','Prisões informadas'],['Veículos recuperados','Veículos recuperados'],
     ['Foragidos localizados','Foragidos localizados'],['Armas registradas','Armas registradas'],
@@ -183,6 +251,11 @@ function render(registros,escopo,esperado){
   grupos=dados.linhas;indicadores=[...dados.totais];
   cards(dados.totais);
   tabelaRanking('cpcAnaliseComandantes',pares(dados.totais,'Comandante · '),'Comandante · ');
+  tabelaRanking('cpcAnaliseDocumentos',pares(dados.totais,'Documentos · '),'Documentos · ',30);
+  tabelaRanking('cpcAnaliseNaturezas',pares(dados.totais,'Naturezas · '),'Naturezas · ',15);
+  tabelaRanking('cpcAnaliseBairros',pares(dados.totais,'Bairros · '),'Bairros · ',15);
+  tabelaRanking('cpcAnaliseLogradouros',pares(dados.totais,'Logradouros · '),'Logradouros · ',20);
+  renderizarMatriz(dados.totais);
   tabelaRanking('cpcAnaliseBens',pares(dados.totais,'Bens subtraídos · '),'Bens subtraídos · ');
   tabelaRanking('cpcAnaliseArmasTipos',pares(dados.totais,'Armas por tipo · '),'Armas por tipo · ');
   tabelaRanking('cpcAnaliseMunicoesCalibres',pares(dados.totais,'Munições por calibre · '),'Munições por calibre · ');
@@ -204,6 +277,7 @@ function render(registros,escopo,esperado){
 }
 function resetar(){
   ++versao;carregou=false;linhas=[];grupos=[];indicadores=[];
+  if(graficoDias){graficoDias.destroy();graficoDias=null}
   const conteudo=$('cpcAnaliseConteudo'),status=$('cpcAnaliseStatus'),botao=$('cpcAnaliseCarregar');
   comparando=false;
   if($('cpcAnaliseComparacao'))$('cpcAnaliseComparacao').hidden=true;
@@ -300,10 +374,8 @@ function iniciar(){
     const botao=e.target.closest('[data-analise-indicador]');
     if(!botao||!carregou||!config)return;
     const indicador=botao.dataset.analiseIndicador;
-    if(!indicadores.some(([k])=>k===indicador))return;
-    global.CpcDetalhamentoOrigem?.registrar('ANALISE',grupos,false,config.args.data_inicio,config.args.data_fim);
-    global.CpcDetalhamentoOrigem?.abrir('ANALISE',indicador);
+    abrirIndicador(indicador);
   });
 }
-global.CpcAnaliseIntegrada=Object.freeze({iniciar,configurar,carregar,comparar,periodoAnterior,resetar,filtro,hierarquiaIds,pessoas,sumarizar,gerarGrupos});
+global.CpcAnaliseIntegrada=Object.freeze({iniciar,configurar,carregar,comparar,periodoAnterior,resetar,filtro,hierarquiaIds,pessoas,sumarizar,gerarGrupos,diaSemana,turnoAnalise,tipoDocumento,naturezas,renderizarMatriz});
 })(window);
