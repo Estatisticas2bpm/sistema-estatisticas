@@ -75,9 +75,10 @@ function faixa(v){
   return n<12?'0–11 anos':n<18?'12–17 anos':n<30?'18–29 anos':n<45?'30–44 anos':n<60?'45–59 anos':'60 anos ou mais';
 }
 function sumarizar(registros){
-  const out={total:registros.length,conducoes:0,veiculos:0,armas:0,municoes:0,drogas:0,foragidos:0,bens:0};
+  const out={total:registros.length,conducoes:0,prisoes:0,veiculos:0,armas:0,municoes:0,drogas:0,foragidos:0,bens:0};
   registros.forEach(o=>{
     out.conducoes+=inteiro(o.conducoes_operacionais);
+    out.prisoes+=inteiro(o.numero_prisoes);
     out.veiculos+=inteiro(o.veiculos_recuperados);
     out.foragidos+=inteiro(o.foragidos);
     const itens=(campo,legado)=>Array.isArray(o[campo])&&o[campo].length?o[campo].reduce((s,i)=>s+inteiro(i.quantidade),0):inteiro(o[legado]);
@@ -119,6 +120,7 @@ function gerarGrupos(registros){
     if(!ni(nome))somar('Comandante · '+nome,o);
     const medidas=[
       ['Conduções operacionais',inteiro(o.conducoes_operacionais)],
+      ['Prisões informadas',inteiro(o.numero_prisoes)],
       ['Veículos recuperados',inteiro(o.veiculos_recuperados)],
       ['Foragidos localizados',inteiro(o.foragidos)]
     ];
@@ -136,6 +138,9 @@ function gerarGrupos(registros){
     const tipos=new Set();
     (Array.isArray(o.entorpecentes_itens)?o.entorpecentes_itens:[]).forEach(i=>{if(inteiro(i.quantidade)>0)tipos.add(ni(i.tipo)?'Não informado':norm(i.tipo))});
     [['Maconha','maconha'],['Cocaína','cocaina'],['Pasta base','pasta_base'],['Crack','crack'],['Skank','skank']].forEach(([tipo,campo])=>{if(inteiro(o[campo])>0)tipos.add(tipo)});
+    (Array.isArray(o.entorpecentes_tipos_legados)?o.entorpecentes_tipos_legados:[]).forEach(tipo=>{
+      if(!ni(tipo))tipos.add(norm(tipo));
+    });
     if(drogas&&!tipos.size)tipos.add('Não informado');
     tipos.forEach(tipo=>somar('Entorpecentes por tipo · '+tipo,o,1));
     (Array.isArray(o.bens_subtraidos)?o.bens_subtraidos:[]).forEach(b=>{
@@ -165,7 +170,7 @@ function pares(totais,prefixo){
     .sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],'pt-BR'));
 }
 function cards(totais){
-  const spec=[['Conduções operacionais','Conduções operacionais'],['Veículos recuperados','Veículos recuperados'],
+  const spec=[['Conduções operacionais','Conduções operacionais'],['Prisões informadas','Prisões informadas'],['Veículos recuperados','Veículos recuperados'],
     ['Foragidos localizados','Foragidos localizados'],['Armas registradas','Armas registradas'],
     ['Munições registradas','Munições registradas'],['Ocorrências com entorpecentes','Ocorrências com entorpecentes']];
   $('cpcAnaliseProdutividade').innerHTML=spec.map(([rotulo,k])=>
@@ -265,7 +270,7 @@ async function comparar(){
     const ids=hierarquiaIds(a.p_unidade_id,config.unidades);
     const anteriorFiltrado=r.data.filter(o=>filtro(o,a,ids));
     const atual=sumarizar(linhas),antes=sumarizar(anteriorFiltrado);
-    const metadados=[['BOs cadastrados','total'],['Conduções operacionais','conducoes'],
+    const metadados=[['BOs cadastrados','total'],['Conduções operacionais','conducoes'],['Prisões informadas','prisoes'],
       ['Veículos recuperados','veiculos'],['Foragidos localizados','foragidos'],
       ['Armas registradas','armas'],['Munições registradas','municoes'],
       ['Ocorrências com entorpecentes','drogas'],['Bens subtraídos','bens']];
