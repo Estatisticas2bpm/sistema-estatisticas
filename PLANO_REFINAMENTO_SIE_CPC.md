@@ -1,6 +1,6 @@
 # Plano de refinamento do SIE-CPC
 
-**Versão:** 3.4 — 14/10/2026  
+**Versão:** 3.5 — 14/10/2026
 **Estado:** em execução; homologação pendente.  
 **Escopo:** CPC, 1º BPM, 2º BPM, BOPE, Cavalaria, CIPA, CIPG, CIPTUR e GIRO.
 
@@ -341,6 +341,20 @@ As alterações da **Fase 3 (cartões CPC), Fase 4 (mapa), Fase 5 (seção de in
 - [x] Usar `<dialog>` nativo para o visualizador aparecer sobre o diálogo de lista, sem perder a posição dos 149 registros.
 - [x] Preservar o UUID próprio do TCO ao gerar lista mista de documentos, permitindo consultar o TCO correto e abrir seu BO vinculado.
 - [ ] Homologar no navegador autenticado CPC o clique em números de BO reais e confirmar que o histórico é exibido, sem controles operacionais.
+
+## Unificação da experiência do Painel CPC — navegação e filtros globais (14/10/2026)
+
+- [x] Manter `dashboard-cpc.html` como painel único do Comando e `dashboard.html` como dashboard operacional das unidades, sem criar uma terceira interface.
+- [x] Organizar o Painel CPC em cinco áreas acessíveis por abas: **Visão geral**, **Produtividade operacional**, **Vítimas e infratores**, **Análise territorial** e **Comparativos estatísticos**.
+- [x] Reutilizar, sem nova RPC, os indicadores executivos, análises detalhadas sob demanda, contratos especializados e visualizador documental já implementados.
+- [x] Destacar o filtro **Unidade policial**, preenchido a partir da tabela `unidades`, com opção consolidada **Todas as unidades — CPC** e sem UUIDs presumidos no código.
+- [x] Acrescentar seletores de **ano** e **mês**, sincronizados com as datas inicial/final, preservando períodos personalizados e o fuso operacional já aplicado nas fontes especializadas.
+- [x] Propagar data, unidade e filtros compatíveis para o mapa completo e para a análise temporal; o mapa passa a aceitar o recorte recebido mesmo quando a unidade não possui ponto georreferenciado no período.
+- [x] Preservar o relatório atual como **consolidado do CPC** com o período selecionado. O relatório PDF por unidade escolhida no filtro global permanece pendente porque os geradores especializados ainda dependem da unidade principal da sessão; não enviar `unidade_id` do navegador como autoridade.
+- [x] Preservar o ocultamento do atalho legado `dashboard.html` apenas no contexto CPC; unidades operacionais continuam utilizando-o normalmente.
+- [ ] Homologar as cinco abas em sessão CPC real, incluindo navegação por teclado, desktop, tablet e celular.
+- [ ] Conciliar os totais de cada aba com as fontes documentais e validar mapa/análise temporal ao abrir pelos atalhos com filtros propagados.
+- [ ] Projetar relatório/exportação por unidade selecionada com validação server-side da unidade acessível, sem confiar em parâmetro arbitrário do navegador.
 
 ## Fase de refinamento — visualizador documental CPC (14/10/2026)
 
