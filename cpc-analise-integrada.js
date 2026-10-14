@@ -136,12 +136,12 @@ function gerarGrupos(registros){
       ['maconha','cocaina','pasta_base','crack','skank'].some(k=>inteiro(o[k])>0)||chave(o.entorpecentes)==='SIM';
     if(drogas)somar('Ocorrências com entorpecentes',o);
     const tipos=new Set();
-    (Array.isArray(o.entorpecentes_itens)?o.entorpecentes_itens:[]).forEach(i=>{if(inteiro(i.quantidade)>0)tipos.add(ni(i.tipo)?'Não informado':norm(i.tipo))});
-    [['Maconha','maconha'],['Cocaína','cocaina'],['Pasta base','pasta_base'],['Crack','crack'],['Skank','skank']].forEach(([tipo,campo])=>{if(inteiro(o[campo])>0)tipos.add(tipo)});
+    (Array.isArray(o.entorpecentes_itens)?o.entorpecentes_itens:[]).forEach(i=>{if(inteiro(i.quantidade)>0)tipos.add(ni(i.tipo)?'NÃO INFORMADO':chave(i.tipo))});
+    [['MACONHA','maconha'],['COCAINA','cocaina'],['PASTA BASE','pasta_base'],['CRACK','crack'],['SKANK','skank']].forEach(([tipo,campo])=>{if(inteiro(o[campo])>0)tipos.add(tipo)});
     (Array.isArray(o.entorpecentes_tipos_legados)?o.entorpecentes_tipos_legados:[]).forEach(tipo=>{
-      if(!ni(tipo))tipos.add(norm(tipo));
+      if(!ni(tipo))tipos.add(chave(tipo));
     });
-    if(drogas&&!tipos.size)tipos.add('Não informado');
+    if(drogas&&!tipos.size)tipos.add('NÃO INFORMADO');
     tipos.forEach(tipo=>somar('Entorpecentes por tipo · '+tipo,o,1));
     (Array.isArray(o.bens_subtraidos)?o.bens_subtraidos:[]).forEach(b=>{
       const cat=ni(b.categoria)?'Não informada':norm(b.categoria);
