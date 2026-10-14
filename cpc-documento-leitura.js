@@ -122,6 +122,7 @@ async function abrir(linha){
   if($('cpcDocumentoLeitura').hidden)anteriorFoco=document.activeElement;
   ativo=null;
   $('cpcDocumentoLeitura').hidden=false;
+  if(typeof $('cpcDocumentoLeitura').showModal==='function'&&!$('cpcDocumentoLeitura').open)$('cpcDocumentoLeitura').showModal();
   $('cpcDocFechar').focus();
   $('cpcDocTitulo').textContent=tabelas[tabela]||'Registro documental';
   $('cpcDocIdentificacao').textContent=String(linha?.referencia||id||'');
