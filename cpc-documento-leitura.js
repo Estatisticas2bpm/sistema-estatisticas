@@ -145,7 +145,7 @@ async function abrir(linha){
     const historico=campos(doc,k=>historicos.has(k));
     $('cpcDocConteudo').innerHTML=grupo('Informações cadastradas',resumo)+grupo('Relato, histórico e observações',historico)+
       '<p class="cpcDocNota">Este visualizador mostra os dados salvos no SIE-CPC. O PDF original somente poderá ser aberto quando houver arquivo efetivamente armazenado e acesso autorizado. Nenhum PDF é presumido a partir do número do BO.</p>';
-    const vinculo=linha.ocorrencia_id||linha.servico_id;
+    const vinculo=ativo.ocorrencia_id||ativo.servico_id;
     if(uuid(vinculo)&&vinculo!==id){
       $('cpcDocVinculo').hidden=false;
       $('cpcDocVinculo').textContent=linha.ocorrencia_id?'Abrir BO vinculado (somente leitura)':'Abrir serviço vinculado (somente leitura)';
