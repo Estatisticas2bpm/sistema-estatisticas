@@ -12,9 +12,10 @@ const fauna=w.CpcRastreabilidade.registros('CIPA',[],[],{fauna:[{id,ocorrencia_i
 assert.equal(fauna.origem_tabela,'cipa_fauna');
 assert.equal(fauna.ocorrencia_id,pai);
 assert.match(list,/data-documento-index/);
+assert.match(list,/CpcDocumentoLeitura\?\.fechar\(\)/,'mudar filtros fecha documento do escopo anterior');
 assert.match(list,/CpcDocumentoLeitura\?\.abrir\(linha\)/);
 for(const idHtml of ['cpcDocumentoLeitura','cpcDocTitulo','cpcDocConteudo','cpcDocVinculo','cpcDocFechar','cpcDocStatus'])assert.match(html,new RegExp('id="'+idHtml+'"'));
-assert.match(html,/cpc-documento-leitura\.js\?v=20261014-documento1/);
+assert.match(html,/cpc-documento-leitura\.js\?v=20261014-documento2/);
 assert.match(html,/CpcDocumentoLeitura\.configurar\(db\)/);
 assert.doesNotMatch(script,/\.insert\(|\.update\(|\.delete\(|\.upsert\(|\.remove\(/,'o visualizador nunca altera dados');
 assert.match(script,/\.rpc\('obter_ocorrencia_publica'/);
