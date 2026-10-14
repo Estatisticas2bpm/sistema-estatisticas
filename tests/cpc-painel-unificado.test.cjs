@@ -32,9 +32,9 @@ assert.equal(ids.has(unidadeA),true);
 assert.equal(ids.has(unidadeFilha),true);
 assert.equal(ids.has(unidadeB),false);
 const r1={id:boA,unidade_id:unidadeFilha,numero_bo:'BO 1',data_ocorrencia:'2026-10-01',
-  ocorrencia:'FURTO',bairro:'CENTRO',aisc:'AISC 1',comandante:'PM Silva',conducoes_operacionais:2,
+  ocorrencia:'FURTO',bairro:'CENTRO',aisc:'AISC 1',comandante:'PM Silva',conducoes_operacionais:2,numero_prisoes:1,
   quantidade_armas:1,armas:'PISTOLA',quantidade_municoes:4,municoes:'9MM',entorpecentes:'SIM',
-  maconha:1,bens_subtraidos:[{categoria:'CELULAR',quantidade:2}],vitima_sexo:'F',vitima_idade:25,
+  maconha:1,entorpecentes_tipos_legados:['MACONHA'],bens_subtraidos:[{categoria:'CELULAR',quantidade:2}],vitima_sexo:'F',vitima_idade:25,
   infrator_sexo:'M',infrator_idade:32};
 const r2={id:boB,unidade_id:unidadeB,numero_bo:'BO 2',data_ocorrencia:'2026-10-02',ocorrencia:'ROUBO',bairro:'CENTRO'};
 assert.equal(a.filtro(r1,{p_aisc:'AISC 1',p_bairro:'centro',p_ocorrencia:'furto'},ids),true);
@@ -44,6 +44,7 @@ assert.equal(a.filtro(r1,{p_aisc:'AISC 2'},ids),false);
 const sum=a.sumarizar([r1]);
 assert.equal(sum.total,1);
 assert.equal(sum.conducoes,2);
+assert.equal(sum.prisoes,1);
 assert.equal(sum.armas,1);
 assert.equal(sum.municoes,4);
 assert.equal(sum.bens,2);
@@ -51,10 +52,11 @@ assert.equal(sum.drogas,1);
 const grupos=a.gerarGrupos([r1]);
 const soma=k=>grupos.totais.get(k);
 assert.equal(soma('Conduções operacionais'),2);
+assert.equal(soma('Prisões informadas'),1);
 assert.equal(soma('Armas registradas'),1);
 assert.equal(soma('Armas por tipo · PISTOLA'),1);
 assert.equal(soma('Munições por calibre · 9MM'),4);
-assert.equal(soma('Entorpecentes por tipo · Maconha'),1);
+assert.equal(soma('Entorpecentes por tipo · MACONHA'),1);
 assert.equal(soma('Bens subtraídos · CELULAR'),2);
 assert.equal(soma('Comandante · PM Silva'),1);
 assert.equal(soma('Vítimas · Sexo · Feminino'),1);
