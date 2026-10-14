@@ -105,7 +105,7 @@ function iniciar(){
 function fechar(){
   ++versao;
   const el=$('cpcDocumentoLeitura');
-  if(el)el.hidden=true;
+  if(el){if(typeof el.close==='function'&&el.open)el.close();el.hidden=true}
   ativo=null;
   if(anteriorFoco?.isConnected)anteriorFoco.focus();
 }
@@ -122,6 +122,7 @@ async function abrir(linha){
   if($('cpcDocumentoLeitura').hidden)anteriorFoco=document.activeElement;
   ativo=null;
   $('cpcDocumentoLeitura').hidden=false;
+  if(typeof $('cpcDocumentoLeitura').showModal==='function'&&!$('cpcDocumentoLeitura').open)$('cpcDocumentoLeitura').showModal();
   $('cpcDocFechar').focus();
   $('cpcDocTitulo').textContent=tabelas[tabela]||'Registro documental';
   $('cpcDocIdentificacao').textContent=String(linha?.referencia||id||'');
