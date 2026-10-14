@@ -105,7 +105,7 @@ function iniciar(){
 function fechar(){
   ++versao;
   const el=$('cpcDocumentoLeitura');
-  if(el)el.hidden=true;
+  if(el){if(typeof el.close==='function'&&el.open)el.close();el.hidden=true}
   ativo=null;
   if(anteriorFoco?.isConnected)anteriorFoco.focus();
 }
