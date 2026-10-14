@@ -249,6 +249,20 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
     <div class="cpcAnaliseGrade">
       <div class="cpcAnaliseBox"><h3>Ocorrências por comandante de viatura</h3><p>BOs associados ao comandante informado.</p><div id="cpcAnaliseComandantes"></div></div>
       <div class="cpcAnaliseBox"><h3>Bens subtraídos</h3><p>Quantidade de itens por categoria, não BOs distintos.</p><div id="cpcAnaliseBens"></div></div>
+      <div class="cpcAnaliseBox"><h3>Armas por tipo</h3><p>Quantidade de armas por tipo informado.</p><div id="cpcAnaliseArmasTipos"></div></div>
+      <div class="cpcAnaliseBox"><h3>Munições por calibre</h3><p>Quantidade de munições por calibre informado.</p><div id="cpcAnaliseMunicoesCalibres"></div></div>
+      <div class="cpcAnaliseBox"><h3>Entorpecentes por tipo</h3><p>Incidência por BO, sem somar pesos ou unidades diferentes.</p><div id="cpcAnaliseDrogasTipos"></div></div>
+      <div class="cpcAnaliseBox"><h3>Comparativo de produtividade</h3>
+        <p>Consulta opcional do período anterior, com os mesmos filtros e sem misturar produtividade especializada.</p>
+        <label for="cpcAnaliseCompararTipo">Comparar com</label>
+        <select id="cpcAnaliseCompararTipo"><option value="anterior">Período imediatamente anterior</option><option value="ano">Mesmo período do ano anterior</option></select>
+        <button id="cpcAnaliseComparar" class="btn secondary" type="button" style="margin:10px 0">Comparar períodos</button>
+        <div id="cpcAnaliseComparacao" hidden>
+          <p id="cpcAnaliseComparacaoPeriodo" class="status"></p>
+          <div class="tableWrap"><table><thead><tr><th>Indicador</th><th>Atual</th><th>Anterior</th><th>Diferença</th></tr></thead>
+          <tbody id="cpcAnaliseComparacaoTabela"></tbody></table></div>
+        </div>
+      </div>
       <div class="cpcAnaliseBox"><h3>Perfil dos infratores — sexo</h3><div id="cpcAnaliseInfratoresSexo"></div></div>
       <div class="cpcAnaliseBox"><h3>Perfil das vítimas — sexo</h3><div id="cpcAnaliseVitimasSexo"></div></div>
       <div class="cpcAnaliseBox"><h3>Perfil dos infratores — nacionalidade</h3><div id="cpcAnaliseInfratoresNacionalidade"></div></div>
