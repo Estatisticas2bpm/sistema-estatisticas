@@ -72,9 +72,33 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
 .cpcOrigemPainel #cpcOrigemExportar{background:#185b86;color:#fff;border-color:#185b86}
 .cpcOrigemPainel #cpcOrigemExportar:hover:not(:disabled){background:#0a406b}
 @media(max-width:600px){.cpcOrigemPainel{padding:12px}.cpcOrigemCabecalho h3{font-size:16px}.cpcOrigemFerramentas{grid-template-columns:1fr}.cpcOrigemDetalhesTabela{min-width:680px}.cpcOrigemRodape{align-items:stretch}.cpcOrigemRodape>button{width:100%}}
+
+/* Visualizador documental CPC: conteúdo autenticado, exclusivamente consulta. */
+.cpcOrigemVerDocumento{display:inline-flex;align-items:center;gap:5px;border:1px solid #b8d2e7;border-radius:6px;background:#edf7ff;color:#0c4d7d;font:800 11px/1.3 inherit;padding:6px 9px;cursor:pointer;overflow-wrap:anywhere;text-align:left}
+.cpcOrigemVerDocumento:hover{background:#d9efff}
+.cpcOrigemVerDocumento:focus-visible,.cpcDocFechar:focus-visible,.cpcDocVinculo:focus-visible{outline:3px solid #2a79a9;outline-offset:2px}
+.cpcDocOverlay[hidden]{display:none!important}
+.cpcDocOverlay{position:fixed;inset:0;z-index:20000;background:rgba(4,21,38,.77);display:flex;align-items:center;justify-content:center;padding:16px}
+.cpcDocJanela{background:#fff;border-radius:15px;width:min(100%,990px);max-height:calc(100dvh - 32px);display:flex;flex-direction:column;box-shadow:0 16px 60px #0005;overflow:hidden}
+.cpcDocTopo{padding:19px 22px;background:#092b4b;color:#fff;display:flex;align-items:start;justify-content:space-between;gap:14px}
+.cpcDocTopo h3{margin:3px 0 6px;font-size:20px}.cpcDocTopo small{color:#bdd8ea;overflow-wrap:anywhere}
+.cpcDocFechar{background:#fff;color:#0b3d64;border:0;border-radius:8px;padding:9px 12px;cursor:pointer;font-weight:800;flex-shrink:0}
+.cpcDocCorpo{padding:18px 22px;overflow:auto;overscroll-behavior:contain}
+.cpcDocStatus{font-size:12px;color:#255578;background:#eff7fd;border:1px solid #c9e1f2;border-radius:8px;padding:9px 11px;margin:0 0 12px}
+.cpcDocErro{color:#912f2f;background:#fff2f2;border-color:#efc5c5}
+.cpcDocGrupo{margin:16px 0 20px}.cpcDocGrupo h4{font-size:14px;margin:0 0 10px;color:#103c60;border-bottom:1px solid #d7e4ef;padding-bottom:7px}
+.cpcDocGrupo dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:0}
+.cpcDocCampo{min-width:0;background:#f7fafc;border:1px solid #e1eaf2;border-radius:8px;padding:10px 12px}
+.cpcDocCampo dt{font-size:11px;color:#52697c;font-weight:800;margin-bottom:5px}
+.cpcDocCampo dd{font-size:13px;line-height:1.55;color:#1a3045;margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.cpcDocMultilinha{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap!important}
+.cpcDocNota{font-size:12px;color:#5c6f80;line-height:1.55;margin:15px 0}
+.cpcDocVinculo{border:1px solid #a7cde6;border-radius:8px;background:#e7f4ff;color:#135782;padding:10px 13px;font-weight:800;cursor:pointer;margin-bottom:8px}
+@media(max-width:700px){.cpcDocOverlay{padding:0}.cpcDocJanela{height:100dvh;max-height:100dvh;border-radius:0}.cpcDocTopo{padding:15px}.cpcDocCorpo{padding:12px}.cpcDocGrupo dl{grid-template-columns:1fr}}
+
 </style>
 <script src="auth-config.js"></script>
-<script src="auth-guard.js"></script><script src="estatistica-indicadores.js?v=20261012-1"></script><script src="cipa-home.js?v=20261012-rastreabilidade3"></script><script src="cipg-home.js?v=20261012-rastreabilidade3"></script><script src="cpc-rastreabilidade.js?v=20261013-indicadores1"></script><script src="cpc-detalhamento-origem.js?v=20261013-indicadores1"></script><script src="cpc-indicadores-dashboard.js?v=20261013-indicadores1"></script>
+<script src="auth-guard.js"></script><script src="estatistica-indicadores.js?v=20261012-1"></script><script src="cipa-home.js?v=20261012-rastreabilidade3"></script><script src="cipg-home.js?v=20261012-rastreabilidade3"></script><script src="cpc-rastreabilidade.js?v=20261014-documento1"></script><script src="cpc-detalhamento-origem.js?v=20261014-documento1"></script><script src="cpc-documento-leitura.js?v=20261014-documento1"></script><script src="cpc-indicadores-dashboard.js?v=20261013-indicadores1"></script>
 </head>
 <body>
 <div id="loading" class="loading">Carregando central executiva do CPC...</div>
@@ -118,7 +142,7 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
   </section>
 
   <section class="panel" id="secIndicadoresCpc">
-  <div class="sectionTitle"><div><h2>Indicadores estatísticos por unidade</h2><p>Indicadores por unidade com critérios próprios; selecione “Conferir registros de origem” para abrir os documentos em uma tabela ampla, pesquisável e paginada.</p></div><span class="tag">SIE-CPC</span></div>
+  <div class="sectionTitle"><div><h2>Indicadores estatísticos por unidade</h2><p>Indicadores por unidade com critérios próprios; clique em um indicador para conferir os registros de origem e selecione o número do documento para consultar o cadastro completo, sem edição.</p></div><span class="tag">SIE-CPC</span></div>
   <div id="cpcIndicadoresEspecificos" class="cpcSpecialGrid"><p class="empty">Consultando indicadores por unidade...</p></div>
   <section id="cpcDetalhamentoOrigem" class="cpcOrigemPainel" aria-labelledby="cpcOrigemTitulo" hidden>
     <div class="cpcOrigemCabecalho">
@@ -156,6 +180,22 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
     </div>
   </section>
   <p id="cpcIndicadoresNota" class="cpcSpecialNote">Dados especializados utilizam a unidade e período selecionados.</p>
+</section>
+<section id="cpcDocumentoLeitura" class="cpcDocOverlay" role="dialog" aria-modal="true" aria-labelledby="cpcDocTitulo" hidden>
+  <div class="cpcDocJanela">
+    <div class="cpcDocTopo">
+      <div><small>CONSULTA DOCUMENTAL · CPC · SOMENTE LEITURA</small>
+        <h3 id="cpcDocTitulo">Registro de origem</h3>
+        <small id="cpcDocIdentificacao"></small>
+      </div>
+      <button id="cpcDocFechar" class="cpcDocFechar" type="button">Fechar ✕</button>
+    </div>
+    <div class="cpcDocCorpo" tabindex="0">
+      <p id="cpcDocStatus" class="cpcDocStatus" role="status" aria-live="polite"></p>
+      <div id="cpcDocConteudo"></div>
+      <button id="cpcDocVinculo" class="cpcDocVinculo" type="button" hidden>Abrir registro vinculado</button>
+    </div>
+  </div>
 </section>
 <section class="panel executive"><h2>Leitura executiva do período</h2><p id="resumoExecutivo">Analisando os indicadores selecionados...</p></section><section class="panel" id="secAbordagensGiroCpc">
   <div class="sectionTitle"><div><h2>Abordagens preventivas — GIRO</h2><p>Produtividade de abordagens registrada pelas equipes do GIRO. Este bloco considera período e unidade; filtros criminais/territoriais de BO não alteram estes números.</p></div><span class="tag">GIRO</span></div>
@@ -205,6 +245,7 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
 <script>
 const cfg=window.SISTEMA_AUTH_CONFIG;
 const db=supabase.createClient(cfg.supabaseUrl,cfg.publishableKey);
+window.CpcDocumentoLeitura.configurar(db);
 const $=id=>document.getElementById(id);
 let charts={},unidadesCarregadas=false,catalogoTerritorial=null,abordagensGiroCpc=[],hierarquiaUnidades=[];
 function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
