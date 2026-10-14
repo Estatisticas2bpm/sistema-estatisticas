@@ -44,6 +44,29 @@ body.modo-1bpm header .head a{background:rgba(2,18,39,.58);backdrop-filter:blur(
 #secCipgProdutividade .tablewrap{overflow:auto;max-width:100%}
 #secCipgProdutividade table{min-width:680px}
 #secCipgProdutividade .sub{line-height:1.5}
+
+/* Consulta documental no Dashboard Completo do CPC, sem navegação operacional. */
+.cpcDocOverlay[hidden]{display:none!important}
+.cpcDocOverlay{position:fixed;inset:0;z-index:20000;background:rgba(4,21,38,.77);display:flex;align-items:center;justify-content:center;padding:16px}
+.cpcDocJanela{background:#fff;border-radius:15px;width:min(100%,990px);max-height:calc(100dvh - 32px);display:flex;flex-direction:column;box-shadow:0 16px 60px #0005;overflow:hidden}
+.cpcDocTopo{padding:19px 22px;background:#092b4b;color:#fff;display:flex;align-items:start;justify-content:space-between;gap:14px}
+.cpcDocTopo h3{margin:3px 0 6px;font-size:20px}.cpcDocTopo small{color:#bdd8ea;overflow-wrap:anywhere}
+.cpcDocFechar{background:#fff;color:#0b3d64;border:0;border-radius:8px;padding:9px 12px;cursor:pointer;font-weight:800;flex-shrink:0}
+.cpcDocCorpo{padding:18px 22px;overflow:auto;overscroll-behavior:contain}
+.cpcDocStatus{font-size:12px;color:#255578;background:#eff7fd;border:1px solid #c9e1f2;border-radius:8px;padding:9px 11px;margin:0 0 12px}
+.cpcDocErro{color:#912f2f;background:#fff2f2;border-color:#efc5c5}
+.cpcDocGrupo{margin:16px 0 20px}.cpcDocGrupo h4{font-size:14px;margin:0 0 10px;color:#103c60;border-bottom:1px solid #d7e4ef;padding-bottom:7px}
+.cpcDocGrupo dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:0}
+.cpcDocCampo{min-width:0;background:#f7fafc;border:1px solid #e1eaf2;border-radius:8px;padding:10px 12px}
+.cpcDocCampo dt{font-size:11px;color:#52697c;font-weight:800;margin-bottom:5px}
+.cpcDocCampo dd{font-size:13px;line-height:1.55;color:#1a3045;margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.cpcDocMultilinha{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap!important}
+.cpcDocNota{font-size:12px;color:#5c6f80;line-height:1.55;margin:15px 0}
+.cpcDocVinculo{border:1px solid #a7cde6;border-radius:8px;background:#e7f4ff;color:#135782;padding:10px 13px;font-weight:800;cursor:pointer;margin-bottom:8px}
+.drill-ref-cpc{font-family:inherit;font-size:12px;font-weight:850;line-height:1.4;border:0;background:transparent;color:#145c91;cursor:pointer;text-decoration:underline;text-underline-offset:3px;padding:4px 2px;text-align:left}
+.drill-ref-cpc:hover{color:#092d4e}.drill-ref-cpc:focus-visible,.cpcDocFechar:focus-visible,.cpcDocVinculo:focus-visible{outline:3px solid #277ba9;outline-offset:2px}
+body.dashboard-comando .drill-table table{min-width:0}
+@media(max-width:700px){.cpcDocOverlay{padding:0}.cpcDocJanela{height:100dvh;max-height:100dvh;border-radius:0}.cpcDocTopo{padding:15px}.cpcDocCorpo{padding:12px}.cpcDocGrupo dl{grid-template-columns:1fr}}
 </style><script src="auth-config.js"></script><script src="auth-guard.js"></script><script src="cipg-dashboard.js?v=20261009-3"></script></head>
 <body><div class="loading" id="loading">Carregando dados estatísticos...</div><header><div class="head"><div><h1>Dashboard Completo</h1><p>Análise estatística operacional da unidade ativa</p></div><div><a href="#" data-permission="planilha" data-planilha-unidade hidden>▦ Google Planilhas</a> <a href="index.html">← Página inicial</a></div></div></header><main>
 <section class="panel"><div class="presets"><button data-period="hoje">Hoje</button><button data-period="semana">Semana atual</button><button data-period="mes">Mês atual</button><button data-period="trimestre">Trimestre</button><button data-period="semestre">Semestre</button><button data-period="ano">Ano</button></div><div class="filters">
@@ -357,8 +380,20 @@ body.modo-1bpm header .head a{background:rgba(2,18,39,.58);backdrop-filter:blur(
 <section class="section" id="secBensSubtraidos"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap"><div><h2>Bens Subtraídos</h2><p class="sub">Patrimônio roubado ou furtado no período; bens recuperados continuam contabilizados como subtraídos</p></div><label style="font-weight:700;color:#52677a">Modalidade <select id="filtroTipoSubtracao" style="display:block;margin-top:5px;border:1px solid #cdd8e5;border-radius:8px;padding:9px;background:#fff"><option value="">ROUBO E FURTO</option><option>ROUBO</option><option>FURTO</option></select></label></div><div class="cards" id="cardsBensSubtraidos"></div><div class="grid2"><div class="chartbox"><canvas id="chartBensSubtraidos"></canvas></div><div class="tablewrap"><table><thead><tr><th>Data</th><th>BO</th><th>Modalidade</th><th>Categoria</th><th>Qtd.</th><th>Descrição</th><th>Identificação</th><th>Situação</th></tr></thead><tbody id="tabBensSubtraidos"></tbody></table></div></div></section>
 <section class="section" id="secComandantes"><h2>Ocorrências por Comandante de Viatura</h2><p class="sub">Ranking completo e indicadores associados</p><div class="tablewrap"><table><thead><tr><th>#</th><th>Comandante</th><th>Ocorrências</th><th>Armas de fogo</th><th>Simulacros</th><th>Não classificadas (legado)</th><th>Veículos</th><th>Foragidos/cautelares</th><th>Ocorr. c/ drogas</th></tr></thead><tbody id="tabComandantes"></tbody></table></div></section>
 <section class="section"><h2>Comparativo de Produtividade</h2><p class="sub">Período atual versus período selecionado para comparação</p><div class="tablewrap"><table><thead><tr><th>Indicador</th><th>Atual</th><th>Comparado</th><th>Diferença</th><th>Variação</th></tr></thead><tbody id="tabComparativo"></tbody></table></div></section>
-<dialog id="drillDialog" class="drill-dialog"><div class="drill-head"><div><h3 id="drillTitulo">Detalhamento</h3><p id="drillSubtitulo"></p></div><button type="button" id="drillFechar" class="drill-close" aria-label="Fechar">×</button></div><div class="drill-body"><div class="drill-tools"><span id="drillContagem" class="drill-count"></span><a id="drillAbrirLista" class="drill-open-list" href="consulta.html">Abrir esta lista em Ocorrências →</a></div><div class="drill-table"><table><thead><tr><th>Data</th><th>Referência</th><th>Ocorrência</th><th>Bairro</th><th>Comandante</th><th>Ação</th></tr></thead><tbody id="drillTabela"></tbody></table></div></div></dialog></main><script>
-const db=supabase.createClient('https://jppmhhukujigxupgskdk.supabase.co','sb_publishable_ZVnU35i2x9zwppQqYg7UYw_mzaT43aG');const CORES={navy:'#0B2239',blue:'#1F5A8A',steel:'#496B86',teal:'#2F7278',green:'#39705A',amber:'#B7791F',red:'#A63D40',purple:'#665C83',gray:'#667085',light:'#C8D1DA'};let atual=[],anterior=[],tcosAtual=[],tcosAnterior=[],cipaAutosAtual=[],cipaAutosAnterior=[],cipaNotificacoesAtual=[],cipaNotificacoesAnterior=[],cipaFaunaAtual=[],cipaFaunaAnterior=[],cipaEmbargosAtual=[],cipaEmbargosAnterior=[],cipaEducacaoAtual=[],cipaEducacaoAnterior=[],autosCipturAtual=[],autosCipturAnterior=[],abordagensGiroAtual=[],abordagensGiroAnterior=[],servicosCavalariaAtual=[],servicosCavalariaAnterior=[],servicosCipgAtual=[],servicosCipgAnterior=[],eventosCipgAtual=[],eventosCipgAnterior=[],charts={},drillActions=new Map(),drillSeq=0,catalogoTerritorial=null;const $=id=>document.getElementById(id),num=v=>Number(v)||0,norm=v=>(v||'NÃO INFORMADO').toString().trim(),esc=v=>norm(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+<dialog id="drillDialog" class="drill-dialog"><div class="drill-head"><div><h3 id="drillTitulo">Detalhamento</h3><p id="drillSubtitulo"></p></div><button type="button" id="drillFechar" class="drill-close" aria-label="Fechar">×</button></div><div class="drill-body"><div class="drill-tools"><span id="drillContagem" class="drill-count"></span><a id="drillAbrirLista" class="drill-open-list" href="consulta.html">Abrir esta lista em Ocorrências →</a></div><div class="drill-table"><table><thead><tr><th>Data</th><th>Referência</th><th>Ocorrência</th><th>Bairro</th><th>Comandante</th><th id="drillColunaAcao">Ação</th></tr></thead><tbody id="drillTabela"></tbody></table></div></div></dialog>
+<section id="cpcDocumentoLeitura" class="cpcDocOverlay" role="dialog" aria-modal="true" aria-labelledby="cpcDocTitulo" hidden>
+ <div class="cpcDocJanela">
+  <div class="cpcDocTopo"><div><small>CONSULTA DOCUMENTAL · CPC · SOMENTE LEITURA</small>
+   <h3 id="cpcDocTitulo">Registro de origem</h3><small id="cpcDocIdentificacao"></small></div>
+   <button id="cpcDocFechar" class="cpcDocFechar" type="button">Fechar ✕</button></div>
+  <div class="cpcDocCorpo" tabindex="0"><p id="cpcDocStatus" class="cpcDocStatus" role="status" aria-live="polite"></p>
+   <div id="cpcDocConteudo"></div>
+   <button id="cpcDocVinculo" class="cpcDocVinculo" type="button" hidden>Abrir registro vinculado</button>
+  </div>
+ </div>
+</section>
+</main><script src="cpc-documento-leitura.js?v=20261014-dashboard-completo1"></script><script>
+const db=supabase.createClient('https://jppmhhukujigxupgskdk.supabase.co','sb_publishable_ZVnU35i2x9zwppQqYg7UYw_mzaT43aG');window.CpcDocumentoLeitura.configurar(db);const CORES={navy:'#0B2239',blue:'#1F5A8A',steel:'#496B86',teal:'#2F7278',green:'#39705A',amber:'#B7791F',red:'#A63D40',purple:'#665C83',gray:'#667085',light:'#C8D1DA'};let atual=[],anterior=[],tcosAtual=[],tcosAnterior=[],cipaAutosAtual=[],cipaAutosAnterior=[],cipaNotificacoesAtual=[],cipaNotificacoesAnterior=[],cipaFaunaAtual=[],cipaFaunaAnterior=[],cipaEmbargosAtual=[],cipaEmbargosAnterior=[],cipaEducacaoAtual=[],cipaEducacaoAnterior=[],autosCipturAtual=[],autosCipturAnterior=[],abordagensGiroAtual=[],abordagensGiroAnterior=[],servicosCavalariaAtual=[],servicosCavalariaAnterior=[],servicosCipgAtual=[],servicosCipgAnterior=[],eventosCipgAtual=[],eventosCipgAnterior=[],charts={},drillActions=new Map(),drillSeq=0,catalogoTerritorial=null;const $=id=>document.getElementById(id),num=v=>Number(v)||0,norm=v=>(v||'NÃO INFORMADO').toString().trim(),esc=v=>norm(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function normalizarBairro(v){let k=chaveOcorrencia(v),m={'AIRTON ROCHA':'DR AIRTON ROCHA','DOUTOR AIRTON ROCHA':'DR AIRTON ROCHA','DR AIRTON ROCHA':'DR AIRTON ROCHA','DOUTOR SILVIO BOTELHO':'DR SILVIO BOTELHO','SILVIO BOTELHO':'DR SILVIO BOTELHO','DR SILVIO BOTELHO':'DR SILVIO BOTELHO','DOUTOR SILVIO LEITE':'DR SILVIO LEITE','SILVIO LEITE':'DR SILVIO LEITE','DR SILVIO LEITE':'DR SILVIO LEITE','GOVERNADOR AQUILINO MOTA DUARTE':'GOV AQUILINO MOTA DUARTE','GOV AQUILINO MOTA DUARTE':'GOV AQUILINO MOTA DUARTE','JARDIM EQUATORIAL':'EQUATORIAL','PROFESSORA ARACELI SOUTO MAIOR':'ARACELI','PSICULTURA':'PISCICULTURA'};return m[k]||norm(v)}function normalizarNacionalidade(v){let k=chaveOcorrencia(v);if(['BR','BR - BRASILEIRA','BR — BRASILEIRA','BRASILEIRA','BRASILEIRO'].includes(k))return 'BR — Brasileira';if(['VE','VE - VENEZUELANA','VE — VENEZUELANA','VENEZUELANA','VENEZUELANO'].includes(k))return 'VE — Venezuelana';if(k==='NI'||k==='N'||k==='NA'||k==='NAO INFORMADO')return 'NI';return norm(v)}function normalizarSexo(v){let k=chaveOcorrencia(v);if(k==='M'||k==='MASCULINO')return 'M';if(k==='F'||k==='FEMININO')return 'F';if(k==='NI'||k==='N'||k==='NA'||k==='NAO INFORMADO'||k==='NÃO INFORMADO')return 'NI';return 'OUTRO'}function corSexo(v){return v==='M'?CORES.blue:v==='F'?CORES.purple:v==='NI'?CORES.gray:CORES.amber}function corDocumento(v){let k=chaveOcorrencia(v);return k==='BO'?CORES.blue:k==='TS'?CORES.teal:k==='AME'?CORES.green:k==='TCO'?CORES.amber:k==='ROP'?CORES.steel:CORES.gray}function classeVariacao(nome,a,b){let k=chaveOcorrencia(nome),crime=k==='TOTAL DE OCORRENCIAS'||k==='CLASSIFICACAO AME'||k.includes('MARIA DA PENHA')||k.includes('VIOLENCIA DOMESTICA');if(a===b)return 'neutral-var';if(crime)return a>b?'crit-up':'crit-down';return a>b?'prod-up':'prod-down'}function ehNaoInformado(v){let k=String(v??'').trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();return !k||['NI','N/I','N','NA','NAO INFORMADO','NÃO INFORMADO'].includes(k)}function rank(a,c,limit=999){let m={};a.forEach(x=>{let bruto=typeof c==='function'?c(x):x[c];if(ehNaoInformado(bruto))return;let k=String(bruto).trim();m[k]=(m[k]||0)+1});return Object.entries(m).sort((x,y)=>y[1]-x[1]||x[0].localeCompare(y[0])).slice(0,limit)}function soma(a,c){return a.reduce((s,x)=>s+num(x[c]),0)}function pred(a,c){return rank(a,c,1)[0]?.[0]||'NÃO INFORMADO'}function variacao(a,b){if(!b)return a?'Novo':'0%';let v=(a-b)*100/b;return (v>0?'+':'')+v.toFixed(1)+'%'}function cls(a,b){return a>b?'up':a<b?'down':''}function fmt(d){let y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dia=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${dia}`}
 function periodoComparado(){let a=new Date(ini.value+'T12:00:00'),b=new Date(fim.value+'T12:00:00');if(comparar.value==='ano'){a.setFullYear(a.getFullYear()-1);b.setFullYear(b.getFullYear()-1)}else{let dias=Math.round((b-a)/864e5)+1;b=new Date(a.getTime()-864e5);a=new Date(b.getTime()-(dias-1)*864e5)}return[fmt(a),fmt(b)]}
 function siglaUnidadeAtiva(){return String(window.SistemaAuth?.contexto?.sigla||window.SistemaAuth?.perfil?.unidades?.sigla||'').toUpperCase()}
@@ -541,8 +576,51 @@ function dataBr(v){if(!v)return '—';let p=String(v).slice(0,10).split('-');ret
 function idOcorrenciaDrill(o){return String(o?.ocorrencia_id||o?.id||'')}
 function documentoDrill(o){return o?._doc||o?.tipo_registro||(o?.numero_tco?'TCO':'BO')}
 function referenciaDrill(o){let doc=documentoDrill(o);if(doc==='TCO'&&o.numero_tco)return 'TCO '+norm(o.numero_tco)+(o.numero_bo?' · BO '+norm(o.numero_bo):'');return doc+' '+norm(o?.numero_bo)}
-function documentosPeriodo(registros,tcos){return [...registros.map(o=>({...o,_doc:o.tipo_registro||'BO'})),...tcos.map(t=>({...t,_doc:'TCO',id:t.ocorrencia_id||t.id}))]}
-function abrirDetalhes(titulo,registros,opcoes={}){let lista=(registros||[]).filter(Boolean);if(!opcoes.preservarDuplicados){let vistos=new Set();lista=lista.filter(o=>{let k=idOcorrenciaDrill(o)||[o.numero_bo,o.data_ocorrencia,o.numero_tco].join('|');if(vistos.has(k))return false;vistos.add(k);return true})}lista.sort((a,b)=>String(b.data_ocorrencia||b.data_tco||'').localeCompare(String(a.data_ocorrencia||a.data_tco||'')));$('drillTitulo').textContent=titulo;$('drillSubtitulo').textContent=opcoes.subtitulo||'Clique no BO para abrir a ocorrência correspondente.';$('drillContagem').textContent=lista.length+' ocorrência(s) relacionada(s)';let ids=[...new Set(lista.map(idOcorrenciaDrill).filter(Boolean))];$('drillAbrirLista').style.display=ids.length?'inline-flex':'none';$('drillAbrirLista').href='consulta.html?ids='+encodeURIComponent(ids.join(','))+'&origem=dashboard';rows('drillTabela',lista.map(o=>{let id=idOcorrenciaDrill(o),bo=norm(o.numero_bo),href=bo&&bo!=='NÃO INFORMADO'?'consulta.html?q='+encodeURIComponent(bo):'#';return '<tr><td>'+esc(dataBr(o.data_ocorrencia||o.data_tco))+'</td><td>'+esc(referenciaDrill(o))+'</td><td>'+esc(o.ocorrencia)+'</td><td>'+esc(o.bairro)+'</td><td>'+esc(o.comandante)+'</td><td>'+(href!=='#'?'<a class="drill-bo" href="'+href+'">Ver ocorrência →</a>':'—')+'</td></tr>'}).join(''));$('drillDialog').showModal()}
+function documentosPeriodo(registros,tcos){return [...registros.map(o=>({...o,_doc:o.tipo_registro||'BO'})),...tcos.map(t=>({...t,_doc:'TCO'}))]}
+const uuidDrill=v=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v||''))||/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v||''));
+let linhasDrillAtuais=[];
+function contextoCpcSomenteLeitura(){return window.CpcDocumentoLeitura?.autorizado()===true}
+function documentoOrigemDrill(o){
+  const tipo=documentoDrill(o);
+  if(tipo==='TCO')return {origem_tabela:'tcos',registro_id:o.id,ocorrencia_id:o.ocorrencia_id,referencia:referenciaDrill(o)};
+  return {origem_tabela:'ocorrencias',registro_id:o.id,referencia:referenciaDrill(o)};
+}
+function abrirDetalhes(titulo,registros,opcoes={}){
+  let lista=(registros||[]).filter(Boolean);
+  if(!opcoes.preservarDuplicados){let vistos=new Set();lista=lista.filter(o=>{
+    let k=idOcorrenciaDrill(o)||[o.numero_bo,o.data_ocorrencia,o.numero_tco].join('|');
+    if(vistos.has(k))return false;vistos.add(k);return true;
+  })}
+  lista.sort((a,b)=>String(b.data_ocorrencia||b.data_tco||'').localeCompare(String(a.data_ocorrencia||a.data_tco||'')));
+  const comando=contextoCpcSomenteLeitura();
+  document.body.classList.toggle('dashboard-comando',comando);
+  linhasDrillAtuais=lista;
+  $('drillTitulo').textContent=titulo;
+  $('drillSubtitulo').textContent=comando?'Clique no número do BO na coluna Referência para visualizar o cadastro completo, sem editar.':(opcoes.subtitulo||'Clique no BO para abrir a ocorrência correspondente.');
+  $('drillContagem').textContent=lista.length+' ocorrência(s) relacionada(s)';
+  const ids=[...new Set(lista.map(idOcorrenciaDrill).filter(Boolean))];
+  $('drillAbrirLista').style.display=comando?'none':(ids.length?'inline-flex':'none');
+  $('drillColunaAcao').hidden=comando;
+  rows('drillTabela',lista.map((o,i)=>{
+    const bo=norm(o.numero_bo),href=bo&&bo!=='NÃO INFORMADO'?'consulta.html?q='+encodeURIComponent(bo):'#';
+    const doc=documentoOrigemDrill(o);
+    const referencia=comando&&uuidDrill(doc.registro_id)?
+      '<button type="button" class="drill-ref-cpc" data-cpc-doc-index="'+i+'" aria-label="Visualizar '+esc(referenciaDrill(o))+' em modo somente leitura">'+esc(referenciaDrill(o))+'</button>':
+      esc(referenciaDrill(o));
+    const acao=comando?'':'<td>'+(href!=='#'?'<a class="drill-bo" href="'+href+'">Ver ocorrência →</a>':'—')+'</td>';
+    return '<tr><td>'+esc(dataBr(o.data_ocorrencia||o.data_tco))+'</td><td>'+referencia+'</td><td>'+esc(o.ocorrencia)+'</td><td>'+esc(o.bairro)+'</td><td>'+esc(o.comandante)+'</td>'+acao+'</tr>';
+  }).join(''));
+  $('drillDialog').showModal();
+}
+$('drillTabela').addEventListener('click',e=>{
+  const botao=e.target.closest('[data-cpc-doc-index]');
+  if(!botao||!contextoCpcSomenteLeitura())return;
+  const index=Number(botao.dataset.cpcDocIndex);
+  if(!Number.isInteger(index)||index<0||index>=linhasDrillAtuais.length)return;
+  const doc=documentoOrigemDrill(linhasDrillAtuais[index]);
+  if(!uuidDrill(doc.registro_id))return;
+  window.CpcDocumentoLeitura.abrir(doc);
+});
 function registrarDrill(titulo,registros,opcoes={}){let id='d'+(++drillSeq);drillActions.set(id,()=>abrirDetalhes(titulo,registros,opcoes));return id}
 function drillNumero(valor,titulo,registros,opcoes={}){let id=registrarDrill(titulo,registros,opcoes);return '<button type="button" class="drill-link" data-drill-id="'+id+'" title="Clique para ver as ocorrências">'+valor+'</button>'}
 function vincularCardDrill(id,titulo,registros,opcoes={}){let el=$(id)?.closest('.card');if(!el)return;let acao=()=>abrirDetalhes(titulo,registros,opcoes);el.classList.add('drill-card');el.tabIndex=0;el.onclick=acao;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();acao()}}}
