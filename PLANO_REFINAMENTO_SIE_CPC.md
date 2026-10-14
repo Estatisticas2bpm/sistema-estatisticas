@@ -318,7 +318,7 @@ As alterações da **Fase 3 (cartões CPC), Fase 4 (mapa), Fase 5 (seção de in
 - [ ] Homologar em sessão CPC autenticada a abertura real dos documentos, a correspondência dos UUIDs e os vínculos entre registros de todas as unidades.
 - [x] Auditar a política de INSERT compartilhado de `giro_abordagens`: identificada exceção ao bloqueio de escrita em contexto `COMANDO`.
 - [x] Preparar migração e rollback para negar INSERT compartilhado do GIRO em contexto `COMANDO`, preservando a regra original para acessos GIRO autorizados, inclusive usuários sem unidade principal.
-- [ ] Confirmar a aplicação da migração e o predicado RLS final no Supabase de produção.
+- [x] Aplicar a migração no Supabase de produção e verificar predicado RLS final: `authenticated`, acesso GIRO compartilhado preservado e `COMANDO` bloqueado para INSERT; verificação lógica para `COMANDO` (false), unidade operacional (true) e sem unidade principal (true), condicionada às demais regras originais. **Teste de usuário real ainda pendente.**
 - [ ] Testar negações de escrita com perfis reais CPC e operadores, sem executar exclusões destrutivas; auditar outras RPCs de escrita.
 - [ ] Definir fluxo de armazenamento privado e autorização de PDFs originais, caso a unidade decida preservar os documentos enviados.
 
