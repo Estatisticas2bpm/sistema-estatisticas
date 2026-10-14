@@ -10,6 +10,7 @@ const normalizar=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,''
 const displayName=s=>String(s||'').replace(/^(\d+)BPM$/i,(_,n)=>n+'º BPM');
 const documentos=new Map();
 const tamanhoPagina=12;
+const idValido=v=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v||''));
 let atual='',pagina=0,termo='',fonte='',indicador='',iniciado=false;
 function linhasAtuais(){
   const todos=documentos.get(atual)?.linhas||[];
@@ -31,12 +32,15 @@ function montar(){
   const filtradas=linhasAtuais(),totalPaginas=Math.max(1,Math.ceil(filtradas.length/tamanhoPagina));
   pagina=Math.min(Math.max(0,pagina),totalPaginas-1);
   const part=filtradas.slice(pagina*tamanhoPagina,(pagina+1)*tamanhoPagina);
-  $('cpcOrigemCorpo').innerHTML=part.map(x=>
-    '<tr><td>'+esc(x.data)+'</td><td>'+esc(x.fonte)+'</td>'+
-    '<td class="cpcOrigemReferencia">'+esc(x.referencia)+'</td>'+
-    '<td>'+esc(x.descricao)+'</td><td class="cpcOrigemMedida">'+valorMedida(x)+'</td>'+
-    '<td>'+esc(x.criterio)+'</td></tr>'
-  ).join('')||'<tr><td colspan="6" class="cpcOrigemSemResultados">Nenhum registro corresponde à pesquisa.</td></tr>';
+  $('cpcOrigemCorpo').innerHTML=part.map((x,i)=>{
+    const disponivel=idValido(x.registro_id)&&!!x.origem_tabela;
+    const ref=disponivel?'<button type="button" class="cpcOrigemVerDocumento" data-documento-index="'+(pagina*tamanhoPagina+i)+'" aria-label="Abrir cadastro '+esc(x.referencia)+'">'+esc(x.referencia)+' ↗</button>':
+      '<span title="Cadastro completo indisponível">'+esc(x.referencia)+'</span>';
+    return '<tr><td>'+esc(x.data)+'</td><td>'+esc(x.fonte)+'</td>'+
+      '<td class="cpcOrigemReferencia">'+ref+'</td>'+
+      '<td>'+esc(x.descricao)+'</td><td class="cpcOrigemMedida">'+valorMedida(x)+'</td>'+
+      '<td>'+esc(x.criterio)+'</td></tr>';
+  }).join('')||'<tr><td colspan="6" class="cpcOrigemSemResultados">Nenhum registro corresponde à pesquisa.</td></tr>';
   $('cpcOrigemQuantidade').textContent=filtradas.length+' registro(s) relacionado(s) ao indicador · '+d.linhas.length+' registro(s) de origem. Valores somados podem diferir da quantidade de documentos.';
   $('cpcOrigemPagina').textContent='Página '+(pagina+1)+' de '+totalPaginas;
   $('cpcOrigemAnterior').disabled=pagina===0;
@@ -110,6 +114,13 @@ function inicializar(){
     if(pagina+1<Math.ceil(linhasAtuais().length/tamanhoPagina)){pagina++;montar()}
   });
   $('cpcOrigemExportar').addEventListener('click',exportar);
+  $('cpcOrigemCorpo').addEventListener('click',e=>{
+    const botao=e.target.closest('[data-documento-index]');
+    if(!botao||!atual)return;
+    const pos=Number(botao.dataset.documentoIndex),linha=linhasAtuais()[pos];
+    if(!Number.isInteger(pos)||pos<0||!linha||!idValido(linha.registro_id))return;
+    global.CpcDocumentoLeitura?.abrir(linha);
+  });
 }
 global.CpcDetalhamentoOrigem=Object.freeze({abrir,fechar,registrar,reiniciar,linhasAtuais,valorMedida});
 })(window);
