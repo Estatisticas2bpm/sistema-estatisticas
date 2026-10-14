@@ -1,0 +1,17 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const root=path.join(__dirname,'..');
+const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const sql=read('supabase/migrations/20261014153000_giro_bloquear_insert_contexto_comando.sql');
+const rollback=read('migrations/rollback_20261014_giro_insert_contexto_comando.sql');
+assert.match(sql,/ALTER POLICY giro_abordagens_insert_acesso_compartilhado\s+ON public\.giro_abordagens\s+WITH CHECK/i);
+assert.match(sql,/criado_por\s*=\s*\(\s*SELECT auth\.uid\(\)/i,'mantém autenticação do autor');
+assert.match(sql,/giro_acessos_abordagem a/,'mantém concessão individual GIRO');
+assert.match(sql,/a\.ativo\s*=\s*true/,'mantém exigência de compartilhamento ativo');
+assert.match(sql,/u\.ativo\s*=\s*true/,'mantém unidade GIRO ativa');
+assert.match(sql,/a\.unidade_id\s*=\s*giro_abordagens\.unidade_id/,'mantém vínculo com unidade GIRO');
+assert.match(sql,/NOT COALESCE\(\(\s*SELECT u\.tipo = 'COMANDO'\s+FROM public\.unidades u\s+WHERE u\.id = private\.unidade_atual\(\)\s*\), false\)/i,'nega gravação no contexto COMANDO sem quebrar acesso compartilhado sem perfil');
+assert.doesNotMatch(rollback,/NOT COALESCE/,'rollback restaura política original');
+assert.match(rollback,/giro_acessos_abordagem a/);
+assert.doesNotMatch(sql,/DROP POLICY|CREATE POLICY|GRANT|REVOKE|DELETE FROM|UPDATE\s+public\.giro_abordagens/i);
+console.log('PASS: RLS GIRO preserva acesso compartilhado, bloqueia contexto COMANDO e possui rollback.');
