@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SIE-CPC — Central Executiva do CPC</title>
+<title>SIE-CPC — Painel Estatístico Integrado do CPC</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <style>
 *{box-sizing:border-box}:root{--navy:#071b33;--blue:#0e4f8a;--steel:#496b86;--teal:#2f7278;--green:#39705a;--amber:#b7791f;--red:#a63d40;--bg:#eef3f8;--card:#fff;--line:#d7e0ea;--muted:#66758a;--ink:#172033}
@@ -96,23 +96,55 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
 .cpcDocVinculo{border:1px solid #a7cde6;border-radius:8px;background:#e7f4ff;color:#135782;padding:10px 13px;font-weight:800;cursor:pointer;margin-bottom:8px}
 @media(max-width:700px){.cpcDocOverlay{padding:0}.cpcDocJanela{height:100dvh;max-height:100dvh;border-radius:0}.cpcDocTopo{padding:15px}.cpcDocCorpo{padding:12px}.cpcDocGrupo dl{grid-template-columns:1fr}}
 
+
+.cpcNavIntegrado{width:min(1440px,96%);margin:0 auto 15px;display:flex;gap:8px;flex-wrap:wrap}
+.cpcNavIntegrado a{border:1px solid #cbd7e3;border-radius:9px;background:#fff;color:#16496f;font-size:12px;font-weight:850;text-decoration:none;padding:10px 13px}
+.cpcNavIntegrado a:hover,.cpcNavIntegrado a:focus-visible{background:#e5f2fa;outline-offset:2px}
+.cpcAnaliseChamada{display:flex;justify-content:space-between;gap:15px;align-items:center;flex-wrap:wrap;background:#f0f6fc;border:1px solid #c9ddeb;border-radius:11px;padding:14px;margin:12px 0}
+.cpcAnaliseChamada p{margin:5px 0 0;font-size:12px;color:#536c81;max-width:780px}
+.cpcAnaliseCartoes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:16px 0}
+.cpcAnaliseCartao{background:#fff;border:1px solid #cddce9;border-left:4px solid #1c628f;border-radius:10px;padding:13px;text-align:left;cursor:pointer;font-family:inherit}
+.cpcAnaliseCartao small{display:block;color:#64748b;font-weight:850;text-transform:uppercase;font-size:10px}
+.cpcAnaliseCartao strong{display:block;font-size:24px;color:#0c3555;margin:6px 0}
+.cpcAnaliseCartao span{color:#1c628f;font-size:11px;font-weight:800}
+.cpcAnaliseCartao:hover,.cpcAnaliseLinha:hover{background:#eaf4fc}
+.cpcAnaliseGrade{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:15px}
+.cpcAnaliseBox{border:1px solid #d9e5ef;background:#f8fbfe;border-radius:11px;padding:15px;min-width:0}
+.cpcAnaliseBox h3{font-size:14px;color:#133d5d;margin:0 0 9px}
+.cpcAnaliseBox p{color:#6a7d8d;font-size:11px;margin:0 0 12px}
+.cpcAnaliseLinha{display:flex;align-items:center;gap:9px;width:100%;border:0;border-bottom:1px solid #e1eaf2;background:transparent;color:#203d55;text-align:left;font:inherit;font-size:12px;padding:9px 3px;cursor:pointer}
+.cpcAnalisePos{font-size:10px;font-weight:900;color:#607c90;width:21px}
+.cpcAnaliseNome{flex:1;min-width:0;overflow-wrap:anywhere}
+.cpcAnaliseLinha strong{font-variant-numeric:tabular-nums;color:#16496f}
+.cpcAnaliseAviso{border:1px solid #e8ba79;border-radius:8px;background:#fff5e8;color:#8a520a;padding:11px;font-size:12px;font-weight:700;margin:12px 0}
+.cpcAnaliseLinha:focus-visible,.cpcAnaliseCartao:focus-visible{outline:3px solid #327ca9;outline-offset:2px}
+@media(max-width:860px){.cpcAnaliseCartoes{grid-template-columns:repeat(2,minmax(0,1fr))}.cpcAnaliseGrade{grid-template-columns:1fr}}
+@media(max-width:480px){.cpcAnaliseCartoes{grid-template-columns:1fr}}
+
 </style>
 <script src="auth-config.js"></script>
-<script src="auth-guard.js"></script><script src="estatistica-indicadores.js?v=20261012-1"></script><script src="cipa-home.js?v=20261012-rastreabilidade3"></script><script src="cipg-home.js?v=20261012-rastreabilidade3"></script><script src="cpc-rastreabilidade.js?v=20261014-documento1"></script><script src="cpc-detalhamento-origem.js?v=20261014-documento2"></script><script src="cpc-documento-leitura.js?v=20261014-documento2"></script><script src="cpc-indicadores-dashboard.js?v=20261013-indicadores1"></script>
+<script src="auth-guard.js"></script><script src="estatistica-indicadores.js?v=20261012-1"></script><script src="cipa-home.js?v=20261012-rastreabilidade3"></script><script src="cipg-home.js?v=20261012-rastreabilidade3"></script><script src="cpc-rastreabilidade.js?v=20261014-documento1"></script><script src="cpc-detalhamento-origem.js?v=20261014-documento2"></script><script src="cpc-documento-leitura.js?v=20261014-documento2"></script><script src="cpc-indicadores-dashboard.js?v=20261013-indicadores1"></script><script src="cpc-analise-integrada.js?v=20261014-unificado1"></script>
 </head>
 <body>
 <div id="loading" class="loading">Carregando central executiva do CPC...</div>
 <header>
   <div class="head">
     <div class="brand"><img src="brasao-pmrr.png" alt="Brasão da PMRR"><div><b>SIE-CPC</b><small>Sistema Integrado de Estatística do CPC</small></div></div>
-    <div class="headActions"><a href="mapa-criminal.html">⌖ Mapa criminal</a><a href="dashboard.html">▥ Dashboard completo</a><a href="index.html">← Página inicial</a></div>
+    <div class="headActions"><a href="mapa-criminal.html">⌖ Mapa criminal</a><a href="#cpcAnaliseIntegrada">▥ Análises completas</a><a href="index.html">← Página inicial</a></div>
   </div>
   <div class="hero">
-    <div><div class="eyebrow">Comando de Policiamento da Capital · gestão estratégica · somente leitura</div><h1>Central Executiva do CPC</h1><p>Leitura consolidada das unidades subordinadas, com comparação operacional, evolução temporal e filtros para aprofundar a análise sem sair do contexto do Comando.</p></div>
+    <div><div class="eyebrow">Comando de Policiamento da Capital · gestão estratégica · somente leitura</div><h1>Painel Estatístico Integrado do CPC</h1><p>Leitura consolidada das unidades subordinadas, com comparação operacional, evolução temporal e filtros para aprofundar a análise sem sair do contexto do Comando.</p></div>
     <div class="scopeHero"><strong id="heroScope">Todas as unidades subordinadas</strong><span id="heroPeriod">Período em carregamento...</span></div>
   </div>
 </header>
 <main>
+  <nav class="cpcNavIntegrado" aria-label="Seções do painel estatístico integrado">
+    <a href="#secIndicadoresCpc">Indicadores por unidade</a>
+    <a href="#cpcAnaliseIntegrada">Perfis e produtividade</a>
+    <a href="#secAbordagensGiroCpc">GIRO</a>
+    <a href="#cpcQuadroUnidades">Comparativo de unidades</a>
+    <a href="#cpcNaturezasUnidades">Naturezas</a>
+  </nav>
   <section class="panel">
     <div class="presets"><button data-period="hoje">Hoje</button><button data-period="7dias">Últimos 7 dias</button><button data-period="mes">Mês atual</button><button data-period="30dias">Últimos 30 dias</button><button data-period="ano">Ano atual</button></div>
     <div class="filters">
@@ -197,6 +229,36 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
     </div>
   </div>
 </section>
+<section class="panel" id="cpcAnaliseIntegrada">
+  <div class="sectionTitle">
+    <div><h2>Análises completas — produtividade, pessoas e bens</h2>
+      <p>Informações do Dashboard Completo integradas aos filtros de unidade, período e território do CPC. Os dados de BO são separados das atividades especializadas.</p></div>
+    <span class="tag">SOMENTE LEITURA</span>
+  </div>
+  <div class="cpcAnaliseChamada">
+    <div><strong>Análise operacional aprofundada</strong>
+      <p>Para preservar o desempenho, os detalhes de ocorrências são consultados somente quando solicitados. Selecione a unidade e as datas acima, clique em “Aplicar filtros” e carregue esta análise.</p></div>
+    <button id="cpcAnaliseCarregar" type="button" class="btn">Carregar análise detalhada</button>
+  </div>
+  <p id="cpcAnaliseStatus" class="status" role="status" aria-live="polite">Aplique os filtros e clique em “Carregar análise detalhada”.</p>
+  <p id="cpcAnaliseConferencia" class="cpcAnaliseAviso" role="alert" hidden></p>
+  <div id="cpcAnaliseConteudo" hidden>
+    <p class="filterScope"><span id="cpcAnaliseEscopo">Escopo selecionado</span> · <strong id="cpcAnaliseTotal">0</strong> BO(s) analisados</p>
+    <h3>Resumo da produtividade operacional</h3>
+    <div id="cpcAnaliseProdutividade" class="cpcAnaliseCartoes"></div>
+    <div class="cpcAnaliseGrade">
+      <div class="cpcAnaliseBox"><h3>Ocorrências por comandante de viatura</h3><p>BOs associados ao comandante informado.</p><div id="cpcAnaliseComandantes"></div></div>
+      <div class="cpcAnaliseBox"><h3>Bens subtraídos</h3><p>Quantidade de itens por categoria, não BOs distintos.</p><div id="cpcAnaliseBens"></div></div>
+      <div class="cpcAnaliseBox"><h3>Perfil dos infratores — sexo</h3><div id="cpcAnaliseInfratoresSexo"></div></div>
+      <div class="cpcAnaliseBox"><h3>Perfil das vítimas — sexo</h3><div id="cpcAnaliseVitimasSexo"></div></div>
+      <div class="cpcAnaliseBox"><h3>Perfil dos infratores — nacionalidade</h3><div id="cpcAnaliseInfratoresNacionalidade"></div></div>
+      <div class="cpcAnaliseBox"><h3>Perfil das vítimas — nacionalidade</h3><div id="cpcAnaliseVitimasNacionalidade"></div></div>
+      <div class="cpcAnaliseBox"><h3>Perfil dos infratores — faixa etária</h3><div id="cpcAnaliseInfratoresIdade"></div></div>
+      <div class="cpcAnaliseBox"><h3>Perfil das vítimas — faixa etária</h3><div id="cpcAnaliseVitimasIdade"></div></div>
+    </div>
+    <p class="status">Clique em qualquer quantidade ou categoria para conferir os BOs de origem e abrir seu histórico em modo de consulta.</p>
+  </div>
+</section>
 <section class="panel executive"><h2>Leitura executiva do período</h2><p id="resumoExecutivo">Analisando os indicadores selecionados...</p></section><section class="panel" id="secAbordagensGiroCpc">
   <div class="sectionTitle"><div><h2>Abordagens preventivas — GIRO</h2><p>Produtividade de abordagens registrada pelas equipes do GIRO. Este bloco considera período e unidade; filtros criminais/territoriais de BO não alteram estes números.</p></div><span class="tag">GIRO</span></div>
   <div class="kpis" style="margin-bottom:16px">
@@ -229,16 +291,16 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
   </div>
 
   <section class="panel">
-    <div class="sectionTitle"><div><h2>Quadro comparativo operacional</h2><p>Indicadores por unidade subordinada dentro dos filtros ativos</p></div><span class="tag">CONSOLIDADO</span></div>
+    <div class="sectionTitle"><div><h2 id="cpcQuadroUnidades">Quadro comparativo operacional</h2><p>Indicadores por unidade subordinada dentro dos filtros ativos</p></div><span class="tag">CONSOLIDADO</span></div>
     <div class="tableWrap"><table><thead><tr><th>Unidade</th><th>Ocorrências</th><th>Conduções</th><th>Prisões</th><th>TCOs</th><th>Veículos rec.</th><th>Com armas</th><th>Com drogas</th></tr></thead><tbody id="tbodyUnidades"></tbody></table></div>
   </section>
 
   <section class="panel">
-    <div class="sectionTitle"><div><h2>Principais ocorrências por unidade</h2><p>Top 5 naturezas de cada unidade no escopo selecionado</p></div><span class="tag">DRILL-DOWN</span></div>
+    <div class="sectionTitle"><div><h2 id="cpcNaturezasUnidades">Principais ocorrências por unidade</h2><p>Top 5 naturezas de cada unidade no escopo selecionado</p></div><span class="tag">DRILL-DOWN</span></div>
     <div id="naturezas" class="naturezas"></div>
   </section>
 
-  <section class="panel"><div class="sectionTitle"><div><h2>Aprofundar análise</h2><p>Abra as ferramentas especializadas mantendo o contexto CPC</p></div><span class="tag">ATALHOS</span></div><div class="quick"><a href="territorio-cpc.html">Matriz territorial <span>→</span></a><a href="dashboard.html">Dashboard completo <span>→</span></a><a href="mapa-criminal.html">Mapa criminal <span>→</span></a><a href="analise-temporal.html">Análise temporal <span>→</span></a><a href="relatorio.html">Gerar relatório <span>→</span></a></div></section>
+  <section class="panel"><div class="sectionTitle"><div><h2>Aprofundar análise</h2><p>Abra as ferramentas especializadas mantendo o contexto CPC</p></div><span class="tag">ATALHOS</span></div><div class="quick"><a href="territorio-cpc.html">Matriz territorial <span>→</span></a><a href="#cpcAnaliseIntegrada">Análises completas <span>→</span></a><a href="mapa-criminal.html">Mapa criminal <span>→</span></a><a href="analise-temporal.html">Análise temporal <span>→</span></a><a href="relatorio.html">Gerar relatório <span>→</span></a></div></section>
 </main>
 <footer>SIE-CPC — Polícia Militar de Roraima · Comando de Policiamento da Capital</footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -246,6 +308,7 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
 const cfg=window.SISTEMA_AUTH_CONFIG;
 const db=supabase.createClient(cfg.supabaseUrl,cfg.publishableKey);
 window.CpcDocumentoLeitura.configurar(db);
+window.CpcAnaliseIntegrada.iniciar();
 const $=id=>document.getElementById(id);
 let charts={},unidadesCarregadas=false,catalogoTerritorial=null,abordagensGiroCpc=[],hierarquiaUnidades=[];
 function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
@@ -327,6 +390,7 @@ async function consultarGiroCpcPaginado(inicio,fim){
 let versaoConsultaCpc=0;
 async function carregar(){
   const versao=++versaoConsultaCpc;
+  window.CpcAnaliseIntegrada.resetar();
   const ready=window.SistemaAuth?.ready;
   if(ready)await ready;
   if(versao!==versaoConsultaCpc)return;
@@ -355,6 +419,7 @@ async function carregar(){
     popularUnidades();
     if(!args.p_unidade_id&&$('unidade').value){carregar();return}
     render(r.data);
+    window.CpcAnaliseIntegrada.configurar(db,args,hierarquiaUnidades,r.data.resumo?.total_ocorrencias);
     document.querySelector('main').classList.remove('cpcConsultaSemResultado');
     window.CpcIndicadoresDashboard.carregar(db,args,hierarquiaUnidades).catch(function(e){console.error(e);if(versao===versaoConsultaCpc)$('cpcIndicadoresEspecificos').textContent='Erro ao consultar indicadores especializados.'});
     $('status').textContent='Filtro aplicado: '+br(inicio)+' a '+br(fim)+' · '+n(r.data.resumo?.total_ocorrencias).toLocaleString('pt-BR')+' ocorrências policiais no escopo. Os indicadores especializados possuem critérios próprios descritos abaixo.';
