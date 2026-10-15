@@ -61,6 +61,13 @@
 
   function pode(perfil,permissao){
     if(!permissao)return true;
+    // Fluxos da Seção está suspenso para todos, inclusive ADMIN.
+    if(permissao==='fluxos')return false;
+    // Modo TV: apenas quando o contexto de trabalho ativo é o Comando CPC.
+    // Bloqueia também acesso direto a modo-tv.html, painel-tv.html e mapa-tv.html.
+    if(permissao==='tv'&&String(contextoAtual?.tipo||'').toUpperCase()!=='COMANDO')return false;
+    // ESTATISTICA gerencia somente acessos individuais no próprio módulo; contas SIE-CPC seguem ADMIN.
+    if(permissao==='usuarios'&&normalizarPerfil(perfil)!=='ADMIN')return false;
     if(contextoAtual?.somente_leitura_operacional&&permissoesEscritaOperacional.has(permissao))return false;
     const lista=cfg.permissions[normalizarPerfil(perfil)]||[];
     return lista.includes(permissao);
