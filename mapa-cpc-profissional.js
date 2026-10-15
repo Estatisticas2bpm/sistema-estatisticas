@@ -34,13 +34,21 @@
   function popup(v,conteudo){
     return '<div class="sieCpcPopup">'+cabecalhoPopup(v)+'<div class="sieCpcPopupDados">'+String(conteudo||'')+'</div></div>';
   }
-  function criarMarcador(L,registro,conteudo,zoom){
+  function criarMarcador(L,registro,conteudo,zoom,opcoes){
     const latitude=Number(registro.latitude),longitude=Number(registro.longitude),unidade=sigla(registro.unidade_sigla);
     const marcador=L.marker([latitude,longitude],{
       icon:iconePonto(L,unidade,zoom),title:nome(unidade)+' · ocorrência',
       unidadeSieCpc:unidade
     }).bindPopup(popup(unidade,conteudo),{maxWidth:320});
-    if(typeof marcador.bindTooltip==='function')marcador.bindTooltip(nome(unidade),{direction:'top',opacity:.95});
+    const hover=opcoes?.popupAoPassar===true &&
+      (typeof global.matchMedia!=='function'||global.matchMedia('(hover: hover) and (pointer: fine)').matches);
+    if(hover){
+      // Somente o mapa inicial solicita abertura por hover; a cartografia completa mantém o clique.
+      marcador.on('mouseover',()=>marcador.openPopup());
+      marcador.on('mouseout',()=>marcador.closePopup());
+    }else if(typeof marcador.bindTooltip==='function'){
+      marcador.bindTooltip(nome(unidade),{direction:'top',opacity:.95});
+    }
     return marcador;
   }
   function contagens(registros){

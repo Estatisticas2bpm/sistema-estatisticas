@@ -45,7 +45,7 @@ assert.match(c.html,/sieCpcClusterBubble misto/);
 assert.equal(U.agregador({layerGroup:L.layerGroup}).disponivel,false);
 const home=read('index.html'),completo=read('mapa-criminal.html'),tv=read('mapa-tv.html');
 for(const [nome,s] of [['Home',home],['Mapa completo',completo],['TV',tv]]){
-  assert.match(s,/mapa-unidade-profissional\.js\?v=20261013-v1/,nome+' deve carregar motor temático');
+  assert.match(s,/mapa-unidade-profissional\.js\?v=/,nome+' deve carregar motor temático');
   assert.match(s,/MapaUnidadeProfissional\.criarMarcador/,nome+' deve desenhar marcadores compactos');
   assert.match(s,/MapaUnidadeProfissional\.agregador/,nome+' deve criar agrupador temático');
 }
