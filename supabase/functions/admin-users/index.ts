@@ -285,26 +285,27 @@ Deno.serve(async (req: Request) => {
           (upper(perfilCaller.unidades?.sigla) === "CIPG" && perfilCaller.perfil === "ESTATISTICA"));
       if (!autorizado) return resposta({ error: "Acesso restrito à administração ou estatística da CIPG." }, 403);
       const listar = async () => {
-        const { data, error } = await admin.from("cipg_acessos_caderno").select("user_id,ativo,criado_em").order("criado_em",{ascending:false});
+        const { data, error } = await admin.from("cipg_acessos_caderno").select("user_id,ativo,criado_em,posto_graduacao,nome_guerra").order("criado_em",{ascending:false});
         if (error) throw error;
         const itens = await Promise.all((data||[]).map(async (x:any) => {
           const { data: authData } = await admin.auth.admin.getUserById(x.user_id);
-          return { ...x, email: authData?.user?.email || "", nome: authData?.user?.user_metadata?.nome || "" };
+          return { ...x, email: authData?.user?.email || "", nome: authData?.user?.user_metadata?.nome || "", posto_graduacao: x.posto_graduacao, nome_guerra: x.nome_guerra };
         }));
         return itens;
       };
       if (action === "cipg_access_list") return resposta({ users: await listar() });
       if (action === "cipg_access_create") {
-        const email = limpar(body.email).toLowerCase(), password = limpar(body.password), nome = limpar(body.nome);
+        const email = limpar(body.email).toLowerCase(), password = limpar(body.password), nome = limpar(body.nome), postoGraduacao = limpar(body.posto_graduacao).toUpperCase(), nomeGuerra = limpar(body.nome_guerra).toUpperCase(), matricula = limpar(body.matricula);
         if (!email.includes("@") || email.length > 254) throw new Error("Informe e-mail válido.");
         if (password.length < 12) throw new Error("A senha deve ter pelo menos 12 caracteres.");
         if (nome.length < 3 || nome.length > 120) throw new Error("Informe o nome do policial.");
+        if (!postoGraduacao || postoGraduacao.length > 40 || !nomeGuerra || nomeGuerra.length > 60 || !matricula || matricula.length > 40) throw new Error("Informe graduação, nome de guerra e matrícula.");
         const { data: created, error: authError } = await admin.auth.admin.createUser({
           email,password,email_confirm:true,user_metadata:{nome},
         });
         if (authError || !created.user) throw authError || new Error("Falha ao criar conta individual.");
         const { error: accessError } = await admin.from("cipg_acessos_caderno").insert({
-          user_id:created.user.id, unidade_id:unidadeCipg, ativo:true,
+          user_id:created.user.id, unidade_id:unidadeCipg, ativo:true, nome_completo:nome, posto_graduacao:postoGraduacao, nome_guerra:nomeGuerra, matricula,
         });
         if (accessError) {
           await admin.auth.admin.deleteUser(created.user.id);

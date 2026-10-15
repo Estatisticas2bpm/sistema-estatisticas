@@ -19,13 +19,13 @@ function tela(autorizado){
 async function validar(){
  const {data:{user},error}=await client.auth.getUser();
  if(error||!user)return null;
- const r=await client.from('cipg_acessos_caderno').select('user_id,unidade_id,ativo').eq('user_id',user.id).eq('ativo',true).maybeSingle();
+ const r=await client.from('cipg_acessos_caderno').select('user_id,unidade_id,ativo,posto_graduacao,nome_guerra').eq('user_id',user.id).eq('ativo',true).maybeSingle();
  if(r.error||!r.data||r.data.unidade_id!==unidadeCipg)return null;
- return user;
+ return {...user, identificacao:((r.data.posto_graduacao||'')+' '+(r.data.nome_guerra||'')).trim()};
 }
 async function habilitar(user){
  window.SistemaAuth.user=user;
- window.SistemaAuth.perfil={perfil:'CADERNO_CIPG',nome_guerra:user.email,unidades:{sigla:'CIPG'}};
+ window.SistemaAuth.perfil={perfil:'CADERNO_CIPG',nome_guerra:user.identificacao||'Policial CIPG',unidades:{sigla:'CIPG'}};
  window.SistemaAuth.contexto={unidade_id:unidadeCipg,sigla:'CIPG'};
  window.SistemaAuth.pode=p=>p==='caderno_cipg';
  window.SistemaAuth.temModulo=m=>m==='PRODUTIVIDADE_CIPG';
