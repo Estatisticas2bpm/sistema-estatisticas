@@ -48,7 +48,7 @@ async function montar(sigla) {
     assert.equal(sessao.access_token, 'token-de-teste');
     if (sigla === 'BOPE') {
       assert.match(html, /id="subunidadeOperacional"/);
-      assert.match(html, /<option value="">Selecione a unidade responsavel<\/option>/i);
+      assert.match(html, /<option value="">Selecione a unidade respons<\/option>/i);
     } else {
       assert.doesNotMatch(html, /id="subunidadeOperacional"/);
     }
