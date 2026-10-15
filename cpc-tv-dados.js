@@ -129,5 +129,5 @@ function formatDiff(a,b){
  if(b===0)return a===0?'Sem variação':'Sem base anterior';
  const p=(a-b)*100/b;return (p>0?'+':'')+p.toFixed(1).replace('.',',')+'%';
 }
-global.CpcTvDados=Object.freeze({esc,num,currency,sum,normalize,periodos,countRank,groupSum,weekSeries,consultar,metrics,formatDiff});
+global.CpcTvDados=Object.freeze({esc,num,currency,sum,normalize,periodos,countRank,groupSum,weekSeries,pagina,consultar,metrics,formatDiff});
 })(window);
