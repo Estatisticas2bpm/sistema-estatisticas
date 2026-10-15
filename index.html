@@ -333,9 +333,10 @@ function renderUnidadesCpc(){
     (filhosUnidadeCpc(u.id).length?' (consolidado)':''):'todas as unidades subordinadas.');
 }
 function renderCpcAtual(){var hoje=new Date(),pc=periodoMesAnterior(hoje),d=dadosPorUnidade(cpcAtual,filtroCpcUnidade),dAnt=dadosPorUnidade(cpcAnterior,filtroCpcUnidade),t=dadosPorUnidade(cpcTcosAtual,filtroCpcUnidade),tAnt=dadosPorUnidade(cpcTcosAnterior,filtroCpcUnidade),u=unidadePorId(filtroCpcUnidade);total.textContent=d.length;conducoes.textContent=somar(d,"conducoes_operacionais");tcosProduzidos.textContent=t.length;veiculosRecuperadosKpi.textContent=somar(d,"veiculos_recuperados");totalSub.textContent=u?"registros do "+siglaHome(u.sigla):unidadesCpcPrincipais().map(function(x){return siglaHome(x.sigla)+": "+dadosPorUnidade(cpcAtual,x.id).length}).join(" · ");conducoesSub.textContent=u?"conduções do "+siglaHome(u.sigla):"somatório das unidades subordinadas";tcosSub.textContent=u?"TCOs do "+siglaHome(u.sigla):unidadesCpcPrincipais().map(function(x){return siglaHome(x.sigla)+": "+dadosPorUnidade(cpcTcosAtual,x.id).length}).join(" · ");veiculosSub.textContent=u?"recuperados pelo "+siglaHome(u.sigla):"resultado consolidado das unidades";renderResumoComparativo(d,t,dAnt,tAnt,hoje,pc);draw("topOcorrencias",rank(d,"ocorrencia","crime"),[["#0e4f8a","#18a0ae"],["#2469a3","#44b7bc"],["#3a7fad","#74c6c8"],["#5794b8","#8fd0ce"],["#75a9c5","#acdcd7"]]);draw("topBairros",rank(d,"bairro","localidade"),[["#d36b36","#ef9f25"],["#d77e3e","#f2af3e"],["#dc9250","#f4bd59"],["#dfa562","#f6ca75"],["#e5b77b","#f8d794"]]);atualizarCardsPrincipaisCpc(u);renderUnidadesCpc()}
-var mapa=L.map("mapa",{scrollWheelZoom:false}).setView([2.8235,-60.6758],12),camadaPontos=L.layerGroup().addTo(mapa),camadaCalor=L.heatLayer([],{radius:34,blur:28,minOpacity:.2,maxZoom:18,gradient:{.18:"#2563eb",.4:"#22c55e",.62:"#facc15",.82:"#f97316",1:"#dc2626"}}),dadosMapaAtuais=[],abordagensMapaAtuais=[];
+var mapa=L.map("mapa",{scrollWheelZoom:false,dragging:false}).setView([2.8235,-60.6758],12),camadaPontos=L.layerGroup().addTo(mapa),camadaCalor=L.heatLayer([],{radius:34,blur:28,minOpacity:.2,maxZoom:18,gradient:{.18:"#2563eb",.4:"#22c55e",.62:"#facc15",.82:"#f97316",1:"#dc2626"}}),dadosMapaAtuais=[],abordagensMapaAtuais=[];
 var agrupamentoCpc=MapaCpcProfissional.agrupador(L),camadaAgrupadaCpc=agrupamentoCpc.camada,marcadoresCpcAtuais=[];
 var agrupamentoUnidade=MapaUnidadeProfissional.agregador(L),camadaAgrupadaUnidade=agrupamentoUnidade.camada,marcadoresUnidadeAtuais=[];
+var controleInteracaoMapa=MapaInteracaoHome.instalar(mapa,{dica:document.getElementById("mapaInteracaoDica")});
 function siglaAtivaMapa(){return String(window.SistemaAuth?.contexto?.sigla||window.SistemaAuth?.perfil?.unidade_sigla||"").toUpperCase()}
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"&copy; OpenStreetMap"}).addTo(mapa);
 var legenda=L.control({position:"bottomright"});legenda.onAdd=function(){var div=L.DomUtil.create("div","mapLegend");div.id="legendaMapaPrincipal";return div};legenda.addTo(mapa);
@@ -398,55 +399,13 @@ function renderizarMapa(ajustarVista=true){
     limites=ocorrencias.concat(abordagens).map(x=>[Number(x.latitude),Number(x.longitude)]);
     if(!mapaCalor){
       ocorrencias.forEach(function(x){
-        const conteudo='<b>'+escHome(x.ocorrencia||x.crime||'Ocorrência')+'</b>'+
-          (x.numero_bo?'<br><b>BO:</b> '+escHome(x.numero_bo):'')+
-          '<br>'+escHome(x.endereco||'Endereço não informado')+
-          (x.bairro?'<br>'+escHome(x.bairro):'')+
-          (x.data_ocorrencia?'<br>'+escHome(x.data_ocorrencia):'');
-        marcadoresUnidadeAtuais.push(MapaUnidadeProfissional.criarMarcador(
-          L,x,conteudo,mapa.getZoom(),'ocorrencia',unidade||x.unidade_sigla
-        ));
-      });
-      abordagens.forEach(function(x){
-        const data=x.registrado_em?new Date(x.registrado_em).toLocaleString('pt-BR',{
-          timeZone:'America/Boa_Vista',dateStyle:'short',timeStyle:'short'
-        }):'';
-        const conteudo='<b>Abordagem GIRO</b><br>'+escHome(rotuloAbordagemGiro(x.tipo_abordagem))+
-          '<br>'+Number(x.quantidade_pessoas||0)+' pessoa(s) abordada(s)'+
-          '<br>'+escHome([x.endereco,x.bairro,x.municipio].filter(Boolean).join(' · ')||'Local GPS')+
-          '<br>'+escHome(data);
-        marcadoresUnidadeAtuais.push(MapaUnidadeProfissional.criarMarcador(
-          L,x,conteudo,mapa.getZoom(),'abordagem','GIRO'
-        ));
-      });
-      if(visualizacaoMapa.value==='agrupado'){
-        if(camadaAgrupadaUnidade.addLayers)camadaAgrupadaUnidade.addLayers(marcadoresUnidadeAtuais);
-        else marcadoresUnidadeAtuais.forEach(m=>camadaAgrupadaUnidade.addLayer(m));
-        camadaAgrupadaUnidade.addTo(mapa);
-      }else marcadoresUnidadeAtuais.forEach(m=>m.addTo(camadaPontos));
-    }
-    atualizarLegendaMapa(ocorrencias,abordagens);
-  }else{
-    // A densidade e os marcadores jamais são exibidos simultaneamente no CPC.
-    limites=ocorrencias.concat(abordagens).map(x=>[Number(x.latitude),Number(x.longitude)]);
-    if(!mapaCalor){
-      ocorrencias.forEach(function(x){
-        const cat=categoriaMapa(x.ocorrencia||x.crime);
-        const conteudo='<b>'+escHome(x.ocorrencia||x.crime||"Ocorrência")+'</b>'+
-          '<br><span style="color:'+cat[1]+';font-weight:700">'+escHome(cat[0])+'</span>'+
-          (x.numero_bo?'<br><b>BO:</b> '+escHome(x.numero_bo):'')+
-          '<br>'+escHome(x.endereco||"Endereço não informado")+
-          (x.bairro?'<br>'+escHome(x.bairro):'')+
-          '<br>'+escHome(x.data_ocorrencia||'');
-        marcadoresCpcAtuais.push(MapaCpcProfissional.criarMarcador(L,x,conteudo,mapa.getZoom()));
+        const conteudo=MapaResumoHome.ocorrencia(x);
+        marcadoresCpcAtuais.push(MapaCpcProfissional.criarMarcador(L,x,conteudo,mapa.getZoom(),{popupAoPassar:true}));
       });
       abordagens.forEach(function(x){
         const data=x.registrado_em?new Date(x.registrado_em).toLocaleString('pt-BR',{timeZone:'America/Boa_Vista',dateStyle:'short',timeStyle:'short'}):'';
-        const conteudo='<b>Abordagem GIRO</b><br>'+escHome(rotuloAbordagemGiro(x.tipo_abordagem))+
-          '<br>'+Number(x.quantidade_pessoas||0)+' pessoa(s) abordada(s)'+
-          '<br>'+escHome([x.endereco,x.bairro,x.municipio].filter(Boolean).join(' · ')||'Local GPS')+
-          '<br>'+escHome(data);
-        marcadoresCpcAtuais.push(MapaCpcProfissional.criarMarcador(L,Object.assign({},x,{unidade_sigla:'GIRO'}),conteudo,mapa.getZoom()));
+        const conteudo=MapaResumoHome.abordagem(x);
+        marcadoresCpcAtuais.push(MapaCpcProfissional.criarMarcador(L,Object.assign({},x,{unidade_sigla:'GIRO'}),conteudo,mapa.getZoom(),{popupAoPassar:true}));
       });
       if(visualizacaoMapa.value==="agrupado"){
         camadaAgrupadaCpc.addLayers?camadaAgrupadaCpc.addLayers(marcadoresCpcAtuais):marcadoresCpcAtuais.forEach(m=>camadaAgrupadaCpc.addLayer(m));
