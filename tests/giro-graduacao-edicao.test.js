@@ -1,0 +1,15 @@
+const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');const read=p=>fs.readFileSync(path.resolve(__dirname,'..',p),'utf8');
+const html=read('giro-acesso-abordagens.html'),api=read('supabase/functions/admin-users/index.ts'),sql=read('supabase/migrations/20261015213000_giro_graduacao_edicao.sql');
+assert.match(html,/<select name="posto_graduacao"[^>]*required>/);
+assert.match(html,/name="posto_graduacao"/);
+assert.match(html,/id="formEditar"/);
+assert.match(html,/data-action=\\"edit\\"/);
+assert.match(html,/giro_users_update/);
+assert.match(html,/user_id:f.get\('user_id'\)/);
+assert.match(api,/giro_users_update/);
+assert.match(api,/postosGraduacoesValidos.has\(postoGraduacao\)/);
+assert.match(api,/nome_completo:nome,nome_guerra:nomeGuerra,matricula,posto_graduacao:postoGraduacao/);
+assert.match(api,/!!x.email && !!x.matricula/);
+assert.match(api,/!alvo.email\|\|alvo.email.toLowerCase\(\)===GIRO_ABORDAGENS_EMAIL/);
+assert.match(sql,/giro_identificacao_individual_completa/);
+console.log('GIRO: graduação, edição sem troca de UUID e ocultação do acesso compartilhado validados.');
