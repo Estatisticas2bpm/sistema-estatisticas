@@ -22,6 +22,7 @@ window.SISTEMA_AUTH_CONFIG = Object.freeze({
     "autos-infracao.html":"cadastro",
     "cavalaria-produtividade.html":"cadastro",
     "cipg-produtividade.html":"cadastro",
+    "cipg-gerenciar-acessos.html":"cadastro",
     "cipg-eventos.html":"cadastro",
     "consulta.html":"consulta",
     "dashboard.html":"dashboard",
@@ -49,6 +50,7 @@ window.SISTEMA_AUTH_CONFIG = Object.freeze({
     "autos-infracao.html":"AUTOS_INFRACAO",
     "cavalaria-produtividade.html":"PRODUTIVIDADE_CAVALARIA",
     "cipg-produtividade.html":"PRODUTIVIDADE_CIPG",
+    "cipg-gerenciar-acessos.html":"PRODUTIVIDADE_CIPG",
     "cipg-eventos.html":"PRODUTIVIDADE_CIPG"
   })
 });
