@@ -47,7 +47,8 @@ const home=read('index.html'),completo=read('mapa-criminal.html'),tv=read('mapa-
 for(const [nome,s] of [['Home',home],['Mapa completo',completo],['TV',tv]]){
   assert.match(s,/mapa-unidade-profissional\.js\?v=/,nome+' deve carregar motor temático');
   assert.match(s,/MapaUnidadeProfissional\.criarMarcador/,nome+' deve desenhar marcadores compactos');
-  assert.match(s,/MapaUnidadeProfissional\.agregador/,nome+' deve criar agrupador temático');
+  if(nome==='TV')assert.match(s,/MapaCpcProfissional\.agrupador/,nome+' deve agrupar as ocorrências pelas unidades do CPC');
+  else assert.match(s,/MapaUnidadeProfissional\.agregador/,nome+' deve criar agrupador temático');
 }
 for(const s of [home,completo]){
   assert.match(s,/value="agrupado"/);
