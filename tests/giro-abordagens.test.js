@@ -93,7 +93,7 @@ assert.match(authConfig,/giro-acesso-abordagens/);
 assert.match(edge,/function podeGerenciarAcessoGiro/);
 assert.doesNotMatch(dashboard,/id="secGiroAcesso"/);
 assert.match(home,/id="giroAccessShortcut"/);
-assert.match(home,/Gerenciar acesso das abordagens/);
+assert.match(home,/Cadastrar/gerenciar policiais das abordagens — GIRO/);
 assert.match(home,/perfilGiro==='ADMIN'\|\|perfilGiro==='ESTATISTICA'/);
 assert.match(home,/giro-acesso-abordagens\.html/);
 assert.doesNotMatch(home,/<a[^>]*id="giroAccessShortcut"[^>]*href="dashboard\.html"/);
