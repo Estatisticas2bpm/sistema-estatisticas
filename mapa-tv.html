@@ -1,23 +1,115 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mapa TV — CPC</title><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"><script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script><link rel="stylesheet" href="mapa-cpc-profissional.css?v=20261013-v2"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><style>*{box-sizing:border-box}html,body{height:100%;margin:0;background:#061321;font-family:Inter,Segoe UI,Arial,sans-serif}.screen{height:100%;display:grid;grid-template-rows:auto 1fr auto;padding:1.2vh 1vw;gap:1vh;background:linear-gradient(135deg,#061321,#092440);color:#fff}header{display:flex;justify-content:space-between;align-items:center;padding:0 .5vw}.brand{display:flex;align-items:center;gap:.7vw}.brand img{height:5.2vh;max-height:58px}.brand b{font-size:clamp(17px,1.25vw,25px)}.brand span{display:block;color:#bcd2e4;font-size:clamp(10px,.72vw,14px)}.date{text-align:right}.date b{display:block;font-size:clamp(15px,1.1vw,22px)}.date span{color:#9ee5e7;font-size:clamp(10px,.72vw,14px)}#mapa{height:100%;border-radius:1vw;overflow:hidden;border:1px solid #ffffff20}.footer{display:flex;justify-content:space-between;gap:10px;color:#b8cadd;font-size:clamp(10px,.72vw,14px);padding:0 .5vw}.live{color:#72e3b7;font-weight:900}.legend{background:#061b2eea;color:#e7f0f6;border:1px solid #ffffff22;border-radius:10px;padding:8px 10px;line-height:1.7;font-size:11px}.legend b{display:block}.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;border:1px solid #fff}</style><script src="estatistica-indicadores.js?v=20261012-ciptur-escudo3"></script><script src="mapa-cpc-profissional.js?v=20261012-v1"></script><script src="mapa-unidade-profissional.js?v=20261013-v1"></script><script src="auth-config.js"></script><script src="auth-guard.js"></script></head><body><main class="screen"><header><div class="brand"><img src="brasao-pmrr.png"><div><b>Mapa Criminal — CPC</b><span>Ocorrências georreferenciadas do mês atual</span></div></div><div class="date"><b id="hora"></b><span id="data"></span></div></header><div id="mapa"></div><footer class="footer"><span><span class="live">● MAPA ATIVO</span> · atualização automática a cada 60 segundos</span><span id="status">Carregando ocorrências...</span></footer></main><script>const db=supabase.createClient('https://jppmhhukujigxupgskdk.supabase.co','sb_publishable_ZVnU35i2x9zwppQqYg7UYw_mzaT43aG');const mapa=L.map('mapa',{zoomControl:false,scrollWheelZoom:false,dragging:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false}).setView([2.8235,-60.6758],12),pontos=L.layerGroup().addTo(mapa),grupoTV=MapaUnidadeProfissional.agregador(L);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(mapa);let leg=L.control({position:'bottomright'});leg.onAdd=()=>{let d=L.DomUtil.create('div','legend');d.innerHTML='<b>Natureza</b><i style="background:#dc2626"></i>Roubo<br><i style="background:#f59e0b"></i>Furto<br><i style="background:#8b5cf6"></i>Violência doméstica<br><i style="background:#2563eb"></i>Trânsito<br><i style="background:#16a34a"></i>Drogas<br><i style="background:#64748b"></i>Outras';return d};leg.addTo(mapa);function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}function chave(v){return String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase()}function cat(v){let k=chave(v);if(k.includes('ROUBO'))return'#dc2626';if(k.includes('FURTO'))return'#f59e0b';if(k.includes('MARIA DA PENHA')||k.includes('VIOLENCIA DOMESTICA'))return'#8b5cf6';if(k.includes('TRANSITO')||k.includes('ACIDENTE'))return'#2563eb';if(k.includes('DROGA')||k.includes('ENTORPECENTE')||k.includes('TRAFICO'))return'#16a34a';return'#64748b'}function coordValida(x){if(x.latitude===null||x.latitude===undefined||x.longitude===null||x.longitude===undefined||String(x.latitude).trim()===''||String(x.longitude).trim()==='')return false;let la=Number(x.latitude),lo=Number(x.longitude);return Number.isFinite(la)&&Number.isFinite(lo)&&la>2&&la<4&&lo>-62&&lo<-59}function relogio(){let d=new Date();hora.textContent=d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});data.textContent=d.toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'})}async function carregar(){
- let h=new Date(),i=new Date(h.getFullYear(),h.getMonth(),1);
- const r=await db.rpc('obter_ocorrencias_mapa',{data_inicio:iso(i),data_fim:iso(h),tipo_filtro:null});
- if(r.error){status.textContent='Erro ao atualizar mapa';return}
- const dados=(r.data||[]).filter(coordValida);
- pontos.clearLayers();grupoTV.camada.clearLayers();
- if(mapa.hasLayer(grupoTV.camada))mapa.removeLayer(grupoTV.camada);
- const lim=[],markers=[];
- dados.forEach(x=>{
-   const la=Number(x.latitude),lo=Number(x.longitude);
-   const conteudo='<b>'+String(x.ocorrencia||x.crime||'Ocorrência').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))+'</b>';
-   markers.push(MapaUnidadeProfissional.criarMarcador(L,x,conteudo,mapa.getZoom(),'ocorrencia','2BPM'));
-   lim.push([la,lo]);
- });
- if(grupoTV.camada.addLayers)grupoTV.camada.addLayers(markers);
- else markers.forEach(m=>grupoTV.camada.addLayer(m));
- grupoTV.camada.addTo(mapa);
- if(lim.length===1)mapa.setView(lim[0],14);
- else if(lim.length>1)mapa.fitBounds(lim,{padding:[16,16],maxZoom:13});
- else mapa.setView([2.8235,-60.6758],12);
- status.textContent=dados.length+' ocorrência(s) georreferenciada(s) · agrupamento por natureza · atualizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mapa TV — CPC consolidado</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+<script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<link rel="stylesheet" href="mapa-cpc-profissional.css?v=20261015-bigtrail1">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}html,body{height:100%;margin:0;background:#04111e;color:#fff;font:14px Inter,Segoe UI,Arial,sans-serif;overflow:hidden}
+.screen{height:100%;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:1vh;padding:1.2vh 1.3vw;background:linear-gradient(135deg,#051625,#0b2b45)}
+header,footer{display:flex;justify-content:space-between;align-items:center;gap:18px}
+header{border-bottom:1px solid #ffffff20;padding-bottom:.75vh}.brand{display:flex;align-items:center;gap:.9vw}
+.brand img{height:6vh;max-height:65px;width:70px;object-fit:contain}.brand b{display:block;font-size:clamp(19px,1.6vw,32px)}.brand span{display:block;font-size:clamp(11px,.85vw,18px);color:#b7cfdc}
+#mapa{width:100%;height:100%;border-radius:15px;background:#163950;border:1px solid #ffffff30}
+.footer{font-size:clamp(11px,.8vw,17px);color:#a8c0d0}.footer strong{color:#64d7bf}
+.legend{background:#071a2eeb;border:1px solid #ffffff3a;padding:12px;border-radius:12px;line-height:1.75;font-size:12px;color:#f2f9ff;max-height:50vh;overflow-y:auto}
+.legend b{display:block;color:#f1cb7c;margin-bottom:5px}.legend i{display:inline-block;width:10px;height:10px;border:1px solid #fff;border-radius:50%;vertical-align:middle;margin-right:7px}
+#periodoMapa{font-weight:800;color:#deb66b}.controls{display:flex;align-items:center;gap:10px}.controls select{border:1px solid #ffffff50;border-radius:8px;padding:8px;background:#0c334c;color:#fff}
+</style>
+<script src="auth-config.js"></script><script src="auth-guard.js"></script>
+<script src="estatistica-indicadores.js?v=20261012-ciptur-escudo3"></script>
+<script src="mapa-cpc-profissional.js?v=20261015-hover1"></script>
+<script src="mapa-unidade-profissional.js?v=20261015-bigtrail1"></script>
+<script src="cpc-tv-dados.js?v=20261015-trimestre1"></script>
+</head><body><main class="screen">
+<header><div class="brand">
+ <!-- Imagem preservada: o Codex fará a troca pela logo oficial do CPC. -->
+ <img src="brasao-pmrr.png" alt="Identidade institucional atual">
+ <div><b>Mapa Operacional do CPC</b><span id="periodoMapa">Registros georreferenciados de todas as unidades</span></div>
+ </div><div class="controls"><label>Período <select id="escolherTrimestre"><option value="atual">Trimestre atual</option><option value="encerrado">Último trimestre concluído</option></select></label><div><b id="hora"></b><span id="data"></span></div></div></header>
+<div id="mapa" aria-label="Mapa georreferenciado consolidado das unidades CPC"></div>
+<footer class="footer"><span><strong>● CPC — VISÃO TERRITORIAL</strong> · atualização a cada 5 minutos</span><span id="status" role="status">Verificando autorização...</span></footer>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const mapa=L.map('mapa',{zoomControl:false,scrollWheelZoom:false,dragging:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false})
+  .setView([2.8235,-60.6758],11);
+const grupo=MapaCpcProfissional.agrupador(L),cores=EstatisticaIndicadores.corUnidade||{};
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:16,attribution:'&copy; OpenStreetMap'}).addTo(mapa);
+let unidades=[],db=null,carregando=false;
+const legenda=L.control({position:'bottomright'});
+legenda.onAdd=()=>{
+ const el=L.DomUtil.create('div','legend');el.id='legendaCpcTv';el.textContent='Carregando unidades...';return el;
+};legenda.addTo(mapa);
+function esc(v){return CpcTvDados.esc(v)}
+function relogio(){
+ const d=new Date(),f={timeZone:'America/Boa_Vista'};
+ $('hora').textContent=d.toLocaleTimeString('pt-BR',{...f,hour:'2-digit',minute:'2-digit'});
+ $('data').textContent=d.toLocaleDateString('pt-BR',{...f,day:'2-digit',month:'short',year:'numeric'});
 }
-relogio();setInterval(relogio,1000);carregar();setInterval(carregar,60000);</script></body></html>
+function validar(x){
+ if(x.latitude===null||x.longitude===null||x.latitude===undefined||x.longitude===undefined)return false;
+ const lat=Number(x.latitude),lon=Number(x.longitude);
+ return Number.isFinite(lat)&&Number.isFinite(lon)&&lat>=2&&lat<=5&&lon>=-63&&lon<=-59;
+}
+async function carregar(){
+ if(!db||carregando)return;carregando=true;try{
+  const p=CpcTvDados.periodos(new Date(),$('escolherTrimestre').value);
+  $('periodoMapa').textContent=p.titulo+' · '+p.subtitulo;
+  const r=await db.rpc('obter_mapa_cpc_territorial',{data_inicio:p.inicio,data_fim:p.fim,
+   p_unidade_id:null,p_tipo_filtro:null,p_aisc:null,p_sisc:null,p_setor:null,p_bairro:null});
+  if(r.error)throw Error(r.error.message);
+  const ocorrencias=(r.data||[]).filter(validar);
+  // Abordagens não integram os totais de ocorrências policiais; são exibidas com moto própria.
+  const idsGiro=new Set(unidades.filter(u=>String(u.sigla||'').toUpperCase()==='GIRO').map(u=>String(u.id)));
+  let abordagens=[],gOk=true;
+  try{
+    abordagens=(await CpcTvDados.pagina(db,'giro_abordagens',
+      'id,unidade_id,registrado_em,tipo_abordagem,quantidade_pessoas,latitude,longitude,bairro',
+      'registrado_em',p.inicio+'T00:00:00-04:00',p.fim+'T23:59:59.999-04:00',idsGiro)).filter(validar);
+  }catch(err){gOk=false;console.warn('Abordagens GIRO indisponíveis no mapa TV:',err.message)}
+  grupo.camada.clearLayers();if(mapa.hasLayer(grupo.camada))mapa.removeLayer(grupo.camada);
+  const markers=[],lim=[],c={};
+  ocorrencias.forEach(x=>{
+   const sigla=String(x.unidade_sigla||'').toUpperCase();
+   c[sigla]=(c[sigla]||0)+1;
+   markers.push(MapaCpcProfissional.criarMarcador(L,x,
+    '<b>'+esc(x.ocorrencia||x.crime||'Ocorrência')+'</b><br>'+esc(x.data_ocorrencia||''),mapa.getZoom()));
+   lim.push([+x.latitude,+x.longitude]);
+  });
+  abordagens.forEach(x=>{
+   const m=MapaUnidadeProfissional.criarMarcador(L,x,
+    '<b>Abordagem GIRO</b><br>'+Number(x.quantidade_pessoas||0)+' pessoa(s) abordada(s)',mapa.getZoom(),'abordagem','GIRO');
+   m.options.unidadeSieCpc='GIRO';markers.push(m);
+   lim.push([+x.latitude,+x.longitude]);
+  });
+  if(grupo.camada.addLayers)grupo.camada.addLayers(markers);
+  else markers.forEach(x=>grupo.camada.addLayer(x));
+  grupo.camada.addTo(mapa);
+  if(lim.length===1)mapa.setView(lim[0],12);
+  else if(lim.length>1)mapa.fitBounds(lim,{padding:[30,30],maxZoom:12});
+  else mapa.setView([2.8235,-60.6758],11);
+  const siglas=[...new Set([...unidades.map(x=>x.sigla),...Object.keys(c)])].filter(Boolean);
+  $('legendaCpcTv').innerHTML='<b>Ocorrências por unidade</b>'+siglas.map(u=>
+   '<div><i style="background:'+(cores[u]||'#94a3b8')+'"></i>'+esc(u.replace(/^([12])BPM$/,'$1º BPM'))+': '+(c[u]||0)+'</div>').join('')+
+   '<small>GIRO: '+(gOk?abordagens.length+' abordagem(ns)':'dados indisponíveis')+'</small>';
+  $('status').textContent=ocorrencias.length+' ocorrência(s)'+(gOk?' · '+abordagens.length+' abordagem(ns) GIRO':' · abordagens indisponíveis')+' · atualizado '+new Date().toLocaleTimeString('pt-BR',{timeZone:'America/Boa_Vista',hour:'2-digit',minute:'2-digit'});
+ }catch(err){console.error('Mapa TV CPC:',err);$('status').textContent='Falha na atualização do mapa: '+err.message}
+ finally{carregando=false}
+}
+(async()=>{
+ relogio();setInterval(relogio,1000);
+ const auth=await window.SistemaAuth?.ready;
+ if(!auth?.client||auth.contexto?.tipo!=='COMANDO'||String(auth.contexto?.sigla||'').toUpperCase()!=='CPC'||!auth.pode('tv')){
+  $('status').textContent='Acesso autorizado somente no contexto CPC';return;
+ }
+ db=auth.client;
+ const u=await db.rpc('obter_home_cpc_territorial',{data_inicio:CpcTvDados.periodos().inicio,data_fim:CpcTvDados.periodos().fim});
+ if(u.error||u.data?.autorizado!==true){$('status').textContent='Não foi possível validar a hierarquia territorial do CPC';return}
+ unidades=u.data.unidades||[];
+ $('escolherTrimestre').addEventListener('change',carregar);
+ await carregar();setInterval(()=>{if(!document.hidden)carregar()},300000);
+})().catch(err=>{$('status').textContent='Falha ao iniciar: '+err.message});
+</script></body></html>
