@@ -83,7 +83,7 @@ async function construir(sigla){
   const win={SistemaAuth:{ready:Promise.resolve({contexto:{sigla}})},location:{replace(){throw Error('Redirecionamento indevido')}}};
   const doc={open(){},write(html){htmlFinal=html},close(){}};
   const buscar=async()=>({ok:true,text:async()=>base});
-  await new Function('window','document','fetch','console','return '+integradorScript)(
+  await new Function('window','document','fetch','console','return '+integradorScript.trim())(
     win,doc,buscar,console);
   assert.ok(htmlFinal&&htmlFinal.includes('abrirNovoFormularioAposSalvar()'));
   assert.ok(htmlFinal.includes('<form id="formOcorrencia" novalidate autocomplete="off">'));
