@@ -63,9 +63,13 @@ async function carregar(){
   if(r.error)throw Error(r.error.message);
   const ocorrencias=(r.data||[]).filter(validar);
   // Abordagens não integram os totais de ocorrências policiais; são exibidas com moto própria.
-  const g=await db.from('giro_abordagens').select('id,unidade_id,registrado_em,tipo_abordagem,quantidade_pessoas,latitude,longitude,bairro')
-    .gte('registrado_em',p.inicio+'T00:00:00-04:00').lte('registrado_em',p.fim+'T23:59:59.999-04:00');
-  const gOk=!g.error,abordagens=gOk?(g.data||[]).filter(validar):[];
+  const idsGiro=new Set(unidades.filter(u=>String(u.sigla||'').toUpperCase()==='GIRO').map(u=>String(u.id)));
+  let abordagens=[],gOk=true;
+  try{
+    abordagens=(await CpcTvDados.pagina(db,'giro_abordagens',
+      'id,unidade_id,registrado_em,tipo_abordagem,quantidade_pessoas,latitude,longitude,bairro',
+      'registrado_em',p.inicio+'T00:00:00-04:00',p.fim+'T23:59:59.999-04:00',idsGiro)).filter(validar);
+  }catch(err){gOk=false;console.warn('Abordagens GIRO indisponíveis no mapa TV:',err.message)}
   grupo.camada.clearLayers();if(mapa.hasLayer(grupo.camada))mapa.removeLayer(grupo.camada);
   const markers=[],lim=[],c={};
   ocorrencias.forEach(x=>{
@@ -76,8 +80,9 @@ async function carregar(){
    lim.push([+x.latitude,+x.longitude]);
   });
   abordagens.forEach(x=>{
-   markers.push(MapaUnidadeProfissional.criarMarcador(L,x,
-    '<b>Abordagem GIRO</b><br>'+Number(x.quantidade_pessoas||0)+' pessoa(s) abordada(s)',mapa.getZoom(),'abordagem','GIRO'));
+   const m=MapaUnidadeProfissional.criarMarcador(L,x,
+    '<b>Abordagem GIRO</b><br>'+Number(x.quantidade_pessoas||0)+' pessoa(s) abordada(s)',mapa.getZoom(),'abordagem','GIRO');
+   m.options.unidadeSieCpc='GIRO';markers.push(m);
    lim.push([+x.latitude,+x.longitude]);
   });
   if(grupo.camada.addLayers)grupo.camada.addLayers(markers);
