@@ -466,7 +466,41 @@ mapa.on("zoomend",function(){
   });
 });
 function intervaloMapa(){var h=new Date(),i,f=new Date(h);if(periodoMapa.value==="hoje")i=new Date(h);else if(periodoMapa.value==="7dias"){i=new Date(h);i.setDate(h.getDate()-6)}else if(periodoMapa.value==="semana"){i=new Date(h);var d=h.getDay(),dif=d===0?-6:1-d;i.setDate(h.getDate()+dif)}else if(periodoMapa.value==="personalizado"){return [mapaInicio.value,mapaFim.value]}else i=new Date(h.getFullYear(),h.getMonth(),1);return[iso(i),iso(f)]}
+// Complementa apenas dados de BO já acessíveis ao usuário (RLS de ocorrências).
+// Mantém os RPCs e os filtros territoriais originais; nunca amplia a visibilidade de registros.
+const detalhesOcorrenciasMapa=new Map();
+let requisicaoMapaAtual=0;
+async function enriquecerOcorrenciasMapa(registros){
+  const ids=[...new Set((registros||[]).map(x=>String(x.id||'')).filter(x=>/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(x)))];
+  const pendentes=ids.filter(id=>!detalhesOcorrenciasMapa.has(id));
+  const lotes=[];
+  for(let i=0;i<pendentes.length;i+=200)lotes.push(pendentes.slice(i,i+200));
+  let indice=0;
+  await Promise.all(Array.from({length:Math.min(3,lotes.length)},async()=>{
+    while(indice<lotes.length){
+      const lote=lotes[indice++];
+      // A leitura direta usa exatamente as mesmas políticas RLS aplicadas à consulta de ocorrências.
+      const resposta=await db.from('ocorrencias').select('id,numero_bo,comandante,hora_inicial').in('id',lote);
+      if(resposta.error){
+        console.warn('Detalhes autorizados do mapa indisponíveis:',resposta.error.message);
+        return;
+      }
+      lote.forEach(id=>detalhesOcorrenciasMapa.set(id,null));
+      (resposta.data||[]).forEach(x=>detalhesOcorrenciasMapa.set(String(x.id),x));
+    }
+  }));
+  return (registros||[]).map(x=>{
+    const detalhe=detalhesOcorrenciasMapa.get(String(x.id));
+    if(!detalhe)return x;
+    const extras={};
+    for(const campo of ['numero_bo','comandante','hora_inicial']){
+      if(detalhe[campo]!==null&&detalhe[campo]!==undefined&&String(detalhe[campo]).trim()!=='')extras[campo]=detalhe[campo];
+    }
+    return {...x,...extras};
+  });
+}
 async function carregarMapa(){
+  const requisicao=++requisicaoMapaAtual;
   var p=intervaloMapa();
   if(!p[0]||!p[1]){mapStatus.textContent="Informe as duas datas do período personalizado.";return}
   mapaInicio.value=p[0];mapaFim.value=p[1];mapStatus.textContent="Atualizando mapa...";
@@ -494,7 +528,9 @@ async function carregarMapa(){
   }
   if(r.error){mapStatus.textContent="Não foi possível carregar o mapa: "+r.error.message;return}
   if(g&&g.error){mapStatus.textContent="Não foi possível carregar as abordagens: "+g.error.message;return}
-  dadosMapaAtuais=(r.data||[]).filter(function(x){return x.latitude!=null&&x.longitude!=null&&Number.isFinite(Number(x.latitude))&&Number.isFinite(Number(x.longitude))&&Math.abs(Number(x.latitude))<=90&&Math.abs(Number(x.longitude))<=180});
+  const registrosEnriquecidos=await enriquecerOcorrenciasMapa(r.data||[]);
+  if(requisicao!==requisicaoMapaAtual)return;
+  dadosMapaAtuais=registrosEnriquecidos.filter(function(x){return x.latitude!=null&&x.longitude!=null&&Number.isFinite(Number(x.latitude))&&Number.isFinite(Number(x.longitude))&&Math.abs(Number(x.latitude))<=90&&Math.abs(Number(x.longitude))<=180});
   abordagensMapaAtuais=(g?.data||[]).filter(function(x){return x.latitude!=null&&x.longitude!=null&&Number.isFinite(Number(x.latitude))&&Number.isFinite(Number(x.longitude))&&Math.abs(Number(x.latitude))<=90&&Math.abs(Number(x.longitude))<=180});
   renderizarMapa()
 }
