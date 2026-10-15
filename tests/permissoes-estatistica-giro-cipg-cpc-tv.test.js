@@ -38,3 +38,23 @@ test('Fluxos da Seção estão desativados para todos os perfis e fora do menu',
  assert.equal(cfg.pagePermissions['fluxos.html'],'fluxos');
  assert.doesNotMatch(home,/href="fluxos\.html"/);
 });
+
+test('A URL direta da gestão móvel não permite ESTATÍSTICA de outra unidade',()=>{
+ const i=guard.indexOf('  function paginaEspecializadaPermitida(perfil){');
+ const f=guard.indexOf('  function permissaoDaPagina()',i);
+ assert.ok(i>=0&&f>i);
+ const code=guard.slice(i,f);
+ function acesso(unidade,pagina,perfil){
+  return new Function('pathname','contextoAtual','normalizarPerfil',code+';return paginaEspecializadaPermitida;')(
+    pagina,{sigla:unidade},x=>String(x||'').toUpperCase()
+  )({perfil});
+ }
+ assert.equal(acesso('GIRO','giro-acesso-abordagens.html','ESTATISTICA'),true);
+ assert.equal(acesso('CIPG','giro-acesso-abordagens.html','ESTATISTICA'),false);
+ assert.equal(acesso('GIRO','giro-ranking-abordagens.html','ESTATISTICA'),true);
+ assert.equal(acesso('GIRO','cipg-gerenciar-acessos.html','ESTATISTICA'),false);
+ assert.equal(acesso('CIPG','cipg-gerenciar-acessos.html','ESTATISTICA'),true);
+ assert.equal(acesso('GIRO','cipg-auditoria-caderno.html','ESTATISTICA'),false);
+ assert.equal(acesso('GIRO','cipg-gerenciar-acessos.html','ADMIN'),true);
+ assert.match(guard,/if\(!paginaEspecializadaPermitida\(perfil\)\)/);
+});
