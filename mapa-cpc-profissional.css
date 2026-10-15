@@ -50,3 +50,7 @@ button.sieCpcLegendaUnidade:hover,button.sieCpcLegendaUnidade:focus-visible{back
  .sieMapaResumo{min-width:165px;max-width:235px}
  .sieMapaResumoLinha{grid-template-columns:minmax(60px,80px) minmax(0,1fr)}
 }
+
+/* Abordagem GIRO: miniatura vetorial de big trail preta, sem mudar os pontos das ocorrências. */
+.sieGiroMotoPin{background:transparent!important;border:0!important;box-shadow:none!important}
+.sieGiroMotoPin img{display:block;width:100%;height:100%;object-fit:contain;pointer-events:none;filter:drop-shadow(0 0 1px #fff)}
