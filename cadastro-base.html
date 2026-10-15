@@ -316,7 +316,7 @@
       <div class="status-importacao" id="statusImportacaoPdf" hidden></div>
     </section>
 
-    <form id="formOcorrencia" novalidate>
+    <form id="formOcorrencia" novalidate autocomplete="off">
       <section>
         <h2>1. Identificação do registro</h2>
 
@@ -2427,8 +2427,22 @@
       return true;
     }
 
+    // Uma inserção bem-sucedida precisa abrir uma instância INTEIRAMENTE NOVA do cadastro.
+    // reset() não elimina estados do OCR/PDF, mapas, listas dinâmicas nem scripts das unidades.
+    // Navegar para URL inédita preserva a sessão Supabase e o contexto institucional, que são
+    // gerenciados pelo auth-guard.js, sem reutilizar o DOM nem o rascunho anterior.
+    function abrirNovoFormularioAposSalvar() {
+      const novaPagina = new URL(window.location.href);
+      novaPagina.searchParams.delete("id");
+      novaPagina.searchParams.delete("retorno");
+      novaPagina.searchParams.set("novo", String(Date.now()));
+      window.location.replace(novaPagina.toString());
+    }
+    let salvamentoEmAndamento = false;
     formulario.addEventListener("submit", async (evento) => {
       evento.preventDefault();
+      // Impede reenvio concorrente, inclusive via tecla Enter.
+      if (salvamentoEmAndamento) return;
       if (subunidadeOperacional && !subunidadeOperacional.value) return mostrarErroCampo("subunidadeOperacional","Selecione a unidade operacional responsável: Força Tática, Choque, Canil ou GATE.");
       if (!validarFormularioPrincipal()) return;
       const botaoSalvar = formulario.querySelector('button[type="submit"]');
@@ -2471,6 +2485,8 @@
       if ((!enderecoAtual || !document.getElementById("latitude").value || !document.getElementById("longitude").value) && enderecoFoiAlterado) return mostrarErroCampo("enderecoGoogle","O endereço foi alterado. Pesquise e selecione uma sugestão do Google Maps antes de salvar.");
       if (importacaoPdfPendente && !confirm("Você conferiu os dados preenchidos pelo PDF, corrigiu o que for necessário e confirma que deseja salvar esta ocorrência?")) return;
 
+      if (salvamentoEmAndamento) return;
+      salvamentoEmAndamento = true;
       botaoSalvar.disabled = true;
       botaoSalvar.textContent = "Salvando...";
 
@@ -2584,22 +2600,15 @@
         }
         importacaoPdfPendente = false;
         alert("Ocorrência salva com sucesso!");
-        formulario.reset();
-        document.getElementById("vitimasAdicionais").replaceChildren();
-        document.getElementById("infratoresAdicionais").replaceChildren();
-        document.getElementById("envolvidosAdicionais").replaceChildren();
-        adicionarPessoa("envolvido");
-        statusImportacaoPdf.hidden = true;
-        document.getElementById("nomePdfSelecionado").textContent = "Nenhum arquivo selecionado";
-        semana.value = "";
-        mes.value = "";
-        turno.value = "";
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        // Somente a confirmação de gravação (e os módulos de unidade) autoriza
+        // a troca de página. Falhas de salvamento deixam PDF e rascunho intocados.
+        abrirNovoFormularioAposSalvar();
 
       } catch (erro) {
         console.error(erro);
         alert("Ocorreu um erro inesperado ao salvar.");
       } finally {
+        salvamentoEmAndamento = false;
         botaoSalvar.disabled = false;
         botaoSalvar.textContent = textoOriginalBotao;
       }
