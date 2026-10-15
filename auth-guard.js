@@ -27,6 +27,18 @@
     });
   }
 
+  // Estatística só acessa a gestão móvel e o ranking da própria unidade, mesmo por URL direta.
+  function paginaEspecializadaPermitida(perfil){
+    if(normalizarPerfil(perfil?.perfil)!=='ESTATISTICA')return true;
+    const unidadesPorPagina={
+      'giro-acesso-abordagens.html':'GIRO',
+      'giro-ranking-abordagens.html':'GIRO',
+      'cipg-gerenciar-acessos.html':'CIPG',
+      'cipg-auditoria-caderno.html':'CIPG'
+    };
+    const exigida=unidadesPorPagina[pathname];
+    return !exigida||String(contextoAtual?.sigla||'').toUpperCase()===exigida;
+  }
   function permissaoDaPagina(){return cfg.pagePermissions[pathname]||null;}
   function moduloDaPagina(){return cfg.pageModules?.[pathname]||null;}
 
@@ -61,6 +73,13 @@
 
   function pode(perfil,permissao){
     if(!permissao)return true;
+    // Fluxos da Seção está suspenso para todos, inclusive ADMIN.
+    if(permissao==='fluxos')return false;
+    // Modo TV: apenas quando o contexto de trabalho ativo é o Comando CPC.
+    // Bloqueia também acesso direto a modo-tv.html, painel-tv.html e mapa-tv.html.
+    if(permissao==='tv'&&String(contextoAtual?.tipo||'').toUpperCase()!=='COMANDO')return false;
+    // ESTATISTICA gerencia somente acessos individuais no próprio módulo; contas SIE-CPC seguem ADMIN.
+    if(permissao==='usuarios'&&normalizarPerfil(perfil)!=='ADMIN')return false;
     if(contextoAtual?.somente_leitura_operacional&&permissoesEscritaOperacional.has(permissao))return false;
     const lista=cfg.permissions[normalizarPerfil(perfil)]||[];
     return lista.includes(permissao);
@@ -385,6 +404,11 @@
       if(await exigirMfaSeNecessario(client))return null;
 
       await carregarContextoUnidade(client,perfil);
+
+      if(!paginaEspecializadaPermitida(perfil)){
+        location.replace(cfg.homePage+'?erro=unidade-nao-autorizada');
+        return null;
+      }
 
       const pPagina=permissaoDaPagina();
       if(pPagina&&!pode(perfil.perfil,pPagina)){
