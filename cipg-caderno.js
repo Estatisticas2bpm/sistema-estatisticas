@@ -170,7 +170,7 @@ async function salvar(evt){
    el.dataset.gravado='sim';
    el.classList.add('gravado');
   }
-  status('Relatório SEI '+payload.numero_sei+' e '+linhasEventos().length+' acontecimento(s) registrados com sucesso.');
+  status('Relatório SEI '+payload.numero_sei+' — '+(sessao.perfil?.nome_guerra||'Policial CIPG')+' — '++linhasEventos().length+' acontecimento(s) registrados com sucesso.');
   const el=$('recibo');el.hidden=false;el.textContent='Registro concluído: SEI '+payload.numero_sei+'. Você já pode iniciar outro serviço.';
   servicoSalvoId=null;
   $('form').reset();$('dia').value=hoje();
