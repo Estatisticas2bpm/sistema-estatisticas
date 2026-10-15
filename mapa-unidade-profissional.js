@@ -53,7 +53,20 @@
   function temaAtivo(registro,tipo,unidade){
     return tipo==='abordagem'?classificarAbordagem(registro):classificarOcorrencia(registro,unidade);
   }
-  function icone(L,tema,zoom){
+  function ehAbordagemGiro(tipo,unidade){
+    return tipo==='abordagem'&&normalizar(unidade).replace(/[^A-Z0-9]/g,'')==='GIRO';
+  }
+  function iconeMotoGiro(L,zoom){
+    // Silhueta de big trail preta: proporcional aos pontos, sem substituir os demais tipos de ocorrência.
+    const largo=zoom>=16?24:18,alto=zoom>=16?18:14;
+    return L.divIcon({
+      className:'sieCpcPin sieGiroMotoPin',
+      html:'<img src="assets/icons/giro-bigtrail-preta.svg" alt="" aria-hidden="true" draggable="false">',
+      iconSize:[largo,alto],iconAnchor:[largo/2,alto/2],popupAnchor:[0,-alto/2]
+    });
+  }
+  function icone(L,tema,zoom,tipo,unidade){
+    if(ehAbordagemGiro(tipo,unidade))return iconeMotoGiro(L,zoom);
     const grande=zoom>=16,tamanho=grande?22:12;
     return L.divIcon({className:'sieCpcPin sieUnidadePin',
       html:'<span class="sieCpcDot'+(grande?' detalhado':'')+'" style="--unit-color:'+tema.cor+'" aria-hidden="true">'+(grande?esc(tema.abreviacao):'')+'</span>',
@@ -62,10 +75,13 @@
   }
   function criarMarcador(L,registro,conteudo,zoom,tipo,unidade,opcoes){
     const tema=temaAtivo(registro,tipo,unidade);
+    const identificacao=unidade||registro.unidade_sigla||'';
     const m=L.marker([Number(registro.latitude),Number(registro.longitude)],{
-      icon:icone(L,tema,zoom),
-      title:tema.nome,
-      sieCategoria:tema.codigo
+      icon:icone(L,tema,zoom,tipo,identificacao),
+      title:ehAbordagemGiro(tipo,identificacao)?'Abordagem do GIRO':tema.nome,
+      sieCategoria:tema.codigo,
+      sieUnidade:identificacao,
+      sieAbordagemGiro:ehAbordagemGiro(tipo,identificacao)
     });
     const tituloUnidade=unidade||registro.unidade_sigla||'';
     const header=base()?.cabecalhoPopup?base().cabecalhoPopup(tituloUnidade):'';
@@ -129,6 +145,6 @@
       'brasão no popup</small>';
   }
   global.MapaUnidadeProfissional=Object.freeze({
-    categorias,classificarOcorrencia,classificarAbordagem,icone,criarMarcador,agregador,legenda,temaAtivo
+    categorias,classificarOcorrencia,classificarAbordagem,icone,iconeMotoGiro,criarMarcador,agregador,legenda,temaAtivo
   });
 })(window);
