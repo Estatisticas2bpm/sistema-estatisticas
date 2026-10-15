@@ -280,6 +280,7 @@ body.dashboard-comando .drill-table table{min-width:0}
     <div><h3 style="margin:0 0 8px;color:var(--navy)">Faixa etária</h3><div class="tablewrap"><table><thead><tr><th>Faixa</th><th>Pessoas</th></tr></thead><tbody id="tabGiroFaixas"></tbody></table></div></div>
     <div><h3 style="margin:0 0 8px;color:var(--navy)">Distribuição por hora</h3><div class="chartbox"><canvas id="chartGiroAbordagemHora"></canvas></div></div>
   </div>
+  <div style="margin-top:20px"><h3>Produtividade por militar</h3><p class="sub">Ranking de policiais identificados, considerando abordagens e pessoas abordadas no período selecionado.</p><div class="tablewrap"><table><thead><tr><th>#</th><th>Nome de guerra</th><th>Matrícula</th><th>Abordagens</th><th>Pessoas</th></tr></thead><tbody id="tabGiroRankingMilitares"></tbody></table></div><p><a href="giro-ranking-abordagens.html">Ver ranking completo e filtrar período ↗</a></p></div>
   <p class="giro-data-note" id="giroQualidadeLocal">Bairro e logradouro dependem do endereço identificado no momento do registro mobile.</p>
   <div class="actions" id="giroCorrecaoLocalAcoes" hidden>
     <button class="btn green" id="giroCorrigirLocais" type="button">Corrigir locais pendentes</button>
@@ -683,10 +684,21 @@ function filtrarAbordagensGiro(lista){
     return (!b||bb.includes(b))&&(!l||ll.includes(l))&&(!t||x.tipo_abordagem===t)&&horaOk;
   });
 }
+async function carregarRankingMilitaresGiro(){
+ if(!ehGiro())return;
+ const tbody=$('tabGiroRankingMilitares');if(!tbody)return;
+ const dataInicio=$('ini')?.value||ini.value,dataFim=$('fim')?.value||fim.value;
+ const fimExclusivo=new Date(dataFim+'T12:00:00');fimExclusivo.setDate(fimExclusivo.getDate()+1);
+ const limite=fimExclusivo.getFullYear()+'-'+String(fimExclusivo.getMonth()+1).padStart(2,'0')+'-'+String(fimExclusivo.getDate()).padStart(2,'0');
+ const {data,error}=await db.rpc('giro_ranking_militares',{p_inicio:dataInicio+'T00:00:00-04:00',p_fim:limite+'T00:00:00-04:00'});
+ if(error){tbody.innerHTML='<tr><td colspan="5">Ranking indisponível para este perfil.</td></tr>';return}
+ tbody.innerHTML=(data||[]).slice(0,20).map((x,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(x.nome_guerra)+'</td><td>'+esc(x.matricula)+'</td><td>'+num(x.quantidade_abordagens)+'</td><td>'+num(x.pessoas_abordadas)+'</td></tr>').join('')||'<tr><td colspan="5">Sem abordagens individuais no período.</td></tr>';
+}
 function renderGiroAbordagens(){
   if(!ehGiro())return;
   const a=filtrarAbordagensGiro(abordagensGiroAtual),p=filtrarAbordagensGiro(abordagensGiroAnterior),pessoas=pessoasAbordagensGiro(a);
   const contarTipo=t=>a.filter(x=>x.tipo_abordagem===t).length;
+  carregarRankingMilitaresGiro().catch(console.error);
   $('giroAbordagensTotal').textContent=a.length;
   $('giroPessoasTotal').textContent=a.reduce((s,x)=>s+num(x.quantidade_pessoas),0);
   $('giroAbordagensPe').textContent=contarTipo('A_PE');

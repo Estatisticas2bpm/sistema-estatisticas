@@ -15,7 +15,7 @@ const acesso=read('giro-acesso-abordagens.html');
 const authConfig=read('auth-config.js');
 
 // Mobile: fluxo rápido e restrito.
-assert.match(mobile,/GIRO ABORDAGENS/);
+assert.match(mobile,/id="emailPolicial" type="email"/);
 assert.match(mobile,/storageKey:'sie-cpc-giro-abordagem-auth'/);
 assert.match(mobile,/data-tipo="A_PE"/);
 assert.match(mobile,/data-tipo="MOTO"/);
@@ -79,33 +79,19 @@ assert.match(mapa,/MapaUnidadeProfissional\.agregador/);
 assert.match(mapa,/mapa-unidade-profissional\.js/);
 assert.match(mapa,/abords\.forEach/);
 
-// Administração do acesso compartilhado.
-assert.match(usuarios,/Acesso compartilhado — GIRO Abordagens/);
-assert.match(usuarios,/giro_access_create/);
-assert.match(usuarios,/giro_access_reset_password/);
-assert.match(usuarios,/Promise\.allSettled/);
-assert.match(usuarios,/listaResult\.status==='fulfilled'/);
-assert.match(usuarios,/giroResult\.status==='fulfilled'/);
-assert.match(edge,/GIRO_ABORDAGENS_EMAIL/);
-assert.match(edge,/giro_access_deactivate/);
+// Gestão individual do GIRO; a conta compartilhada foi descontinuada.
+assert.match(usuarios,/GIRO — Acesso individual às abordagens/);
+assert.match(usuarios,/giroIndividualPanel/);
+assert.match(edge,/giro_users_create/);
+assert.match(edge,/giro_users_toggle/);
 assert.match(edge,/giro_acessos_abordagem/);
-assert.doesNotMatch(dashboard,/id="secGiroAcesso"/);
-assert.doesNotMatch(dashboard,/navGiroAcesso/);
-assert.doesNotMatch(dashboard,/giro_access_status/);
-assert.match(acesso,/Acesso Compartilhado — Abordagens/);
-assert.match(acesso,/giro_access_status/);
-assert.match(acesso,/giro_access_create/);
-assert.match(acesso,/giro_access_reset_password/);
-assert.match(acesso,/giro_access_deactivate/);
-assert.match(acesso,/giro_access_reactivate/);
-assert.match(acesso,/sigla==='GIRO'/);
-assert.match(acesso,/perfil==='ADMIN'\|\|perfil==='ESTATISTICA'/);
-assert.match(authConfig,/"giro-acesso-abordagens\.html":"dashboard"/);
+assert.match(acesso,/name="nome_completo"/);
+assert.match(acesso,/name="nome_guerra"/);
+assert.match(acesso,/name="matricula"/);
+assert.match(acesso,/giro_users_list/);
+assert.match(authConfig,/giro-acesso-abordagens/);
 assert.match(edge,/function podeGerenciarAcessoGiro/);
-assert.match(edge,/sigla === "GIRO" && perfil\.perfil === "ESTATISTICA"/);
-assert.match(edge,/Somente ADMIN ou ESTATÍSTICA do GIRO podem gerenciar/);
-assert.match(edge,/Somente administradores ativos de uma unidade ativa podem gerenciar usuários/);
-
+assert.doesNotMatch(dashboard,/id="secGiroAcesso"/);
 assert.match(home,/id="giroAccessShortcut"/);
 assert.match(home,/Gerenciar acesso das abordagens/);
 assert.match(home,/perfilGiro==='ADMIN'\|\|perfilGiro==='ESTATISTICA'/);

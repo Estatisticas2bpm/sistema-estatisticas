@@ -336,6 +336,50 @@ Deno.serve(async (req: Request) => {
       return resposta({ok:true,users:await listar()});
     }
 
+    const acoesGiroIndividuais=new Set(["giro_users_list","giro_users_create","giro_users_toggle","giro_users_reset_password"]);
+    if(acoesGiroIndividuais.has(action)){
+      if(!podeGerenciarAcessoGiro(perfilCaller))return resposta({error:"Acesso restrito à administração ou estatística do GIRO."},403);
+      const unidade=await unidadeGiro();
+      if(!unidade?.id||!unidade.ativo)throw new Error("Unidade GIRO indisponível.");
+      const listar=async()=>{
+        const {data,error}=await admin.from("giro_acessos_abordagem").select("user_id,ativo,nome_completo,nome_guerra,matricula,email,criado_em").eq("unidade_id",unidade.id).order("criado_em",{ascending:false});
+        if(error)throw error;
+        return (data||[]).filter((x:any)=>x.email!==GIRO_ABORDAGENS_EMAIL);
+      };
+      if(action==="giro_users_list")return resposta({users:await listar()});
+      if(action==="giro_users_create"){
+        const nome=limpar(body.nome_completo),nomeGuerra=limpar(body.nome_guerra),matricula=limpar(body.matricula),email=limpar(body.email).toLowerCase(),password=limpar(body.password);
+        if(nome.length<3||nome.length>120)throw new Error("Informe o nome completo.");
+        if(nomeGuerra.length<2||nomeGuerra.length>100)throw new Error("Informe o nome de guerra.");
+        if(!/^[a-zA-Z0-9.-]{3,30}$/.test(matricula))throw new Error("Informe matrícula válida (3 a 30 caracteres).");
+        if(!email.includes("@")||email.length>254)throw new Error("Informe e-mail individual válido.");
+        if(password.length<12)throw new Error("A senha inicial precisa ter pelo menos 12 caracteres.");
+        const {data:created,error:authError}=await admin.auth.admin.createUser({email,password,email_confirm:true,user_metadata:{nome,nome_guerra:nomeGuerra,matricula}});
+        if(authError||!created.user)throw authError||new Error("Não foi possível criar a conta.");
+        const {error:insertError}=await admin.from("giro_acessos_abordagem").insert({user_id:created.user.id,unidade_id:unidade.id,ativo:true,nome_completo:nome,nome_guerra:nomeGuerra,matricula,email});
+        if(insertError){await admin.auth.admin.deleteUser(created.user.id);throw insertError;}
+        await log(caller.id,"CRIOU_ACESSO_INDIVIDUAL_GIRO","giro_acesso_abordagem",created.user.id,{matricula});
+        return resposta({ok:true,users:await listar()});
+      }
+      const userId=limpar(body.user_id);
+      if(!uuidValido(userId))throw new Error("Conta inválida.");
+      const {data:alvo,error:alvoError}=await admin.from("giro_acessos_abordagem").select("user_id,email,ativo").eq("user_id",userId).eq("unidade_id",unidade.id).maybeSingle();
+      if(alvoError||!alvo||alvo.email===GIRO_ABORDAGENS_EMAIL)throw new Error("Conta individual não encontrada.");
+      if(action==="giro_users_toggle"){
+        const ativo=body.ativo===true;
+        const {error}=await admin.from("giro_acessos_abordagem").update({ativo,atualizado_em:new Date().toISOString()}).eq("user_id",userId);
+        if(error)throw error;
+        await log(caller.id,ativo?"REATIVOU_GIRO_INDIVIDUAL":"BLOQUEOU_GIRO_INDIVIDUAL","giro_acesso_abordagem",userId);
+      }
+      if(action==="giro_users_reset_password"){
+        const password=limpar(body.password);
+        if(password.length<12)throw new Error("Senha mínima: 12 caracteres.");
+        const {error}=await admin.auth.admin.updateUserById(userId,{password});
+        if(error)throw error;
+        await log(caller.id,"REDEFINIU_SENHA_GIRO_INDIVIDUAL","giro_acesso_abordagem",userId);
+      }
+      return resposta({ok:true,users:await listar()});
+    }
     const acoesAcessoGiro = new Set([
       "giro_access_status",
       "giro_access_create",
@@ -345,6 +389,7 @@ Deno.serve(async (req: Request) => {
     ]);
 
     if (acoesAcessoGiro.has(action)) {
+      if(action!=="giro_access_status"&&action!=="giro_access_deactivate")return resposta({error:"Acesso compartilhado descontinuado. Cadastre policiais individuais."},403);
       if (!podeGerenciarAcessoGiro(perfilCaller)) {
         return resposta({ error: "Somente ADMIN ou ESTATÍSTICA do GIRO podem gerenciar o acesso compartilhado de abordagens." }, 403);
       }

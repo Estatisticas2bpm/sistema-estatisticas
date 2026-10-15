@@ -44,7 +44,7 @@ input:focus{outline:3px solid #bfdbfe;border-color:#60a5fa}.btn{border:0;border-
     <h1>Acesso de patrulhamento</h1>
     <p class="sub">Acesso exclusivo para registro de abordagens do GIRO. Esta conta não permite consultar outros dados do SIE-CPC.</p>
     <form id="loginForm">
-      <div class="campo"><label>Login</label><input value="GIRO ABORDAGENS" readonly></div>
+      <div class="campo"><label for="emailPolicial">E-mail individual</label><input id="emailPolicial" type="email" autocomplete="username" required></div>
       <div class="campo"><label for="senha">Senha</label><input id="senha" type="password" minlength="8" autocomplete="current-password" required autofocus></div>
       <div class="campo"><button class="btn primary" id="entrar" type="submit">Entrar</button></div>
       <div id="loginStatus" class="status"></div>
@@ -96,7 +96,6 @@ input:focus{outline:3px solid #bfdbfe;border-color:#60a5fa}.btn{border:0;border-
 <script>
 const SUPABASE_URL='https://jppmhhukujigxupgskdk.supabase.co';
 const SUPABASE_KEY='sb_publishable_ZVnU35i2x9zwppQqYg7UYw_mzaT43aG';
-const EMAIL_COMPARTILHADO='giro.abordagens@siecpc.local';
 const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{storageKey:'sie-cpc-giro-abordagem-auth',persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
 const $=id=>document.getElementById(id);
 let tipoSelecionado='',localizacao=null,contadorPessoas=0,geocoder=null,geocodePromise=null;
@@ -115,15 +114,15 @@ function mostrarFormulario(){
 async function acessoValido(){
   const {data:{session}}=await db.auth.getSession();
   if(!session?.user)return false;
-  const {data,error}=await db.from('giro_acessos_abordagem').select('user_id,ativo').eq('user_id',session.user.id).eq('ativo',true).maybeSingle();
-  return !error&&!!data;
+  const {data,error}=await db.from('giro_acessos_abordagem').select('user_id,ativo,nome_completo,nome_guerra,matricula').eq('user_id',session.user.id).eq('ativo',true).maybeSingle();
+  return !error&&!!data&&!!data.nome_completo&&!!data.nome_guerra&&!!data.matricula;
 }
 $('loginForm').addEventListener('submit',async e=>{
   e.preventDefault();limparStatus('loginStatus');
   const b=$('entrar');b.disabled=true;b.textContent='Entrando...';
   try{
-    const {error}=await db.auth.signInWithPassword({email:EMAIL_COMPARTILHADO,password:$('senha').value});
-    if(error)throw new Error('Senha inválida ou acesso indisponível.');
+    const {error}=await db.auth.signInWithPassword({email:$('emailPolicial').value.trim(),password:$('senha').value});
+    if(error)throw new Error('E-mail ou senha inválidos, ou acesso indisponível.');
     if(!await acessoValido()){await db.auth.signOut({scope:'local'});throw new Error('Este acesso não está autorizado para registrar abordagens.');}
     $('senha').value='';mostrarFormulario();
   }catch(err){status('loginStatus',err.message||'Não foi possível entrar.','err')}

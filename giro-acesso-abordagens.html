@@ -35,102 +35,28 @@ h2{margin:11px 0 6px;color:var(--navy);font-size:24px}.sub{margin:0 0 20px;color
     <a href="index.html">← Página inicial</a>
   </div>
 </header>
-<main>
-  <section class="panel">
-    <span class="tag">Gestão administrativa · GIRO</span>
-    <h2>Acesso Compartilhado — Abordagens</h2>
-    <p class="sub">Crie ou altere a credencial usada pelas equipes de patrulhamento para registrar abordagens no celular. A senha atual nunca é exibida; para alterá-la, informe uma nova senha.</p>
-
-    <div class="grid">
-      <div class="campo"><label>Login</label><input value="GIRO ABORDAGENS" readonly></div>
-      <div class="campo"><label>Situação</label><input id="situacao" value="Carregando..." readonly></div>
-      <div class="campo" style="grid-column:1/-1"><label id="senhaLabel">Senha compartilhada</label><input id="senha" type="password" minlength="8" autocomplete="new-password" placeholder="Mínimo 8 caracteres"></div>
-    </div>
-
-    <div class="acoes">
-      <button class="btn green" id="salvar" type="button">Criar acesso</button>
-      <button class="btn red" id="alternar" type="button" hidden>Bloquear acesso</button>
-      <a class="btn" href="giro-abordagem.html?v=20261001-geocode2" target="_blank" rel="noopener">Abrir formulário mobile ↗</a>
-    </div>
-
-    <div id="status" class="status">Consultando a situação do acesso...</div>
-    <div class="note">Esta página administra somente o acesso compartilhado das abordagens do GIRO. Ela não concede permissão para gerenciar usuários de outras unidades nem exibe relatórios estatísticos.</div>
-  </section>
-</main>
+<main><section class="panel"><span class="tag">GIRO · Contas individuais</span><h2>Gerenciar policiais</h2><p class="sub">Cada policial utiliza seu e-mail, senha e matrícula. As abordagens ficam associadas à identidade autenticada. A sessão permanece no celular enquanto válida.</p><p><a class="btn" href="giro-abordagem.html" target="_blank" rel="noopener">Abrir formulário mobile ↗</a> <a class="btn" href="giro-ranking-abordagens.html">Ranking e auditoria de abordagens ↗</a></p>
+<h3>Cadastrar policial</h3><form id="novo" class="grid">
+<div class="campo"><label>Nome completo *</label><input name="nome_completo" required minlength="3" maxlength="120"></div>
+<div class="campo"><label>Nome de guerra *</label><input name="nome_guerra" required minlength="2" maxlength="100"></div>
+<div class="campo"><label>Matrícula *</label><input name="matricula" required minlength="3" maxlength="30"></div>
+<div class="campo"><label>E-mail individual *</label><input name="email" type="email" required></div>
+<div class="campo"><label>Senha inicial (mínimo 12 caracteres) *</label><input name="password" type="password" minlength="12" autocomplete="new-password" required></div>
+<div class="campo"><label>&nbsp;</label><button class="btn" type="submit">Criar acesso individual</button></div>
+</form><p id="status" role="status"></p><h3>Policiais cadastrados</h3><div id="usuarios">Carregando...</div>
+<p class="sub">A conta compartilhada anterior deve permanecer bloqueada. Os registros históricos anteriores não identificam o policial que utilizou aquela senha.</p>
+</section></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="auth-config.js"></script><script src="auth-guard.js"></script>
 <script>
-const $=id=>document.getElementById(id);
-let acesso=null,auth=null;
-
-function mostrarStatus(texto,tipo=''){
-  const el=$('status');el.textContent=texto;el.className='status'+(tipo?' '+tipo:'');
-}
-function autorizado(){
-  const perfil=String(auth?.perfil?.perfil||'').toUpperCase();
-  const sigla=String(auth?.contexto?.sigla||auth?.perfil?.unidades?.sigla||'').toUpperCase();
-  return sigla==='GIRO'&&(perfil==='ADMIN'||perfil==='ESTATISTICA');
-}
-async function invocar(body){
-  const client=auth?.client||window.SistemaAuth?.client;
-  const fn=window.SISTEMA_AUTH_CONFIG?.adminFunction||'admin-users';
-  if(!client)throw new Error('Sessão do SIE-CPC indisponível.');
-  const r=await client.functions.invoke(fn,{body});
-  if(r.error)throw r.error;
-  if(r.data?.error)throw new Error(r.data.error);
-  return r.data||{};
-}
-function render(){
-  const existe=!!acesso?.user_id,ativo=acesso?.ativo===true;
-  $('situacao').value=!existe?'NÃO CRIADO':ativo?'ATIVO':'BLOQUEADO';
-  $('salvar').textContent=existe?'Alterar senha':'Criar acesso';
-  $('senhaLabel').textContent=existe?'Nova senha compartilhada':'Senha compartilhada';
-  $('alternar').hidden=!existe;
-  if(existe){
-    $('alternar').textContent=ativo?'Bloquear acesso':'Reativar acesso';
-    $('alternar').className='btn '+(ativo?'red':'green');
-  }
-  mostrarStatus(!existe?'Defina uma senha para criar o acesso compartilhado das equipes.':ativo?'Acesso compartilhado ativo. A senha pode ser substituída a qualquer momento.':'Acesso compartilhado bloqueado. Reative quando quiser liberar novos lançamentos.',ativo?'ok':'');
-}
-async function carregar(){
-  mostrarStatus('Consultando a situação do acesso...');
-  const d=await invocar({action:'giro_access_status'});
-  acesso=d.access||null;render();
-}
-$('salvar').addEventListener('click',async()=>{
-  const senha=String($('senha').value||'');
-  if(senha.length<8){mostrarStatus('A senha precisa ter pelo menos 8 caracteres.','erro');return}
-  const b=$('salvar');b.disabled=true;
-  try{
-    const action=acesso?.user_id?'giro_access_reset_password':'giro_access_create';
-    const d=await invocar({action,password:senha});
-    acesso=d.access||acesso;$('senha').value='';
-    mostrarStatus(action==='giro_access_create'?'Acesso compartilhado criado com sucesso.':'Senha compartilhada alterada com sucesso.','ok');
-    await carregar();
-  }catch(e){console.error(e);mostrarStatus('Não foi possível concluir: '+(e.message||e),'erro')}
-  finally{b.disabled=false}
-});
-$('alternar').addEventListener('click',async()=>{
-  if(!acesso?.user_id)return;
-  const ativo=acesso.ativo===true;
-  if(ativo&&!confirm('Bloquear temporariamente o acesso compartilhado das abordagens?'))return;
-  const b=$('alternar');b.disabled=true;
-  try{
-    const d=await invocar({action:ativo?'giro_access_deactivate':'giro_access_reactivate'});
-    acesso=d.access||acesso;await carregar();
-  }catch(e){console.error(e);mostrarStatus('Não foi possível alterar o acesso: '+(e.message||e),'erro')}
-  finally{b.disabled=false}
-});
 (async()=>{
-  try{
-    auth=window.SistemaAuth?.client&&window.SistemaAuth?.user?window.SistemaAuth:await window.SistemaAuth?.ready;
-    if(!auth)return;
-    if(!autorizado()){location.replace('index.html?erro=sem-permissao');return}
-    $('loading').style.display='none';
-    await carregar();
-  }catch(e){
-    console.error(e);$('loading').style.display='none';
-    mostrarStatus('Não foi possível carregar a gestão do acesso: '+(e.message||e),'erro');
-  }
+const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const auth=await window.SistemaAuth.ready;
+if(!auth?.client){$('status').textContent='Acesso administrativo indisponível.';return}
+async function api(body){const {data,error}=await auth.client.functions.invoke('admin-users',{body});if(error)throw error;if(data?.error)throw Error(data.error);return data}
+function render(users){$('usuarios').innerHTML=users.length?users.map(u=>'<article style="padding:12px;border-bottom:1px solid #d7e0ea"><b>'+esc(u.nome_guerra||u.nome_completo)+'</b><div>'+esc(u.nome_completo)+' · Matrícula '+esc(u.matricula)+' · '+esc(u.email)+' · '+(u.ativo?'Ativo':'Bloqueado')+'</div><button class="btn" data-id="'+esc(u.user_id)+'" data-action="toggle" data-ativo="'+u.ativo+'">'+(u.ativo?'Bloquear':'Reativar')+'</button><button class="btn" data-id="'+esc(u.user_id)+'" data-action="password">Alterar senha</button></article>').join(''):'Nenhum policial individual cadastrado.'}
+async function carregar(){const r=await api({action:'giro_users_list'});render(r.users||[])}
+$('novo').onsubmit=async e=>{e.preventDefault();const b=e.submitter;b.disabled=true;try{const f=new FormData(e.target);await api({action:'giro_users_create',nome_completo:f.get('nome_completo'),nome_guerra:f.get('nome_guerra'),matricula:f.get('matricula'),email:f.get('email'),password:f.get('password')});e.target.reset();$('status').textContent='Policial cadastrado com sucesso.';await carregar()}catch(err){$('status').textContent='Erro: '+err.message}finally{b.disabled=false}};
+$('usuarios').onclick=async e=>{const b=e.target.closest('button[data-action]');if(!b)return;let payload;if(b.dataset.action==='toggle'){const ativo=b.dataset.ativo!=='true';if(!confirm((ativo?'Reativar':'Bloquear')+' este policial?'))return;payload={action:'giro_users_toggle',user_id:b.dataset.id,ativo}}else{const password=prompt('Nova senha individual (mínimo 12 caracteres):');if(password===null)return;payload={action:'giro_users_reset_password',user_id:b.dataset.id,password}}b.disabled=true;try{await api(payload);$('status').textContent='Conta atualizada.';await carregar()}catch(err){$('status').textContent='Erro: '+err.message}finally{b.disabled=false}};
+try{await carregar()}catch(err){$('status').textContent='Não foi possível listar os policiais: '+err.message}
 })();
-</script>
-</body>
-</html>
+</script></body></html>
