@@ -121,11 +121,21 @@ function slides(model){
   {giro:chartDef('line',giroWeek.map(x=>weekLabel(x[0])),giroWeek.map(x=>x[1]))},{omit:status(giro)&&!giroRows.length}));
  const ai=sp('CIPTUR'),aiRows=status(ai)?ai.data:[],rem=aiRows.filter(x=>x.houve_remocao===true);
  const grav=rank(aiRows,x=>x.gravidade_snapshot||'Não informada',6);
+ // Mesmo critério do Dashboard Completo: TOR marcado no bloco estrutural do BO,
+ // nunca inferido pela natureza da ocorrência ou pelo nome da viatura.
+ const torCount=a.filter(x=>{
+  const unidade=hier.byId.get(String(x.unidade_id));
+  if(norm(unidade?.sigla)!=='CIPTUR')return false;
+  const text=String(x.observacao_final||''),token='[[PESSOAS_ENVOLVIDAS]]',pos=text.lastIndexOf(token);
+  if(pos<0)return false;
+  try{return norm(JSON.parse(text.slice(pos+token.length))?.grupamento_atendimento)==='TOR'}catch(_){return false}
+ }).length;
  main.push(slide('CIPTUR — SEGURANÇA VIÁRIA','Fiscalização urbana e rodoviária; TOR quando identificado','FISCALIZAÇÃO DE TRÂNSITO',
   cards([metric('Autos de infração',status(ai)?aiRows.length:null,'registros administrativos'),
    metric('Autos com remoção',status(ai)?rem.length:null,'não representa total de veículos'),
    metric('Remoção — carro',status(ai)?rem.filter(x=>norm(x.tipo_veiculo_removido)==='CARRO').length:null,'autos registrados'),
-   metric('Remoção — moto',status(ai)?rem.filter(x=>norm(x.tipo_veiculo_removido)==='MOTO').length:null,'autos registrados')])+
+   metric('Remoção — moto',status(ai)?rem.filter(x=>norm(x.tipo_veiculo_removido)==='MOTO').length:null,'autos registrados'),
+   metric('Ocorrências TOR',torCount,'BOs vinculados ao Tático Ostensivo Rodoviário','var(--gold)')],2)+
   '<div class="tvColumns"><div class="tvCard"><h2>Classificação da infração</h2>'+chart('ciptur')+'</div>'+
   card('Principais classificações',rankHtml(grav))+'</div>',
   {ciptur:chartDef('bar',grav.map(x=>x[0]),grav.map(x=>x[1]),{horizontal:true})},{omit:status(ai)&&!aiRows.length}));
@@ -148,7 +158,8 @@ function slides(model){
   cards([metric('Serviços realizados',status(cav)?serv.length:null,'registros de produtividade'),
          metric('Pessoas abordadas',status(cav)?sum(serv,'abordagens_pessoas'):null,'somatório informado'),
          metric('Motocicletas abordadas',status(cav)?sum(serv,'abordagens_motos'):null,'somatório informado'),
-         metric('Carros abordados',status(cav)?sum(serv,'abordagens_carros'):null,'somatório informado')])+
+         metric('Carros abordados',status(cav)?sum(serv,'abordagens_carros'):null,'somatório informado'),
+         metric('Serviços em eventos',status(cav)?serv.filter(x=>norm(x.contexto_atividade)==='EVENTO').length:null,'contexto de atividade')],2)+
   '<div class="tvColumns"><div class="tvCard"><h2>Modalidades de serviço</h2>'+chart('cav')+'</div>'+
   card('Tipos de policiamento',rankHtml(modo))+'</div>',
   {cav:chartDef('bar',modo.map(x=>x[0]),modo.map(x=>x[1]),{horizontal:true})},{omit:status(cav)&&!serv.length}));
