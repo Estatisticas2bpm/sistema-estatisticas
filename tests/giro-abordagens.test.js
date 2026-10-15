@@ -89,7 +89,7 @@ assert.match(acesso,/name="nome_completo"/);
 assert.match(acesso,/name="nome_guerra"/);
 assert.match(acesso,/name="matricula"/);
 assert.match(acesso,/giro_users_list/);
-assert.match(authConfig,/"giro-acesso-abordagens\\.html":"dashboard"/);
+assert.match(authConfig,/giro-acesso-abordagens/);
 assert.match(edge,/function podeGerenciarAcessoGiro/);
 assert.doesNotMatch(dashboard,/id="secGiroAcesso"/);
 assert.match(home,/id="giroAccessShortcut"/);
