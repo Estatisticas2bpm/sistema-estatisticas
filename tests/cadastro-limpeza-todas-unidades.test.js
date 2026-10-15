@@ -48,12 +48,12 @@ async function montar(sigla) {
     assert.equal(sessao.access_token, 'token-de-teste');
     if (sigla === 'BOPE') {
       assert.match(html, /id="subunidadeOperacional"/);
-      assert.match(html, /<option value="">Selecione a unidade respons<\/option>/i);
+      assert.match(html, /<option value="">Selecione a unidade respons[^<]*<\/option>/i);
     } else {
       assert.doesNotMatch(html, /id="subunidadeOperacional"/);
     }
     if (sigla === 'CIPTUR') assert.match(html, /id="grupamentoTor"/);
-    if (sigla === 'CIPA') assert.match(html, /CipaCadastro\.salvar/);
+    if (sigla === 'CIPA') assert.match(html, /CipaCadastro\?\.salvar/);
   }
   const cipg = await montar('CIPG');
   assert.match(cipg.destino, /^cipg-produtividade\.html/);
