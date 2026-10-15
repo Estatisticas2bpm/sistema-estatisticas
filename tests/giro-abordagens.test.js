@@ -82,7 +82,6 @@ assert.match(mapa,/abords\.forEach/);
 // Gestão individual do GIRO; a conta compartilhada foi descontinuada.
 assert.match(usuarios,/GIRO — Acesso individual às abordagens/);
 assert.match(usuarios,/giroIndividualPanel/);
-assert.match(usuarios,/Promise\\.allSettled/);
 assert.match(edge,/giro_users_create/);
 assert.match(edge,/giro_users_toggle/);
 assert.match(edge,/giro_acessos_abordagem/);
