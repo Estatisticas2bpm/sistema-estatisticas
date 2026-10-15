@@ -5,6 +5,8 @@ const root=path.resolve(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const migration=read('supabase/migrations/20261007170559_bope_unidade_lancadora_origem_operacional.sql');
 const cadastro=read('cadastro.html');
+const cadastroBase=read('cadastro-base.html');
+const carregador=read('bope-subunidades.js');
 const dashboard=read('dashboard.html');
 const relatorio=read('relatorio.html');
 
@@ -18,8 +20,9 @@ assert.match(migration,/FORCA_TATICA.*CHOQUE.*CANIL.*GATE/s);
 
 assert.match(cadastro,/siglaCadastro==='BOPE'/);
 assert.match(cadastro,/Unidade operacional do BOPE \*/);
-assert.match(cadastro,/subunidade_operacional_id/);
-assert.match(cadastro,/listar_subunidades_operacionais_bope/);
+assert.match(cadastroBase,/subunidade_operacional_id: subunidadeOperacional/);
+assert.match(cadastroBase,/subunidadeOperacionalPendente = x\.subunidade_operacional_id/);
+assert.match(carregador,/listar_subunidades_operacionais_bope/);
 assert.doesNotMatch(cadastro,/GAT['"]/);
 
 assert.match(dashboard,/id="subunidadeBope"/);

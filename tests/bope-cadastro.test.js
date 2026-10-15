@@ -4,14 +4,20 @@ const path=require('node:path');
 
 const root=path.resolve(__dirname,'..');
 const cadastro=fs.readFileSync(path.join(root,'cadastro.html'),'utf8');
+const base=fs.readFileSync(path.join(root,'cadastro-base.html'),'utf8');
+const carregador=fs.readFileSync(path.join(root,'bope-subunidades.js'),'utf8');
 
 assert.match(cadastro,/const unidadesBopeSemGrupamento=new Set\(\['CANIL','FORCA_TATICA','CHOQUE','GATE'\]\)/);
 assert.match(cadastro,/const ehUnidadeBopeCadastro=unidadesBopeSemGrupamento\.has\(siglaCadastro\)/);
 assert.match(cadastro,/const ehBopeCadastro=siglaCadastro==='BOPE'/);
 assert.match(cadastro,/ehUnidadeBopeCadastro\|\|ehBopeCadastro/);
 assert.match(cadastro,/Unidade operacional do BOPE \*/);
-assert.match(cadastro,/listar_subunidades_operacionais_bope/);
-assert.match(cadastro,/subunidade_operacional_id/);
+assert.match(cadastro,/statusSubunidadesBope/);
+assert.match(cadastro,/recarregarSubunidadesBope/);
+assert.match(carregador,/listar_subunidades_operacionais_bope/);
+assert.match(base,/subunidade_operacional_id: subunidadeOperacional/);
+assert.match(base,/subunidadeOperacionalPendente = x\.subunidade_operacional_id/);
+assert.doesNotMatch(cadastro,/sincronizarGrupamentoComTipo\(\).*listar_subunidades_operacionais_bope/s);
 
 // As quatro estruturas internas permanecem na nomenclatura, mas o lançamento é feito no BOPE.
 for(const sigla of ['CANIL','FORCA_TATICA','CHOQUE','GATE']){

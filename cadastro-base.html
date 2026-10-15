@@ -737,6 +737,7 @@
   </dialog>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="pdf-importer-core.js?v=20261001-guarnicao1"></script>
+  <script src="bope-subunidades.js?v=20261015-1"></script>
   <script>
     const SUPABASE_URL = "https://jppmhhukujigxupgskdk.supabase.co";
     const SUPABASE_KEY = "sb_publishable_ZVnU35i2x9zwppQqYg7UYw_mzaT43aG";
@@ -2311,6 +2312,33 @@
 
     const idEdicao = new URLSearchParams(location.search).get("id");
     let registroOriginalEdicao = null;
+    const subunidadeOperacional = document.getElementById("subunidadeOperacional");
+    const statusSubunidadesBope = document.getElementById("statusSubunidadesBope");
+    const recarregarSubunidadesBope = document.getElementById("recarregarSubunidadesBope");
+    let subunidadeOperacionalPendente = null;
+    let subunidadesBopeProntas = Promise.resolve({registros:[],selecionado:false,erro:null});
+    function carregarSubunidadesBope() {
+      if (!subunidadeOperacional) return Promise.resolve({registros:[],selecionado:false,erro:null});
+      if (!window.BopeSubunidades) {
+        const erro = new Error("O carregador das unidades operacionais do BOPE não está disponível.");
+        statusSubunidadesBope.textContent = "Não foi possível iniciar o carregamento. Atualize a página e tente novamente.";
+        statusSubunidadesBope.style.color = "#b91c1c";
+        recarregarSubunidadesBope.hidden = false;
+        return Promise.resolve({registros:[],selecionado:false,erro});
+      }
+      subunidadesBopeProntas = window.BopeSubunidades.carregarNoFormulario({
+        banco,
+        select:subunidadeOperacional,
+        status:statusSubunidadesBope,
+        tentarNovamente:recarregarSubunidadesBope,
+        valorPreferido:subunidadeOperacionalPendente || subunidadeOperacional.value
+      });
+      return subunidadesBopeProntas;
+    }
+    if (subunidadeOperacional) {
+      recarregarSubunidadesBope.addEventListener("click",carregarSubunidadesBope);
+      carregarSubunidadesBope();
+    }
     function definirCampo(id, valor) {
       const el = document.getElementById(id);
       if (!el || valor === null || valor === undefined) return;
@@ -2326,10 +2354,20 @@
       if (resposta.error || !resposta.data) { alert("Não foi possível carregar a ocorrência para edição."); return; }
       const x = resposta.data;
       registroOriginalEdicao = x;
+      subunidadeOperacionalPendente = x.subunidade_operacional_id || null;
+      if (subunidadeOperacional) await subunidadesBopeProntas;
       const pessoasSalvas = separarPessoas(x.observacao_final);
       x.observacao_final = pessoasSalvas.texto;
       const mapa = {data_ocorrencia:"data",status_atendimento:"statusAtendimento",motivo_repressao:"motivoRepressao",municipio:"municipio",vtr:"vtr",tipo_registro:"tipoRegistro",numero_bo:"numeroBo",hora_inicial:"horaInicial",hora_final:"horaFinal",ocorrencia:"ocorrencia",crime:"crime",numero_conduzidos:"numeroConduzidos",orientacoes:"orientacoes",veiculos_recuperados:"veiculosRecuperados",endereco:"endereco",numero_endereco:"numeroEndereco",bairro:"bairro",local_entrega:"localEntrega",vitima_nacionalidade:"nacVitima",vitima_sexo:"sexoVitima",vitima_idade:"idadeVitima",infrator_nacionalidade:"nacInfrator",infrator_sexo:"sexoInfrator",infrator_idade:"idadeInfrator",comandante:"comandante",historico_resumido:"mo",materialidade:"materialidade",observacao:"observacao1",entorpecentes:"entorpecentes",maconha:"maconha",cocaina:"cocaina",pasta_base:"pastaBase",crack:"crack",skank:"skank",quantidade_armas:"quantArmas",quantidade_arma_branca:"quantArmaBranca",arma_branca:"armaBranca",armas:"armas",quantidade_municoes:"quantMunicoes",municoes:"municoes",veiculos_restricao:"veiculosRestricao",foragidos:"foragidos",disparo:"disparo",auto_resistencia:"autoResistencia",quantidade_autos_infracao:"quantAutoInfracao",auto_infracao:"autoInfracao",balanca_precisao:"balanca",observacao_final:"observacaoFinal",latitude:"latitude",longitude:"longitude",endereco_formatado:"enderecoFormatado"};
       Object.keys(mapa).forEach(k => definirCampo(mapa[k],x[k]));
+      if (subunidadeOperacional) {
+        definirCampo("subunidadeOperacional",subunidadeOperacionalPendente);
+        if (subunidadeOperacionalPendente && subunidadeOperacional.value !== subunidadeOperacionalPendente) {
+          statusSubunidadesBope.textContent = "A unidade operacional salva não está disponível. Tente carregar novamente antes de salvar.";
+          statusSubunidadesBope.style.color = "#b91c1c";
+          recarregarSubunidadesBope.hidden = false;
+        }
+      }
       carregarItensEstruturados(x);
       definirCampo("localEntrega",padronizarLocalEntrega(x.local_entrega));
       marcarResultadosExistentes(x);
@@ -2391,6 +2429,7 @@
 
     formulario.addEventListener("submit", async (evento) => {
       evento.preventDefault();
+      if (subunidadeOperacional && !subunidadeOperacional.value) return mostrarErroCampo("subunidadeOperacional","Selecione a unidade operacional responsável: Força Tática, Choque, Canil ou GATE.");
       if (!validarFormularioPrincipal()) return;
       const botaoSalvar = formulario.querySelector('button[type="submit"]');
       const textoOriginalBotao = botaoSalvar.textContent;
@@ -2445,6 +2484,7 @@
           municipio: document.getElementById("municipio").value.trim(),
           vtr: document.getElementById("vtr").value || null,
           tipo_registro: tratarNI(document.getElementById("tipoRegistro").value),
+          subunidade_operacional_id: subunidadeOperacional ? subunidadeOperacional.value || null : null,
           numero_bo: document.getElementById("numeroBo").value.trim(),
           hora_inicial: document.getElementById("horaInicial").value,
           hora_final: document.getElementById("horaFinal").value || null,
