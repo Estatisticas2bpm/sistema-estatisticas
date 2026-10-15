@@ -15,6 +15,7 @@ function tela(autorizado){
  $('loginCipg').hidden=autorizado;
  $('conteudoCipg').hidden=!autorizado;
  $('sairCaderno').hidden=!autorizado;
+ $('perfilCipg').hidden=!autorizado;
 }
 async function validar(){
  const {data:{user},error}=await client.auth.getUser();
