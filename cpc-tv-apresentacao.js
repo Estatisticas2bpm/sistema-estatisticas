@@ -90,7 +90,8 @@ function slides(model){
   unitHtml(model)+box('Cada unidade é apresentada por um indicador coerente com sua missão. Não são somadas atividades diferentes.')));
  const batalhoes=unidades.filter(x=>['1BPM','2BPM'].includes(norm(x.sigla)));
  const bpmCount=batalhoes.map(u=>[short(u.sigla),unitRows(model,u).length]);
- const cia=rank(a.filter(x=>batalhoes.some(u=>unitRows(model,u).some(z=>z.id===x.id))),x=>x.companhia,6);
+ const idsTerritoriais=new Set(batalhoes.flatMap(u=>unitRows(model,u).map(x=>String(x.id))));
+ const cia=rank(a.filter(x=>idsTerritoriais.has(String(x.id))),x=>x.companhia,6);
  main.push(slide('POLICIAMENTO TERRITORIAL','1º BPM, 2º BPM e companhias territoriais','PRESENÇA NOS BAIRROS',
   '<div class="tvColumns"><div class="tvCard"><h2>Ocorrências por batalhão</h2>'+chart('bpm')+'</div>'+
   card('Distribuição por companhia',rankHtml(cia))+'</div>'+
