@@ -60,7 +60,7 @@
       iconSize:[tamanho,tamanho],iconAnchor:[tamanho/2,tamanho/2],popupAnchor:[0,-tamanho/2]
     });
   }
-  function criarMarcador(L,registro,conteudo,zoom,tipo,unidade){
+  function criarMarcador(L,registro,conteudo,zoom,tipo,unidade,opcoes){
     const tema=temaAtivo(registro,tipo,unidade);
     const m=L.marker([Number(registro.latitude),Number(registro.longitude)],{
       icon:icone(L,tema,zoom),
@@ -71,7 +71,14 @@
     const header=base()?.cabecalhoPopup?base().cabecalhoPopup(tituloUnidade):'';
     const mensagem=header+'<div class="sieCpcPopupDados"><div class="sieUnidadeTipo" style="--tipo-cor:'+tema.cor+'"><i></i><b>'+esc(tema.nome)+'</b></div>'+conteudo+'</div>';
     m.bindPopup('<div class="sieCpcPopup">'+mensagem+'</div>',{maxWidth:320});
-    if(typeof m.bindTooltip==='function')m.bindTooltip(tema.nome,{direction:'top',opacity:.95});
+    const hover=opcoes?.popupAoPassar===true &&
+      (typeof global.matchMedia!=='function'||global.matchMedia('(hover: hover) and (pointer: fine)').matches);
+    if(hover){
+      m.on('mouseover',()=>m.openPopup());
+      m.on('mouseout',()=>m.closePopup());
+    }else if(typeof m.bindTooltip==='function'){
+      m.bindTooltip(tema.nome,{direction:'top',opacity:.95});
+    }
     return m;
   }
   function agregador(L){
