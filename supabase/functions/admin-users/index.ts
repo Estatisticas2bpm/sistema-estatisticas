@@ -351,7 +351,7 @@ Deno.serve(async (req: Request) => {
         const nome=limpar(body.nome_completo),nomeGuerra=limpar(body.nome_guerra),matricula=limpar(body.matricula),email=limpar(body.email).toLowerCase(),password=limpar(body.password);
         if(nome.length<3||nome.length>120)throw new Error("Informe o nome completo.");
         if(nomeGuerra.length<2||nomeGuerra.length>100)throw new Error("Informe o nome de guerra.");
-        if(!/^[a-zA-Z0-9.\\/-]{3,30}$/.test(matricula))throw new Error("Informe matrícula válida (3 a 30 caracteres).");
+        if(!/^[a-zA-Z0-9.-]{3,30}$/.test(matricula))throw new Error("Informe matrícula válida (3 a 30 caracteres).");
         if(!email.includes("@")||email.length>254)throw new Error("Informe e-mail individual válido.");
         if(password.length<12)throw new Error("A senha inicial precisa ter pelo menos 12 caracteres.");
         const {data:created,error:authError}=await admin.auth.admin.createUser({email,password,email_confirm:true,user_metadata:{nome,nome_guerra:nomeGuerra,matricula}});
