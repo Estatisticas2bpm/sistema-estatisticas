@@ -400,6 +400,33 @@ function renderizarMapa(ajustarVista=true){
     if(!mapaCalor){
       ocorrencias.forEach(function(x){
         const conteudo=MapaResumoHome.ocorrencia(x);
+        marcadoresUnidadeAtuais.push(MapaUnidadeProfissional.criarMarcador(
+          L,x,conteudo,mapa.getZoom(),'ocorrencia',unidade||x.unidade_sigla,{popupAoPassar:true}
+        ));
+      });
+      abordagens.forEach(function(x){
+        const data=x.registrado_em?new Date(x.registrado_em).toLocaleString('pt-BR',{
+          timeZone:'America/Boa_Vista',dateStyle:'short',timeStyle:'short'
+        }):'';
+        const conteudo=MapaResumoHome.abordagem(x);
+        marcadoresUnidadeAtuais.push(MapaUnidadeProfissional.criarMarcador(
+          L,x,conteudo,mapa.getZoom(),'abordagem','GIRO',{popupAoPassar:true}
+        ));
+      });
+      if(visualizacaoMapa.value==='agrupado'){
+        if(camadaAgrupadaUnidade.addLayers)camadaAgrupadaUnidade.addLayers(marcadoresUnidadeAtuais);
+        else marcadoresUnidadeAtuais.forEach(m=>camadaAgrupadaUnidade.addLayer(m));
+        camadaAgrupadaUnidade.addTo(mapa);
+      }else marcadoresUnidadeAtuais.forEach(m=>m.addTo(camadaPontos));
+    }
+    atualizarLegendaMapa(ocorrencias,abordagens);
+  }else{
+    // A densidade e os marcadores jamais são exibidos simultaneamente no CPC.
+    limites=ocorrencias.concat(abordagens).map(x=>[Number(x.latitude),Number(x.longitude)]);
+    if(!mapaCalor){
+      ocorrencias.forEach(function(x){
+        const cat=categoriaMapa(x.ocorrencia||x.crime);
+        const conteudo=MapaResumoHome.ocorrencia(x);
         marcadoresCpcAtuais.push(MapaCpcProfissional.criarMarcador(L,x,conteudo,mapa.getZoom(),{popupAoPassar:true}));
       });
       abordagens.forEach(function(x){
