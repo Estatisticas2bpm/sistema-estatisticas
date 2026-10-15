@@ -1,0 +1,54 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Meu perfil operacional — GIRO / CIPG</title>
+<style>:root{--navy:#082b46;--green:#176044;--line:#d4e0e7}*{box-sizing:border-box}body{margin:0;background:#eef3f7;color:#173147;font:15px/1.5 system-ui,Arial}header{padding:24px 18px;background:var(--navy);color:white}header>div,main{max-width:720px;margin:auto}header h1{font-size:26px;margin:0}header p{margin:5px 0;color:#d3e4ef}main{padding:22px 14px 50px}.card{background:white;border:1px solid var(--line);border-radius:15px;padding:25px;box-shadow:0 5px 22px #12324612}label{display:block;margin:14px 0;font-weight:700}input,select{display:block;width:100%;padding:12px;border:1px solid #aebfce;border-radius:9px;font:inherit;margin-top:6px;background:white}input:disabled{background:#edf2f5}button,.btn{display:inline-block;padding:12px 18px;background:var(--green);color:white;text-decoration:none;border:0;border-radius:9px;font:inherit;font-weight:700;cursor:pointer;margin:8px 8px 8px 0}.btn{background:#415e75}.muted{color:#617083}#mensagem{white-space:pre-wrap}button:disabled{opacity:.55}</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="auth-config.js"></script></head>
+<body><header><div><h1>Meu perfil operacional</h1><p id="subtitulo">GIRO / CIPG · Atualização dos dados funcionais</p></div></header>
+<main><section class="card"><p id="mensagem" role="status">Verificando identificação e sessão...</p><form id="perfilForm" hidden>
+<label>Nome completo<input id="nomeCompleto" disabled></label>
+<label>Matrícula funcional<input id="matricula" disabled></label>
+<label>E-mail de acesso<input id="email" disabled></label>
+<label>Posto ou graduação <span aria-hidden="true">*</span><select id="posto_graduacao" required><option value="">Selecione</option><option value="CEL PM">CEL PM</option><option value="TEN CEL PM">TEN CEL PM</option><option value="MAJ PM">MAJ PM</option><option value="CAP PM">CAP PM</option><option value="1º TEN PM">1º TEN PM</option><option value="2º TEN PM">2º TEN PM</option><option value="ASP OF PM">ASP OF PM</option><option value="AL OF PM">AL OF PM</option><option value="SUB TEN PM">SUB TEN PM</option><option value="1º SGT PM">1º SGT PM</option><option value="2º SGT PM">2º SGT PM</option><option value="3º SGT PM">3º SGT PM</option><option value="CB PM">CB PM</option><option value="SD PM">SD PM</option></select></label>
+<label>Nome de guerra <span aria-hidden="true">*</span><input id="nome_guerra" required minlength="2" maxlength="100" autocomplete="off"></label>
+<p class="muted">Você pode atualizar sua graduação e seu nome de guerra após uma promoção ou mudança funcional. Sua identidade de acesso e seus lançamentos anteriores permanecem vinculados à mesma conta.</p>
+<button id="salvarPerfil" type="submit">Salvar alterações</button></form><p><a id="voltar" class="btn" href="#">Voltar ao módulo</a></p></section></main>
+<script>
+(async()=>{
+const $=id=>document.getElementById(id);
+const unidade=String(new URLSearchParams(location.search).get('unidade')||'').toUpperCase();
+const destinos={GIRO:'giro-abordagem.html',CIPG:'cipg-caderno-acesso.html'};
+if(!destinos[unidade]){$('mensagem').textContent='Unidade inválida. Abra o perfil pelo seu módulo operacional.';$('voltar').href='index.html';return;}
+$('voltar').href=destinos[unidade];$('subtitulo').textContent=unidade+' · Meus dados funcionais';
+const config=window.SISTEMA_AUTH_CONFIG;
+const client=supabase.createClient(config.supabaseUrl,config.publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storageKey:unidade==='GIRO'?'sie-cpc-giro-abordagem-auth':'sie-cipg-caderno-auth'}});
+const tabela=unidade==='GIRO'?'giro_acessos_abordagem':'cipg_acessos_caderno';
+let uid;
+const msg=x=>$('mensagem').textContent=x;
+try{
+ const {data:{user},error}=await client.auth.getUser();if(error||!user)throw Error('Entre no módulo para acessar seu perfil.');
+ uid=user.id;
+ const {data:perfil,error:err}=await client.from(tabela).select(unidade==='GIRO'?'user_id,ativo,nome_completo,nome_guerra,matricula,posto_graduacao':'user_id,ativo,nome_completo,nome_guerra,posto_graduacao').eq('user_id',uid).eq('ativo',true).maybeSingle();
+ if(err||!perfil)throw Error('Seu perfil individual não foi encontrado ou está bloqueado.');
+ if(unidade==='GIRO'&&!perfil.matricula)throw Error('Conta individual não identificada.');
+ $('nomeCompleto').value=perfil.nome_completo||'';
+ $('matricula').value=perfil.matricula||'Não informado / não aplicável';
+ $('email').value=user.email||'';
+ const posto=String(perfil.posto_graduacao||'').toUpperCase();
+ if(posto&&!Array.from($('posto_graduacao').options).some(o=>o.value===posto)){
+ const o=document.createElement('option');o.value=posto;o.textContent=posto;$('posto_graduacao').append(o);
+ }
+ $('posto_graduacao').value=posto;
+ $('nome_guerra').value=perfil.nome_guerra||'';
+ $('perfilForm').hidden=false;msg('Confira seus dados antes de salvar.');
+}catch(e){msg(e.message||'Não foi possível abrir o perfil.');}
+$('perfilForm').addEventListener('submit',async e=>{
+ e.preventDefault();if(!$('perfilForm').reportValidity())return;
+ const b=$('salvarPerfil');b.disabled=true;msg('Salvando seus dados...');
+ try{
+ const {data,error}=await client.functions.invoke('perfil-operacional',{body:{
+ unidade,posto_graduacao:$('posto_graduacao').value,nome_guerra:$('nome_guerra').value.trim()
+ }});
+ if(error||data?.error)throw Error(data?.error||error?.message||'Não foi possível atualizar.');
+ msg(data.alterado?'Perfil atualizado. Seu histórico permanece vinculado à mesma conta.':'Nenhuma alteração necessária.');
+ }catch(e){msg('Falha: '+(e.message||e));}finally{b.disabled=false;}
+});
+})();
+</script></body></html>
