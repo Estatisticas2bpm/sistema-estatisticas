@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CIPG — Acesso individual ao Caderno Digital</title>
+<style>
+:root{--navy:#0a2941;--green:#176044;--bg:#f0f4f7;--muted:#5b6e7d;--line:#d4e0e7}
+*{box-sizing:border-box}*[hidden]{display:none!important}
+body{margin:0;background:var(--bg);font:15px/1.45 Inter,system-ui,-apple-system,Arial,sans-serif;color:#193147}
+header{background:linear-gradient(112deg,#071b33,#154454 70%,#196448);color:#fff;padding:23px 18px}
+.head,main{max-width:1000px;margin:0 auto}
+.head{display:flex;align-items:center;justify-content:space-between;gap:14px}
+h1{font-size:clamp(22px,3.6vw,30px);margin:0}header p{color:#d6e9e5;font-size:13px;margin:7px 0 0}
+header a{color:white;text-decoration:none;border:1px solid #ffffff77;border-radius:10px;padding:9px 12px}
+main{padding:16px 13px 70px}.panel{background:#fff;border:1px solid var(--line);border-radius:14px;margin:0 0 16px;padding:clamp(16px,3vw,25px);box-shadow:0 5px 18px #0a29410c}
+h2{font-size:19px;margin:0 0 8px;color:#0d3d35}h3{font-size:16px;color:#194e3c;margin:0 0 8px}
+.sub,.helper{font-size:12px;color:var(--muted);line-height:1.5}
+.fieldgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}.field span{font-size:12px;font-weight:750;color:#2b4b57}
+input,select,textarea{font:inherit;width:100%;min-height:45px;border:1px solid #adc3cb;padding:10px 11px;border-radius:9px;background:white;color:#193147;outline-offset:2px}
+input:focus,select:focus,textarea:focus{border-color:#1b7760;outline:2px solid #85bfad}
+input[readonly]{background:#edf3f3;font-weight:700;color:#285e48}
+textarea{min-height:85px;resize:vertical}.wide{grid-column:1/-1}
+.floatingNote{border-left:4px solid #4b987b;background:#eff7f2;padding:10px 12px;border-radius:3px;margin:12px 0;color:#365b49;font-size:12px}
+details{margin-top:12px;border:1px solid var(--line);border-radius:11px;padding:12px 14px}
+summary{font-size:15px;font-weight:750;cursor:pointer;color:#15563f;min-height:26px}
+summary::marker{color:#19664c}
+.events{display:grid;gap:12px;margin:12px 0}
+.evento{border:1px solid #b6d4c3;background:#f9fcfa;padding:13px;border-radius:11px}
+.evento-head{display:flex;justify-content:space-between;align-items:center;gap:9px}
+.evento-head b{color:#14583e}.evento.gravado{opacity:.65}
+button,.btnLink{font:inherit;min-height:45px;border-radius:10px;padding:10px 16px;border:0;background:var(--green);color:#fff;font-weight:760;cursor:pointer;text-align:center;text-decoration:none}
+button:disabled{opacity:.55}.btn-subtle{background:#e5eeeb;border:1px solid #abc8ba;color:#155340;font-size:12px;min-height:34px;padding:6px 10px}
+.btn-secondary{background:#5b7381}
+.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:16px}
+.actions .status{flex:1 1 100%;min-height:22px}
+.status{color:#4f6a79;font-size:13px}.status.erro{color:#b52323}.status.ok{color:#176744}
+.output{display:block;border:1px solid #d5e5d9;border-radius:8px;min-height:45px;padding:12px;background:#edf5f0;font-size:13px}
+.recent-list{display:grid;gap:9px;margin-top:14px}.recent-card{border:1px solid var(--line);border-radius:10px;background:#f9fbfc;padding:12px;display:flex;flex-direction:column;gap:3px}
+.recent-card b{color:#144e3a}.recent-card span{font-size:12px;color:#465f6d}
+#recibo{border-left:4px solid #1d8258;padding:12px;margin-top:14px;background:#edf9f1;font-size:13px}
+@media(max-width:650px){
+  .head{align-items:flex-start;flex-direction:column}.fieldgrid{grid-template-columns:minmax(0,1fr)}
+  .actions button{flex:1 1 100%}main{padding:10px 9px 70px}
+  .panel{padding:16px 14px}.evento{padding:12px}
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="auth-config.js"></script><script src="cipg-acesso.js?v=20261015-1"></script><script src="cipg-caderno.js?v=20261015-1"></script>
+</head><body>
+<header><div class="head"><div><h1>Caderno digital de serviço — CIPG</h1>
+<p>Companhia Independente de Policiamento de Guarda · Polícia Militar de Roraima · SIE-CPC</p></div>
+<button id="sairCaderno" type="button" style="border:1px solid #ffffff77;border-radius:9px;background:transparent;color:white;padding:9px 12px;cursor:pointer">Sair da conta</button></div></header>
+<main>
+<section id="loginCipg" class="panel" style="max-width:500px;margin:35px auto">
+<h2>Acesso individual do policial</h2><p class="sub">Entre com seu e-mail institucional e senha cadastrados para o Caderno Digital da CIPG. Este acesso não libera os painéis do CPC.</p>
+<form id="formLoginCipg"><div class="fieldgrid" style="grid-template-columns:1fr"><label class="field"><span>E-mail *</span><input id="emailCipg" type="email" autocomplete="username" required></label><label class="field"><span>Senha *</span><input id="senhaCipg" type="password" autocomplete="current-password" required></label></div><p><button id="entrarCipg" type="submit" style="background:#176044;color:#fff;border:0;border-radius:9px;padding:13px 24px;font-weight:700">Entrar no caderno</button></p><p id="erroLoginCipg" role="alert" class="helper"></p></form>
+</section>
+<div id="conteudoCipg" hidden>
+<section class="panel"><h2>Registrar serviço de guarda</h2>
+<p class="sub">Este é o cadastro próprio da CIPG. Substitui o lançamento manual no caderno: não é BO, não tem tático, não exige upload de documentos ou leitura de PDF. Use diretamente pelo celular.</p>
+<form id="form" autocomplete="off">
+<div class="fieldgrid">
+<label class="field"><span>Data do serviço *</span><input id="dia" type="date" required></label>
+<label class="field"><span>Nº SEI do relatório *</span><input id="documento" type="text" maxlength="120" required placeholder="Ex.: 23858411" inputmode="numeric"></label>
+<label class="field"><span>Posto de serviço</span><select id="posto"><option>Carregando postos...</option></select></label>
+<label class="field"><span>Instituição atendida *</span><input id="instituicao" maxlength="160" required placeholder="Selecione o posto ou digite"></label>
+<label class="field"><span>Turno CIPG *</span><select id="turnoServico" required><option value="">Selecione</option>
+<option value="1">1º turno — 08h às 20h</option><option value="2">2º turno — 20h às 08h</option></select></label>
+<label class="field"><span>Regime (conforme relatório)</span><input id="regime" maxlength="70" placeholder="Opcional"></label>
+<label class="field"><span>Categoria do local</span><select id="tipoLocal">
+<option value="EDIFICIO_PUBLICO">Edifício público</option><option value="ESTABELECIMENTO_PENAL">Segurança externa de estabelecimento penal</option><option value="OUTRO">Outro</option></select></label>
+<label class="field"><span>Atividade predominante</span><select id="modalidade">
+<option value="GUARDA_FIXA">Guarda fixa</option><option value="RONDA">Ronda</option>
+<option value="REFORCO">Reforço</option><option value="APOIO_OPERACIONAL">Apoio operacional</option><option value="OUTRA">Outra</option></select></label>
+</div>
+<details><summary>Passagem do serviço e efetivo</summary><div class="fieldgrid">
+<label class="field"><span>Comandante</span><input id="comandante" maxlength="120" placeholder="Conforme livro de serviço"></label>
+<label class="field"><span>Recebeu de</span><input id="recebeuDe" maxlength="120"></label>
+<label class="field"><span>Passou para</span><input id="passouPara" maxlength="120"></label>
+<label class="field"><span>Efetivo ordinário</span><input id="efetivoOrdinario" data-label="Efetivo ordinário" type="number" min="0" max="10000" value="0" inputmode="numeric"></label>
+<label class="field"><span>Efetivo SVI</span><input id="efetivoSvi" data-label="Efetivo SVI" type="number" min="0" max="10000" value="0" inputmode="numeric"></label>
+<label class="field"><span>Efetivo total (automático)</span><input id="efetivoTotal" readonly value="0"></label>
+</div></details>
+<details><summary>Viatura, quilometragem e abastecimento</summary><div class="fieldgrid">
+<label class="field"><span>Viatura</span><input id="viatura" maxlength="60"></label>
+<label class="field"><span>Km inicial</span><input id="kmInicial" data-label="Km inicial" type="number" min="0" step="0.01" inputmode="decimal"></label>
+<label class="field"><span>Km final</span><input id="kmFinal" data-label="Km final" type="number" min="0" step="0.01" inputmode="decimal"></label>
+<label class="field"><span>Km rodados</span><input id="kmRodados" data-label="Km rodados" type="number" min="0" step="0.01" inputmode="decimal"></label>
+<p id="kmAjuda" class="helper wide">A distância pode ser calculada dos hodômetros, quando informados.</p>
+<label class="field"><span>Litros abastecidos</span><input id="litros" data-label="Litros abastecidos" type="number" min="0" step="0.01" inputmode="decimal"></label>
+<label class="field"><span>Rondas realizadas</span><input id="rondas" data-label="Rondas" type="number" min="0" max="10000" value="0" inputmode="numeric"></label>
+<label class="field"><span>Saídas autorizadas</span><input id="saidas" data-label="Saídas autorizadas" type="number" min="0" max="10000" inputmode="numeric"></label>
+</div></details>
+<details><summary>Alterações de pessoal, instalações e material</summary><div class="fieldgrid">
+<label class="field"><span>Alteração de pessoal?</span><select id="alteracaoPessoal"><option value="NAO">Não</option><option value="SIM">Sim</option></select></label>
+<label class="field"><span>Alteração de instalações?</span><select id="alteracaoInstalacoes"><option value="NAO">Não</option><option value="SIM">Sim</option></select></label>
+<label class="field"><span>Alteração de material?</span><select id="alteracaoMaterial"><option value="NAO">Não</option><option value="SIM">Sim</option></select></label>
+<label class="field wide"><span>Outros / solicitações</span><textarea id="outrosSolicitacoes" maxlength="400" placeholder="Somente informações administrativas, sem dados clínicos ou detalhes de segurança"></textarea></label>
+</div></details>
+<section class="panel" style="padding:16px;margin:18px 0 0;box-shadow:none;background:#f8fbf9">
+<h3>Acontecimentos do serviço</h3>
+<div class="fieldgrid">
+<label class="field"><span>Houve acontecimento / evento no serviço? *</span><select id="houveEvento">
+<option value="NAO">Não — relatório sem acontecimento</option><option value="SIM">Sim — registrar acontecimento</option></select></label>
+<label class="field"><span>Situação do relatório (automática)</span>
+<input id="situacao" readonly value="SEM ALTERACAO"></label>
+<label class="field"><span>Eventos registrados neste relatório</span><input id="totalEventos" readonly value="0"></label>
+</div>
+<div id="eventosWrap" hidden>
+<p class="floatingNote">Preencha uma ficha para cada militar envolvido no acontecimento, como no levantamento SIEPOM. Dois militares = duas fichas. Não registre nome de guerra nem lesão ou diagnóstico.</p>
+<div id="listaEventos" class="events"></div>
+<button id="adicionarEvento" type="button" class="btn-subtle">+ Adicionar outro militar / acontecimento</button>
+<span id="contagemEventos" hidden>0</span>
+</div>
+<p class="helper">Se o relatório não tiver acontecimento, basta salvar. Alterações de pessoal, instalações ou material também marcam o serviço como “com alteração”.</p>
+</section>
+<div class="actions"><button id="salvar" type="submit">Salvar relatório de serviço</button>
+<button id="limpar" type="button" class="btn-secondary">Limpar formulário</button>
+<div id="status" class="status" role="status">Verificando acesso...</div></div>
+<div id="recibo" role="status" hidden></div>
+</form>
+</section>
+<section class="panel"><h2>Últimos relatórios registrados</h2>
+<p class="sub">Os lançamentos aparecem aqui para conferência. Se um acontecimento precisar ser acrescentado posteriormente a um relatório SEI existente, utilize o cadastro complementar abaixo.</p>
+<div id="recentes" class="recent-list">Carregando relatórios...</div>
+<p class="helper">Para complementar um relatório já salvo, solicite ao setor de estatística da CIPG.</p>
+</section>
+</div>
+</main>
+</body></html>
