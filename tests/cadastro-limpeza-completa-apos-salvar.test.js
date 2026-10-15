@@ -67,10 +67,11 @@ const pSucesso=submit.indexOf('        alert("Ocorrência salva com sucesso!");'
 const pNavegar=submit.indexOf('        abrirNovoFormularioAposSalvar();');
 assert.ok(pErro>0&&pEdicao>pErro&&pSucesso>pEdicao&&pNavegar>pSucesso);
 assert.match(submit,/if \(error\) \{[\s\S]*?alert\("Erro ao salvar a ocorrência: " \+ error\.message\);\s*return;/);
-assert.match(submit,/if \(idEdicao\) \{\s*importacaoPdfPendente = false;\s*alert\("Alterações salvas com sucesso!"\);\s*location\.href = "consulta\.html\?q="/);
+assert.match(submit,/if \(idEdicao\) \{\s*importacaoPdfPendente = false;\s*alert\("Alterações salvas com sucesso!"\);\s*navegacaoAposGravacao = true;\s*location\.href = "consulta\.html\?q="/);
 assert.match(submit,/if \(salvamentoEmAndamento\) return;/);
 assert.match(submit,/salvamentoEmAndamento = true;/);
-assert.match(submit,/finally \{\s*salvamentoEmAndamento = false;/);
+assert.match(submit,/finally \{\s*if \(!navegacaoAposGravacao\) \{\s*salvamentoEmAndamento = false;/);
+assert.match(submit,/alert\("Ocorrência salva com sucesso!"\);\s*navegacaoAposGravacao = true;[\s\S]*?abrirNovoFormularioAposSalvar\(\)/);
 assert.doesNotMatch(submit,/formulario\.reset\(\)/);
 assert.doesNotMatch(submit,/replaceChildren\(\)[\s\S]*?Ocorrência salva com sucesso/);
 assert.doesNotMatch(codigo,/localStorage|sessionStorage|signOut|setContexto/);
