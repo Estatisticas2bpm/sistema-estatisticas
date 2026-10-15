@@ -66,7 +66,7 @@ test('gera telas de todas as unidades, sem somar serviços com BOs e sem expor d
  }
  const apresentacao=slides.map(x=>x.html).join('\n');
  assert.match(apresentacao,/1º BPM/);assert.match(apresentacao,/2º BPM/);
- assert.match(apresentacao,/3 pessoa/); // Verifica o indicador isolado das abordagens
+ assert.match(apresentacao,/Pessoas abordadas GIRO<\/label><strong>3<\/strong>/); // Indicador próprio, separado dos BOs
  assert.doesNotMatch(apresentacao,/nome_completo|cpf|nome_guerra/);
  assert.match(A.rankHtml([['Teste',3]]),/Teste/);
  assert.ok(D.metrics(model.atual).ocorrencias===3);
