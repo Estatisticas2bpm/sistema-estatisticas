@@ -277,6 +277,62 @@ Deno.serve(async (req: Request) => {
     }
 
     const perfilCaller = await perfilDoUsuario(caller.id);
+    const acoesCadernoCipg = new Set(["cipg_access_list","cipg_access_create","cipg_access_toggle","cipg_access_reset_password"]);
+    if (acoesCadernoCipg.has(action)) {
+      const unidadeCipg = "5c73f100-cd5d-415a-be39-1f8816bccbc9";
+      const autorizado = perfilCaller?.ativo === true && perfilCaller?.unidades?.ativo === true &&
+        (perfilCaller.perfil === "ADMIN" ||
+          (upper(perfilCaller.unidades?.sigla) === "CIPG" && perfilCaller.perfil === "ESTATISTICA"));
+      if (!autorizado) return resposta({ error: "Acesso restrito à administração ou estatística da CIPG." }, 403);
+      const listar = async () => {
+        const { data, error } = await admin.from("cipg_acessos_caderno").select("user_id,ativo,criado_em").order("criado_em",{ascending:false});
+        if (error) throw error;
+        const itens = await Promise.all((data||[]).map(async (x:any) => {
+          const { data: authData } = await admin.auth.admin.getUserById(x.user_id);
+          return { ...x, email: authData?.user?.email || "", nome: authData?.user?.user_metadata?.nome || "" };
+        }));
+        return itens;
+      };
+      if (action === "cipg_access_list") return resposta({ users: await listar() });
+      if (action === "cipg_access_create") {
+        const email = limpar(body.email).toLowerCase(), password = limpar(body.password), nome = limpar(body.nome);
+        if (!email.includes("@") || email.length > 254) throw new Error("Informe e-mail válido.");
+        if (password.length < 12) throw new Error("A senha deve ter pelo menos 12 caracteres.");
+        if (nome.length < 3 || nome.length > 120) throw new Error("Informe o nome do policial.");
+        const { data: created, error: authError } = await admin.auth.admin.createUser({
+          email,password,email_confirm:true,user_metadata:{nome},
+        });
+        if (authError || !created.user) throw authError || new Error("Falha ao criar conta individual.");
+        const { error: accessError } = await admin.from("cipg_acessos_caderno").insert({
+          user_id:created.user.id, unidade_id:unidadeCipg, ativo:true,
+        });
+        if (accessError) {
+          await admin.auth.admin.deleteUser(created.user.id);
+          throw accessError;
+        }
+        await log(caller.id,"CRIOU_ACESSO_CADERNO_CIPG","cipg_acesso",created.user.id,{email});
+        return resposta({ok:true,users:await listar()});
+      }
+      const id = limpar(body.user_id);
+      if (!uuidValido(id)) throw new Error("Selecione um policial válido.");
+      const { data: alvo, error: errAlvo } = await admin.from("cipg_acessos_caderno").select("user_id,ativo").eq("user_id",id).maybeSingle();
+      if (errAlvo || !alvo) throw new Error("Conta do caderno não encontrada.");
+      if (action === "cipg_access_toggle") {
+        const novo = body.ativo === true;
+        const { error } = await admin.from("cipg_acessos_caderno").update({ativo:novo}).eq("user_id",id);
+        if (error) throw error;
+        await log(caller.id,novo?"REATIVOU_CADERNO_CIPG":"BLOQUEOU_CADERNO_CIPG","cipg_acesso",id);
+      }
+      if (action === "cipg_access_reset_password") {
+        const password = limpar(body.password);
+        if (password.length < 12) throw new Error("A senha deve ter pelo menos 12 caracteres.");
+        const { error } = await admin.auth.admin.updateUserById(id,{password});
+        if (error) throw error;
+        await log(caller.id,"ALTEROU_SENHA_CADERNO_CIPG","cipg_acesso",id);
+      }
+      return resposta({ok:true,users:await listar()});
+    }
+
     const acoesAcessoGiro = new Set([
       "giro_access_status",
       "giro_access_create",

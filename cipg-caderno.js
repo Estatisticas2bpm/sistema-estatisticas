@@ -36,9 +36,9 @@ function numeroOpcional(id){
 function autenticado(){
  const sigla=String(sessao?.contexto?.sigla||sessao?.perfil?.unidades?.sigla||'').toUpperCase();
  const perfil=String(sessao?.perfil?.perfil||'').toUpperCase();
- return sigla==='CIPG'&&['ADMIN','ESTATISTICA','OPERADOR'].includes(perfil)
- &&sessao?.pode?.('cadastro')!==false
- &&sessao?.temModulo?.('PRODUTIVIDADE_CIPG')===true;
+ return sigla==='CIPG'&&sessao?.temModulo?.('PRODUTIVIDADE_CIPG')===true
+ &&(perfil==='CADERNO_CIPG'&&sessao?.pode?.('caderno_cipg')===true
+ || ['ADMIN','ESTATISTICA','OPERADOR'].includes(perfil)&&sessao?.pode?.('cadastro')!==false);
 }
 function tipoSelect(lista){return opcao('','Não informado')+lista.map(x=>opcao(x)).join('')}
 function campoEvento(nome,label,conteudo){return '<label class="field"><span>'+esc(label)+'</span>'+conteudo+'</label>'}
