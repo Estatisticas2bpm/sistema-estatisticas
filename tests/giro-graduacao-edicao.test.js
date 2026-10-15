@@ -3,7 +3,7 @@ const html=read('giro-acesso-abordagens.html'),api=read('supabase/functions/admi
 assert.match(html,/<select name="posto_graduacao"[^>]*required>/);
 assert.match(html,/name="posto_graduacao"/);
 assert.match(html,/id="formEditar"/);
-assert.match(html,/data-action=\\"edit\\"/);
+assert.match(html,/Editar dados<\/button>/);
 assert.match(html,/giro_users_update/);
 assert.match(html,/user_id:f.get\('user_id'\)/);
 assert.match(api,/giro_users_update/);
