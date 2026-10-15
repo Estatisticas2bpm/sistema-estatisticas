@@ -27,6 +27,18 @@
     });
   }
 
+  // Estatística só acessa a gestão móvel e o ranking da própria unidade, mesmo por URL direta.
+  function paginaEspecializadaPermitida(perfil){
+    if(normalizarPerfil(perfil?.perfil)!=='ESTATISTICA')return true;
+    const unidadesPorPagina={
+      'giro-acesso-abordagens.html':'GIRO',
+      'giro-ranking-abordagens.html':'GIRO',
+      'cipg-gerenciar-acessos.html':'CIPG',
+      'cipg-auditoria-caderno.html':'CIPG'
+    };
+    const exigida=unidadesPorPagina[pathname];
+    return !exigida||String(contextoAtual?.sigla||'').toUpperCase()===exigida;
+  }
   function permissaoDaPagina(){return cfg.pagePermissions[pathname]||null;}
   function moduloDaPagina(){return cfg.pageModules?.[pathname]||null;}
 
@@ -392,6 +404,11 @@
       if(await exigirMfaSeNecessario(client))return null;
 
       await carregarContextoUnidade(client,perfil);
+
+      if(!paginaEspecializadaPermitida(perfil)){
+        location.replace(cfg.homePage+'?erro=unidade-nao-autorizada');
+        return null;
+      }
 
       const pPagina=permissaoDaPagina();
       if(pPagina&&!pode(perfil.perfil,pPagina)){
