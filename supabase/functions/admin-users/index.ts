@@ -277,7 +277,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const perfilCaller = await perfilDoUsuario(caller.id);
-    const acoesCadernoCipg = new Set(["cipg_access_list","cipg_access_create","cipg_access_toggle","cipg_access_reset_password"]);
+    const acoesCadernoCipg = new Set(["cipg_access_list","cipg_access_create","cipg_access_toggle","cipg_access_reset_password","cipg_access_self_enable"]);
     if (acoesCadernoCipg.has(action)) {
       const unidadeCipg = "5c73f100-cd5d-415a-be39-1f8816bccbc9";
       const autorizado = perfilCaller?.ativo === true && perfilCaller?.unidades?.ativo === true &&
@@ -293,10 +293,36 @@ Deno.serve(async (req: Request) => {
         }));
         return itens;
       };
+      if (action === "cipg_access_self_enable") {
+        // Vincula a conta autenticada do SIE-CPC ao Caderno Digital sem gerar um segundo
+        // auth.users, redefinir senha ou criar um perfil adicional no painel.
+        const nome = limpar(perfilCaller.nome), postoGraduacao = limpar(perfilCaller.posto_graduacao);
+        const nomeGuerra = limpar(perfilCaller.nome_guerra);
+        if (nome.length < 3 || postoGraduacao.length < 2 || nomeGuerra.length < 2) {
+          return resposta({error:"Atualize nome completo, posto/graduação e nome de guerra em Meu Perfil do SIE-CPC antes de habilitar o caderno."},400);
+        }
+        const { data:existente, error:exError } = await admin.from("cipg_acessos_caderno")
+          .select("user_id,unidade_id,ativo").eq("user_id",caller.id).maybeSingle();
+        if(exError)throw exError;
+        if(existente?.unidade_id && existente.unidade_id!==unidadeCipg) {
+          return resposta({error:"Acesso registrado em unidade diferente. Contate a administração."},409);
+        }
+        if(existente?.ativo===true)return resposta({ok:true,already_active:true,users:await listar()});
+        const payload={unidade_id:unidadeCipg,ativo:true,nome_completo:nome,
+          posto_graduacao:postoGraduacao,nome_guerra:nomeGuerra};
+        const {error:accessError}=existente
+          ?await admin.from("cipg_acessos_caderno").update(payload).eq("user_id",caller.id)
+          :await admin.from("cipg_acessos_caderno").insert({user_id:caller.id,...payload});
+        if(accessError)throw accessError;
+        await log(caller.id,existente?"REATIVOU_PROPRIO_CADERNO_CIPG":"HABILITOU_PROPRIO_CADERNO_CIPG",
+          "cipg_acesso",caller.id,{origem:"conta_existente_sie"});
+        return resposta({ok:true,already_active:false,users:await listar()});
+      }
       if (action === "cipg_access_list") return resposta({ users: await listar() });
       if (action === "cipg_access_create") {
         const email = limpar(body.email).toLowerCase(), password = limpar(body.password), nome = limpar(body.nome), postoGraduacao=limpar(body.posto_graduacao), nomeGuerra=limpar(body.nome_guerra);
         if (!email.includes("@") || email.length > 254) throw new Error("Informe e-mail válido.");
+        if (email === limpar(caller.email).toLowerCase()) return resposta({error:"Este e-mail já pertence à sua conta do SIE-CPC. Use o botão Habilitar meu acesso ao Caderno Digital, sem criar outra senha."},409);
         if (password.length < 12) throw new Error("A senha deve ter pelo menos 12 caracteres.");
         if (nome.length < 3 || nome.length > 120) throw new Error("Informe o nome completo do policial.");
         if (postoGraduacao.length < 2 || postoGraduacao.length > 60) throw new Error("Informe o posto ou graduação.");
