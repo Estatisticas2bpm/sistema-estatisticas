@@ -36,7 +36,7 @@ test('Ativação vincula exclusivamente a sessão ativa e não duplica auth.user
 test('RLS compara explicitamente unidade do relatório, não a coluna do mesmo alias',()=>{
  assert.match(sql,/a\.unidade_id=cipg_servicos_guarda\.unidade_id/g);
  assert.equal((sql.match(/a\.unidade_id=cipg_servicos_guarda\.unidade_id/g)||[]).length,2);
- assert.doesNotMatch(sql,/a\.unidade_id\s*=\s*unidade_id\b/);
+ assert.doesNotMatch(sql.replace(/^--.*$/gm,''),/a\.unidade_id\s*=\s*unidade_id\b/);
  assert.match(sql,/criado_por=\(select auth\.uid\(\)\)/);
  assert.match(sql,/a\.ativo=true/);
 });
