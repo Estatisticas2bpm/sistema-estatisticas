@@ -1,9 +1,16 @@
 <!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CIPG — Gerenciar acesso ao Caderno Digital</title>
-<style>*{box-sizing:border-box}body{margin:0;background:#edf2f5;color:#193147;font:15px system-ui,Arial}header{background:#0a2941;color:white;padding:22px}header div,main{max-width:800px;margin:auto}main{padding:18px 12px 55px}.card{background:white;border:1px solid #d6e1e8;border-radius:14px;padding:22px;margin-bottom:15px}h1{font-size:24px;margin:0}h2{font-size:19px;margin:0 0 12px}label{display:block;font-weight:700;font-size:13px;margin-bottom:12px}input{display:block;width:100%;font:inherit;padding:12px;margin-top:6px;border:1px solid #afc3cf;border-radius:8px}button{background:#176044;color:white;border:0;border-radius:8px;padding:11px 14px;font-weight:700;cursor:pointer;margin:4px}button:disabled{opacity:.6}button.secondary{background:#365773}button.danger{background:#a33a34}article{padding:12px 0;border-bottom:1px solid #e2e8ef}.muted{color:#5d6a77;font-size:13px}#status{white-space:pre-wrap}a{color:#125d83}header a{color:white}</style>
+<style>*{box-sizing:border-box}body{margin:0;background:#edf2f5;color:#193147;font:15px system-ui,Arial}header{background:#0a2941;color:white;padding:22px}header div,main{max-width:800px;margin:auto}main{padding:18px 12px 55px}.card{background:white;border:1px solid #d6e1e8;border-radius:14px;padding:22px;margin-bottom:15px}h1{font-size:24px;margin:0}h2{font-size:19px;margin:0 0 12px}label{display:block;font-weight:700;font-size:13px;margin-bottom:12px}input{display:block;width:100%;font:inherit;padding:12px;margin-top:6px;border:1px solid #afc3cf;border-radius:8px}button{background:#176044;color:white;border:0;border-radius:8px;padding:11px 14px;font-weight:700;cursor:pointer;margin:4px}button:disabled{opacity:.6}button.secondary{background:#365773}button.danger{background:#a33a34}article{padding:12px 0;border-bottom:1px solid #e2e8ef}.muted{color:#5d6a77;font-size:13px}#status{white-space:pre-wrap}a{color:#125d83}header a{color:white}.notice{padding:12px 14px;border:1px solid #9bc5b0;background:#ecf8f1;border-radius:9px;color:#18573e;font-weight:650;margin:10px 0}.notice.error{background:#fff0ed;color:#8a3028;border-color:#dcb4ad}.account-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.account-actions button{margin:0}.chip{font-size:12px;font-weight:800;color:#0b684a}</style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="auth-config.js"></script><script src="auth-guard.js"></script></head><body>
 <header><div><h1>Credenciais individuais — CIPG</h1><p>Caderno Digital de Serviço · Gerenciamento restrito à administração e estatística da CIPG</p><a href="cipg-produtividade.html">← Voltar</a></div></header>
-<main><section class="card"><h2>Link do policial</h2><p><a id="link" href="cipg-caderno-acesso.html">Abrir Caderno Digital da CIPG</a></p><button id="copiar" type="button" class="secondary">Copiar link de acesso</button></section>
-<section class="card"><h2>Auditoria dos lançamentos</h2><p>Consulte quem registrou cada serviço por data, turno, SEI e identificação funcional.</p><p><a href="cipg-auditoria-caderno.html">Abrir auditoria por policial e turno →</a></p></section><section class="card"><h2>Cadastrar policial</h2><p class="muted">Cada policial recebe seu próprio e-mail de acesso e senha inicial. Não será criado perfil de acesso ao painel.</p>
+<main>
+<section class="card" id="proprioAcesso">
+<h2>Meu acesso ao Caderno Digital</h2>
+<p class="muted">Se você já acessa o sistema com perfil <b>ADMIN</b> ou <b>ESTATÍSTICA da CIPG</b>, não precisa criar outro usuário ou outra senha para preencher o Livro da Permanência.</p>
+<div class="account-actions"><button id="ativarProprio" type="button">Habilitar meu acesso ao Caderno Digital</button><a id="irCaderno" href="cipg-caderno-acesso.html">Abrir livro da permanência →</a></div>
+<p id="mensagemProprio" class="notice" role="status" aria-live="polite">Verificando sua autorização...</p>
+</section>
+<section class="card"><h2>Link do policial</h2><p><a id="link" href="cipg-caderno-acesso.html">Abrir Caderno Digital da CIPG</a></p><button id="copiar" type="button" class="secondary">Copiar link de acesso</button></section>
+<section class="card"><h2>Auditoria dos lançamentos</h2><p>Consulte quem registrou cada serviço por data, turno, SEI e identificação funcional.</p><p><a href="cipg-auditoria-caderno.html">Abrir auditoria por policial e turno →</a></p></section><section class="card"><h2>Cadastrar outro policial</h2><p class="muted">Use este cadastro apenas para policiais que <b>ainda não têm conta no SIE-CPC</b>. Para habilitar sua própria conta administrativa, use o botão acima. Cada policial novo recebe seu próprio e-mail e senha; não ganha acesso ao painel estatístico.</p><p id="erroCadastro" class="notice" role="status" aria-live="polite">Preencha os dados para criar uma conta individual.</p>
 <form id="novo"><label>Nome completo<input name="nome" required minlength="3" maxlength="120"></label><label>Posto ou graduação<select name="posto_graduacao" required style="display:block;width:100%;padding:12px;margin-top:6px;border:1px solid #afc3cf;border-radius:8px"><option value="">Selecione</option><option>Soldado PM</option><option>Cabo PM</option><option>3º Sargento PM</option><option>2º Sargento PM</option><option>1º Sargento PM</option><option>Subtenente PM</option><option>2º Tenente PM</option><option>1º Tenente PM</option><option>Capitão PM</option><option>Major PM</option><option>Tenente-Coronel PM</option><option>Coronel PM</option></select></label><label>Nome de guerra<input name="nome_guerra" required minlength="2" maxlength="100"></label><label>E-mail individual<input type="email" name="email" required autocomplete="off"></label><label>Senha inicial (mínimo 12 caracteres)<input type="password" name="password" minlength="12" required autocomplete="new-password"></label><button type="submit">Criar acesso individual</button></form></section>
 <section class="card"><h2>Policiais autorizados</h2><p class="muted">É possível bloquear/reativar e trocar a senha de uma conta sem afetar outros policiais.</p><div id="usuarios">Verificando acesso...</div></section><p id="status" role="status"></p></main>
 <script>
@@ -16,15 +23,39 @@ if(!sessao?.client){status('Acesso administrativo indisponível.');return}
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function invoke(body){
  const {data,error}=await sessao.client.functions.invoke('admin-users',{body});
- if(error)throw error;
+ if(error){
+  let mensagem='';
+  try{const resposta=error.context;if(resposta&&typeof resposta.json==='function')mensagem=(await resposta.json())?.error||'';}catch(_){}
+  throw Error(mensagem||error.message||'Falha na comunicação com o servidor.');
+ }
  if(data?.error)throw Error(data.error);
  return data;
 }
 function render(users){
  $('usuarios').innerHTML=users.length?users.map(u=>'<article><b>'+esc((u.posto_graduacao||'')+' '+(u.nome_guerra||u.nome||u.email))+'</b><div class="muted">'+esc(u.nome_completo||'')+' · '+esc(u.email)+' · '+(u.ativo?'Ativo':'Bloqueado')+'</div><button class="'+(u.ativo?'danger':'secondary')+'" data-action="toggle" data-id="'+esc(u.user_id)+'" data-ativo="'+u.ativo+'">'+(u.ativo?'Bloquear':'Reativar')+'</button><button class="secondary" data-action="senha" data-id="'+esc(u.user_id)+'">Alterar senha</button></article>').join(''):'Nenhuma conta individual cadastrada.';
 }
-async function recarregar(){const r=await invoke({action:'cipg_access_list'});render(r.users||[])}
-$('novo').onsubmit=async e=>{e.preventDefault();const b=e.submitter;b.disabled=true;try{const fd=new FormData(e.target);await invoke({action:'cipg_access_create',nome:fd.get('nome'),posto_graduacao:fd.get('posto_graduacao'),nome_guerra:fd.get('nome_guerra'),email:fd.get('email'),password:fd.get('password')});e.target.reset();status('Conta individual criada e habilitada. Entregue as credenciais diretamente ao policial.');await recarregar()}catch(err){status('Erro: '+err.message)}finally{b.disabled=false}};
+function mostrarProprio(mensagem,erro=false){
+ const el=$('mensagemProprio');el.textContent=mensagem;el.classList.toggle('error',erro);
+}
+async function habilitarProprio(){
+ const botao=$('ativarProprio');botao.disabled=true;mostrarProprio('Habilitando sua conta individual...');
+ try{
+  await invoke({action:'cipg_access_self_enable'});
+  mostrarProprio('Acesso habilitado! Abra o livro e entre com o mesmo e-mail e senha do SIE-CPC.');
+  $('irCaderno').focus();
+  await recarregar();
+ }catch(err){mostrarProprio('Não foi possível habilitar: '+err.message,true);}
+ finally{botao.disabled=false}
+}
+$('ativarProprio').addEventListener('click',habilitarProprio);
+async function recarregar(){
+ const r=await invoke({action:'cipg_access_list'}),users=r.users||[];
+ render(users);
+ const meu=users.find(u=>u.user_id===sessao.user?.id);
+ if(meu?.ativo){mostrarProprio('Seu acesso já está habilitado. Use as mesmas credenciais de login do SIE-CPC.');$('ativarProprio').textContent='Revalidar meu acesso';}
+ else mostrarProprio('Seu acesso ao Caderno Digital ainda não foi habilitado. Clique no botão acima para ativá-lo.');
+}
+$('novo').onsubmit=async e=>{e.preventDefault();const b=e.submitter||$('novo').querySelector('button[type="submit"]');b.disabled=true;const inform=$('erroCadastro');inform.classList.remove('error');inform.textContent='Salvando o novo policial...';try{const fd=new FormData(e.target);await invoke({action:'cipg_access_create',nome:fd.get('nome'),posto_graduacao:fd.get('posto_graduacao'),nome_guerra:fd.get('nome_guerra'),email:fd.get('email'),password:fd.get('password')});e.target.reset();inform.textContent='Conta individual criada e habilitada. Entregue as credenciais diretamente ao policial.';status(inform.textContent);await recarregar()}catch(err){inform.textContent='Erro ao cadastrar: '+err.message;inform.classList.add('error');status(inform.textContent);inform.scrollIntoView({block:'center',behavior:'smooth'})}finally{b.disabled=false}};
 $('usuarios').onclick=async e=>{const button=e.target.closest('button[data-action]');if(!button)return;const id=button.dataset.id;let action=button.dataset.action;let body;
 if(action==='toggle'){const ativo=button.dataset.ativo!=='true';if(!confirm((ativo?'Reativar':'Bloquear')+' esta conta?'))return;body={action:'cipg_access_toggle',user_id:id,ativo};}
 else {const password=prompt('Nova senha (mínimo 12 caracteres):');if(password===null)return;if(password.length<12){status('A nova senha precisa ter pelo menos 12 caracteres.');return;}body={action:'cipg_access_reset_password',user_id:id,password};}
