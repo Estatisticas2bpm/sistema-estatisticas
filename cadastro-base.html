@@ -737,6 +737,7 @@
   </dialog>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="pdf-importer-core.js?v=20261001-guarnicao1"></script>
+  <script src="verificacao-quantidades-operacionais.js?v=20261018-auditoria1"></script>
   <script src="bope-subunidades.js?v=20261015-1"></script>
   <script>
     const SUPABASE_URL = "https://jppmhhukujigxupgskdk.supabase.co";
@@ -2568,6 +2569,16 @@
           tatico_setorial: document.getElementById("tipoRegistro").value === "TS",
           observacao_final: montarObservacaoFinal()
         };
+
+        // Validação preventiva: calibres e números de modelo não são quantidades.
+        // Uma quantidade atípica continua permitida após confirmação do operador.
+        const alertasMateriais = window.ValidacaoQuantidadesOperacionais?.verificar(registro) || [];
+        if (alertasMateriais.length && !confirm(
+          "ATENÇÃO — confira as quantidades antes de gravar:\n\n" +
+          alertasMateriais.join("\n") +
+          "\n\nOs números podem ser modelos ou calibres, não quantidades. " +
+          "Conferiu com o boletim original e deseja salvar assim mesmo?"
+        )) return;
 
         let error = null;
         if (idEdicao) {
