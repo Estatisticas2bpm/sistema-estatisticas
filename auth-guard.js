@@ -135,16 +135,6 @@
     return new Set((r.data||[]).map(x=>normalizarModulo(x.codigo)).filter(Boolean));
   }
 
-  async function carregarPlanilhaUsuario(client){
-    const r=await client.rpc('obter_planilha_usuario');
-    if(r.error){
-      console.error('Não foi possível carregar a planilha da unidade; atalho bloqueado:',r.error);
-      return null;
-    }
-    const linha=Array.isArray(r.data)?r.data[0]:r.data;
-    return linha?.google_sheet_url?linha:null;
-  }
-
   function aplicarPermissoes(perfil,modulos,planilha){
     document.querySelectorAll('[data-permission],[data-module],[data-planilha-unidade]').forEach(el=>{
       const permitidoPerfil=pode(perfil,el.getAttribute('data-permission'));
@@ -418,10 +408,9 @@
         return null;
       }
 
-      const [modulos,planilha]=await Promise.all([
-        carregarModulos(client),
-        carregarPlanilhaUsuario(client)
-      ]);
+      // Integração Google Sheets encerrada: não carregar RPC de planilhas.
+      const modulos=await carregarModulos(client);
+      const planilha=null;
       const mPagina=moduloDaPagina();
       if(mPagina&&!temModulo(modulos,mPagina)){
         location.replace(cfg.homePage+'?erro=modulo-indisponivel');
