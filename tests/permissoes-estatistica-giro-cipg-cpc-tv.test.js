@@ -26,12 +26,14 @@ test('ESTATISTICA gerencia apenas usuários móveis da unidade correspondente',(
  assert.match(home,/id="giroAccessShortcut" href="giro-acesso-abordagens\.html"/);
  assert.match(home,/id="cipgAccessShortcut" href="cipg-gerenciar-acessos\.html"/);
 });
-test('Modo TV só em contexto de comando CPC, mesmo por URL direta',()=>{
- for(const unidade of ['GIRO','CIPG','1BPM','2BPM','CIPA','CAVALARIA','BOPE'])for(const perfil of ['ADMIN','ESTATISTICA','GESTOR'])assert.equal(pode(unidade,perfil,'tv'),false);
- for(const perfil of ['ADMIN','ESTATISTICA','GESTOR'])assert.equal(pode('CPC',perfil,'tv'),true);
- assert.equal(pode('CPC','OPERADOR','tv'),false);
+test('Modo TV temporariamente suspenso para todos os perfis e unidades, inclusive URLs diretas',()=>{
+ for(const unidade of ['CPC','GIRO','CIPG','1BPM','2BPM','CIPA','CAVALARIA','BOPE'])
+  for(const perfil of Object.keys(cfg.permissions))assert.equal(pode(unidade,perfil,'tv'),false,unidade+':'+perfil);
+ for(const [perfil,permissions] of Object.entries(cfg.permissions))assert.equal(permissions.includes('tv'),false,perfil);
  for(const page of ['modo-tv.html','mapa-tv.html','painel-tv.html'])assert.equal(cfg.pagePermissions[page],'tv');
- assert.match(home,/id="modoTvSomenteCpc" href="modo-tv\.html" data-permission="tv" hidden/);
+ assert.doesNotMatch(home,/href="modo-tv\.html"/);
+ assert.doesNotMatch(home,/id="modoTvSomenteCpc"/);
+ assert.match(guard,/if\(permissao==='tv'\)return false/);
 });
 test('Fluxos da Seção estão desativados para todos os perfis e fora do menu',()=>{
  for(const unidade of ['GIRO','CIPG','CPC'])for(const perfil of Object.keys(cfg.permissions))assert.equal(pode(unidade,perfil,'fluxos'),false);
