@@ -597,8 +597,8 @@ function abrirDetalhes(titulo,registros,opcoes={}){
   document.body.classList.toggle('dashboard-comando',comando);
   linhasDrillAtuais=lista;
   $('drillTitulo').textContent=titulo;
-  $('drillSubtitulo').textContent=comando?'Clique no número do BO na coluna Referência para visualizar o cadastro completo, sem editar.':(opcoes.subtitulo||'Clique no BO para abrir a ocorrência correspondente.');
-  $('drillContagem').textContent=lista.length+' ocorrência(s) relacionada(s)';
+  $('drillSubtitulo').textContent=(comando?'Clique no número do BO na coluna Referência para visualizar o cadastro completo, sem editar.':(opcoes.subtitulo||'Clique no BO para abrir a ocorrência correspondente.'))+(Number.isInteger(opcoes.quantidadePessoas)?' Uma ocorrência pode conter mais de uma pessoa.':'');
+  $('drillContagem').textContent=Number.isInteger(opcoes.quantidadePessoas)?opcoes.quantidadePessoas+' pessoa(s) em '+lista.length+' ocorrência(s) relacionada(s)':lista.length+' ocorrência(s) relacionada(s)';
   const ids=[...new Set(lista.map(idOcorrenciaDrill).filter(Boolean))];
   $('drillAbrirLista').style.display=comando?'none':(ids.length?'inline-flex':'none');
   $('drillColunaAcao').hidden=comando;
@@ -949,8 +949,59 @@ let comparativos=[indicador('Total de ocorrências',a.length,p.length),indicador
 if(ehGiro())comparativos.push(indicador('Abordagens',gaComp.length,gpComp.length),indicador('Pessoas abordadas',gaComp.reduce((s,x)=>s+num(x.quantidade_pessoas),0),gpComp.reduce((s,x)=>s+num(x.quantidade_pessoas),0)),indicador('Abordagens a pé',gaComp.filter(x=>x.tipo_abordagem==='A_PE').length,gpComp.filter(x=>x.tipo_abordagem==='A_PE').length),indicador('Motocicletas abordadas',gaComp.filter(x=>x.tipo_abordagem==='MOTO').length,gpComp.filter(x=>x.tipo_abordagem==='MOTO').length),indicador('Veículos abordados',gaComp.filter(x=>x.tipo_abordagem==='VEICULO').length,gpComp.filter(x=>x.tipo_abordagem==='VEICULO').length));
 else comparativos.push(indicador('Classificação AME',a.filter(ehAme).length,p.filter(ehAme).length));
 rows('tabComparativo',comparativos.join(''));loading.style.display='none'}
-function dadosPessoaInformados(n,s,i){return [n,s,i].some(v=>!ehNaoInformado(v))}function listaPessoas(a,prefix){let chave=prefix==='vitima'?'vitimas':'infratores',lista=[];a.forEach(x=>{let n=x[prefix+'_nacionalidade'],sx=x[prefix+'_sexo'],i=x[prefix+'_idade'];if(dadosPessoaInformados(n,sx,i))lista.push({nacionalidade:n,sexo:sx,idade:i});let texto=String(x.observacao_final||''),marca='[[PESSOAS_ENVOLVIDAS]]',pos=texto.indexOf(marca);if(pos>=0)try{let dados=JSON.parse(texto.slice(pos+marca.length));lista.push(...(dados[chave]||[]).filter(pessoa=>dadosPessoaInformados(pessoa.nacionalidade,pessoa.sexo,pessoa.idade)))}catch(_){}});return lista}
-function perfil(a,prefix,chartId,box){let pessoas=listaPessoas(a,prefix),nacs=rank(pessoas,x=>normalizarNacionalidade(x.nacionalidade),20),sex=rank(pessoas,x=>normalizarSexo(x.sexo),8),idades=pessoas.map(x=>num(x.idade)).filter(Boolean),faltNac=pessoas.filter(x=>ehNaoInformado(x.nacionalidade)).length,faltSexo=pessoas.filter(x=>ehNaoInformado(x.sexo)).length,faltIdade=pessoas.filter(x=>ehNaoInformado(x.idade)).length;chart(chartId,'doughnut',sex.map(x=>x[0]),sex.map(x=>x[1]),'Sexo',sex.map(x=>corSexo(x[0])));let linhas=nacs.map(x=>`<tr><td>${esc(x[0])}</td><td>${x[1]}</td></tr>`).join('');$(box).innerHTML=`<table><tr><th>Nacionalidade</th><th>Quantidade</th></tr>${linhas||'<tr><td colspan="2">Sem nacionalidade informada</td></tr>'}<tr><th>Faixa etária</th><td>${idades.length?Math.min(...idades)+' a '+Math.max(...idades)+' anos':'Sem idade informada'}</td></tr><tr><th>Pessoas identificadas</th><td>${pessoas.length}</td></tr><tr><th>Campos pendentes</th><td>Nacionalidade: ${faltNac} · Sexo: ${faltSexo} · Idade: ${faltIdade}</td></tr></table>`}
+function dadosPessoaInformados(n,s,i){return [n,s,i].some(v=>!ehNaoInformado(v))}
+function listaPessoas(a,prefix){
+  let chave=prefix==='vitima'?'vitimas':'infratores',lista=[];
+  a.forEach(o=>{
+    let n=o[prefix+'_nacionalidade'],sx=o[prefix+'_sexo'],idade=o[prefix+'_idade'];
+    // Preserva a referência ao BO já filtrado para que cada número possa abrir
+    // as ocorrências corretas sem consultar outra unidade ou expor dados pessoais.
+    if(dadosPessoaInformados(n,sx,idade))lista.push({nacionalidade:n,sexo:sx,idade,_ocorrencia:o});
+    let texto=String(o.observacao_final||''),marca='[[PESSOAS_ENVOLVIDAS]]',pos=texto.indexOf(marca);
+    if(pos>=0)try{
+      let dados=JSON.parse(texto.slice(pos+marca.length));
+      (dados[chave]||[]).filter(p=>dadosPessoaInformados(p.nacionalidade,p.sexo,p.idade))
+        .forEach(p=>lista.push({...p,_ocorrencia:o}));
+    }catch(_){}
+  });
+  return lista;
+}
+function perfil(a,prefix,chartId,box){
+  const pessoas=listaPessoas(a,prefix),tipo=prefix==='vitima'?'Vítimas':'Infratores';
+  const nacs=rank(pessoas,p=>normalizarNacionalidade(p.nacionalidade),20);
+  const sex=rank(pessoas,p=>normalizarSexo(p.sexo),8);
+  const comIdade=pessoas.filter(p=>num(p.idade)>0),idades=comIdade.map(p=>num(p.idade));
+  const semNac=pessoas.filter(p=>ehNaoInformado(p.nacionalidade));
+  const semSexo=pessoas.filter(p=>ehNaoInformado(p.sexo));
+  const semIdade=pessoas.filter(p=>ehNaoInformado(p.idade));
+  const regs=grupo=>grupo.map(p=>p._ocorrencia).filter(Boolean);
+  const opcoes=grupo=>({quantidadePessoas:grupo.length});
+  const detalhar=(rotulo,grupo)=>abrirDetalhes(tipo+' — '+rotulo,regs(grupo),opcoes(grupo));
+  const numero=(valor,rotulo,grupo)=>drillNumero(valor,tipo+' — '+rotulo,regs(grupo),opcoes(grupo));
+
+  chart(chartId,'doughnut',sex.map(x=>x[0]),sex.map(x=>x[1]),'Sexo',
+    sex.map(x=>corSexo(x[0])),idx=>{
+      let rotulo=sex[idx]?.[0];
+      if(rotulo)detalhar('sexo '+rotulo,pessoas.filter(p=>normalizarSexo(p.sexo)===rotulo));
+    });
+  const linhas=nacs.map(([nacionalidade,quantidade])=>{
+    let grupo=pessoas.filter(p=>normalizarNacionalidade(p.nacionalidade)===nacionalidade);
+    return `<tr><td>${esc(nacionalidade)}</td><td>${numero(quantidade,'nacionalidade '+nacionalidade,grupo)}</td></tr>`;
+  }).join('');
+  const faixa=idades.length?Math.min(...idades)+' a '+Math.max(...idades)+' anos':'Sem idade informada';
+  const faixaLink=idades.length?numero(faixa,'faixa etária informada',comIdade):esc(faixa);
+  $(box).innerHTML=`<table>
+    <tr><th>Nacionalidade</th><th>Quantidade</th></tr>
+    ${linhas||'<tr><td colspan="2">Sem nacionalidade informada</td></tr>'}
+    <tr><th>Faixa etária</th><td>${faixaLink}</td></tr>
+    <tr><th>Pessoas identificadas</th><td>${numero(pessoas.length,'pessoas identificadas',pessoas)}</td></tr>
+    <tr><th>Campos pendentes</th><td>
+      Nacionalidade: ${numero(semNac.length,'nacionalidade pendente',semNac)} ·
+      Sexo: ${numero(semSexo.length,'sexo pendente',semSexo)} ·
+      Idade: ${numero(semIdade.length,'idade pendente',semIdade)}
+    </td></tr>
+  </table>`;
+}
 async function consultarCipaPaginado(tabela,campo,data,ini,fim){
   const linhas=[],passo=1000;
   for(let offset=0;;offset+=passo){
