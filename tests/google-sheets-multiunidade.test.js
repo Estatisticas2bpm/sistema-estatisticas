@@ -30,10 +30,10 @@ assert.match(edge, /google_sheet_id/);
 assert.match(edge, /activeIntegrations\.length === 1/);
 assert.match(edge, /Roteamento obrigatorio/);
 
-assert.match(guard, /obter_planilha_usuario/);
-assert.match(guard, /data-planilha-unidade/);
-assert.match(index, /data-planilha-unidade/);
-assert.match(index, /data-permission="planilha"/);
+assert.doesNotMatch(guard, /client\.rpc\('obter_planilha_usuario'\)/);
+assert.match(guard, /data-planilha-unidade/); // Tratamento defensivo legado preservado.
+assert.doesNotMatch(index, /data-planilha-unidade/);
+assert.doesNotMatch(index, /data-permission="planilha"/);
 assert.doesNotMatch(index, /href="https:\/\/docs\.google\.com\/spreadsheets\/d\/10BcWmWxzSrFghs_y_1L6QchidNWAwS6eAC9T53J_vs8\/edit"/);
 
 console.log('Fase 3D-D: contratos de Google Sheets multiunidade validados.');
