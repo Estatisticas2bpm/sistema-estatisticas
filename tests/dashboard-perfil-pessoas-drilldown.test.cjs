@@ -67,7 +67,7 @@ test('perfil de vítimas torna clicáveis nacionalidade, total, idade e cada cam
  assert.equal(br.rows.map(x=>x.id).join(','),'a,a,b');
  const pessoas=links.find(x=>x.title.endsWith('pessoas identificadas'));
  assert.equal(pessoas.value,4);assert.equal(pessoas.rows.length,4);
- const idade=links.find(x=>x.title.endsWith('idade pendente'));
+ const idade=links.find(x=>x.title.endsWith(' — idade pendente'));
  assert.equal(idade.value,1);assert.equal(idade.rows[0].id,'a');
  const chart=charts[0];assert.equal(chart.type,'doughnut');
  assert.equal(typeof chart.callback,'function');
@@ -87,7 +87,7 @@ test('perfil de infratores usa os dados dos infratores, sem misturar vítimas e 
  const nacionalidadeBr=links.find(x=>x.title.includes('nacionalidade BR'));
  assert.equal(nacionalidadeBr.value,1);
  assert.equal(nacionalidadeBr.rows.map(o=>o.id).join(','),'a');
- const pending=links.find(x=>x.title.endsWith('idade pendente'));
+ const pending=links.find(x=>x.title.endsWith(' — idade pendente'));
  assert.equal(pending.value,1);
  assert.equal(pending.rows.map(o=>o.id).join(','),'c');
 });
