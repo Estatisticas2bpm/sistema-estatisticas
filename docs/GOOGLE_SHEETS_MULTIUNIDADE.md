@@ -1,5 +1,32 @@
 # Google Sheets multiunidade — arquitetura da Fase 3D-D
 
+> **DECISÃO DEFINITIVA DE 18/10/2026 — CANCELAMENTO DA EXPANSÃO:**
+> O SIE-CPC sincroniza dados com Google Sheets **somente do 1º BPM e do 2º BPM**.
+> Todas as demais unidades (CIPTUR, GIRO, BOPE e subunidades, CIPA, CIPG,
+> Cavalaria e outras) **não utilizam planilha**. Seus dados permanecem
+> integralmente no banco Supabase e são acessados pelo próprio site.
+> As etapas abaixo sobre adicionar planilhas a outras unidades representam
+> planejamento histórico **descontinuado** e não devem ser executadas.
+
+## Política atual, aplicada no banco
+
+- A permissão para envio é restrita aos UUIDs oficiais do **1BPM** e do **2BPM**.
+- Os gatilhos de criação, atualização e exclusão de BO **não criam eventos de
+  Google Sheets** para nenhuma outra unidade, mesmo se alguém inserir uma
+  integração nova acidentalmente.
+- Os registros das demais unidades usam `sync_status='NAO_APLICAVEL'`.
+  Esse status **não significa erro**: o BO está registrado no Supabase.
+- As **202 tarefas históricas pendentes** das unidades sem planilha foram
+  reclassificadas para `CANCELADO`, com motivo e data de cancelamento.
+  Seus respectivos payloads foram **preservados para auditoria**.
+- O sincronizador só recebe eventos dos batalhões com integração ativa,
+  mantendo o 1º BPM e o 2º BPM operando normalmente.
+- Não limpar manualmente a outbox nem reenviar eventos cancelados.
+  Eventual política futura de retenção deve ser precedida por backup e
+  homologação independente.
+
+---
+
 ## Objetivo
 
 Manter um único banco central e uma única fila de sincronização, mas garantir que cada ocorrência seja enviada somente para a planilha configurada para sua unidade responsável.
