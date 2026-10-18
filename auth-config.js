@@ -10,8 +10,8 @@ window.SISTEMA_AUTH_CONFIG = Object.freeze({
   mfaPage: "mfa.html",
   profilePage: "meu-perfil.html",
   permissions: Object.freeze({
-    ADMIN: ["cadastro","consulta","dashboard","auditoria","analise","mapa","tco","relatorio","planilha","acoes","usuarios","logs","configuracoes"],
-    ESTATISTICA: ["cadastro","consulta","dashboard","auditoria","analise","mapa","tco","relatorio","planilha","acoes","logs"],
+    ADMIN: ["cadastro","consulta","dashboard","auditoria","analise","mapa","tco","relatorio","acoes","usuarios","logs","configuracoes"],
+    ESTATISTICA: ["cadastro","consulta","dashboard","auditoria","analise","mapa","tco","relatorio","acoes","logs"],
     OPERADOR: ["cadastro","consulta","dashboard","mapa","tco","acoes"],
     GESTOR: ["consulta","dashboard","analise","mapa","relatorio"],
     CONSULTA: ["consulta","dashboard","mapa","relatorio"]
