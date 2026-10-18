@@ -64,7 +64,7 @@ test('perfil de vítimas torna clicáveis nacionalidade, total, idade e cada cam
  assert.match(htmlBox,/<button type="button" class="drill-link">19 a 32 anos<\/button>/);
  const br=links.find(x=>x.title.includes('nacionalidade BR — Brasileira'));
  assert.equal(br.value,3);assert.equal(br.options.quantidadePessoas,3);
- assert.deepEqual(br.rows.map(x=>x.id),['a','a','b']);
+ assert.equal(br.rows.map(x=>x.id).join(','),'a,a,b');
  const pessoas=links.find(x=>x.title.endsWith('pessoas identificadas'));
  assert.equal(pessoas.value,4);assert.equal(pessoas.rows.length,4);
  const idade=links.find(x=>x.title.endsWith('idade pendente'));
@@ -74,7 +74,7 @@ test('perfil de vítimas torna clicáveis nacionalidade, total, idade e cada cam
  chart.callback(chart.labels.indexOf('F'));
  assert.equal(details.length,1);
  assert.equal(details[0].options.quantidadePessoas,3);
- assert.deepEqual(details[0].rows.map(x=>x.id),['a','a','b']);
+ assert.equal(details[0].rows.map(x=>x.id).join(','),'a,a,b');
 });
 
 test('perfil de infratores usa os dados dos infratores, sem misturar vítimas e sem escapar filtro',()=>{
@@ -82,14 +82,14 @@ test('perfil de infratores usa os dados dos infratores, sem misturar vítimas e 
  api.perfil([o1,o3],'infrator','chartInfratores','perfilInfratores');
  const all=links.find(x=>x.title.endsWith('pessoas identificadas'));
  assert.equal(all.value,3);
- assert.deepEqual(all.rows.map(o=>o.id),['a','a','c']);
+ assert.equal(all.rows.map(o=>o.id).join(','),'a,a,c');
  assert.match(boxes.perfilInfratores.innerHTML,/Pessoas identificadas/);
  const nacionalidadeBr=links.find(x=>x.title.includes('nacionalidade BR'));
  assert.equal(nacionalidadeBr.value,1);
- assert.deepEqual(nacionalidadeBr.rows.map(o=>o.id),['a']);
+ assert.equal(nacionalidadeBr.rows.map(o=>o.id).join(','),'a');
  const pending=links.find(x=>x.title.endsWith('idade pendente'));
  assert.equal(pending.value,1);
- assert.deepEqual(pending.rows.map(o=>o.id),['c']);
+ assert.equal(pending.rows.map(o=>o.id).join(','),'c');
 });
 
 test('só consulta registros da seleção atual, sem criar outro RPC e sem mudar totais',()=>{
