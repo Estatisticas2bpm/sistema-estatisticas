@@ -1,5 +1,41 @@
 # Google Sheets multiunidade — arquitetura da Fase 3D-D
 
+
+## Estado final — 18/10/2026: integração inteiramente ENCERRADA
+
+> **Decisão do CPC:** Nenhuma unidade do SIE-CPC utiliza mais Google Sheets
+> como destino de dados. Isso inclui o **1º BPM e o 2º BPM**.
+> O banco de dados PostgreSQL do Supabase passou a ser a única fonte operacional.
+
+A migração `20261019000000_encerrar_sheets_arquivar_historico_e_liberar_espaco.sql`:
+
+- desativa as duas integrações ainda ativas, sem excluir as planilhas existentes
+  na conta Google do proprietário;
+- remove os gatilhos que criavam tarefas de saída durante cadastro, edição ou
+  exclusão de BOs; as funções históricas ficam inativas, sem afetar outras RPCs;
+- registra `sync_status='NAO_APLICAVEL'` para **todas** as ocorrências;
+  não houve exclusão de BOs, nem alterações de estatísticas/documentos;
+- antes de liberar espaço, **arquiva no schema privado** todos os 11.330 eventos
+  em forma compacta (identificador, versão, data, resultado e hash do payload),
+  e o payload integral da **última versão de cada um dos 3.316 identificadores**,
+  incluindo 34 que não têm BO atual;
+- valida os totais do arquivo e esvazia a outbox com `TRUNCATE`, que devolve
+  imediatamente suas páginas e índices ao PostgreSQL;
+- retira do portal os atalhos de Google Sheets e evita a consulta RPC de planilhas
+  durante o login.
+
+**Nota de auditoria:** O arquivo compacto não armazena integralmente os
+payloads de cada versão intermediária; preserva seus metadados e hashes,
+além do último payload integral por identificador. Antes de reverter esta
+decisão, seria preciso redesenhar o fluxo e obter autorização institucional.
+
+**Os trechos abaixo são documentação histórica descontinuada**, e não instruções
+para reativar o Google Sheets.
+
+---
+
+
+
 > **DECISÃO DEFINITIVA DE 18/10/2026 — CANCELAMENTO DA EXPANSÃO:**
 > O SIE-CPC sincroniza dados com Google Sheets **somente do 1º BPM e do 2º BPM**.
 > Todas as demais unidades (CIPTUR, GIRO, BOPE e subunidades, CIPA, CIPG,
