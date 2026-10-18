@@ -12,6 +12,7 @@ main{padding:22px 0 70px}.panel{background:#fff;border:1px solid var(--line);bor
 .panel h2{margin:0 0 5px;color:var(--navy)}.sub{margin:0 0 17px;color:var(--muted);line-height:1.45}
 .formgrid{display:grid;grid-template-columns:220px 1fr;gap:13px}.campo{position:relative}.campo label{display:block;font-size:12px;font-weight:900;color:#455b70;margin-bottom:5px}
 .campo input,.campo select{width:100%;padding:12px;border:1px solid #cbd7e2;border-radius:10px;font:inherit;background:#fff}.campo input:focus,.campo select:focus{outline:2px solid #0e4f8a22;border-color:#6d9bbc}
+.campo .opcaoEtilometro{display:inline-flex;align-items:center;gap:8px;width:auto;margin:0;min-height:34px;padding:6px 12px;border:1px solid #cbd7e2;border-radius:9px;font-size:13px;font-weight:750;color:#26384b;cursor:pointer}.campo .opcaoEtilometro input{appearance:none;width:17px;height:17px;flex:none;margin:0;padding:0;border:2px solid #8297aa;border-radius:3px;background:#fff;cursor:pointer}.campo .opcaoEtilometro input:checked{background:var(--blue);border-color:var(--blue);box-shadow:inset 0 0 0 3px #fff}.campo .opcaoEtilometro input:focus-visible{outline:3px solid #2a75bf;outline-offset:3px}.campoEtilometro{grid-column:1/-1;border:0;margin:0;padding:0;min-width:0}.campoEtilometro legend{padding:0;margin-bottom:7px;font-size:12px;font-weight:900;color:#455b70}.opcoesEtilometro{display:flex;gap:12px;flex-wrap:wrap}
 .hint{font-size:11px;color:var(--muted);margin-top:5px}.resultado{margin-top:16px;border:1px solid #cfe0ea;background:#f8fbfd;border-radius:13px;padding:15px;display:none}
 .resultado.show{display:block}.resultado h3{margin:0 0 9px;color:var(--navy);font-size:16px}.meta{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
 .meta div{background:#fff;border:1px solid #e0e8ef;border-radius:9px;padding:10px}.meta small{display:block;color:var(--muted);font-weight:800;margin-bottom:4px}.meta strong{color:var(--navy)}
@@ -59,6 +60,15 @@ main{padding:22px 0 70px}.panel{background:#fff;border:1px solid var(--line);bor
         <label>Tipo de veículo removido *</label>
         <select id="tipoVeiculo"><option value="">Selecione...</option><option value="CARRO">Carro</option><option value="MOTO">Moto</option></select>
       </div>
+    </div>
+    <div class="formgrid" style="margin-top:13px">
+      <fieldset class="campo campoEtilometro">
+        <legend>Houve teste de etilômetro? *</legend>
+        <div class="opcoesEtilometro">
+          <label class="opcaoEtilometro"><input type="radio" name="houveTesteEtilometro" value="SIM" required> Sim</label>
+          <label class="opcaoEtilometro"><input type="radio" name="houveTesteEtilometro" value="NAO" required> Não</label>
+        </div>
+      </fieldset>
     </div>
     <div id="resultado" class="resultado">
       <h3 id="descricao">—</h3>
@@ -145,7 +155,7 @@ async function carregarCatalogo(){
 function podeEditar(r){const p=auth.perfil.perfil;return p==='ADMIN'||p==='ESTATISTICA'||String(r.criado_por)===String(auth.user.id)}
 function podeExcluir(){return ['ADMIN','ESTATISTICA'].includes(auth.perfil.perfil)}
 async function carregarRegistros(){
-  const r=await db.from('ciptur_autos_infracao').select('id,data_infracao,codigo_infracao,agente_autuador_id,agente_codigo_snapshot,agente_nome_snapshot,descricao_snapshot,base_legal_snapshot,pontos_snapshot,gravidade_snapshot,valor_snapshot,valor_texto_snapshot,houve_remocao,tipo_veiculo_removido,criado_por,criado_em').order('data_infracao',{ascending:false}).order('criado_em',{ascending:false}).limit(100);
+  const r=await db.from('ciptur_autos_infracao').select('id,data_infracao,codigo_infracao,agente_autuador_id,agente_codigo_snapshot,agente_nome_snapshot,descricao_snapshot,base_legal_snapshot,pontos_snapshot,gravidade_snapshot,valor_snapshot,valor_texto_snapshot,houve_remocao,tipo_veiculo_removido,houve_teste_etilometro,criado_por,criado_em').order('data_infracao',{ascending:false}).order('criado_em',{ascending:false}).limit(100);
   if(r.error)throw r.error;registros=r.data||[];renderTabela();
 }
 function renderTabela(){
@@ -159,11 +169,17 @@ function renderTabela(){
 function editar(id){
   const r=registros.find(x=>x.id===id);if(!r)return;editandoId=id;$('dataInfracao').value=r.data_infracao;$('codigo').value=r.codigo_infracao;
   $('houveRemocao').value=r.houve_remocao?'SIM':'NAO';alternarRemocao();$('tipoVeiculo').value=r.houve_remocao?(r.tipo_veiculo_removido||''):'';
+  marcarTesteEtilometro(r.houve_teste_etilometro);
   if(r.agente_autuador_id)selecionarAgente({id:r.agente_autuador_id,codigo:r.agente_codigo_snapshot,nome:r.agente_nome_snapshot,codigo_ambiguo:false});else selecionarAgente(null);
   selecionar(catalogo.find(c=>c.codigo===r.codigo_infracao));$('salvar').textContent='Salvar alteração';$('cancelarEdicao').hidden=false;window.scrollTo({top:0,behavior:'smooth'});
 }
 function alternarRemocao(){const sim=$('houveRemocao').value==='SIM';$('campoTipoVeiculo').hidden=!sim;$('tipoVeiculo').required=sim;if(!sim)$('tipoVeiculo').value=''}
-function cancelar(){editandoId=null;$('codigo').value='';selecionarAgente(null);$('houveRemocao').value='NAO';alternarRemocao();selecionar(null);$('salvar').textContent='Salvar A.I.';$('cancelarEdicao').hidden=true;limparStatus()}
+function marcarTesteEtilometro(valor){
+  document.querySelectorAll('input[name="houveTesteEtilometro"]').forEach(input=>{
+    input.checked=valor===true?input.value==='SIM':valor===false?input.value==='NAO':false;
+  });
+}
+function cancelar(){editandoId=null;$('codigo').value='';selecionarAgente(null);$('houveRemocao').value='NAO';alternarRemocao();marcarTesteEtilometro(null);selecionar(null);$('salvar').textContent='Salvar A.I.';$('cancelarEdicao').hidden=true;limparStatus()}
 async function excluir(id){
   if(!confirm('Excluir este lançamento de A.I.?'))return;
   const r=await db.from('ciptur_autos_infracao').delete().eq('id',id);if(r.error){status('Não foi possível excluir: '+r.error.message,'erro');return}
@@ -179,9 +195,11 @@ $('formAi').addEventListener('submit',async e=>{
   const data=$('dataInfracao').value;if(!data){status('Informe a data.','erro');return}
   const houveRemocao=$('houveRemocao').value==='SIM',tipoVeiculo=houveRemocao?$('tipoVeiculo').value:null;
   if(houveRemocao&&!tipoVeiculo){status('Informe se o veículo removido foi carro ou moto.','erro');return}
+  const testeEtilometro=document.querySelector('input[name="houveTesteEtilometro"]:checked')?.value;
+  if(!['SIM','NAO'].includes(testeEtilometro)){status('Informe se houve teste de etilômetro.','erro');return}
   const b=$('salvar');b.disabled=true;b.textContent='Salvando...';
   try{
-    let r,payload={data_infracao:data,codigo_infracao:selecionado.codigo,agente_autuador_id:agenteSelecionado.id,houve_remocao:houveRemocao,tipo_veiculo_removido:tipoVeiculo};
+    let r,payload={data_infracao:data,codigo_infracao:selecionado.codigo,agente_autuador_id:agenteSelecionado.id,houve_remocao:houveRemocao,tipo_veiculo_removido:tipoVeiculo,houve_teste_etilometro:testeEtilometro==='SIM'};
     if(editandoId)r=await db.from('ciptur_autos_infracao').update(payload).eq('id',editandoId);
     else r=await db.from('ciptur_autos_infracao').insert({...payload,unidade_id:auth.contexto.unidade_id});
     if(r.error)throw r.error;
