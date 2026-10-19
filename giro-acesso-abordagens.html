@@ -33,7 +33,7 @@ h2{margin:11px 0 6px;color:var(--navy);font-size:24px}.sub{margin:0 0 20px;color
     <a href="index.html">← Página inicial</a>
   </div>
 </header>
-<main><section class="panel"><span class="tag">GIRO · Contas individuais</span><h2>Gerenciar policiais</h2><p class="sub">Cada policial utiliza seu e-mail, senha e matrícula. As abordagens ficam associadas à identidade autenticada. A sessão permanece no celular enquanto válida.</p><p><a class="btn" href="giro-abordagem.html" target="_blank" rel="noopener">Abrir formulário mobile ↗</a> <a class="btn" href="giro-ranking-abordagens.html">Ranking e auditoria de abordagens ↗</a></p>
+<main><section class="panel"><span class="tag">GIRO · Contas individuais</span><h2>Gerenciar policiais</h2><p class="sub">Cada policial utiliza seu e-mail, senha e matrícula. As abordagens ficam associadas à identidade autenticada. A sessão permanece no celular enquanto válida.</p><p><a class="btn" id="linkGiroFormulario" href="giro-abordagem.html" target="_blank" rel="noopener">Abrir formulário mobile ↗</a> <a class="btn" href="giro-ranking-abordagens.html">Ranking e auditoria de abordagens ↗</a></p>
 <h3>Cadastrar policial</h3><form id="novo" class="grid">
 <div class="campo"><label>Nome completo *</label><input name="nome_completo" required minlength="3" maxlength="120"></div>
 <div class="campo"><label>Nome de guerra *</label><input name="nome_guerra" required minlength="2" maxlength="100"></div>
@@ -51,6 +51,10 @@ h2{margin:11px 0 6px;color:var(--navy);font-size:24px}.sub{margin:0 0 20px;color
 (async()=>{
 const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const auth=await window.SistemaAuth.ready;
+if(String(auth?.perfil?.perfil||'').toUpperCase()==='ADMIN'){
+  const link=document.getElementById('linkGiroFormulario');
+  if(link){link.href='giro-abordagem.html?admin=1';link.textContent='Abrir formulário GIRO (ADMIN) ↗';}
+}
 if(!auth?.client){$('status').textContent='Acesso administrativo indisponível.';return}
 async function api(body){const {data,error}=await auth.client.functions.invoke('admin-users',{body});if(error)throw error;if(data?.error)throw Error(data.error);return data}
 let policiais=[];
