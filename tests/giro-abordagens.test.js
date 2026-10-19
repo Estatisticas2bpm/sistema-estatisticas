@@ -26,7 +26,10 @@ assert.match(mobile,/data-idade/);
 assert.match(mobile,/Adicionar pessoa/);
 assert.match(mobile,/navigator\.geolocation\.getCurrentPosition/);
 assert.match(mobile,/registrar_abordagem_giro/);
-assert.doesNotMatch(mobile,/auth-guard\.js/);
+// Contas GIRO continuam com login isolado; guarda central só em ?admin=1.
+assert.match(mobile,/if\(!MODO_ADMIN_GIRO\)/);
+assert.match(mobile,/await carregarGuardaAdmin\('auth-guard\.js'\)/);
+assert.match(mobile,/auth\.perfil\.ativo===true/);
 assert.match(mobile,/geocodePromise/);
 assert.match(mobile,/id="localManualBox"/);
 assert.match(mobile,/id="bairroManual"/);
