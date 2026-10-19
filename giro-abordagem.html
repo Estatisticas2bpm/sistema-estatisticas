@@ -42,7 +42,9 @@ input:focus{outline:3px solid #bfdbfe;border-color:#60a5fa}.btn{border:0;border-
 <main>
   <section id="adminBox" class="card login hidden">
     <h1>Acesso ADMIN — GIRO</h1>
-    <p class="sub">Para registrar abordagens como administrador, volte ao SIE-CPC, selecione <strong>GIRO</strong> no campo Unidade de trabalho e abra novamente este módulo. A autoria será identificada com sua própria conta ADMIN.</p>
+    <p id="adminOrientacao" class="sub">Para registrar abordagens, ative a unidade de trabalho GIRO com sua conta ADMIN. A troca será registrada na auditoria e não altera sua unidade principal.</p>
+    <div class="campo"><button id="ativarContextoGiro" class="btn primary hidden" type="button">Ativar contexto GIRO e abrir formulário</button></div>
+    <div id="adminStatus" class="status" role="status" aria-live="polite"></div>
     <p><a class="btn gray" href="index.html">← Voltar ao SIE-CPC</a></p>
   </section>
   <section id="loginBox" class="card login hidden">
@@ -317,6 +319,52 @@ $('salvar').onclick=async()=>{
   }finally{b.disabled=false;b.textContent='SALVAR ABORDAGEM'}
 };
 window.iniciarMapaGiro=function(){try{geocoder=new google.maps.Geocoder()}catch(e){console.warn(e)}};
+function exibirBloqueioAdmin(auth){
+  $('loading').classList.add('hidden');
+  $('loginBox').classList.add('hidden');
+  $('formBox').classList.add('hidden');
+  $('adminBox').classList.remove('hidden');
+  $('ativarContextoGiro').classList.add('hidden');
+  const administrador=auth?.perfil?.perfil==='ADMIN'&&auth.perfil?.ativo===true;
+  const contexto=String(auth?.contexto?.sigla||'').toUpperCase();
+  if(!administrador){
+    $('adminOrientacao').textContent='Esta funcionalidade exige uma conta ADMIN ativa do SIE-CPC.';
+    return;
+  }
+  if(contexto==='GIRO'){
+    $('adminOrientacao').textContent='A unidade GIRO já está selecionada. Não foi possível confirmar a sessão ou a permissão de registro. Retorne ao SIE-CPC, atualize a página e tente novamente.';
+    return;
+  }
+  $('adminOrientacao').textContent='A unidade de trabalho atual é '+(auth.contexto?.nome||contexto||'outra unidade')+'. Ative GIRO abaixo para abrir o formulário com sua conta ADMIN. Sua unidade principal não será alterada e a troca ficará registrada na auditoria.';
+  $('ativarContextoGiro').classList.remove('hidden');
+}
+async function ativarContextoGiroAdmin(){
+  const botao=$('ativarContextoGiro');
+  botao.disabled=true;
+  status('adminStatus','Validando o acesso e selecionando GIRO...','info');
+  try{
+    const auth=await window.SistemaAuth?.ready;
+    if(!auth?.client||auth.perfil?.perfil!=='ADMIN'||auth.perfil?.ativo!==true||!auth.user?.id)
+      throw new Error('Somente uma sessão ADMIN ativa pode alternar a unidade de trabalho.');
+    const sess=await auth.client.auth.getUser();
+    if(sess.error||sess.data?.user?.id!==auth.user.id)
+      throw new Error('A sessão ADMIN não pôde ser validada. Entre novamente no SIE-CPC.');
+    const unidades=await auth.client.rpc('listar_unidades_contexto_admin');
+    if(unidades.error)throw unidades.error;
+    const giro=(unidades.data||[]).find(u=>String(u.sigla||'').toUpperCase()==='GIRO');
+    if(!giro?.id)throw new Error('GIRO não está disponível entre as unidades autorizadas.');
+    const troca=await auth.client.rpc('definir_contexto_unidade_admin',{p_unidade_id:giro.id});
+    if(troca.error)throw troca.error;
+    if(String(troca.data?.sigla||'').toUpperCase()!=='GIRO'||troca.data?.aceita_registro_operacional!==true)
+      throw new Error('Não foi possível confirmar o contexto operacional GIRO.');
+    status('adminStatus','Contexto GIRO selecionado. Abrindo o formulário...','ok');
+    location.reload();
+  }catch(err){
+    status('adminStatus',err?.message||'Não foi possível ativar o contexto GIRO.','err');
+    botao.disabled=false;
+  }
+}
+$('ativarContextoGiro').addEventListener('click',ativarContextoGiroAdmin);
 function carregarGuardaAdmin(src){
   return new Promise((resolve,reject)=>{
     const script=document.createElement('script');
@@ -338,17 +386,11 @@ function carregarGuardaAdmin(src){
     const auth=await window.SistemaAuth.ready;
     if(!auth)return; // Guarda central já direciona ao login/MFA.
     if(await acessoValido())mostrarFormulario();
-    else {
-      $('loading').classList.add('hidden');
-      $('loginBox').classList.add('hidden');
-      $('formBox').classList.add('hidden');
-      $('adminBox').classList.remove('hidden');
-    }
+    else exibirBloqueioAdmin(auth);
   }catch(err){
     console.error('Acesso administrador GIRO:',err);
-    $('loading').classList.add('hidden');
-    $('loginBox').classList.add('hidden');
-    $('adminBox').classList.remove('hidden');
+    exibirBloqueioAdmin(null);
+    status('adminStatus','Falha ao verificar o acesso ADMIN. Atualize a página ou retorne ao SIE-CPC.','err');
   }
 })();
 </script>
