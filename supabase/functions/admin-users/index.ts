@@ -115,6 +115,7 @@ function podeGerenciarAcessoGiro(perfil: any) {
 async function acessoGiroAbordagens() {
   const { data, error } = await admin.from("giro_acessos_abordagem")
     .select("user_id,unidade_id,ativo,criado_em,atualizado_em")
+    .is("email", null)
     .limit(1)
     .maybeSingle();
   if (error) throw error;
@@ -362,7 +363,7 @@ Deno.serve(async (req: Request) => {
       return resposta({ok:true,users:await listar()});
     }
 
-    const acoesGiroIndividuais=new Set(["giro_users_list","giro_users_create","giro_users_toggle","giro_users_reset_password","giro_users_update"]);
+    const acoesGiroIndividuais=new Set(["giro_users_list","giro_users_create","giro_users_link_existing","giro_users_toggle","giro_users_reset_password","giro_users_update"]);
     if(acoesGiroIndividuais.has(action)){
       if(!podeGerenciarAcessoGiro(perfilCaller))return resposta({error:"Acesso restrito à administração ou estatística do GIRO."},403);
       const unidade=await unidadeGiro();
@@ -370,9 +371,59 @@ Deno.serve(async (req: Request) => {
       const listar=async()=>{
         const {data,error}=await admin.from("giro_acessos_abordagem").select("user_id,ativo,nome_completo,nome_guerra,matricula,posto_graduacao,email,criado_em").eq("unidade_id",unidade.id).order("criado_em",{ascending:false});
         if(error)throw error;
-        return (data||[]).filter((x:any)=>!!x.email && !!x.matricula && x.email.toLowerCase()!==GIRO_ABORDAGENS_EMAIL);
+        const pessoas=(data||[]).filter((x:any)=>!!x.email && !!x.matricula && x.email.toLowerCase()!==GIRO_ABORDAGENS_EMAIL);
+        if(!pessoas.length)return [];
+        const {data:perfis,error:perfisError}=await admin.from("perfis_usuarios")
+          .select("user_id").in("user_id",pessoas.map((x:any)=>x.user_id));
+        if(perfisError)throw perfisError;
+        const idsSie=new Set((perfis||[]).map((p:any)=>p.user_id));
+        return pessoas.map((x:any)=>({...x,conta_sie:idsSie.has(x.user_id)}));
       };
       if(action==="giro_users_list")return resposta({users:await listar()});
+      if(action==="giro_users_link_existing"){
+        // Conta já existente no SIE-CPC: reutiliza o UUID e preserva senha e permissões atuais.
+        const nome=limpar(body.nome_completo),nomeGuerra=limpar(body.nome_guerra);
+        const matricula=limpar(body.matricula),postoGraduacao=upper(body.posto_graduacao);
+        const email=limpar(body.email).toLowerCase();
+        if(nome.length<3||nome.length>120) return resposta({error:"Informe o nome completo do policial."},400);
+        if(nomeGuerra.length<2||nomeGuerra.length>100) return resposta({error:"Informe o nome de guerra."},400);
+        if(!postosGraduacoesValidos.has(postoGraduacao)) return resposta({error:"Selecione o posto ou graduação."},400);
+        if(!/^[a-zA-Z0-9.-]{3,30}$/.test(matricula)) return resposta({error:"Informe matrícula válida (3 a 30 caracteres)."},400);
+        if(!email.includes("@")||email.length>254||email===GIRO_ABORDAGENS_EMAIL)
+          return resposta({error:"Informe um e-mail individual válido."},400);
+        const {data:perfilExistente,error:perfilError}=await admin.from("perfis_usuarios")
+          .select("user_id,ativo,unidade_id,nome_guerra,matricula")
+          .ilike("email",email).maybeSingle();
+        if(perfilError)throw perfilError;
+        if(!perfilExistente)return resposta({error:"Este e-mail não pertence a uma conta de usuário do SIE-CPC. Para policial novo, desmarque a opção de conta existente."},404);
+        if(perfilExistente.ativo!==true||perfilExistente.unidade_id!==unidade.id)
+          return resposta({error:"O usuário do SIE-CPC precisa estar ativo e pertencer à unidade GIRO para ser vinculado."},403);
+        if(perfilExistente.nome_guerra && upper(perfilExistente.nome_guerra)!==upper(nomeGuerra))
+          return resposta({error:"O nome de guerra não confere com a conta existente no SIE-CPC. Verifique os dados do policial antes de vincular."},409);
+        if(perfilExistente.matricula && upper(perfilExistente.matricula)!==upper(matricula))
+          return resposta({error:"A matrícula não confere com o cadastro existente no SIE-CPC."},409);
+        const {data:conta,error:contaError}=await admin.auth.admin.getUserById(perfilExistente.user_id);
+        if(contaError||!conta?.user||limpar(conta.user.email).toLowerCase()!==email)
+          return resposta({error:"Não foi possível validar a conta existente. Confirme o e-mail de login no SIE-CPC."},409);
+        const {data:vinculo,error:vinculoError}=await admin.from("giro_acessos_abordagem")
+          .select("user_id").eq("user_id",perfilExistente.user_id).maybeSingle();
+        if(vinculoError)throw vinculoError;
+        if(vinculo)return resposta({error:"Este policial já possui vínculo no Giro Abordagens. Use a lista de cadastrados para reativar, se necessário."},409);
+        const {data:matriculaEmUso,error:matriculaError}=await admin.from("giro_acessos_abordagem")
+          .select("user_id").ilike("matricula",matricula).limit(1).maybeSingle();
+        if(matriculaError)throw matriculaError;
+        if(matriculaEmUso)return resposta({error:"Esta matrícula já está vinculada a outro policial no Giro Abordagens."},409);
+        const {error:insertError}=await admin.from("giro_acessos_abordagem").insert({
+          user_id:perfilExistente.user_id,unidade_id:unidade.id,ativo:true,
+          nome_completo:nome,nome_guerra:nomeGuerra,matricula,posto_graduacao:postoGraduacao,email
+        });
+        if(insertError){
+          if(insertError.code==="23505")return resposta({error:"Já existe um acesso para esta conta ou matrícula no Giro Abordagens."},409);
+          throw insertError;
+        }
+        await log(caller.id,"VINCULOU_CONTA_EXISTENTE_GIRO","giro_acesso_abordagem",perfilExistente.user_id,{matricula,origem:"conta_sie"});
+        return resposta({ok:true,users:await listar()});
+      }
       if(action==="giro_users_create"){
         const nome=limpar(body.nome_completo),nomeGuerra=limpar(body.nome_guerra),matricula=limpar(body.matricula),postoGraduacao=upper(body.posto_graduacao),email=limpar(body.email).toLowerCase(),password=limpar(body.password);
         if(nome.length<3||nome.length>120)throw new Error("Informe o nome completo.");
@@ -380,11 +431,30 @@ Deno.serve(async (req: Request) => {
         if(!postosGraduacoesValidos.has(postoGraduacao))throw new Error("Selecione o posto ou graduação.");
         if(!/^[a-zA-Z0-9.-]{3,30}$/.test(matricula))throw new Error("Informe matrícula válida (3 a 30 caracteres).");
         if(!email.includes("@")||email.length>254)throw new Error("Informe e-mail individual válido.");
+        if(email===GIRO_ABORDAGENS_EMAIL)return resposta({error:"O e-mail compartilhado antigo do GIRO não pode ser reutilizado."},400);
         if(password.length<12)throw new Error("A senha inicial precisa ter pelo menos 12 caracteres.");
+        const {data:perfilMesmoEmail,error:perfilMesmoEmailError}=await admin.from("perfis_usuarios")
+          .select("user_id").ilike("email",email).limit(1).maybeSingle();
+        if(perfilMesmoEmailError)throw perfilMesmoEmailError;
+        if(perfilMesmoEmail)return resposta({error:"Este e-mail já possui uma conta no SIE-CPC. Marque 'Já possui conta no SIE-CPC' para vincular, sem criar outra senha."},409);
+        const {data:matriculaEmUso,error:matriculaError}=await admin.from("giro_acessos_abordagem")
+          .select("user_id").ilike("matricula",matricula).limit(1).maybeSingle();
+        if(matriculaError)throw matriculaError;
+        if(matriculaEmUso)return resposta({error:"Esta matrícula já está cadastrada no Giro Abordagens."},409);
         const {data:created,error:authError}=await admin.auth.admin.createUser({email,password,email_confirm:true,user_metadata:{nome,nome_guerra:nomeGuerra,matricula,posto_graduacao:postoGraduacao}});
-        if(authError||!created.user)throw authError||new Error("Não foi possível criar a conta.");
+        if(authError){
+          if(authError.code==="email_exists"||/already been registered|already exists/i.test(authError.message||""))
+            return resposta({error:"Este e-mail já possui conta de acesso. Se for um policial cadastrado no SIE-CPC, utilize a opção de vincular conta existente."},409);
+          throw authError;
+        }
+        if(!created.user)throw new Error("Não foi possível criar a conta.");
         const {error:insertError}=await admin.from("giro_acessos_abordagem").insert({user_id:created.user.id,unidade_id:unidade.id,ativo:true,nome_completo:nome,nome_guerra:nomeGuerra,matricula,posto_graduacao:postoGraduacao,email});
-        if(insertError){await admin.auth.admin.deleteUser(created.user.id);throw insertError;}
+        if(insertError){
+          const {error:exclusaoError}=await admin.auth.admin.deleteUser(created.user.id);
+          if(exclusaoError)console.error("Falha ao desfazer conta GIRO após inserção:",exclusaoError.message);
+          if(insertError.code==="23505")return resposta({error:"Esta matrícula ou acesso já está cadastrado no GIRO."},409);
+          throw insertError;
+        }
         await log(caller.id,"CRIOU_ACESSO_INDIVIDUAL_GIRO","giro_acesso_abordagem",created.user.id,{matricula});
         return resposta({ok:true,users:await listar()});
       }
@@ -413,6 +483,8 @@ Deno.serve(async (req: Request) => {
         await log(caller.id,ativo?"REATIVOU_GIRO_INDIVIDUAL":"BLOQUEOU_GIRO_INDIVIDUAL","giro_acesso_abordagem",userId);
       }
       if(action==="giro_users_reset_password"){
+        const perfilSie=await perfilDoUsuario(userId);
+        if(perfilSie)return resposta({error:"Esta conta pertence ao SIE-CPC. O policial deve alterar ou recuperar a senha pelo acesso principal, sem redefini-la no GIRO."},409);
         const password=limpar(body.password);
         if(password.length<12)throw new Error("Senha mínima: 12 caracteres.");
         const {error}=await admin.auth.admin.updateUserById(userId,{password});
