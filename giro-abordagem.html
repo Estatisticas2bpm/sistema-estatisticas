@@ -40,6 +40,11 @@ input:focus{outline:3px solid #bfdbfe;border-color:#60a5fa}.btn{border:0;border-
   </div>
 </header>
 <main>
+  <section id="adminBox" class="card login hidden">
+    <h1>Acesso ADMIN — GIRO</h1>
+    <p class="sub">Para registrar abordagens como administrador, volte ao SIE-CPC, selecione <strong>GIRO</strong> no campo Unidade de trabalho e abra novamente este módulo. A autoria será identificada com sua própria conta ADMIN.</p>
+    <p><a class="btn gray" href="index.html">← Voltar ao SIE-CPC</a></p>
+  </section>
   <section id="loginBox" class="card login hidden">
     <h1>Acesso de patrulhamento</h1>
     <p class="sub">Acesso exclusivo para registro de abordagens do GIRO. Esta conta não permite consultar outros dados do SIE-CPC.</p>
@@ -52,6 +57,10 @@ input:focus{outline:3px solid #bfdbfe;border-color:#60a5fa}.btn{border:0;border-
   </section>
 
   <section id="formBox" class="hidden">
+    <section class="card hidden" id="giroAdminBanner">
+      <b>Modo administrador — unidade GIRO</b>
+      <p class="sub">Este registro será atribuído à sua conta ADMIN, identificando sua autoria. A unidade de trabalho deve permanecer GIRO.</p>
+    </section>
     <section class="card">
       <h2>Nova abordagem</h2>
       <p class="sub">Data e hora são registradas automaticamente ao salvar.</p>
@@ -96,7 +105,10 @@ input:focus{outline:3px solid #bfdbfe;border-color:#60a5fa}.btn{border:0;border-
 <script>
 const SUPABASE_URL='https://jppmhhukujigxupgskdk.supabase.co';
 const SUPABASE_KEY='sb_publishable_ZVnU35i2x9zwppQqYg7UYw_mzaT43aG';
-const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{storageKey:'sie-cpc-giro-abordagem-auth',persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+const MODO_ADMIN_GIRO=new URLSearchParams(location.search).get('admin')==='1';
+const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,MODO_ADMIN_GIRO
+  ? undefined // Sessão padrão do SIE-CPC; autenticada pela mesma guarda da página principal.
+  : {auth:{storageKey:'sie-cpc-giro-abordagem-auth',persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
 const $=id=>document.getElementById(id);
 let tipoSelecionado='',localizacao=null,contadorPessoas=0,geocoder=null,geocodePromise=null;
 
@@ -108,12 +120,26 @@ function mostrarLogin(){
   $('loading').classList.add('hidden');$('loginBox').classList.remove('hidden');$('formBox').classList.add('hidden');$('sair').classList.add('hidden');$('perfilGiro').classList.add('hidden');
 }
 function mostrarFormulario(){
-  $('loading').classList.add('hidden');$('loginBox').classList.add('hidden');$('formBox').classList.remove('hidden');$('sair').classList.remove('hidden');$('perfilGiro').classList.remove('hidden');
+  $('loading').classList.add('hidden');$('loginBox').classList.add('hidden');$('adminBox').classList.add('hidden');$('formBox').classList.remove('hidden');$('sair').classList.remove('hidden');
+  $('perfilGiro').classList.toggle('hidden',MODO_ADMIN_GIRO);
+  $('giroAdminBanner').classList.toggle('hidden',!MODO_ADMIN_GIRO);
+  $('sair').textContent=MODO_ADMIN_GIRO?'Voltar ao SIE-CPC':'Sair';
   if(!$('pessoas').children.length)adicionarPessoa();
 }
 async function acessoValido(){
   const {data:{session}}=await db.auth.getSession();
   if(!session?.user)return false;
+  if(MODO_ADMIN_GIRO){
+    // ADMIN nunca utiliza credenciais de abordagem compartilhadas ou de terceiros.
+    const auth=await window.SistemaAuth?.ready;
+    return !!auth?.user
+      && auth.user.id===session.user.id
+      && String(auth.perfil?.perfil||'').toUpperCase()==='ADMIN'
+      && auth.perfil.ativo===true
+      && String(auth.contexto?.sigla||'').toUpperCase()==='GIRO'
+      && auth.contexto.aceita_registro_operacional===true
+      && auth.contexto.somente_leitura_operacional!==true;
+  }
   const {data,error}=await db.from('giro_acessos_abordagem').select('user_id,ativo,nome_completo,nome_guerra,matricula').eq('user_id',session.user.id).eq('ativo',true).maybeSingle();
   return !error&&!!data&&!!data.nome_completo&&!!data.nome_guerra&&!!data.matricula;
 }
@@ -128,7 +154,10 @@ $('loginForm').addEventListener('submit',async e=>{
   }catch(err){status('loginStatus',err.message||'Não foi possível entrar.','err')}
   finally{b.disabled=false;b.textContent='Entrar'}
 });
-$('sair').onclick=async()=>{await db.auth.signOut({scope:'local'});mostrarLogin()};
+$('sair').onclick=async()=>{
+  if(MODO_ADMIN_GIRO){location.href='index.html';return;}
+  await db.auth.signOut({scope:'local'});mostrarLogin();
+};
 
 function criarPessoa(){
   contadorPessoas++;
@@ -288,8 +317,39 @@ $('salvar').onclick=async()=>{
   }finally{b.disabled=false;b.textContent='SALVAR ABORDAGEM'}
 };
 window.iniciarMapaGiro=function(){try{geocoder=new google.maps.Geocoder()}catch(e){console.warn(e)}};
+function carregarGuardaAdmin(src){
+  return new Promise((resolve,reject)=>{
+    const script=document.createElement('script');
+    script.src=src;script.onload=resolve;
+    script.onerror=()=>reject(new Error('Falha ao carregar autenticação SIE-CPC.'));
+    document.head.appendChild(script);
+  });
+}
 (async()=>{
-  if(await acessoValido())mostrarFormulario();else mostrarLogin();
+  if(!MODO_ADMIN_GIRO){
+    if(await acessoValido())mostrarFormulario();else mostrarLogin();
+    return;
+  }
+  try{
+    // Carrega a guarda completa somente no fluxo ADMIN: MFA, sessão, perfil e contexto.
+    // Contas operacionais GIRO continuam usando a sessão isolada.
+    await carregarGuardaAdmin('auth-config.js');
+    await carregarGuardaAdmin('auth-guard.js');
+    const auth=await window.SistemaAuth.ready;
+    if(!auth)return; // Guarda central já direciona ao login/MFA.
+    if(await acessoValido())mostrarFormulario();
+    else {
+      $('loading').classList.add('hidden');
+      $('loginBox').classList.add('hidden');
+      $('formBox').classList.add('hidden');
+      $('adminBox').classList.remove('hidden');
+    }
+  }catch(err){
+    console.error('Acesso administrador GIRO:',err);
+    $('loading').classList.add('hidden');
+    $('loginBox').classList.add('hidden');
+    $('adminBox').classList.remove('hidden');
+  }
 })();
 </script>
 <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB-IcfbT-uuHlYSNcvmhbSqkPGqh2wl4Rc&v=weekly&callback=iniciarMapaGiro"></script>
