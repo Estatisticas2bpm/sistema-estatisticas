@@ -2,10 +2,10 @@
 (function(root){
   'use strict';
   const unidades=[
-    {sigla:'GATE',nome:'GATE',curta:'GATE',simbolo:'✥',cor:'#8e303c'},
-    {sigla:'CHOQUE',nome:'Choque',curta:'CH',simbolo:'◈',cor:'#95632a'},
-    {sigla:'CANIL',nome:'Canil',curta:'K9',simbolo:'♞',cor:'#246b63'},
-    {sigla:'FORCA_TATICA',nome:'Força Tática',curta:'FT',simbolo:'✦',cor:'#23568f'}
+    {sigla:'GATE',nome:'GATE',curta:'GATE',simbolo:'✥',cor:'#8e303c',brasao:'assets/logos/bope-subunidades/gate.jpeg'},
+    {sigla:'CHOQUE',nome:'Choque',curta:'CH',simbolo:'◈',cor:'#95632a',brasao:'assets/logos/bope-subunidades/choque.jpeg'},
+    {sigla:'CANIL',nome:'Canil',curta:'K9',simbolo:'♞',cor:'#246b63',brasao:'assets/logos/bope-subunidades/canil.png'},
+    {sigla:'FORCA_TATICA',nome:'Força Tática',curta:'FT',simbolo:'✦',cor:'#23568f',brasao:'assets/logos/bope-subunidades/forca-tatica.jpeg'}
   ];
   function normalizar(s){return String(s||'').trim().toUpperCase()}
   function unidade(sigla){return unidades.find(u=>u.sigla===normalizar(sigla))||null}
