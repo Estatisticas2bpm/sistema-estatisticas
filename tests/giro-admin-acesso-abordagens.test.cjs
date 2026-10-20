@@ -41,8 +41,11 @@ test('backend autoriza somente ADMIN no contexto GIRO e preserva autoria de toda
  assert.doesNotMatch(sql,/ALTER POLICY giro_abordagens_insert_acesso_compartilhado/i);
  assert.doesNotMatch(sql,/DELETE FROM|TRUNCATE TABLE|DROP TABLE/i);
 });
-test('atalhos para ADMIN apontam à rota segura; estatística não recebe esse atalho',()=>{
- assert.match(home,/id="giroAdminAbordagensShortcut" href="giro-abordagem\.html\?admin=1" data-permission="usuarios"/);
+test('atalho de teste ADMIN só aparece quando a unidade ativa é GIRO',()=>{
+ assert.match(home,/id="giroAdminAbordagensShortcut" href="giro-abordagem\.html\?admin=1" hidden/);
+ assert.doesNotMatch(home,/id="giroAdminAbordagensShortcut"[^>]*data-permission=/);
+ assert.match(home,/if\(testarGiro\)testarGiro\.hidden=!\(modoGiro&&perfilGiro==='ADMIN'&&/);
+ assert.match(home,/String\(window\.SistemaAuth\?\.contexto\?\.sigla\|\|''\)\.toUpperCase\(\)==='GIRO'/);
  assert.match(config,/ADMIN: \["cadastro"/);
  assert.match(dashboard,/giroLink\.href='giro-abordagem\.html\?admin=1'/);
  assert.match(mgmt,/link\.href='giro-abordagem\.html\?admin=1'/);
