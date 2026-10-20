@@ -32,6 +32,11 @@
     .btnTco:hover{background:var(--verde);color:#fff}
     .btnExcluir{border:1px solid #dc3545;background:#fff;color:#c82333;border-radius:7px;padding:7px 10px;font-weight:bold;cursor:pointer}
     .btnExcluir:hover{background:#dc3545;color:#fff}.btnExcluir:disabled{opacity:.55;cursor:wait}
+    .btnVisualizar{display:inline-block;border:1px solid #0d6b62;background:#effbf7;color:#126456;border-radius:7px;padding:7px 10px;font-weight:700;cursor:pointer;margin-right:6px;min-height:0}
+    .detalheModal{border:1px solid #d7e0ea;border-radius:13px;box-shadow:0 20px 55px #132b4660;max-width:min(720px,95vw);width:100%;max-height:86vh;overflow:auto;padding:22px}
+    .detalheModal::backdrop{background:#132b4677}.detalheGrade{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.detalheCampo{background:#f5f8fb;padding:10px;border-radius:8px;min-width:0;overflow-wrap:anywhere}.detalheCampo b{display:block;font-size:11px;text-transform:uppercase;color:#64748b;margin-bottom:5px}.detalheAcao{display:flex;justify-content:flex-end;margin-top:16px}
+    @media(max-width:550px){.detalheGrade{grid-template-columns:1fr}}
+
     .tco-lista{display:flex;flex-wrap:wrap;gap:6px;min-width:140px}.tco-badge{display:inline-flex;align-items:center;gap:5px;background:#ecfdf5;border:1px solid #a7f3d0;color:#047857;border-radius:999px;padding:5px 8px;font-size:12px;font-weight:800;white-space:nowrap}.tco-vazio{color:#94a3b8;font-size:12px}.acoes-linha{white-space:nowrap}
     @media(max-width:700px) { .topo { align-items:flex-start; flex-direction:column; } .filtros { grid-template-columns:1fr; } button { width:100%; } }
   </style>
@@ -47,6 +52,12 @@
     <p id="status" class="status">Carregando ocorrências...</p><div id="filtroDashboard" class="filtro-dashboard" hidden>Lista selecionada no Dashboard <button id="limparFiltroDashboard" type="button">Limpar</button></div>
     <div class="tabela-wrap"><table><thead><tr><th>Data</th><th>Tipo</th><th>Nº BO</th><th>TCO vinculado</th><th>Ocorrência</th><th>Bairro</th><th>Ações</th></tr></thead><tbody id="resultado"></tbody></table></div>
   </section></main>
+  <dialog id="detalheOcorrencia" class="detalheModal" aria-labelledby="tituloDetalheOcorrencia">
+    <h2 id="tituloDetalheOcorrencia">Visualizar ocorrência</h2>
+    <p class="status">Consulta somente leitura. Nenhuma alteração será realizada.</p>
+    <div id="detalheConteudo" class="detalheGrade"></div>
+    <div class="detalheAcao"><button id="fecharDetalheOcorrencia" type="button">Fechar</button></div>
+  </dialog>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     const banco = supabase.createClient("https://jppmhhukujigxupgskdk.supabase.co","sb_publishable_ZVnU35i2x9zwppQqYg7UYw_mzaT43aG");
@@ -54,6 +65,32 @@
     const dataFiltro = document.getElementById("dataFiltro");
     const resultado = document.getElementById("resultado");
     const statusEl = document.getElementById("status");
+    const detalheModal = document.getElementById("detalheOcorrencia");
+    const detalheConteudo = document.getElementById("detalheConteudo");
+    let podeEditar = false;
+    const camposConsulta=[
+      ['numero_bo','Número do BO'],['tipo_registro','Documento'],['data_ocorrencia','Data da ocorrência'],
+      ['hora_inicial','Hora'],['ocorrencia','Ocorrência'],['crime','Tipificação'],
+      ['status_atendimento','Situação'],['municipio','Município'],['bairro','Bairro'],
+      ['endereco','Endereço'],['companhia','Companhia'],['sisc','SISC'],
+      ['turno','Turno'],['comandante','Comandante da viatura'],['vtr','Viatura'],
+      ['numero_prisoes','Prisões'],['numero_conduzidos','Conduzidos']
+    ];
+    async function visualizarOcorrencia(id){
+      detalheConteudo.textContent='Consultando dados autorizados...';
+      if(!detalheModal.open)detalheModal.showModal();
+      const r=await banco.from('ocorrencias')
+        .select('id,'+camposConsulta.map(c=>c[0]).join(',')).eq('id',id).maybeSingle();
+      if(r.error||!r.data){
+        detalheConteudo.textContent='Ocorrência não encontrada na unidade autorizada para sua conta.';
+        return;
+      }
+      detalheConteudo.innerHTML=camposConsulta.map(([chave,rotulo])=>{
+        const valor=chave==='data_ocorrencia'&&r.data[chave]?formatarData(r.data[chave]):r.data[chave];
+        return '<div class="detalheCampo"><b>'+escapar(rotulo)+'</b><span>'+escapar(valor==null||valor===''?'—':valor)+'</span></div>';
+      }).join('');
+    }
+    document.getElementById('fecharDetalheOcorrencia').onclick=()=>detalheModal.close();
     const filtroDashboardEl = document.getElementById("filtroDashboard");
     const parametrosIniciais = new URLSearchParams(location.search);
     let idsDashboard = new Set((parametrosIniciais.get("ids") || "").split(",").map(x=>x.trim()).filter(Boolean));
@@ -99,17 +136,21 @@
       resultado.innerHTML = dados.map(function(item) {
         const tcos = Array.isArray(item.tcos) ? item.tcos : [];
         const textoBotaoTco = tcos.length ? '＋ Outro TCO' : '＋ TCO';
-        const botaoTco = item.tipo_registro === "BO"
+        const botaoTco = podeEditar && item.tipo_registro === "BO"
           ? '<a class="btnTco" href="tco.html?bo_id='+encodeURIComponent(item.id)+'">'+textoBotaoTco+'</a>'
           : '';
+        const visualizar='<button type="button" class="btnVisualizar" data-id="'+escapar(item.id)+'">Visualizar</button>';
+        const acoesEscrita=podeEditar?botaoTco+'<a class="btnEditar" href="cadastro-base.html?id='+encodeURIComponent(item.id)+'">Editar</a><button class="btnExcluir" data-id="'+escapar(item.id)+'" data-bo="'+escapar(item.numero_bo)+'">Excluir</button>':'';
         return "<tr><td>" + formatarData(item.data_ocorrencia) + "</td><td>" +
           escapar(item.tipo_registro || "—") + "</td><td>" + escapar(item.numero_bo) +
-          "</td><td>" + renderTcos(item) + "</td><td>" + escapar(item.ocorrencia) + "</td><td>" + escapar(item.bairro || "—") + "</td><td class=\"acoes-linha\">"+botaoTco+"<a class=\"btnEditar\" href=\"cadastro-base.html?id="+encodeURIComponent(item.id)+"\">Editar</a><button class=\"btnExcluir\" data-id=\""+escapar(item.id)+"\" data-bo=\""+escapar(item.numero_bo)+"\">Excluir</button></td></tr>";
+          "</td><td>" + renderTcos(item) + "</td><td>" + escapar(item.ocorrencia) + "</td><td>" + escapar(item.bairro || "—") + "</td><td class=\"acoes-linha\">"+visualizar+acoesEscrita+"</td></tr>";
       }).join("");
     }
     resultado.addEventListener("click", async function(e) {
+      const visualizar=e.target.closest('.btnVisualizar');
+      if(visualizar){await visualizarOcorrencia(visualizar.dataset.id);return;}
       const botao = e.target.closest(".btnExcluir");
-      if (!botao) return;
+      if (!botao || !podeEditar) return;
       const numero = botao.dataset.bo || "este registro";
       if (botao.dataset.confirmado !== "sim") {
         document.querySelectorAll(".btnExcluir").forEach(function(b){ b.dataset.confirmado=""; b.textContent="Excluir"; });
@@ -138,7 +179,14 @@
     busca.addEventListener("keydown", function(e) { if (e.key === "Enter") { idsDashboard.clear(); carregar(); } });
     dataFiltro.addEventListener("change", function(){ idsDashboard.clear(); carregar(); });
     document.getElementById("limparFiltroDashboard").addEventListener("click", function(){ idsDashboard.clear(); filtroDashboardEl.hidden=true; history.replaceState(null,"","consulta.html"); carregar(); });
-    carregar();
+    (async()=>{
+      const auth=await window.SistemaAuth?.ready;
+      if(!auth?.user||!auth?.perfil)return;
+      // Ações dependem das permissões efetivas (papel + contexto).
+      // COMANDANTE e CONSULTA sempre visualizam sem botões de escrita.
+      podeEditar=auth.pode('cadastro') && ['ADMIN','ESTATISTICA','OPERADOR'].includes(String(auth.perfil.perfil||''));
+      await carregar();
+    })();
   </script>
 </body>
 </html>
