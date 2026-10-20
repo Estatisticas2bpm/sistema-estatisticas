@@ -1358,23 +1358,102 @@
     const formulario = document.getElementById("formOcorrencia");
     const origemOcorrenciaBope=document.getElementById("origemOcorrenciaBope");
     const origemOcorrenciaBopeDetalhe=document.getElementById("origemOcorrenciaBopeDetalhe");
+    let catalogoOrigensBope=[];
+    let origensBopeCarregadas=!origemOcorrenciaBope;
+    let origensBopeProntas=Promise.resolve([]);
+
+    function chaveOrigemBope(texto){
+      return String(texto||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+        .replace(/\s+/g," ").trim().toUpperCase();
+    }
+    async function carregarOrigensBope(valorPreferido){
+      if(!origemOcorrenciaBope)return [];
+      const manter=valorPreferido===undefined?origemOcorrenciaBope.value:valorPreferido;
+      const {data,error}=await banco.from("bope_origens_ocorrencia")
+        .select("id,nome").order("nome");
+      if(error){
+        origensBopeCarregadas=false;
+        document.getElementById("statusOrigensBope").textContent=
+          "Não foi possível carregar as origens do BOPE. Atualize a página e tente novamente.";
+        throw error;
+      }
+      catalogoOrigensBope=data||[];
+      const opcaoInicial=new Option("Selecione ou cadastre uma origem","");
+      origemOcorrenciaBope.replaceChildren(opcaoInicial);
+      catalogoOrigensBope.forEach(item=>origemOcorrenciaBope.add(new Option(item.nome,item.nome)));
+      const salvo=catalogoOrigensBope.find(item=>chaveOrigemBope(item.nome)===chaveOrigemBope(manter));
+      if(salvo)origemOcorrenciaBope.value=salvo.nome;
+      origensBopeCarregadas=true;
+      document.getElementById("statusOrigensBope").textContent=
+        catalogoOrigensBope.length
+          ? "Selecione uma origem já cadastrada ou clique em + para criar outra."
+          : "Nenhuma origem cadastrada. Clique em + para cadastrar a primeira.";
+      return catalogoOrigensBope;
+    }
+    function statusCadastroOrigemBope(mensagem,erro=false){
+      const el=document.getElementById("statusNovaOrigemBope");
+      if(!el)return;
+      el.hidden=!mensagem;
+      el.style.color=erro?"#b42318":"#13795b";
+      el.textContent=mensagem||"";
+    }
     if(origemOcorrenciaBope){
-      origemOcorrenciaBope.addEventListener("change",()=>{
-        origemOcorrenciaBopeDetalhe.required=origemOcorrenciaBope.value==="OUTRA";
+      origensBopeProntas=carregarOrigensBope().catch(erro=>{
+        console.error("Falha ao buscar catálogo de origens do BOPE:",erro);
+        return [];
+      });
+      const modal=document.getElementById("modalNovaOrigemBope");
+      const novoNome=document.getElementById("novaOrigemBope");
+      const salvar=document.getElementById("salvarNovaOrigemBope");
+      document.getElementById("abrirNovaOrigemBope").addEventListener("click",()=>{
+        novoNome.value="";
+        statusCadastroOrigemBope("");
+        modal.showModal();
+        novoNome.focus();
+      });
+      document.getElementById("cancelarNovaOrigemBope").addEventListener("click",()=>modal.close());
+      document.getElementById("formNovaOrigemBope").addEventListener("submit",async evento=>{
+        evento.preventDefault();
+        if(salvar.disabled)return;
+        const nome=novoNome.value.replace(/\s+/g," ").trim();
+        if(nome.length<2||nome.length>120){
+          statusCadastroOrigemBope("Informe o nome da origem, de 2 a 120 caracteres.",true);
+          return;
+        }
+        salvar.disabled=true;
+        salvar.textContent="Salvando...";
+        statusCadastroOrigemBope("Gravando origem no banco de dados...");
+        try{
+          const {data,error}=await banco.rpc("cadastrar_origem_ocorrencia_bope",{p_nome:nome});
+          if(error)throw error;
+          if(!data?.id||!data?.nome)throw Error("O servidor não confirmou o cadastro.");
+          await carregarOrigensBope(data.nome);
+          if(origemOcorrenciaBope.value!==data.nome)
+            throw Error("Origem gravada, mas não foi possível selecioná-la. Reabra a página.");
+          modal.close();
+        }catch(erro){
+          console.error("Falha no cadastro de origem do BOPE:",erro);
+          statusCadastroOrigemBope("Não foi possível salvar: "+(erro.message||"erro desconhecido"),true);
+        }finally{
+          salvar.disabled=false;
+          salvar.textContent="Salvar origem";
+        }
       });
     }
-    function sugerirOrigemBopePdf(texto){
+    async function sugerirOrigemBopePdf(texto){
       if(!origemOcorrenciaBope)return;
-      // Uma nova importação não deve conservar a origem de outro documento.
+      // Nunca cadastrar automaticamente: o operador controla o catálogo.
+      await origensBopeProntas;
       origemOcorrenciaBope.value="";
       origemOcorrenciaBopeDetalhe.value="";
-      origemOcorrenciaBope.dispatchEvent(new Event("change"));
-      // Extrair apenas quando o BO indica explicitamente sua origem; nenhuma inferência pelo histórico.
-      const descricao=String(texto||"").match(/(?:ORIGEM\s+(?:DA\s+)?(?:OCORR[ÊE]NCIA|ATUA[ÇC][ÃA]O)|ACIONAMENTO\s+POR)\s*[:\-]\s*([^\n\r]{2,90})/i)?.[1]||"";
-      if(!descricao)return;
-      const k=descricao.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase();
-      origemOcorrenciaBope.value=/REDE\s+FALCAO/.test(k)?"REDE_FALCAO":/\bCCC\b/.test(k)?"CCC":/\bMISSAO\b/.test(k)?"MISSAO":/\bPATRULHAMENTO\b/.test(k)?"PATRULHAMENTO":"";
-      if(origemOcorrenciaBope.value)origemOcorrenciaBope.dispatchEvent(new Event("change"));
+      const descricao=String(texto||"").match(/(?:ORIGEM\s+(?:DA\s+)?(?:OCORR[ÊE]NCIA|ATUA[ÇC][ÃA]O)|ACIONAMENTO\s+POR)\s*[:\-]\s*([^\n\r]{2,120})/i)?.[1]||"";
+      const informado=chaveOrigemBope(descricao);
+      if(!informado)return;
+      const encontrado=catalogoOrigensBope.find(item=>{
+        const k=chaveOrigemBope(item.nome);
+        return k&&(informado===k||informado.startsWith(k+" ")||informado.startsWith(k+"-"));
+      });
+      if(encontrado)origemOcorrenciaBope.value=encontrado.nome;
     }
     const latitudeManual=document.getElementById("latitudeManual");
     const longitudeManual=document.getElementById("longitudeManual");
@@ -2180,7 +2259,7 @@
         }
         if (texto.trim().length < 150) throw new Error("Não foi possível encontrar texto suficiente no PPE, mesmo após a leitura das páginas como imagem.");
         const dados = extrairDadosOcorrenciaPdf(texto);
-        sugerirOrigemBopePdf(texto);
+        await sugerirOrigemBopePdf(texto);
         if (!dados.numeroBo && !dados.data && !dados.historico) throw new Error("O documento não corresponde ao modelo de ocorrência reconhecido pelo sistema.");
         if (!catalogos.tipos.length) await carregarCatalogos();
         if (PDF_CORE) {
@@ -2557,7 +2636,12 @@
       botao.textContent = "Salvar alterações";
       window.scrollTo({top:0});
     }
-    carregarCatalogos().then(function(){ if (idEdicao) carregarParaEdicao(); });
+    carregarCatalogos().then(async function(){
+      if (idEdicao) {
+        await origensBopeProntas;
+        await carregarParaEdicao();
+      }
+    });
 
     function mostrarErroCampo(id, mensagem) {
       const el = document.getElementById(id);
@@ -2593,8 +2677,10 @@
       if (document.getElementById("resultadoOutro").checked && !document.getElementById("outroResultadoDescricao").value.trim()) return mostrarErroCampo("outroResultadoDescricao","Descreva o outro resultado do atendimento.");
       if(origemOcorrenciaBope && !idEdicao && !origemOcorrenciaBope.value)
         return mostrarErroCampo("origemOcorrenciaBope","Informe a origem da ocorrência do BOPE.");
-      if(origemOcorrenciaBope?.value==="OUTRA"&&!origemOcorrenciaBopeDetalhe.value.trim())
-        return mostrarErroCampo("origemOcorrenciaBopeDetalhe","Descreva a origem da ocorrência quando selecionar OUTRA.");
+      if(origemOcorrenciaBope?.value && !origensBopeCarregadas)
+        return mostrarErroCampo("origemOcorrenciaBope","Aguarde a atualização do catálogo de origens do BOPE.");
+      if(origemOcorrenciaBope?.value && !catalogoOrigensBope.some(item=>item.nome===origemOcorrenciaBope.value))
+        return mostrarErroCampo("origemOcorrenciaBope","Selecione uma origem do catálogo oficial do BOPE ou cadastre-a no botão +.");
       if (document.getElementById("autoResistenciaMorte").value==="SIM" && document.getElementById("autoResistencia").value!=="SIM")
         return mostrarErroCampo("autoResistencia","Para registrar resultado morte, selecione SIM no Auto de resistência/prisão.");
       if (coordenadasManuaisDigitadas()&&!coordenadasManuaisValidas())
