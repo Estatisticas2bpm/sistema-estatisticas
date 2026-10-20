@@ -17,7 +17,7 @@ begin
   if length(v_nome)<2 then raise exception 'Nome de bairro inválido.'; end if;
   insert into public.bairros(nome,ativo) values(v_nome,true) on conflict(nome) do update set ativo=true;
   return v_nome;
-end; $function$
+end; $function$;
 
 
 -- Protege cadastrar_comandante_publico
@@ -55,7 +55,7 @@ begin
   insert into public.comandantes(nome) values (v_nome);
   return v_nome;
 end;
-$function$
+$function$;
 
 
 -- Protege cadastrar_endereco_publico
@@ -78,7 +78,7 @@ begin
   insert into public.enderecos_padronizados(logradouro,bairro,ativo) values(v_logradouro,v_bairro,true)
   on conflict(logradouro) do update set bairro=excluded.bairro,ativo=true;
   return jsonb_build_object('logradouro',v_logradouro,'bairro',v_bairro);
-end; $function$
+end; $function$;
 
 
 -- Protege cadastrar_subtipo_ocorrencia_publico
@@ -140,7 +140,7 @@ begin
     'fundamento_legal', v_subtipo.fundamento_legal
   );
 end;
-$function$
+$function$;
 
 
 -- Protege cadastrar_tipo_ocorrencia_publico
@@ -179,6 +179,6 @@ begin
 
   return jsonb_build_object('id', v_tipo.id, 'nome', v_tipo.nome, 'categoria', v_tipo.categoria);
 end;
-$function$
+$function$;
 
 
