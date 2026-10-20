@@ -40,7 +40,7 @@
     .tco-lista{display:flex;flex-wrap:wrap;gap:6px;min-width:140px}.tco-badge{display:inline-flex;align-items:center;gap:5px;background:#ecfdf5;border:1px solid #a7f3d0;color:#047857;border-radius:999px;padding:5px 8px;font-size:12px;font-weight:800;white-space:nowrap}.tco-vazio{color:#94a3b8;font-size:12px}.acoes-linha{white-space:nowrap}
     @media(max-width:700px) { .topo { align-items:flex-start; flex-direction:column; } .filtros { grid-template-columns:1fr; } button { width:100%; } }
   </style>
-<script src="auth-config.js"></script><script src="auth-guard.js"></script></head>
+<script src="auth-config.js"></script><script src="auth-guard.js"></script><script src="bope-painel.js?v=20261020-bope-sub1"></script></head>
 <body>
   <header><div class="topo"><div><h1>Consultar ocorrências</h1><p>Sistema de Estatísticas Operacionais</p></div><a class="voltar" href="index.html">← Voltar ao painel</a></div></header>
   <main><section class="painel">
@@ -67,7 +67,7 @@
     const statusEl = document.getElementById("status");
     const detalheModal = document.getElementById("detalheOcorrencia");
     const detalheConteudo = document.getElementById("detalheConteudo");
-    let podeEditar = false;
+    let podeEditar = false,bopeSubConsulta=null,bopeUnidadeConsulta=null;
     const camposConsulta=[
       ['numero_bo','Número do BO'],['tipo_registro','Documento'],['data_ocorrencia','Data da ocorrência'],
       ['hora_inicial','Hora'],['ocorrencia','Ocorrência'],['crime','Tipificação'],
@@ -135,7 +135,17 @@
         statusEl.textContent = "Não foi possível carregar as ocorrências.";
         return;
       }
-      const dados = resposta.data || [];
+      let dados = resposta.data || [];
+      if(bopeSubConsulta){
+        try{
+          const ids=await window.BopePainel.idsAutorizados(banco,bopeSubConsulta,null,bopeUnidadeConsulta);
+          dados=dados.filter(item=>ids.has(String(item.id)));
+        }catch(e){
+          console.error('Falha no filtro operacional BOPE:',e);
+          statusEl.textContent='Não foi possível validar o filtro da subunidade: '+(e.message||'erro de consulta');
+          return;
+        }
+      }
       statusEl.textContent = dados.length + " ocorrência(s) encontrada(s)." + (usarFiltroDashboard ? " Lista aberta a partir do Dashboard." : "");
       if (!dados.length) {
         resultado.innerHTML = '<tr><td colspan="7" class="vazio">Nenhum registro encontrado.</td></tr>';
@@ -193,6 +203,14 @@
       // Ações dependem das permissões efetivas (papel + contexto).
       // COMANDANTE e CONSULTA sempre visualizam sem botões de escrita.
       podeEditar=auth.pode('cadastro') && ['ADMIN','ESTATISTICA','OPERADOR'].includes(String(auth.perfil.perfil||''));
+      bopeSubConsulta=window.BopePainel.filtro(auth.contexto?.sigla,location.search);
+      if(bopeSubConsulta){
+        bopeUnidadeConsulta=auth.contexto.unidade_id;
+        const titulo=document.querySelector('h1');
+        if(titulo)titulo.textContent='Consultar ocorrências — '+bopeSubConsulta.nome;
+        const voltar=document.querySelector('a[href^="index.html"]');
+        if(voltar)voltar.href=window.BopePainel.url('index.html',bopeSubConsulta);
+      }
       await carregar();
     })();
   </script>
