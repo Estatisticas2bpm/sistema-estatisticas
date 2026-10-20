@@ -38,6 +38,10 @@ for(const nome of ['bopeSubPainel','bopeSubCards','bopeVoltarConsolidado'])asser
 assert.ok(home.indexOf('id="bopeSubPainel"')<home.indexOf('id="total"'),'Cartões precedem KPIs');
 assert.match(home,/class="bopeEmblema"><img src="'\+escHome\(un\.brasao\)\+'" alt="Brasão institucional de /);
 assert.match(home,/\.bopeSubCard \.bopeEmblema img\{[^}]*object-fit:contain/);
+assert.match(home,/bopeSubAtiva\.sigla==='CHOQUE'\)document\.body\.classList\.add\('modo-bope-sub-choque'\)/);
+assert.match(home,/body\.modo-bope\.modo-bope-sub-choque \.hero\{[^}]*choque-home-banner\.png[^}]*background-size:100% 100%,contain/);
+assert.ok(fs.existsSync(path.join(root,'assets/banners/choque-home-banner.png')),'Capa institucional do CHOQUE ausente');
+assert.ok(fs.statSync(path.join(root,'assets/banners/choque-home-banner.png')).size>100_000,'Capa do CHOQUE parece inválida');
 assert.match(home,/renderCardsSubunidadesBope\(completos\)/);
 assert.match(home,/var rpcOcc=modoBope\?"obter_dados_dashboard_territorial"/);
 assert.match(home,/window\.BopePainel\.filtrar\(d,bopeSubAtiva\)/);
