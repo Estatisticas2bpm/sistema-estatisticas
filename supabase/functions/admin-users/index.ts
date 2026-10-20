@@ -18,7 +18,7 @@ const admin = createClient(url, secretKey, {
   auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
 });
 
-const perfisValidos = new Set(["ADMIN", "ESTATISTICA", "OPERADOR", "GESTOR", "CONSULTA"]);
+const perfisValidos = new Set(["ADMIN", "ESTATISTICA", "OPERADOR", "COMANDANTE", "CONSULTA"]);
 const postosGraduacoesValidos = new Set([
   "CEL PM", "TEN CEL PM", "MAJ PM", "CAP PM", "1º TEN PM", "2º TEN PM",
   "ASP OF PM", "AL OF PM", "SUB TEN PM", "1º SGT PM", "2º SGT PM",
