@@ -53,19 +53,36 @@ function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 function status(id,texto,tipo='info'){const e=$(id);e.textContent=texto;e.className='status '+tipo;}
 function limparStatus(id){$(id).className='status';$(id).textContent='';}
 function atualizarAvisosComandante(){
-  $('avisoComandante').hidden=$('perfil').value!=='COMANDANTE';
-  $('avisoEditarComandante').hidden=$('editPerfil').value!=='COMANDANTE';
+  for(const contexto of [
+    {perfil:'perfil',unidade:'unidade',aviso:'avisoComandante'},
+    {perfil:'editPerfil',unidade:'editUnidade',aviso:'avisoEditarComandante'}
+  ]){
+    const ativo=$(contexto.perfil).value==='COMANDANTE';
+    const sigla=unidades.find(u=>u.id===$(contexto.unidade).value)?.sigla||'';
+    const cpc=ativo&&String(sigla).toUpperCase()==='CPC';
+    const texto=cpc
+      ? 'COMANDANTE DO CPC: acesso somente de leitura ao panorama, Painel Estatístico Integrado, Matriz Territorial, Dashboard Completo, Mapa Criminal, Análise Temporal, consultas e relatórios de todas as unidades subordinadas ao CPC. Sem auditoria de dados, gerenciar usuários, cadastrar, editar ou excluir.'
+      : 'COMANDANTE DA UNIDADE: acesso estatístico, análise temporal, consulta e relatórios da unidade selecionada e suas subordinadas, se houver. Sem auditoria de dados, administração ou alterações de registros.';
+    $(contexto.aviso).hidden=!ativo;
+    $(contexto.aviso).textContent=texto;
+  }
 }
 $('perfil').addEventListener('change',atualizarAvisosComandante);
 $('editPerfil').addEventListener('change',atualizarAvisosComandante);
-function perfilLabel(v){return v==='ESTATISTICA'?'ESTATÍSTICA':v==='ADMIN'?'ADMINISTRADOR':v==='COMANDANTE'?'COMANDANTE':v;}
+$('unidade').addEventListener('change',atualizarAvisosComandante);
+$('editUnidade').addEventListener('change',atualizarAvisosComandante);
+function perfilLabel(v,u){return v==='ESTATISTICA'?'ESTATÍSTICA':v==='ADMIN'?'ADMINISTRADOR':v==='COMANDANTE'?(String(u?.sigla||'').toUpperCase()==='CPC'?'COMANDANTE CPC':'COMANDANTE'):v;}
 async function invocar(body){const r=await client.functions.invoke(cfg.adminFunction,{body});if(r.error)throw r.error;if(r.data?.error)throw new Error(r.data.error);return r.data;}
 function formatarSiglaUnidade(v){const s=String(v||'').trim(),m=s.match(/^(\d+)BPM$/i);if(m)return m[1]+'º BPM';const mapa={FORCA_TATICA:'FORÇA TÁTICA'};return mapa[s.toUpperCase()]||s;}
-function preencherUnidades(){const sel=$('unidade');sel.innerHTML=unidades.map(u=>'<option value="'+esc(u.id)+'">'+esc(formatarSiglaUnidade(u.sigla))+' — '+esc(u.nome)+'</option>').join('');}
+function preencherUnidades(){
+  const sel=$('unidade');
+  sel.innerHTML=unidades.map(u=>'<option value="'+esc(u.id)+'">'+esc(formatarSiglaUnidade(u.sigla))+' — '+esc(u.nome)+'</option>').join('');
+  atualizarAvisosComandante();
+}
 function opcoesUnidadesEdicao(u){let lista=unidades.slice();if(u?.unidade_id&&!lista.some(x=>x.id===u.unidade_id)&&u.unidades){lista=[{...u.unidades,historica:true},...lista];}return lista.map(x=>'<option value="'+esc(x.id)+'">'+esc(formatarSiglaUnidade(x.sigla))+' — '+esc(x.nome)+(x.historica?' (histórica/inativa)':'')+'</option>').join('');}
 function abrirEdicao(u){usuarioEdicaoId=u.user_id;$('editNome').value=u.nome||'';$('editNomeGuerra').value=u.nome_guerra||'';$('editPostoGraduacao').value=u.posto_graduacao||'';$('editMatricula').value=u.matricula||'';$('editEmail').value=u.email||'';$('editPerfil').value=u.perfil||'OPERADOR';$('editUnidade').innerHTML=opcoesUnidadesEdicao(u);if(u.unidade_id)$('editUnidade').value=u.unidade_id;atualizarAvisosComandante();limparStatus('statusEditar');$('modalEditar').classList.add('aberto');$('modalEditar').setAttribute('aria-hidden','false');}
 function fecharEdicao(){usuarioEdicaoId=null;$('modalEditar').classList.remove('aberto');$('modalEditar').setAttribute('aria-hidden','true');}
-function render(){const tb=$('tbody');if(!usuarios.length){tb.innerHTML='<tr><td colspan="8" class="vazio">Nenhum usuário cadastrado.</td></tr>';return;}tb.innerHTML=usuarios.map(u=>'<tr><td>'+esc(u.nome)+'</td><td>'+esc(u.nome_guerra||'—')+'</td><td>'+esc(u.posto_graduacao||'—')+'</td><td>'+esc(u.email||'—')+'</td><td><span class="badge">'+esc(perfilLabel(u.perfil))+'</span></td><td>'+esc(formatarSiglaUnidade(u.unidades?.sigla)||'—')+'</td><td><span class="badge '+(u.ativo?'':'off')+'">'+(u.ativo?'ATIVO':'BLOQUEADO')+'</span></td><td><div class="linha-acoes"><button class="btn" data-acao="editar" data-id="'+esc(u.user_id)+'">Editar</button><button class="btn amber" data-acao="senha" data-id="'+esc(u.user_id)+'">Senha</button><button class="btn '+(u.ativo?'red':'green')+'" data-acao="'+(u.ativo?'bloquear':'reativar')+'" data-id="'+esc(u.user_id)+'">'+(u.ativo?'Bloquear':'Reativar')+'</button></div></td></tr>').join('');}
+function render(){const tb=$('tbody');if(!usuarios.length){tb.innerHTML='<tr><td colspan="8" class="vazio">Nenhum usuário cadastrado.</td></tr>';return;}tb.innerHTML=usuarios.map(u=>'<tr><td>'+esc(u.nome)+'</td><td>'+esc(u.nome_guerra||'—')+'</td><td>'+esc(u.posto_graduacao||'—')+'</td><td>'+esc(u.email||'—')+'</td><td><span class="badge">'+esc(perfilLabel(u.perfil,u.unidades))+'</span></td><td>'+esc(formatarSiglaUnidade(u.unidades?.sigla)||'—')+'</td><td><span class="badge '+(u.ativo?'':'off')+'">'+(u.ativo?'ATIVO':'BLOQUEADO')+'</span></td><td><div class="linha-acoes"><button class="btn" data-acao="editar" data-id="'+esc(u.user_id)+'">Editar</button><button class="btn amber" data-acao="senha" data-id="'+esc(u.user_id)+'">Senha</button><button class="btn '+(u.ativo?'red':'green')+'" data-acao="'+(u.ativo?'bloquear':'reativar')+'" data-id="'+esc(u.user_id)+'">'+(u.ativo?'Bloquear':'Reativar')+'</button></div></td></tr>').join('');}
 function renderGiroAccess(){
   const unidade=giroAccess?.unidade||null,existe=!!giroAccess?.user_id,ativo=giroAccess?.ativo===true;
   $('giroAccessUnidade').value=unidade?(formatarSiglaUnidade(unidade.sigla)+' — '+unidade.nome+(unidade.ativo?'':' (INATIVA)')):'GIRO';
