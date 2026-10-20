@@ -15,6 +15,7 @@ assert.match(base,/origem_ocorrencia: document.getElementById/);
 assert.match(base,/coordenadasManuaisDigitadas\(\)/);
 assert.match(base,/!coordenadasManuaisValidas\(\)/);
 assert.match(base,/blocoCoordenadasManuais\.hidden=true/);
+assert.match(wrapper,/siglaCadastro==='CIPG'/); // CIPG usa caderno próprio, não esta tela de BO.
 assert.match(wrapper,/ehBopeCadastro\s*\? '<div class="campo duplo"><label for="origemOcorrenciaBope">/);
 assert.match(schema,/ADD COLUMN IF NOT EXISTS origem_ocorrencia/);
 assert.match(schema,/ADD COLUMN IF NOT EXISTS auto_resistencia_resultou_morte/);
@@ -66,6 +67,6 @@ async function construir(sigla){
  }
 }
 (async()=>{
- for(const sigla of ['BOPE','1BPM','2BPM','CIPA','CIPTUR','GIRO','CAVALARIA','CIPG'])await construir(sigla);
+ for(const sigla of ['BOPE','1BPM','2BPM','CIPA','CIPTUR','GIRO','CAVALARIA'])await construir(sigla);
  console.log('PASS: origem BOPE, coordenadas em todas as unidades, resultado morte e mapa criminal.');
 })().catch(e=>{console.error(e);process.exitCode=1});
