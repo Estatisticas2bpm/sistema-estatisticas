@@ -1365,6 +1365,10 @@
     }
     function sugerirOrigemBopePdf(texto){
       if(!origemOcorrenciaBope)return;
+      // Uma nova importação não deve conservar a origem de outro documento.
+      origemOcorrenciaBope.value="";
+      origemOcorrenciaBopeDetalhe.value="";
+      origemOcorrenciaBope.dispatchEvent(new Event("change"));
       // Extrair apenas quando o BO indica explicitamente sua origem; nenhuma inferência pelo histórico.
       const descricao=String(texto||"").match(/(?:ORIGEM\s+(?:DA\s+)?(?:OCORR[ÊE]NCIA|ATUA[ÇC][ÃA]O)|ACIONAMENTO\s+POR)\s*[:\-]\s*([^\n\r]{2,90})/i)?.[1]||"";
       if(!descricao)return;
@@ -2118,6 +2122,9 @@
       document.getElementById("balanca").value = dados.itensOperacionais.balanca ? "SIM" : "";
       document.getElementById("disparo").value = dados.indicadores.disparo ? "SIM" : "";
       document.getElementById("autoResistencia").value = dados.indicadores.autoResistencia ? "SIM" : "";
+      // O texto do PDF pode sugerir resistência, mas a existência de morte deve
+      // ser confirmada explicitamente pelo operador, nunca inferida.
+      document.getElementById("autoResistenciaMorte").value = "";
       document.getElementById("foragidos").value = dados.indicadores.foragidos;
       const pessoasConduzidas = dados.pessoas.infratores.length || dados.pessoas.envolvidos.length;
       definirResultadoImportado("resultadoConducao","numeroConduzidos", dados.indicadores.conducoes && pessoasConduzidas ? pessoasConduzidas : 0);
@@ -2143,6 +2150,11 @@
       statusImportacaoPdf.hidden = false;
       statusImportacaoPdf.className = "status-importacao";
       statusImportacaoPdf.textContent = "Lendo o PDF localmente. Nenhum arquivo está sendo enviado...";
+      if(!idEdicao&&!document.getElementById("cipaLocalCoordenadas")){
+        latitudeManual.value="";
+        longitudeManual.value="";
+        sincronizarCoordenadasManuais();
+      }
       try {
         if (arquivo.type && arquivo.type !== "application/pdf") throw new Error("Selecione um arquivo PDF.");
         if(document.getElementById("cipaLocalCoordenadas")){
