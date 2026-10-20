@@ -1366,10 +1366,10 @@
     function sugerirOrigemBopePdf(texto){
       if(!origemOcorrenciaBope)return;
       // Extrair apenas quando o BO indica explicitamente sua origem; nenhuma inferência pelo histórico.
-      const descricao=String(texto||"").match(/(?:ORIGEM\\s+(?:DA\\s+)?(?:OCORR[ÊE]NCIA|ATUA[ÇC][ÃA]O)|ACIONAMENTO\\s+POR)\\s*[:\\-]\\s*([^\\n\\r]{2,90})/i)?.[1]||"";
+      const descricao=String(texto||"").match(/(?:ORIGEM\s+(?:DA\s+)?(?:OCORR[ÊE]NCIA|ATUA[ÇC][ÃA]O)|ACIONAMENTO\s+POR)\s*[:\-]\s*([^\n\r]{2,90})/i)?.[1]||"";
       if(!descricao)return;
-      const k=descricao.normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toUpperCase();
-      origemOcorrenciaBope.value=/REDE\\s+FALCAO/.test(k)?"REDE_FALCAO":/\\bCCC\\b/.test(k)?"CCC":/\\bMISSAO\\b/.test(k)?"MISSAO":/\\bPATRULHAMENTO\\b/.test(k)?"PATRULHAMENTO":"";
+      const k=descricao.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase();
+      origemOcorrenciaBope.value=/REDE\s+FALCAO/.test(k)?"REDE_FALCAO":/\bCCC\b/.test(k)?"CCC":/\bMISSAO\b/.test(k)?"MISSAO":/\bPATRULHAMENTO\b/.test(k)?"PATRULHAMENTO":"";
       if(origemOcorrenciaBope.value)origemOcorrenciaBope.dispatchEvent(new Event("change"));
     }
     const latitudeManual=document.getElementById("latitudeManual");
