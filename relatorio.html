@@ -281,7 +281,29 @@ function normalizarCalibreRel(v){
 function detalhesMunicoesRel(registros){let m={};registros.forEach(o=>{let itens=Array.isArray(o.municoes_itens)?o.municoes_itens:[];if(itens.length)itens.forEach(i=>{let k=normalizarCalibreRel(i.calibre),q=N(i.quantidade);if(!k||q<=0)return;m[k]=(m[k]||0)+q});else if(N(o.quantidade_municoes)>0){let k=normalizarCalibreRel(o.municoes);if(!k)return;m[k]=(m[k]||0)+N(o.quantidade_municoes)}});return Object.entries(m).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],'pt-BR'))}
 function ocorrenciaComArmasOuMunicoes(o){return totalEstruturadoOuLegado([o],'armas_itens','quantidade_armas')+totalEstruturadoOuLegado([o],'municoes_itens','quantidade_municoes')>0}
 function docsComTco(registros,tcos){let m=Object.fromEntries(rank(registros,'tipo_registro'));m.TCO=(m.TCO||0)+tcos.length;return Object.entries(m).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]))}
-function pessoaRelTemDado(p){return [p?.nacionalidade,p?.sexo,p?.idade].some(v=>!ehNaoInformadoRel(v))}function pessoasRelatorio(d,prefix){let chave=prefix==='vitima'?'vitimas':'infratores',lista=[];d.forEach(x=>{let principal={nacionalidade:x[prefix+'_nacionalidade'],sexo:x[prefix+'_sexo'],idade:x[prefix+'_idade']};if(pessoaRelTemDado(principal))lista.push(principal);let texto=String(x.observacao_final||''),marca='[[PESSOAS_ENVOLVIDAS]]',pos=texto.indexOf(marca);if(pos>=0)try{let dados=JSON.parse(texto.slice(pos+marca.length));lista.push(...(dados[chave]||[]).filter(pessoaRelTemDado))}catch(_){}});return lista}function comboRows(d,prefix,status){let m={},pessoas=pessoasRelatorio(d,prefix);pessoas.forEach(p=>{let c=normalizarNacionalidadeRel(p.nacionalidade),sx=normalizarSexoRel(p.sexo);if(c==='NÃO INFORMADA'||!['M','F'].includes(sx))return;let k=c+'|'+sx;m[k]=(m[k]||0)+1});let itens=Object.entries(m).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],'pt-BR')),rows=itens.map((x,i)=>{let[c,sx]=x[0].split('|');return`<tr><td>${i+1}</td><td>${status}</td><td>${E(c)}</td><td>${E(sx)}</td><td>${x[1]}</td></tr>`});return{rows,total:itens.reduce((s,x)=>s+x[1],0)}}
+function pessoaRelTemDado(p){return p?.tipo==='ESTADO_RORAIMA'||[p?.nacionalidade,p?.sexo,p?.idade].some(v=>!ehNaoInformadoRel(v))}
+function pessoasRelatorio(d,prefix){
+  const chave=prefix==='vitima'?'vitimas':'infratores',lista=[];
+  d.forEach(x=>{
+    const principal={tipo:prefix==='vitima'?x.vitima_tipo:'PESSOA_FISICA',nacionalidade:x[prefix+'_nacionalidade'],sexo:x[prefix+'_sexo'],idade:x[prefix+'_idade']};
+    if(pessoaRelTemDado(principal))lista.push(principal);
+    const texto=String(x.observacao_final||''),marca='[[PESSOAS_ENVOLVIDAS]]',pos=texto.indexOf(marca);
+    if(pos>=0)try{const dados=JSON.parse(texto.slice(pos+marca.length));lista.push(...(dados[chave]||[]).filter(pessoaRelTemDado))}catch(_){}
+  });return lista;
+}
+function comboRows(d,prefix,status){
+  const m={},pessoas=pessoasRelatorio(d,prefix);
+  const entes=prefix==='vitima'?pessoas.filter(p=>p.tipo==='ESTADO_RORAIMA').length:0;
+  pessoas.filter(p=>p.tipo!=='ESTADO_RORAIMA').forEach(p=>{
+    const c=normalizarNacionalidadeRel(p.nacionalidade),sx=normalizarSexoRel(p.sexo);
+    if(c==='NÃO INFORMADA'||!['M','F'].includes(sx))return;
+    const k=c+'|'+sx;m[k]=(m[k]||0)+1;
+  });
+  const itens=Object.entries(m).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],'pt-BR'));
+  const rows=itens.map((x,i)=>{const[c,sx]=x[0].split('|');return`<tr><td>${i+1}</td><td>${status}</td><td>${E(c)}</td><td>${E(sx)}</td><td>${x[1]}</td></tr>`});
+  if(entes)rows.push(`<tr><td>${itens.length+1}</td><td>${status}</td><td>ESTADO DE RORAIMA (ENTE PÚBLICO)</td><td>—</td><td>${entes}</td></tr>`);
+  return{rows,total:itens.reduce((acc,x)=>acc+x[1],0)+entes};
+}
 
 
 function tipoAbordagemRel(v){return v==='A_PE'?'A PÉ':v==='MOTO'?'MOTOCICLETA':v==='VEICULO'?'VEÍCULO':S(v)||'NI'}
