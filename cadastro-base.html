@@ -1356,6 +1356,22 @@
     const horaInicial = document.getElementById("horaInicial");
     const turno = document.getElementById("turno");
     const formulario = document.getElementById("formOcorrencia");
+    const origemOcorrenciaBope=document.getElementById("origemOcorrenciaBope");
+    const origemOcorrenciaBopeDetalhe=document.getElementById("origemOcorrenciaBopeDetalhe");
+    if(origemOcorrenciaBope){
+      origemOcorrenciaBope.addEventListener("change",()=>{
+        origemOcorrenciaBopeDetalhe.required=origemOcorrenciaBope.value==="OUTRA";
+      });
+    }
+    function sugerirOrigemBopePdf(texto){
+      if(!origemOcorrenciaBope)return;
+      // Extrair apenas quando o BO indica explicitamente sua origem; nenhuma inferência pelo histórico.
+      const descricao=String(texto||"").match(/(?:ORIGEM\\s+(?:DA\\s+)?(?:OCORR[ÊE]NCIA|ATUA[ÇC][ÃA]O)|ACIONAMENTO\\s+POR)\\s*[:\\-]\\s*([^\\n\\r]{2,90})/i)?.[1]||"";
+      if(!descricao)return;
+      const k=descricao.normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toUpperCase();
+      origemOcorrenciaBope.value=/REDE\\s+FALCAO/.test(k)?"REDE_FALCAO":/\\bCCC\\b/.test(k)?"CCC":/\\bMISSAO\\b/.test(k)?"MISSAO":/\\bPATRULHAMENTO\\b/.test(k)?"PATRULHAMENTO":"";
+      if(origemOcorrenciaBope.value)origemOcorrenciaBope.dispatchEvent(new Event("change"));
+    }
     const latitudeManual=document.getElementById("latitudeManual");
     const longitudeManual=document.getElementById("longitudeManual");
     const blocoCoordenadasManuais=document.getElementById("blocoCoordenadasManuais");
@@ -2152,6 +2168,7 @@
         }
         if (texto.trim().length < 150) throw new Error("Não foi possível encontrar texto suficiente no PPE, mesmo após a leitura das páginas como imagem.");
         const dados = extrairDadosOcorrenciaPdf(texto);
+        sugerirOrigemBopePdf(texto);
         if (!dados.numeroBo && !dados.data && !dados.historico) throw new Error("O documento não corresponde ao modelo de ocorrência reconhecido pelo sistema.");
         if (!catalogos.tipos.length) await carregarCatalogos();
         if (PDF_CORE) {
@@ -2486,6 +2503,9 @@
       x.observacao_final = pessoasSalvas.texto;
       const mapa = {data_ocorrencia:"data",status_atendimento:"statusAtendimento",motivo_repressao:"motivoRepressao",municipio:"municipio",vtr:"vtr",tipo_registro:"tipoRegistro",numero_bo:"numeroBo",hora_inicial:"horaInicial",hora_final:"horaFinal",ocorrencia:"ocorrencia",crime:"crime",numero_conduzidos:"numeroConduzidos",orientacoes:"orientacoes",veiculos_recuperados:"veiculosRecuperados",endereco:"endereco",numero_endereco:"numeroEndereco",bairro:"bairro",local_entrega:"localEntrega",vitima_nacionalidade:"nacVitima",vitima_sexo:"sexoVitima",vitima_idade:"idadeVitima",infrator_nacionalidade:"nacInfrator",infrator_sexo:"sexoInfrator",infrator_idade:"idadeInfrator",comandante:"comandante",historico_resumido:"mo",materialidade:"materialidade",observacao:"observacao1",entorpecentes:"entorpecentes",maconha:"maconha",cocaina:"cocaina",pasta_base:"pastaBase",crack:"crack",skank:"skank",quantidade_armas:"quantArmas",quantidade_arma_branca:"quantArmaBranca",arma_branca:"armaBranca",armas:"armas",quantidade_municoes:"quantMunicoes",municoes:"municoes",veiculos_restricao:"veiculosRestricao",foragidos:"foragidos",disparo:"disparo",auto_resistencia:"autoResistencia",quantidade_autos_infracao:"quantAutoInfracao",auto_infracao:"autoInfracao",balanca_precisao:"balanca",observacao_final:"observacaoFinal",latitude:"latitude",longitude:"longitude",endereco_formatado:"enderecoFormatado"};
       Object.keys(mapa).forEach(k => definirCampo(mapa[k],x[k]));
+      definirCampo("origemOcorrenciaBope",x.origem_ocorrencia);
+      definirCampo("origemOcorrenciaBopeDetalhe",x.origem_ocorrencia_detalhe);
+      if(origemOcorrenciaBope)origemOcorrenciaBope.dispatchEvent(new Event("change"));
       if(!document.getElementById("cipaLocalCoordenadas") && x.latitude!=null && x.longitude!=null
          && (!x.endereco||String(x.endereco_formatado||"").startsWith("COORDENADAS GPS:"))){
         latitudeManual.value=String(x.latitude);
@@ -2559,6 +2579,10 @@
       if (document.getElementById("resultadoOrientacao").checked && !Number(document.getElementById("orientacoes").value)) return mostrarErroCampo("orientacoes","Informe a quantidade de orientações.");
       if (document.getElementById("resultadoVeiculo").checked && !Number(document.getElementById("veiculosRecuperados").value)) return mostrarErroCampo("veiculosRecuperados","Informe a quantidade de veículos recuperados.");
       if (document.getElementById("resultadoOutro").checked && !document.getElementById("outroResultadoDescricao").value.trim()) return mostrarErroCampo("outroResultadoDescricao","Descreva o outro resultado do atendimento.");
+      if(origemOcorrenciaBope && !idEdicao && !origemOcorrenciaBope.value)
+        return mostrarErroCampo("origemOcorrenciaBope","Informe a origem da ocorrência do BOPE.");
+      if(origemOcorrenciaBope?.value==="OUTRA"&&!origemOcorrenciaBopeDetalhe.value.trim())
+        return mostrarErroCampo("origemOcorrenciaBopeDetalhe","Descreva a origem da ocorrência quando selecionar OUTRA.");
       if (document.getElementById("autoResistenciaMorte").value==="SIM" && document.getElementById("autoResistencia").value!=="SIM")
         return mostrarErroCampo("autoResistencia","Para registrar resultado morte, selecione SIM no Auto de resistência/prisão.");
       if (coordenadasManuaisDigitadas()&&!coordenadasManuaisValidas())
