@@ -428,6 +428,15 @@
             <input id="endereco" name="endereco" type="hidden"><input id="latitude" type="hidden"><input id="longitude" type="hidden"><input id="enderecoFormatado" type="hidden">
           </div>
 
+          <div class="campo triplo" id="blocoCoordenadasManuais">
+            <label>Coordenadas geográficas da ocorrência — GPS (opcional)</label>
+            <div class="grade">
+              <div class="campo"><label for="latitudeManual">Latitude</label><input id="latitudeManual" type="text" inputmode="decimal" autocomplete="off" placeholder="Ex.: 2.823500 ou -1,234567"></div>
+              <div class="campo"><label for="longitudeManual">Longitude</label><input id="longitudeManual" type="text" inputmode="decimal" autocomplete="off" placeholder="Ex.: -60.675800"></div>
+            </div>
+            <span class="nota">Fazendas, vicinais e áreas remotas: preencha os dois valores em graus decimais. As coordenadas válidas substituem a necessidade de pesquisar rua e bairro e posicionam o registro no mapa criminal.</span>
+            <small id="statusCoordenadasManuais" style="color:#64748b" role="status" aria-live="polite">O campo é opcional. Se informar uma coordenada, informe também a outra.</small>
+          </div>
           <div class="campo">
             <label for="numeroEndereco">Número</label>
             <input id="numeroEndereco" name="numeroEndereco" type="text"
@@ -672,6 +681,7 @@
               <div class="campo"><label for="foragidos">Foragidos capturados</label><input id="foragidos" name="foragidos" type="number" min="0"></div>
               <div class="campo"><label for="disparo">Disparo de arma de fogo</label><select id="disparo" name="disparo"><option value="">Selecione</option><option>NÃO</option><option>SIM</option><option>NI — Não Informado</option></select></div>
               <div class="campo"><label for="autoResistencia">Auto de resistência/prisão</label><select id="autoResistencia" name="autoResistencia"><option value="">Selecione</option><option>NÃO</option><option>SIM</option><option>NI — Não Informado</option></select></div>
+              <div class="campo"><label for="autoResistenciaMorte">Auto de resistência com resultado morte?</label><select id="autoResistenciaMorte" name="autoResistenciaMorte"><option value="">Não informado</option><option value="NÃO">NÃO</option><option value="SIM">SIM</option></select><span class="nota">Marque SIM somente se houve morte decorrente da intervenção policial. Não confundir com disparo de arma de fogo ou auto sem morte.</span></div>
             </div>
           </div>
           <div class="bloco-indicadores">
@@ -1225,12 +1235,15 @@
       document.getElementById("enderecoFormatado").value = lugar.formattedAddress || lugar.formatted_address || logradouro;
       document.getElementById("latitude").value = lat ?? "";
       document.getElementById("longitude").value = lng ?? "";
+      latitudeManual.value="";longitudeManual.value="";
+      sincronizarCoordenadasManuais();
       if (bairro) document.getElementById("bairro").value = bairroPadronizado(bairro);
       document.getElementById("municipio").value = normalizarCatalogo(municipio || "BOA VISTA");
       document.getElementById("statusEndereco").textContent = "Endereço confirmado no Google Maps" + (estado ? " — " + estado : "") + ".";
-      if (document.getElementById("numeroEndereco").value.trim()) await atualizarCoordenadasPeloNumero();
+      if (document.getElementById("numeroEndereco").value.trim()&&!coordenadasManuaisValidas()) await atualizarCoordenadasPeloNumero();
     }
     async function atualizarCoordenadasPeloNumero() {
+      if(coordenadasManuaisDigitadas())return false; // Não substituir GPS manual por geocodificação.
       const numero = document.getElementById("numeroEndereco").value.trim();
       const logradouro = document.getElementById("endereco").value.trim();
       if (!numero || /^(S\/?N|SEM N[ÚU]MERO)$/i.test(numero) || !logradouro || !geocodificadorGoogle) return false;
@@ -1343,6 +1356,51 @@
     const horaInicial = document.getElementById("horaInicial");
     const turno = document.getElementById("turno");
     const formulario = document.getElementById("formOcorrencia");
+    const latitudeManual=document.getElementById("latitudeManual");
+    const longitudeManual=document.getElementById("longitudeManual");
+    const blocoCoordenadasManuais=document.getElementById("blocoCoordenadasManuais");
+    // CIPA já possui campo de coordenadas do PPE (inclusive graus/minutos/segundos).
+    // Os demais painéis usam a entrada decimal compartilhada, sem duplicar na CIPA.
+    if(document.getElementById("cipaLocalCoordenadas")) {
+      blocoCoordenadasManuais.hidden=true;
+      blocoCoordenadasManuais.style.display="none";
+    }
+    function coordenadasManuaisDigitadas(){
+      return !blocoCoordenadasManuais.hidden&&Boolean(latitudeManual.value.trim()||longitudeManual.value.trim());
+    }
+    function numeroCoordenadaManual(texto,min,max){
+      const valor=String(texto||"").trim().replace(",",".");
+      if(!/^-?\\d{1,3}(?:\\.\\d+)?$/.test(valor))return null;
+      const numero=Number(valor);
+      return Number.isFinite(numero)&&numero>=min&&numero<=max?numero:null;
+    }
+    function coordenadasManuaisValidas(){
+      if(!coordenadasManuaisDigitadas())return false;
+      return numeroCoordenadaManual(latitudeManual.value,-90,90)!==null &&
+             numeroCoordenadaManual(longitudeManual.value,-180,180)!==null;
+    }
+    function sincronizarCoordenadasManuais(){
+      const status=document.getElementById("statusCoordenadasManuais");
+      if(!coordenadasManuaisDigitadas()){
+        status.textContent="O campo é opcional. Se informar uma coordenada, informe também a outra.";
+        status.style.color="#64748b";return false;
+      }
+      if(!coordenadasManuaisValidas()){
+        status.textContent="Preencha latitude e longitude válidas em graus decimais (use ponto ou vírgula para as casas decimais).";
+        status.style.color="#b42318";return false;
+      }
+      const lat=numeroCoordenadaManual(latitudeManual.value,-90,90);
+      const lon=numeroCoordenadaManual(longitudeManual.value,-180,180);
+      document.getElementById("latitude").value=String(lat);
+      document.getElementById("longitude").value=String(lon);
+      if(!document.getElementById("endereco").value.trim())
+        document.getElementById("enderecoFormatado").value="COORDENADAS GPS: "+lat.toFixed(6)+", "+lon.toFixed(6);
+      status.textContent="Coordenadas válidas. O mapa criminal usará este ponto geográfico.";
+      status.style.color="#13795b";
+      return true;
+    }
+    [latitudeManual,longitudeManual].forEach(el=>el.addEventListener("input",sincronizarCoordenadasManuais));
+
     const statusAtendimento = document.getElementById("statusAtendimento");
     const campoMotivo = document.getElementById("campoMotivo");
     const motivoRepressao = document.getElementById("motivoRepressao");
@@ -2428,6 +2486,13 @@
       x.observacao_final = pessoasSalvas.texto;
       const mapa = {data_ocorrencia:"data",status_atendimento:"statusAtendimento",motivo_repressao:"motivoRepressao",municipio:"municipio",vtr:"vtr",tipo_registro:"tipoRegistro",numero_bo:"numeroBo",hora_inicial:"horaInicial",hora_final:"horaFinal",ocorrencia:"ocorrencia",crime:"crime",numero_conduzidos:"numeroConduzidos",orientacoes:"orientacoes",veiculos_recuperados:"veiculosRecuperados",endereco:"endereco",numero_endereco:"numeroEndereco",bairro:"bairro",local_entrega:"localEntrega",vitima_nacionalidade:"nacVitima",vitima_sexo:"sexoVitima",vitima_idade:"idadeVitima",infrator_nacionalidade:"nacInfrator",infrator_sexo:"sexoInfrator",infrator_idade:"idadeInfrator",comandante:"comandante",historico_resumido:"mo",materialidade:"materialidade",observacao:"observacao1",entorpecentes:"entorpecentes",maconha:"maconha",cocaina:"cocaina",pasta_base:"pastaBase",crack:"crack",skank:"skank",quantidade_armas:"quantArmas",quantidade_arma_branca:"quantArmaBranca",arma_branca:"armaBranca",armas:"armas",quantidade_municoes:"quantMunicoes",municoes:"municoes",veiculos_restricao:"veiculosRestricao",foragidos:"foragidos",disparo:"disparo",auto_resistencia:"autoResistencia",quantidade_autos_infracao:"quantAutoInfracao",auto_infracao:"autoInfracao",balanca_precisao:"balanca",observacao_final:"observacaoFinal",latitude:"latitude",longitude:"longitude",endereco_formatado:"enderecoFormatado"};
       Object.keys(mapa).forEach(k => definirCampo(mapa[k],x[k]));
+      if(!document.getElementById("cipaLocalCoordenadas") && x.latitude!=null && x.longitude!=null
+         && (!x.endereco||String(x.endereco_formatado||"").startsWith("COORDENADAS GPS:"))){
+        latitudeManual.value=String(x.latitude);
+        longitudeManual.value=String(x.longitude);
+        sincronizarCoordenadasManuais();
+      }
+      document.getElementById("autoResistenciaMorte").value=x.auto_resistencia_resultou_morte||"";
       document.getElementById("tipoVitima").value=x.vitima_tipo==="ESTADO_RORAIMA"?"ESTADO_RORAIMA":"PESSOA_FISICA";
       atualizarTipoVitimaPrincipal();
       if (subunidadeOperacional) {
@@ -2494,6 +2559,10 @@
       if (document.getElementById("resultadoOrientacao").checked && !Number(document.getElementById("orientacoes").value)) return mostrarErroCampo("orientacoes","Informe a quantidade de orientações.");
       if (document.getElementById("resultadoVeiculo").checked && !Number(document.getElementById("veiculosRecuperados").value)) return mostrarErroCampo("veiculosRecuperados","Informe a quantidade de veículos recuperados.");
       if (document.getElementById("resultadoOutro").checked && !document.getElementById("outroResultadoDescricao").value.trim()) return mostrarErroCampo("outroResultadoDescricao","Descreva o outro resultado do atendimento.");
+      if (document.getElementById("autoResistenciaMorte").value==="SIM" && document.getElementById("autoResistencia").value!=="SIM")
+        return mostrarErroCampo("autoResistencia","Para registrar resultado morte, selecione SIM no Auto de resistência/prisão.");
+      if (coordenadasManuaisDigitadas()&&!coordenadasManuaisValidas())
+        return mostrarErroCampo("latitudeManual","Informe latitude e longitude válidas, em graus decimais.");
       return true;
     }
 
@@ -2517,7 +2586,7 @@
       if (!validarFormularioPrincipal()) return;
       const botaoSalvar = formulario.querySelector('button[type="submit"]');
       const textoOriginalBotao = botaoSalvar.textContent;
-      if (document.getElementById("numeroEndereco").value.trim()) {
+      if (document.getElementById("numeroEndereco").value.trim()&&!coordenadasManuaisDigitadas()) {
         botaoSalvar.disabled = true;
         botaoSalvar.textContent = "Validando endereço...";
         await atualizarCoordenadasPeloNumero();
@@ -2547,12 +2616,12 @@
       const bairroDigitado = normalizarCatalogo(document.getElementById("bairro").value);
       const bairroOriginal = normalizarCatalogo(registroOriginalEdicao && registroOriginalEdicao.bairro);
       const bairroAlterado = !idEdicao || bairroDigitado !== bairroOriginal;
-      if (!bairroDigitado && bairroAlterado) return mostrarErroCampo("bairro","Informe o bairro da ocorrência. Se o Google Maps não identificar corretamente, preencha o campo manualmente.");
+      if (!bairroDigitado && bairroAlterado && !coordenadasManuaisValidas()) return mostrarErroCampo("bairro","Informe o bairro da ocorrência ou coordenadas geográficas válidas para local remoto.");
       document.getElementById("bairro").value = bairroDigitado;
       const enderecoAtual = document.getElementById("endereco").value;
       const numeroAtual = document.getElementById("numeroEndereco").value;
       const enderecoFoiAlterado = !idEdicao || !registroOriginalEdicao || normalizarCatalogo(enderecoAtual) !== normalizarCatalogo(registroOriginalEdicao.endereco) || String(numeroAtual||"").trim() !== String(registroOriginalEdicao.numero_endereco||"").trim();
-      if ((!enderecoAtual || !document.getElementById("latitude").value || !document.getElementById("longitude").value) && enderecoFoiAlterado) return mostrarErroCampo("enderecoGoogle","O endereço foi alterado. Pesquise e selecione uma sugestão do Google Maps antes de salvar.");
+      if ((!enderecoAtual || !document.getElementById("latitude").value || !document.getElementById("longitude").value) && enderecoFoiAlterado && !coordenadasManuaisValidas()) return mostrarErroCampo("enderecoGoogle","Selecione um endereço do Google Maps ou informe latitude e longitude válidas para local remoto.");
       if (importacaoPdfPendente && !confirm("Você conferiu os dados preenchidos pelo PDF, corrigiu o que for necessário e confirma que deseja salvar esta ocorrência?")) return;
 
       if (salvamentoEmAndamento) return;
@@ -2632,6 +2701,9 @@
           foragidos: document.getElementById("foragidos").value || null,
           disparo: tratarNI(document.getElementById("disparo").value),
           auto_resistencia: tratarNI(document.getElementById("autoResistencia").value),
+          auto_resistencia_resultou_morte: document.getElementById("autoResistenciaMorte").value || null,
+          origem_ocorrencia: document.getElementById("origemOcorrenciaBope")?.value || null,
+          origem_ocorrencia_detalhe: document.getElementById("origemOcorrenciaBopeDetalhe")?.value.trim() || null,
 
           quantidade_autos_infracao: document.getElementById("quantAutoInfracao").value || null,
           auto_infracao: document.getElementById("autoInfracao").value || null,
