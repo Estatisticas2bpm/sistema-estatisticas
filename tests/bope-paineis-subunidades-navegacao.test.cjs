@@ -44,6 +44,7 @@ assert.ok(fs.existsSync(path.join(root,'assets/banners/choque-home-banner.png'))
 assert.ok(fs.statSync(path.join(root,'assets/banners/choque-home-banner.png')).size>100_000,'Capa do CHOQUE parece inválida');
 assert.match(home,/bopeSubAtiva\.sigla==='FORCA_TATICA'\)document\.body\.classList\.add\('modo-bope-sub-forca-tatica'\)/);
 assert.match(home,/body\.modo-bope\.modo-bope-sub-forca-tatica \.hero\{[^}]*forca-tatica-home-banner\.png[^}]*background-size:100% 100%,contain/);
+assert.match(home,/@media\(max-width:768px\)\{body\.modo-bope\.modo-bope-sub-forca-tatica \.hero\{[^}]*background-position:center,center top[^}]*background-size:100% 100%,100% auto/);
 assert.ok(fs.existsSync(path.join(root,'assets/banners/forca-tatica-home-banner.png')),'Capa institucional da FORÇA TÁTICA ausente');
 assert.ok(fs.statSync(path.join(root,'assets/banners/forca-tatica-home-banner.png')).size>100_000,'Capa da FORÇA TÁTICA parece inválida');
 assert.match(home,/renderCardsSubunidadesBope\(completos\)/);
