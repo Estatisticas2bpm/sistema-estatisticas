@@ -461,6 +461,14 @@
           <div class="cabecalho-pessoas"><div class="subtitulo">Vítima 1</div><button class="botao-adicionar adicionar-pessoa" id="adicionarVitima" type="button">+ Adicionar vítima</button></div>
 
           <div class="campo">
+            <label for="tipoVitima">Tipo de vítima</label>
+            <select id="tipoVitima" name="tipoVitima">
+              <option value="PESSOA_FISICA">Pessoa física</option>
+              <option value="ESTADO_RORAIMA">Estado de Roraima — ente público</option>
+            </select>
+            <span class="nota">Ao selecionar Estado de Roraima, nacionalidade, sexo e idade não se aplicam.</span>
+          </div>
+          <div class="campo">
             <label for="nacVitima">Nacionalidade</label>
             <select id="nacVitima" name="nacVitima">
               <option value="">Selecione</option>
@@ -1521,10 +1529,24 @@
       check.dispatchEvent(new Event("change"));
       if (check.checked) document.getElementById(campoId).value = quantidade;
     }
+    function atualizarTipoVitimaPrincipal() {
+      const estado=document.getElementById("tipoVitima").value==="ESTADO_RORAIMA";
+      for(const id of ["nacVitima","sexoVitima","idadeVitima"]){
+        const campo=document.getElementById(id);
+        if(estado)campo.value="";
+        campo.disabled=estado;
+        campo.closest(".campo").hidden=estado;
+      }
+    }
+    document.getElementById("tipoVitima").addEventListener("change",atualizarTipoVitimaPrincipal);
     function preencherPessoaPrincipal(prefixo, pessoa) {
-      document.getElementById(prefixo === "vitima" ? "nacVitima" : "nacInfrator").value = pessoa ? pessoa.nacionalidade : "";
-      document.getElementById(prefixo === "vitima" ? "sexoVitima" : "sexoInfrator").value = pessoa ? pessoa.sexo : "";
-      document.getElementById(prefixo === "vitima" ? "idadeVitima" : "idadeInfrator").value = pessoa ? pessoa.idade : "";
+      if(prefixo==="vitima"){
+        document.getElementById("tipoVitima").value=pessoa?.tipo==="ESTADO_RORAIMA"?"ESTADO_RORAIMA":"PESSOA_FISICA";
+      }
+      document.getElementById(prefixo === "vitima" ? "nacVitima" : "nacInfrator").value = pessoa ? pessoa.nacionalidade || "" : "";
+      document.getElementById(prefixo === "vitima" ? "sexoVitima" : "sexoInfrator").value = pessoa ? pessoa.sexo || "" : "";
+      document.getElementById(prefixo === "vitima" ? "idadeVitima" : "idadeInfrator").value = pessoa ? pessoa.idade || "" : "";
+      if(prefixo==="vitima")atualizarTipoVitimaPrincipal();
     }
     function extrairPessoasPdf(texto) {
       const pessoas = {vitimas:[], infratores:[], envolvidos:[]};
@@ -2161,21 +2183,43 @@
       const bloco = document.createElement("div");
       bloco.className = "pessoa-adicional";
       bloco.dataset.tipo = tipo;
-      bloco.innerHTML = `<div class="campo"><label>${configuracao.rotulo} ${numero} — Nacionalidade</label><select data-pessoa="nacionalidade">${document.getElementById(configuracao.nacionalidade).innerHTML}</select></div><div class="campo"><label>Sexo</label><select data-pessoa="sexo">${document.getElementById(configuracao.sexo).innerHTML}</select></div><div class="campo"><label>Idade</label><input data-pessoa="idade" type="number" min="0" max="130"></div><button class="botao-adicionar remover-pessoa" type="button" title="Remover esta pessoa">×</button>`;
+      const seletorTipo=tipo==="vitima"
+        ? `<div class="campo"><label>${configuracao.rotulo} ${numero} — Tipo de vítima</label><select data-pessoa="tipo"><option value="PESSOA_FISICA">Pessoa física</option><option value="ESTADO_RORAIMA">Estado de Roraima — ente público</option></select></div>`
+        : "";
+      bloco.innerHTML = seletorTipo+`<div class="campo"><label>${configuracao.rotulo} ${numero} — Nacionalidade</label><select data-pessoa="nacionalidade">${document.getElementById(configuracao.nacionalidade).innerHTML}</select></div><div class="campo"><label>Sexo</label><select data-pessoa="sexo">${document.getElementById(configuracao.sexo).innerHTML}</select></div><div class="campo"><label>Idade</label><input data-pessoa="idade" type="number" min="0" max="130"></div><button class="botao-adicionar remover-pessoa" type="button" title="Remover esta pessoa">×</button>`;
       bloco.querySelector('[data-pessoa="nacionalidade"]').value = dados.nacionalidade || "";
       bloco.querySelector('[data-pessoa="sexo"]').value = dados.sexo || "";
       bloco.querySelector('[data-pessoa="idade"]').value = dados.idade || "";
+      if(tipo==="vitima"){
+        const seletor=bloco.querySelector('[data-pessoa="tipo"]');
+        seletor.value=dados.tipo==="ESTADO_RORAIMA"?"ESTADO_RORAIMA":"PESSOA_FISICA";
+        const atualizarTipo=()=>{
+          const estado=seletor.value==="ESTADO_RORAIMA";
+          for(const chave of ["nacionalidade","sexo","idade"]){
+            const campo=bloco.querySelector('[data-pessoa="'+chave+'"]');
+            if(estado)campo.value="";
+            campo.disabled=estado;
+            campo.closest(".campo").hidden=estado;
+          }
+        };
+        seletor.addEventListener("change",atualizarTipo);
+        atualizarTipo();
+      }
       bloco.querySelector(".remover-pessoa").addEventListener("click", () => bloco.remove());
       recipiente.appendChild(bloco);
     }
     function pessoasAdicionais(tipo) {
       const recipientes = {vitima:"vitimasAdicionais", infrator:"infratoresAdicionais", envolvido:"envolvidosAdicionais"};
       const recipiente = document.getElementById(recipientes[tipo]);
-      return Array.from(recipiente.querySelectorAll(".pessoa-adicional")).map(bloco => ({
-        nacionalidade: tratarNI(bloco.querySelector('[data-pessoa="nacionalidade"]').value),
-        sexo: tratarNI(bloco.querySelector('[data-pessoa="sexo"]').value),
-        idade: bloco.querySelector('[data-pessoa="idade"]').value || null
-      })).filter(p => p.nacionalidade || p.sexo || p.idade);
+      return Array.from(recipiente.querySelectorAll(".pessoa-adicional")).map(bloco => {
+        const tipoVitima=tipo==="vitima" && bloco.querySelector('[data-pessoa="tipo"]')?.value==="ESTADO_RORAIMA"?"ESTADO_RORAIMA":"PESSOA_FISICA";
+        return {
+          ...(tipo==="vitima"?{tipo:tipoVitima}:{}),
+          nacionalidade: tipoVitima==="ESTADO_RORAIMA"?null:tratarNI(bloco.querySelector('[data-pessoa="nacionalidade"]').value),
+          sexo: tipoVitima==="ESTADO_RORAIMA"?null:tratarNI(bloco.querySelector('[data-pessoa="sexo"]').value),
+          idade: tipoVitima==="ESTADO_RORAIMA"?null:(bloco.querySelector('[data-pessoa="idade"]').value || null)
+        };
+      }).filter(p => p.tipo==="ESTADO_RORAIMA" || p.nacionalidade || p.sexo || p.idade);
     }
     function separarPessoas(valor) {
       const texto = String(valor || "");
@@ -2384,6 +2428,8 @@
       x.observacao_final = pessoasSalvas.texto;
       const mapa = {data_ocorrencia:"data",status_atendimento:"statusAtendimento",motivo_repressao:"motivoRepressao",municipio:"municipio",vtr:"vtr",tipo_registro:"tipoRegistro",numero_bo:"numeroBo",hora_inicial:"horaInicial",hora_final:"horaFinal",ocorrencia:"ocorrencia",crime:"crime",numero_conduzidos:"numeroConduzidos",orientacoes:"orientacoes",veiculos_recuperados:"veiculosRecuperados",endereco:"endereco",numero_endereco:"numeroEndereco",bairro:"bairro",local_entrega:"localEntrega",vitima_nacionalidade:"nacVitima",vitima_sexo:"sexoVitima",vitima_idade:"idadeVitima",infrator_nacionalidade:"nacInfrator",infrator_sexo:"sexoInfrator",infrator_idade:"idadeInfrator",comandante:"comandante",historico_resumido:"mo",materialidade:"materialidade",observacao:"observacao1",entorpecentes:"entorpecentes",maconha:"maconha",cocaina:"cocaina",pasta_base:"pastaBase",crack:"crack",skank:"skank",quantidade_armas:"quantArmas",quantidade_arma_branca:"quantArmaBranca",arma_branca:"armaBranca",armas:"armas",quantidade_municoes:"quantMunicoes",municoes:"municoes",veiculos_restricao:"veiculosRestricao",foragidos:"foragidos",disparo:"disparo",auto_resistencia:"autoResistencia",quantidade_autos_infracao:"quantAutoInfracao",auto_infracao:"autoInfracao",balanca_precisao:"balanca",observacao_final:"observacaoFinal",latitude:"latitude",longitude:"longitude",endereco_formatado:"enderecoFormatado"};
       Object.keys(mapa).forEach(k => definirCampo(mapa[k],x[k]));
+      document.getElementById("tipoVitima").value=x.vitima_tipo==="ESTADO_RORAIMA"?"ESTADO_RORAIMA":"PESSOA_FISICA";
+      atualizarTipoVitimaPrincipal();
       if (subunidadeOperacional) {
         definirCampo("subunidadeOperacional",subunidadeOperacionalPendente);
         if (subunidadeOperacionalPendente && subunidadeOperacional.value !== subunidadeOperacionalPendente) {
@@ -2548,9 +2594,10 @@
           endereco_formatado: document.getElementById("enderecoFormatado").value || null,
           local_entrega: localEntregaDigitado || null,
 
-          vitima_nacionalidade: tratarNI(document.getElementById("nacVitima").value),
-          vitima_sexo: tratarNI(document.getElementById("sexoVitima").value),
-          vitima_idade: document.getElementById("idadeVitima").value || null,
+          vitima_tipo: document.getElementById("tipoVitima").value,
+          vitima_nacionalidade: document.getElementById("tipoVitima").value==="ESTADO_RORAIMA"?null:tratarNI(document.getElementById("nacVitima").value),
+          vitima_sexo: document.getElementById("tipoVitima").value==="ESTADO_RORAIMA"?null:tratarNI(document.getElementById("sexoVitima").value),
+          vitima_idade: document.getElementById("tipoVitima").value==="ESTADO_RORAIMA"?null:(document.getElementById("idadeVitima").value || null),
 
           infrator_nacionalidade: tratarNI(document.getElementById("nacInfrator").value),
           infrator_sexo: tratarNI(document.getElementById("sexoInfrator").value),
