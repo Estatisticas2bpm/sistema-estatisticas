@@ -42,6 +42,10 @@ assert.match(home,/bopeSubAtiva\.sigla==='CHOQUE'\)document\.body\.classList\.ad
 assert.match(home,/body\.modo-bope\.modo-bope-sub-choque \.hero\{[^}]*choque-home-banner\.png[^}]*background-size:100% 100%,contain/);
 assert.ok(fs.existsSync(path.join(root,'assets/banners/choque-home-banner.png')),'Capa institucional do CHOQUE ausente');
 assert.ok(fs.statSync(path.join(root,'assets/banners/choque-home-banner.png')).size>100_000,'Capa do CHOQUE parece inválida');
+assert.match(home,/bopeSubAtiva\.sigla==='FORCA_TATICA'\)document\.body\.classList\.add\('modo-bope-sub-forca-tatica'\)/);
+assert.match(home,/body\.modo-bope\.modo-bope-sub-forca-tatica \.hero\{[^}]*forca-tatica-home-banner\.png[^}]*background-size:100% 100%,contain/);
+assert.ok(fs.existsSync(path.join(root,'assets/banners/forca-tatica-home-banner.png')),'Capa institucional da FORÇA TÁTICA ausente');
+assert.ok(fs.statSync(path.join(root,'assets/banners/forca-tatica-home-banner.png')).size>100_000,'Capa da FORÇA TÁTICA parece inválida');
 assert.match(home,/renderCardsSubunidadesBope\(completos\)/);
 assert.match(home,/var rpcOcc=modoBope\?"obter_dados_dashboard_territorial"/);
 assert.match(home,/window\.BopePainel\.filtrar\(d,bopeSubAtiva\)/);
