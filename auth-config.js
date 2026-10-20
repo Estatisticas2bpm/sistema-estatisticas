@@ -13,7 +13,7 @@ window.SISTEMA_AUTH_CONFIG = Object.freeze({
     ADMIN: ["cadastro","consulta","dashboard","auditoria","analise","mapa","tco","relatorio","acoes","usuarios","logs","configuracoes"],
     ESTATISTICA: ["cadastro","consulta","dashboard","auditoria","analise","mapa","tco","relatorio","acoes","logs"],
     OPERADOR: ["cadastro","consulta","dashboard","mapa","tco","acoes"],
-    GESTOR: ["consulta","dashboard","analise","mapa","relatorio"],
+    COMANDANTE: ["consulta","dashboard","analise","mapa","relatorio"],
     CONSULTA: ["consulta","dashboard","mapa","relatorio"]
   }),
   pagePermissions: Object.freeze({
