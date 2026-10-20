@@ -52,14 +52,23 @@
     const blocoOrigemBope=ehBopeCadastro
       ? '<div class="campo duplo"><label for="subunidadeOperacional">Unidade operacional do BOPE *</label><select id="subunidadeOperacional" name="subunidadeOperacional" required aria-describedby="statusSubunidadesBope"><option value="">Selecione a unidade responsável</option></select><span class="nota" id="statusSubunidadesBope" role="status" aria-live="polite">Carregando unidades operacionais do BOPE...</span><button class="botao-secundario" id="recarregarSubunidadesBope" type="button" hidden>Tentar carregar novamente</button></div>'
       : '';
+    // O BOPE começa sem origens fixas: o operador cria uma vez pelo botão +.
+    // O catálogo institucional é compartilhado entre os operadores do BOPE.
     const blocoOrigemOcorrenciaBope=ehBopeCadastro
-      ? '<div class="campo duplo"><label for="origemOcorrenciaBope">Origem da ocorrência — BOPE *</label><select id="origemOcorrenciaBope" name="origemOcorrenciaBope"><option value="">Selecione a origem</option><option value="MISSAO">MISSÃO</option><option value="CCC">CCC</option><option value="REDE_FALCAO">REDE FALCÃO</option><option value="PATRULHAMENTO">PATRULHAMENTO</option><option value="OUTRA">OUTRA ORIGEM</option></select><span class="nota">Informe como a atuação foi iniciada. Confira a origem sugerida após importar um BO.</span></div><div class="campo duplo" id="campoDetalheOrigemBope"><label for="origemOcorrenciaBopeDetalhe">Identificação da missão ou complemento da origem</label><input id="origemOcorrenciaBopeDetalhe" maxlength="240" type="text" placeholder="Ex.: número da missão, setor solicitante ou outra origem"><span class="nota">Obrigatório se selecionar OUTRA ORIGEM.</span></div>'
+      ? '<div class="campo duplo"><label for="origemOcorrenciaBope">Origem da ocorrência — BOPE *</label><div class="campo-com-acao"><select id="origemOcorrenciaBope" name="origemOcorrenciaBope"><option value="">Selecione ou cadastre uma origem</option></select><button class="botao-adicionar" id="abrirNovaOrigemBope" type="button" aria-label="Cadastrar nova origem de ocorrência do BOPE" title="Cadastrar nova origem de ocorrência">+</button></div><span class="nota" id="statusOrigensBope" role="status" aria-live="polite">Carregando origens cadastradas pelos operadores do BOPE...</span></div><div class="campo duplo" id="campoDetalheOrigemBope"><label for="origemOcorrenciaBopeDetalhe">Identificação da missão ou complemento (opcional)</label><input id="origemOcorrenciaBopeDetalhe" maxlength="240" type="text" placeholder="Ex.: número da missão ou setor solicitante"></div>'
+      : '';
+    const modalOrigemBope=ehBopeCadastro
+      ? '<dialog id="modalNovaOrigemBope"><form class="modal-conteudo" id="formNovaOrigemBope" method="dialog"><h3>Cadastrar origem de ocorrência — BOPE</h3><p>Cadastre somente se a origem ainda não existir. Ela ficará disponível para os próximos boletins do BOPE.</p><div class="campo"><label for="novaOrigemBope">Nome da origem</label><input id="novaOrigemBope" maxlength="120" autocomplete="off" required placeholder="Digite o nome utilizado pela unidade"></div><p id="statusNovaOrigemBope" role="status" aria-live="polite" hidden></p><div class="modal-acoes"><button class="botao-secundario" id="cancelarNovaOrigemBope" type="button">Cancelar</button><button id="salvarNovaOrigemBope" type="submit">Salvar origem</button></div></form></dialog>'
       : '';
     html=html.replace(
       /<div class="campo">\s*<label for="tipoRegistro">Tipo \*<\/label>\s*<select id="tipoRegistro" name="tipoRegistro" required>[\s\S]*?<\/select>\s*<\/div>/,
       '<div class="campo"><label>Tipo de documento</label><input id="tipoDocumentoExibicao" type="text" value="BO" readonly aria-label="Tipo de documento"><select id="tipoRegistro" name="tipoRegistro" required hidden><option value="BO" selected>BO</option><option value="ROP">ROP</option><option value="TCO">TCO</option><option value="NI">NI</option></select><span class="nota">Nos novos registros, toda ocorrência operacional é registrada por Boletim de Ocorrência (BO).</span></div>'+blocoOrigemBope+blocoOrigemOcorrenciaBope+blocoGrupamento
     );
 
+    if(ehBopeCadastro){
+      // O modal deve estar no DOM antes de o script principal iniciar.
+      html=html.replace('  <dialog id="modalBairro">',modalOrigemBope+'  <dialog id="modalBairro">');
+    }
     if(ehCipaCadastro){
       // A data operacional exibida para a CIPA é a data da elaboração do PPE,
       // distinta da data do fato que permanece no texto original do documento.
