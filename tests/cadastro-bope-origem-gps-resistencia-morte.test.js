@@ -34,15 +34,24 @@ assert.equal(decimal('2.823500',-90,90),2.8235);
 assert.equal(decimal('-60,675800',-180,180),-60.6758);
 assert.equal(decimal('100',-90,90),null);
 assert.equal(decimal('texto',-90,90),null);
-const origemInicio=base.indexOf('    function sugerirOrigemBopePdf('),origemFim=base.indexOf('    const latitudeManual=',origemInicio);
-const campo={value:'',dispatchEvent(){}};
-const reconhecer=new Function('origemOcorrenciaBope','origemOcorrenciaBopeDetalhe','Event',base.slice(origemInicio,origemFim)+'return sugerirOrigemBopePdf;')(campo,{value:''},class{});
-reconhecer('ORIGEM DA OCORRÊNCIA: REDE FALCÃO');
-assert.equal(campo.value,'REDE_FALCAO');
-reconhecer('Origem da ocorrência: CCC');
-assert.equal(campo.value,'CCC');
-reconhecer('Origem da ocorrência: Missão');
-assert.equal(campo.value,'MISSAO');
+const catalogoSql=ler('supabase/migrations/20261020182000_bope_catalogo_livre_origens.sql');
+assert.match(catalogoSql,/CREATE TABLE IF NOT EXISTS public\.bope_origens_ocorrencia/);
+assert.match(catalogoSql,/CREATE POLICY bope_origens_cadastro/);
+assert.match(catalogoSql,/u\.sigla='BOPE'/);
+assert.match(catalogoSql,/ON CONFLICT DO NOTHING/);
+assert.match(catalogoSql,/DROP CONSTRAINT IF EXISTS ocorrencias_origem_ocorrencia_check/);
+assert.doesNotMatch(wrapper,/<option value="REDE_FALCAO">/);
+assert.doesNotMatch(wrapper,/<option value="MISSAO">/);
+assert.match(wrapper,/id="abrirNovaOrigemBope"/);
+assert.match(wrapper,/id="modalNovaOrigemBope"/);
+assert.match(base,/cadastrar_origem_ocorrencia_bope/);
+assert.match(base,/await carregarOrigensBope\(data\.nome\)/);
+const origemInicio=base.indexOf('    async function sugerirOrigemBopePdf('),origemFim=base.indexOf('    const latitudeManual=',origemInicio);
+assert.ok(origemInicio>=0&&origemFim>origemInicio);
+const campo={value:''};
+const catalogo=[{nome:'REDE FALCÃO'},{nome:'CCC'}];
+const chave=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim().toUpperCase();
+const reconhecer=new Function('origemOcorrenciaBope','origemOcorrenciaBopeDetalhe','catalogoOrigensBope','origensBopeProntas','chaveOrigemBope',base.slice(origemInicio,origemFim)+'return sugerirOrigemBopePdf;')(campo,{value:''},catalogo,Promise.resolve([]),chave);
 async function construir(sigla){
  const script=wrapper.slice(wrapper.lastIndexOf('<script>')+8,wrapper.lastIndexOf('</script>'));
  let html='';
@@ -57,6 +66,11 @@ async function construir(sigla){
  assert.match(html,/id="latitudeManual"/);
  assert.match(html,/id="longitudeManual"/);
  assert.equal(html.includes('id="origemOcorrenciaBope"'),sigla==='BOPE',sigla+': origem exclusiva BOPE');
+ assert.equal(html.includes('id="modalNovaOrigemBope"'),sigla==='BOPE',sigla+': cadastro de origens exclusivo BOPE');
+ if(sigla==='BOPE'){
+   assert.match(html,/Selecione ou cadastre uma origem/);
+   assert.doesNotMatch(html,/<option value="REDE_FALCAO">/);
+ }
  if(sigla==='CIPA'){
    assert.match(html,/id="cipaLocalCoordenadas"/);
    assert.match(html,/const cipaTemCoordenadas=Boolean/);
@@ -67,6 +81,12 @@ async function construir(sigla){
  }
 }
 (async()=>{
+ await reconhecer('ORIGEM DA OCORRÊNCIA: REDE FALCÃO');
+ assert.equal(campo.value,'REDE FALCÃO');
+ await reconhecer('Origem da ocorrência: CCC');
+ assert.equal(campo.value,'CCC');
+ await reconhecer('Origem da ocorrência: Missão');
+ assert.equal(campo.value,'','Origem não cadastrada não pode ser selecionada automaticamente');
  for(const sigla of ['BOPE','1BPM','2BPM','CIPA','CIPTUR','GIRO','CAVALARIA'])await construir(sigla);
  console.log('PASS: origem BOPE, coordenadas em todas as unidades, resultado morte e mapa criminal.');
 })().catch(e=>{console.error(e);process.exitCode=1});
