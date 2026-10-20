@@ -712,7 +712,7 @@
     </form>
   </dialog>
   <dialog id="modalNovoLocalEntrega">
-    <form class="modal-conteudo" id="formNovoLocalEntrega" method="dialog"><h3>Cadastrar local de entrega</h3><p>Cadastre somente se o local ainda não estiver na lista.</p><div class="campo"><label for="novoLocalEntrega">Nome ou sigla do local</label><input id="novoLocalEntrega" maxlength="120" required placeholder="Ex.: DEAM"></div><div class="modal-acoes"><button class="botao-secundario" id="cancelarNovoLocalEntrega" type="button">Cancelar</button><button type="submit">Adicionar local</button></div></form>
+    <form class="modal-conteudo" id="formNovoLocalEntrega" method="dialog"><h3>Cadastrar local de entrega</h3><p>Cadastre somente se o local ainda não estiver na lista.</p><div class="campo"><label for="novoLocalEntrega">Nome ou sigla do local</label><input id="novoLocalEntrega" maxlength="120" required placeholder="Ex.: DEAM"></div><p id="statusNovoLocalEntrega" role="status" aria-live="polite" style="font-size:13px;color:#64748b" hidden></p><div class="modal-acoes"><button class="botao-secundario" id="cancelarNovoLocalEntrega" type="button">Cancelar</button><button id="confirmarNovoLocalEntrega" type="submit">Adicionar local</button></div></form>
   </dialog>
   <dialog id="modalAtalhosLocais">
     <form class="modal-conteudo" id="formAtalhosLocais" method="dialog">
@@ -963,27 +963,50 @@
 
     const modalNovoLocalEntrega = document.getElementById("modalNovoLocalEntrega");
     const novoLocalEntrega = document.getElementById("novoLocalEntrega");
+    const statusNovoLocalEntrega = document.getElementById("statusNovoLocalEntrega");
+    const confirmarNovoLocalEntrega = document.getElementById("confirmarNovoLocalEntrega");
+    function mensagemNovoLocalEntrega(texto,erro=false){
+      statusNovoLocalEntrega.hidden=!texto;
+      statusNovoLocalEntrega.style.color=erro?"#b42318":"#13795b";
+      statusNovoLocalEntrega.textContent=texto||"";
+    }
     document.getElementById("abrirNovoLocalEntrega").addEventListener("click", () => {
       novoLocalEntrega.value = padronizarLocalEntrega(document.getElementById("localEntrega").value);
+      mensagemNovoLocalEntrega("");
       modalNovoLocalEntrega.showModal();
       novoLocalEntrega.focus();
     });
     document.getElementById("cancelarNovoLocalEntrega").addEventListener("click", () => modalNovoLocalEntrega.close());
-    document.getElementById("formNovoLocalEntrega").addEventListener("submit", evento => {
+    document.getElementById("formNovoLocalEntrega").addEventListener("submit", async evento => {
       evento.preventDefault();
+      if (confirmarNovoLocalEntrega.disabled) return;
       const nome = padronizarLocalEntrega(novoLocalEntrega.value);
-      if (nome.length < 2) { alert("Informe um nome ou sigla válido para o local de entrega."); return; }
-      const existente = catalogos.locais.find(local => chaveLocalEntrega(local) === chaveLocalEntrega(nome));
-      if (existente) {
-        document.getElementById("localEntrega").value = existente;
-        modalNovoLocalEntrega.close();
+      if (nome.length < 2 || nome.length > 120) {
+        mensagemNovoLocalEntrega("Informe um nome ou sigla de 2 a 120 caracteres.",true);
         return;
       }
-      catalogos.locais.push(nome);
-      catalogos.locais.sort((a,b)=>a.localeCompare(b,"pt-BR"));
-      preencherLista("listaLocais",catalogos.locais);
-      document.getElementById("localEntrega").value = nome;
-      modalNovoLocalEntrega.close();
+      confirmarNovoLocalEntrega.disabled=true;
+      confirmarNovoLocalEntrega.textContent="Salvando...";
+      mensagemNovoLocalEntrega("Gravando local no catálogo...");
+      try {
+        const resposta=await banco.rpc("cadastrar_local_entrega_unidade",{p_nome:nome});
+        if (resposta.error) throw resposta.error;
+        const salvo=padronizarLocalEntrega(resposta.data?.nome||"");
+        if(!resposta.data?.id||!salvo)throw Error("O servidor não confirmou a gravação do local.");
+        // Recarrega a fonte autoritativa: o catálogo e os atalhos usam a mesma tabela.
+        await carregarCatalogos();
+        const validado=catalogos.locais.find(item=>chaveLocalEntrega(item)===chaveLocalEntrega(salvo));
+        if(!validado)throw Error("Local salvo no banco, mas o catálogo não foi atualizado. Reabra a página.");
+        document.getElementById("localEntrega").value=validado;
+        await carregarCatalogoLocaisAtalhos();
+        modalNovoLocalEntrega.close();
+      }catch(erro){
+        console.error("Falha ao cadastrar local de entrega:",erro);
+        mensagemNovoLocalEntrega("Não foi possível concluir: "+(erro.message||"erro desconhecido"),true);
+      }finally{
+        confirmarNovoLocalEntrega.disabled=false;
+        confirmarNovoLocalEntrega.textContent="Adicionar local";
+      }
     });
     const modalComandante = document.getElementById("modalComandante");
     const campoComandante = document.getElementById("comandante");
