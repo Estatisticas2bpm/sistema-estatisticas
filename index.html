@@ -88,7 +88,17 @@ function siglaHome(v){var s=String(v||"").trim(),m=s.match(/^(\d+)BPM$/i);if(m)r
 function unidadePorId(id){return cpcUnidades.find(function(u){return String(u.id)===String(id)})}
 function filhosUnidadeCpc(id){return cpcUnidades.filter(function(u){return String(u.parent_id||"")===String(id||"")})}
 function idsDescendentesUnidade(id){var ids=[],fila=id?[String(id)]:[];while(fila.length){var atual=fila.shift();if(ids.includes(atual))continue;ids.push(atual);filhosUnidadeCpc(atual).forEach(function(u){fila.push(String(u.id))})}return ids}
-function dadosPorUnidade(a,id){if(!id)return a;var ids=new Set(idsDescendentesUnidade(id));return a.filter(function(x){return ids.has(String(x.unidade_id))})}
+function dadosPorUnidade(a,id){
+  if(!id)return a; // Não replica registros no consolidado geral do CPC.
+  var ids=new Set(idsDescendentesUnidade(id));
+  return a.filter(function(x){
+    // Cada BO pertence administrativamente à unidade que o lançou.
+    // Se o registro tiver subunidade operacional, o cartão dessa companhia
+    // também deve incluí-lo, sem alterar a unidade de origem nem duplicar o BO.
+    return ids.has(String(x.unidade_id)) ||
+      (x.subunidade_operacional_id && ids.has(String(x.subunidade_operacional_id)));
+  });
+}
 function unidadesCpcPrincipais(){var ids=new Set(cpcUnidades.map(function(u){return String(u.id)}));return cpcUnidades.filter(function(u){return !u.parent_id||!ids.has(String(u.parent_id))})}
 function ordenarUnidadesCpc(){var roots=unidadesCpcPrincipais().slice().sort(function(a,b){return siglaHome(a.sigla).localeCompare(siglaHome(b.sigla),"pt-BR",{numeric:true})}),saida=[];function visitar(u,nivel){saida.push({u:u,nivel:nivel});filhosUnidadeCpc(u.id).slice().sort(function(a,b){return siglaHome(a.sigla).localeCompare(siglaHome(b.sigla),"pt-BR",{numeric:true})}).forEach(function(f){visitar(f,nivel+1)})}roots.forEach(function(u){visitar(u,0)});return saida}
 function somar(a,campo){return a.reduce(function(s,x){return s+(Number(x[campo])||0)},0)}
