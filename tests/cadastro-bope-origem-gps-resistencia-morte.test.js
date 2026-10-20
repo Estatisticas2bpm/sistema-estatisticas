@@ -36,7 +36,7 @@ assert.equal(decimal('100',-90,90),null);
 assert.equal(decimal('texto',-90,90),null);
 const origemInicio=base.indexOf('    function sugerirOrigemBopePdf('),origemFim=base.indexOf('    const latitudeManual=',origemInicio);
 const campo={value:'',dispatchEvent(){}};
-const reconhecer=new Function('origemOcorrenciaBope','Event',base.slice(origemInicio,origemFim)+'return sugerirOrigemBopePdf;')(campo,class{});
+const reconhecer=new Function('origemOcorrenciaBope','origemOcorrenciaBopeDetalhe','Event',base.slice(origemInicio,origemFim)+'return sugerirOrigemBopePdf;')(campo,{value:''},class{});
 reconhecer('ORIGEM DA OCORRÊNCIA: REDE FALCÃO');
 assert.equal(campo.value,'REDE_FALCAO');
 reconhecer('Origem da ocorrência: CCC');
