@@ -15,7 +15,7 @@ assert.match(cadastro,/campo\.disabled=estado/);
 assert.match(cadastro,/data-pessoa="tipo"/);
 assert.match(cadastro,/vitima_tipo: document\.getElementById\("tipoVitima"\)\.value/);
 assert.match(cadastro,/tipoVitima==="ESTADO_RORAIMA"\?null/);
-assert.match(cadastro,/tipoVitimaPrincipal\(\)/);
+assert.match(cadastro,/atualizarTipoVitimaPrincipal\(\)/);
 assert.match(cadastro,/cadastrar_local_entrega_unidade/);
 assert.match(cadastro,/await carregarCatalogoLocaisAtalhos\(\)/);
 assert.match(cadastro,/await carregarCatalogos\(\)/);
