@@ -956,18 +956,23 @@ function listaPessoas(a,prefix){
     let n=o[prefix+'_nacionalidade'],sx=o[prefix+'_sexo'],idade=o[prefix+'_idade'];
     // Preserva a referência ao BO já filtrado para que cada número possa abrir
     // as ocorrências corretas sem consultar outra unidade ou expor dados pessoais.
-    if(dadosPessoaInformados(n,sx,idade))lista.push({nacionalidade:n,sexo:sx,idade,_ocorrencia:o});
+    if(prefix==='vitima'&&o.vitima_tipo==='ESTADO_RORAIMA')
+      lista.push({tipo:'ESTADO_RORAIMA',nacionalidade:null,sexo:null,idade:null,_ocorrencia:o});
+    else if(dadosPessoaInformados(n,sx,idade))
+      lista.push({tipo:'PESSOA_FISICA',nacionalidade:n,sexo:sx,idade,_ocorrencia:o});
     let texto=String(o.observacao_final||''),marca='[[PESSOAS_ENVOLVIDAS]]',pos=texto.indexOf(marca);
     if(pos>=0)try{
       let dados=JSON.parse(texto.slice(pos+marca.length));
-      (dados[chave]||[]).filter(p=>dadosPessoaInformados(p.nacionalidade,p.sexo,p.idade))
+      (dados[chave]||[]).filter(p=>p.tipo==='ESTADO_RORAIMA'||dadosPessoaInformados(p.nacionalidade,p.sexo,p.idade))
         .forEach(p=>lista.push({...p,_ocorrencia:o}));
     }catch(_){}
   });
   return lista;
 }
 function perfil(a,prefix,chartId,box){
-  const pessoas=listaPessoas(a,prefix),tipo=prefix==='vitima'?'Vítimas':'Infratores';
+  const todas=listaPessoas(a,prefix),tipo=prefix==='vitima'?'Vítimas':'Infratores';
+  const entidades=prefix==='vitima'?todas.filter(p=>p.tipo==='ESTADO_RORAIMA'):[];
+  const pessoas=todas.filter(p=>p.tipo!=='ESTADO_RORAIMA');
   const nacs=rank(pessoas,p=>normalizarNacionalidade(p.nacionalidade),20);
   const sex=rank(pessoas,p=>normalizarSexo(p.sexo),8);
   const comIdade=pessoas.filter(p=>num(p.idade)>0),idades=comIdade.map(p=>num(p.idade));
@@ -994,7 +999,8 @@ function perfil(a,prefix,chartId,box){
     <tr><th>Nacionalidade</th><th>Quantidade</th></tr>
     ${linhas||'<tr><td colspan="2">Sem nacionalidade informada</td></tr>'}
     <tr><th>Faixa etária</th><td>${faixaLink}</td></tr>
-    <tr><th>Pessoas identificadas</th><td>${numero(pessoas.length,'pessoas identificadas',pessoas)}</td></tr>
+    <tr><th>Pessoas físicas identificadas</th><td>${numero(pessoas.length,'pessoas identificadas',pessoas)}</td></tr>
+    ${prefix==='vitima'?'<tr><th>Estado de Roraima (ente público)</th><td>'+numero(entidades.length,'Estado de Roraima como vítima',entidades)+'</td></tr>':''}
     <tr><th>Campos pendentes</th><td>
       Nacionalidade: ${numero(semNac.length,'nacionalidade pendente',semNac)} ·
       Sexo: ${numero(semSexo.length,'sexo pendente',semSexo)} ·
