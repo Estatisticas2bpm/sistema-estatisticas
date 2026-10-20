@@ -52,9 +52,12 @@
     const blocoOrigemBope=ehBopeCadastro
       ? '<div class="campo duplo"><label for="subunidadeOperacional">Unidade operacional do BOPE *</label><select id="subunidadeOperacional" name="subunidadeOperacional" required aria-describedby="statusSubunidadesBope"><option value="">Selecione a unidade responsável</option></select><span class="nota" id="statusSubunidadesBope" role="status" aria-live="polite">Carregando unidades operacionais do BOPE...</span><button class="botao-secundario" id="recarregarSubunidadesBope" type="button" hidden>Tentar carregar novamente</button></div>'
       : '';
+    const blocoOrigemOcorrenciaBope=ehBopeCadastro
+      ? '<div class="campo duplo"><label for="origemOcorrenciaBope">Origem da ocorrência — BOPE *</label><select id="origemOcorrenciaBope" name="origemOcorrenciaBope"><option value="">Selecione a origem</option><option value="MISSAO">MISSÃO</option><option value="CCC">CCC</option><option value="REDE_FALCAO">REDE FALCÃO</option><option value="PATRULHAMENTO">PATRULHAMENTO</option><option value="OUTRA">OUTRA ORIGEM</option></select><span class="nota">Informe como a atuação foi iniciada. Confira a origem sugerida após importar um BO.</span></div><div class="campo duplo" id="campoDetalheOrigemBope"><label for="origemOcorrenciaBopeDetalhe">Identificação da missão ou complemento da origem</label><input id="origemOcorrenciaBopeDetalhe" maxlength="240" type="text" placeholder="Ex.: número da missão, setor solicitante ou outra origem"><span class="nota">Obrigatório se selecionar OUTRA ORIGEM.</span></div>'
+      : '';
     html=html.replace(
       /<div class="campo">\s*<label for="tipoRegistro">Tipo \*<\/label>\s*<select id="tipoRegistro" name="tipoRegistro" required>[\s\S]*?<\/select>\s*<\/div>/,
-      '<div class="campo"><label>Tipo de documento</label><input id="tipoDocumentoExibicao" type="text" value="BO" readonly aria-label="Tipo de documento"><select id="tipoRegistro" name="tipoRegistro" required hidden><option value="BO" selected>BO</option><option value="ROP">ROP</option><option value="TCO">TCO</option><option value="NI">NI</option></select><span class="nota">Nos novos registros, toda ocorrência operacional é registrada por Boletim de Ocorrência (BO).</span></div>'+blocoOrigemBope+blocoGrupamento
+      '<div class="campo"><label>Tipo de documento</label><input id="tipoDocumentoExibicao" type="text" value="BO" readonly aria-label="Tipo de documento"><select id="tipoRegistro" name="tipoRegistro" required hidden><option value="BO" selected>BO</option><option value="ROP">ROP</option><option value="TCO">TCO</option><option value="NI">NI</option></select><span class="nota">Nos novos registros, toda ocorrência operacional é registrada por Boletim de Ocorrência (BO).</span></div>'+blocoOrigemBope+blocoOrigemOcorrenciaBope+blocoGrupamento
     );
 
     if(ehCipaCadastro){
@@ -89,11 +92,11 @@
         'locationRestriction: {north:5.3,south:-1.7,east:-58.8,west:-64.9}'
       );
       html=html.replace(
-        '      if (!bairroDigitado && bairroAlterado) return mostrarErroCampo("bairro","Informe o bairro da ocorrência. Se o Google Maps não identificar corretamente, preencha o campo manualmente.");',
+        '      if (!bairroDigitado && bairroAlterado && !coordenadasManuaisValidas()) return mostrarErroCampo("bairro","Informe o bairro da ocorrência ou coordenadas geográficas válidas para local remoto.");',
         '      const cipaCoordenadasDigitadas=document.getElementById("cipaLocalCoordenadas")?.value.trim()||"";\n      if(cipaCoordenadasDigitadas&&!window.CipaCadastro?.parseCoordenadas?.(cipaCoordenadasDigitadas)) return mostrarErroCampo("cipaLocalCoordenadas","Revise as coordenadas geográficas. O formato informado não foi reconhecido.");\n      const cipaTemCoordenadas=Boolean(document.getElementById("latitude").value&&document.getElementById("longitude").value);\n      if (!bairroDigitado && bairroAlterado && !cipaTemCoordenadas) return mostrarErroCampo("bairro","Informe o bairro da ocorrência urbana ou forneça coordenadas geográficas válidas para a ocorrência rural.");'
       );
       html=html.replace(
-        '      if ((!enderecoAtual || !document.getElementById("latitude").value || !document.getElementById("longitude").value) && enderecoFoiAlterado) return mostrarErroCampo("enderecoGoogle","O endereço foi alterado. Pesquise e selecione uma sugestão do Google Maps antes de salvar.");',
+        '      if ((!enderecoAtual || !document.getElementById("latitude").value || !document.getElementById("longitude").value) && enderecoFoiAlterado && !coordenadasManuaisValidas()) return mostrarErroCampo("enderecoGoogle","Selecione um endereço do Google Maps ou informe latitude e longitude válidas para local remoto.");',
         '      if ((!enderecoAtual || !document.getElementById("latitude").value || !document.getElementById("longitude").value) && enderecoFoiAlterado && !cipaTemCoordenadas) return mostrarErroCampo("cipaLocalCoordenadas","Informe coordenadas geográficas válidas ou selecione um endereço urbano no Google Maps antes de salvar.");'
       );
       html=html.replace(
