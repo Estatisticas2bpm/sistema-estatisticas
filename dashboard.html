@@ -67,7 +67,7 @@ dialog.cpcDocOverlay{border:0;margin:0;max-width:none;max-height:none;width:100%
 .drill-ref-cpc:hover{color:#092d4e}.drill-ref-cpc:focus-visible,.cpcDocFechar:focus-visible,.cpcDocVinculo:focus-visible{outline:3px solid #277ba9;outline-offset:2px}
 body.dashboard-comando .drill-table table{min-width:0}
 @media(max-width:700px){.cpcDocOverlay{padding:0}.cpcDocJanela{height:100dvh;max-height:100dvh;border-radius:0}.cpcDocTopo{padding:15px}.cpcDocCorpo{padding:12px}.cpcDocGrupo dl{grid-template-columns:1fr}}
-</style><script src="auth-config.js"></script><script src="auth-guard.js"></script><script src="cipg-dashboard.js?v=20261009-3"></script></head>
+</style><script src="auth-config.js"></script><script src="auth-guard.js"></script><script src="bope-painel.js?v=20261020-bope-sub1"></script><script src="cipg-dashboard.js?v=20261009-3"></script></head>
 <body><div class="loading" id="loading">Carregando dados estatísticos...</div><header><div class="head"><div><h1>Dashboard Completo</h1><p>Análise estatística operacional da unidade ativa</p></div><div><a href="index.html">← Página inicial</a></div></div></header><main>
 <section class="panel"><div class="presets"><button data-period="hoje">Hoje</button><button data-period="semana">Semana atual</button><button data-period="mes">Mês atual</button><button data-period="trimestre">Trimestre</button><button data-period="semestre">Semestre</button><button data-period="ano">Ano</button></div><div class="filters">
 <label>Data inicial<input id="ini" type="date"></label><label id="cipaMunicipioWrap" hidden>Município<input id="cipaMunicipio" placeholder="Todos"></label><label id="cipaAreaWrap" hidden>Área<select id="cipaArea"><option value="">Todas</option><option>URBANA</option><option>RURAL</option></select></label><label id="cipaOrigemWrap" hidden>Origem<input id="cipaOrigemFiltro" placeholder="Todas"></label>
@@ -1147,9 +1147,29 @@ $('giroCorrigirLocais')?.addEventListener('click',corrigirLocaisPendentesGiro);
 $('giroLimparFiltros')?.addEventListener('click',()=>{$('giroFiltroBairro').value='';$('giroFiltroLogradouro').value='';$('giroFiltroTipo').value='';$('giroFiltroHoraInicio').value='0';$('giroFiltroHoraFim').value='23';renderGiroAbordagens()});
 document.querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>{let h=new Date(),i=new Date(h),p=b.dataset.period;if(p==='semana')i.setDate(h.getDate()-(h.getDay()||7)+1);else if(p==='mes')i=new Date(h.getFullYear(),h.getMonth(),1);else if(p==='trimestre')i=new Date(h.getFullYear(),Math.floor(h.getMonth()/3)*3,1);else if(p==='semestre')i=new Date(h.getFullYear(),h.getMonth()<6?0:6,1);else if(p==='ano')i=new Date(h.getFullYear(),0,1);ini.value=fmt(i);fim.value=fmt(h);carregar()});
 aplicar.onclick=carregar;filtroTipoSubtracao.onchange=render;aisc.onchange=()=>{sisc.value='';setor.value='';popularTerritorio();render()};sisc.onchange=()=>{setor.value='';popularTerritorio();render()};setor.onchange=render;
-gerarPdf.onclick=()=>location.href='relatorio.html?v=20261012-1bpm-logo1&ini='+ini.value+'&fim='+fim.value+'&comparar='+comparar.value+'&sisc='+encodeURIComponent(sisc.value)+'&companhia='+encodeURIComponent(companhia.value)+'&subunidade_bope='+encodeURIComponent($('subunidadeBope')?.value||'');
+gerarPdf.onclick=()=>location.href='relatorio.html?v=20261012-1bpm-logo1&ini='+ini.value+'&fim='+fim.value+'&comparar='+comparar.value+'&sisc='+encodeURIComponent(sisc.value)+'&companhia='+encodeURIComponent(companhia.value)+'&subunidade='+encodeURIComponent($('subunidadeBope')?.value||'');
 let h=new Date();ini.value=fmt(new Date(h.getFullYear(),h.getMonth(),1));fim.value=fmt(h);
-(async()=>{if(window.SistemaAuth?.ready)await window.SistemaAuth.ready;const giroLink=$('giroLinkRegistroMobile');if(giroLink&&String(window.SistemaAuth?.perfil?.perfil||'').toUpperCase()==='ADMIN'){giroLink.href='giro-abordagem.html?admin=1';giroLink.textContent='Registro GIRO (ADMIN) ↗';}$('subunidadeBope')?.addEventListener('change',render);['cipaMunicipio','cipaArea','cipaOrigemFiltro'].forEach(id=>$(id)?.addEventListener('change',render));prepararFiltrosAbordagemGiro();configurarModuloCiptur();configurarModuloCipa();configurarModuloGiro();configurarModuloCavalaria();configurarModuloCipg();configurarModuloBope();configurarModuloPrimeiroBpm();configurarModuloSegundoBpm();
+(async()=>{if(window.SistemaAuth?.ready)await window.SistemaAuth.ready;const giroLink=$('giroLinkRegistroMobile');if(giroLink&&String(window.SistemaAuth?.perfil?.perfil||'').toUpperCase()==='ADMIN'){giroLink.href='giro-abordagem.html?admin=1';giroLink.textContent='Registro GIRO (ADMIN) ↗';}$('subunidadeBope')?.addEventListener('change',render);['cipaMunicipio','cipaArea','cipaOrigemFiltro'].forEach(id=>$(id)?.addEventListener('change',render));prepararFiltrosAbordagemGiro();configurarModuloCiptur();configurarModuloCipa();configurarModuloGiro();configurarModuloCavalaria();configurarModuloCipg();configurarModuloBope();
+if(ehBope()){
+  const qs=new URLSearchParams(location.search);
+  const selecionada=window.BopePainel.unidade(qs.get('bope_subunidade')||qs.get('subunidade_bope'));
+  if(selecionada)$('subunidadeBope').value=selecionada.sigla;
+  const aplicarVisualSubunidade=()=>{
+    const sub=window.BopePainel.unidade($('subunidadeBope')?.value);
+    const h=document.querySelector('header h1'),p=document.querySelector('header .head p');
+    if(h)h.textContent=sub?'Dashboard Operacional — '+sub.nome:'Dashboard Operacional — BOPE';
+    if(p)p.textContent=sub?'Estatísticas, produtividade e ocorrências da '+sub.nome+' · BOPE':'Ocorrências, produtividade e resultados operacionais do BOPE e de suas unidades especializadas';
+    const voltar=document.querySelector('header .head a[href^="index.html"]');
+    if(voltar)voltar.href=window.BopePainel.url('index.html',sub);
+    const params=new URLSearchParams(location.search);
+    if(sub){params.set('bope_subunidade',sub.sigla);params.set('subunidade_bope',sub.sigla)}
+    else {params.delete('bope_subunidade');params.delete('subunidade_bope')}
+    history.replaceState(null,'',location.pathname+(params.toString()?'?'+params:''));
+  };
+  $('subunidadeBope').addEventListener('change',aplicarVisualSubunidade);
+  aplicarVisualSubunidade();
+}
+configurarModuloPrimeiroBpm();configurarModuloSegundoBpm();
 if(ehCipg()&&window.CipgDashboard){
  let debounceCipg;
  CipgDashboard.filtros.forEach(id=>{
