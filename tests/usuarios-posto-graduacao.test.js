@@ -12,7 +12,7 @@ const migration=ler(path.join('supabase','migrations','20260929121404_fase3p_pos
 assert.match(migration,/add column if not exists posto_graduacao text/i);
 assert.match(usuarios,/id="postoGraduacao" required/);
 assert.match(usuarios,/id="editPostoGraduacao" required/);
-for(const perfil of ['OPERADOR','ESTATISTICA','GESTOR','CONSULTA','ADMIN'])assert.ok(usuarios.includes('value="'+perfil+'"'));
+for(const perfil of ['OPERADOR','ESTATISTICA','COMANDANTE','CONSULTA','ADMIN'])assert.ok(usuarios.includes('value="'+perfil+'"'));
 for(const posto of ['CEL PM','TEN CEL PM','MAJ PM','CAP PM','1º TEN PM','2º TEN PM','ASP OF PM','AL OF PM','SUB TEN PM','1º SGT PM','2º SGT PM','3º SGT PM','CB PM','SD PM'])assert.ok(usuarios.includes('value="'+posto+'"'));
 assert.ok(usuarios.includes("posto_graduacao:$('postoGraduacao').value"));
 assert.ok(usuarios.includes("posto_graduacao:$('editPostoGraduacao').value"));
