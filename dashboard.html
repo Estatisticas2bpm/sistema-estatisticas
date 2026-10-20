@@ -587,7 +587,7 @@ function documentoOrigemDrill(o){
   return {origem_tabela:'ocorrencias',registro_id:o.id,referencia:referenciaDrill(o)};
 }
 function linkConsultaEscopoBope(destino){
-  if(!ehBope())return destino;
+  if(typeof ehBope!=='function'||!ehBope())return destino;
   return window.BopePainel.url(destino,window.BopePainel.unidade($('subunidadeBope')?.value));
 }
 function abrirDetalhes(titulo,registros,opcoes={}){
