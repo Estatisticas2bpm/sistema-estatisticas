@@ -999,7 +999,7 @@ function perfil(a,prefix,chartId,box){
     <tr><th>Nacionalidade</th><th>Quantidade</th></tr>
     ${linhas||'<tr><td colspan="2">Sem nacionalidade informada</td></tr>'}
     <tr><th>Faixa etária</th><td>${faixaLink}</td></tr>
-    <tr><th>Pessoas físicas identificadas</th><td>${numero(pessoas.length,'pessoas identificadas',pessoas)}</td></tr>
+    <tr><th>Pessoas identificadas</th><td>${numero(pessoas.length,'pessoas identificadas',pessoas)}</td></tr>
     ${prefix==='vitima'?'<tr><th>Estado de Roraima (ente público)</th><td>'+numero(entidades.length,'Estado de Roraima como vítima',entidades)+'</td></tr>':''}
     <tr><th>Campos pendentes</th><td>
       Nacionalidade: ${numero(semNac.length,'nacionalidade pendente',semNac)} ·
