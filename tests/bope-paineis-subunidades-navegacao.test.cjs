@@ -10,6 +10,17 @@ new Function('window',js)(rootScope);
 const api=rootScope.BopePainel;
 assert.ok(api,'Helper de subunidades deve inicializar');
 assert.deepEqual(api.unidades.map(u=>u.sigla),['GATE','CHOQUE','CANIL','FORCA_TATICA']);
+const brasoes={
+  GATE:'assets/logos/bope-subunidades/gate.jpeg',
+  CHOQUE:'assets/logos/bope-subunidades/choque.jpeg',
+  CANIL:'assets/logos/bope-subunidades/canil.png',
+  FORCA_TATICA:'assets/logos/bope-subunidades/forca-tatica.jpeg'
+};
+for(const unidade of api.unidades){
+ assert.equal(unidade.brasao,brasoes[unidade.sigla],unidade.sigla+': caminho do brasão incorreto');
+ assert.ok(fs.existsSync(path.join(root,unidade.brasao)),unidade.sigla+': arquivo do brasão ausente');
+ assert.ok(fs.statSync(path.join(root,unidade.brasao)).size>5_000,unidade.sigla+': arquivo do brasão parece inválido');
+}
 assert.equal(api.filtro('1BPM','?bope_subunidade=GATE'),null,'Filtro não muda escopo do 1BPM');
 assert.equal(api.filtro('CPC','?bope_subunidade=GATE'),null,'Filtro não habilita contexto CPC');
 assert.equal(api.filtro('BOPE','?bope_subunidade=OUTRA'),null,'Rejeitar subunidades desconhecidas');
@@ -25,6 +36,8 @@ assert.deepEqual(api.filtrar(registros,api.unidade('CANIL')).map(x=>x.id),[4]);
 assert.equal(api.filtrar(registros,null).length,4);
 for(const nome of ['bopeSubPainel','bopeSubCards','bopeVoltarConsolidado'])assert.ok(home.includes('id="'+nome+'"'));
 assert.ok(home.indexOf('id="bopeSubPainel"')<home.indexOf('id="total"'),'Cartões precedem KPIs');
+assert.match(home,/class="bopeEmblema"><img src="'\+escHome\(un\.brasao\)\+'" alt="Brasão institucional de /);
+assert.match(home,/\.bopeSubCard \.bopeEmblema img\{[^}]*object-fit:contain/);
 assert.match(home,/renderCardsSubunidadesBope\(completos\)/);
 assert.match(home,/var rpcOcc=modoBope\?"obter_dados_dashboard_territorial"/);
 assert.match(home,/window\.BopePainel\.filtrar\(d,bopeSubAtiva\)/);
