@@ -74,7 +74,12 @@
       ['status_atendimento','Situação'],['municipio','Município'],['bairro','Bairro'],
       ['endereco','Endereço'],['companhia','Companhia'],['sisc','SISC'],
       ['turno','Turno'],['comandante','Comandante da viatura'],['vtr','Viatura'],
-      ['numero_prisoes','Prisões'],['numero_conduzidos','Conduzidos']
+      ['numero_prisoes','Prisões'],['numero_conduzidos','Conduzidos'],
+      ['auto_resistencia','Auto de resistência/prisão'],
+      ['auto_resistencia_resultou_morte','Auto de resistência com resultado morte'],
+      ['origem_ocorrencia','Origem da ocorrência — BOPE'],
+      ['origem_ocorrencia_detalhe','Detalhes da origem — BOPE'],
+      ['latitude','Latitude GPS'],['longitude','Longitude GPS']
     ];
     async function visualizarOcorrencia(id){
       detalheConteudo.textContent='Consultando dados autorizados...';
@@ -85,7 +90,10 @@
         detalheConteudo.textContent='Ocorrência não encontrada na unidade autorizada para sua conta.';
         return;
       }
-      detalheConteudo.innerHTML=camposConsulta.map(([chave,rotulo])=>{
+      detalheConteudo.innerHTML=camposConsulta.filter(([chave])=>
+        !['origem_ocorrencia','origem_ocorrencia_detalhe','auto_resistencia_resultou_morte','latitude','longitude'].includes(chave)
+        || (r.data[chave]!==null&&r.data[chave]!==undefined&&String(r.data[chave])!=='')
+      ).map(([chave,rotulo])=>{
         const valor=chave==='data_ocorrencia'&&r.data[chave]?formatarData(r.data[chave]):r.data[chave];
         return '<div class="detalheCampo"><b>'+escapar(rotulo)+'</b><span>'+escapar(valor==null||valor===''?'—':valor)+'</span></div>';
       }).join('');
