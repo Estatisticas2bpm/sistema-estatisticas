@@ -86,7 +86,7 @@ function aplicarParametrosEntrada(){
   [['tipo','tipo'],['bairro','bairro'],['turno','turno']].forEach(([id,k])=>{if(q.get(k))$(id).value=q.get(k)});
   parametrosEntradaAplicados=true;
 }
-function filtrarOcorrencias(){let t=chave($('tipo').value),b=chave($('bairro').value),tu=chave($('turno').value),u=$('unidade').value,a=$('aisc').value,s=$('sisc').value,st=$('setor').value;return base.filter(x=>coordValida(x)&&(!u||String(x.unidade_id)===u)&&(!a||x.aisc===a)&&(!s||x.sisc===s)&&(!st||x.setor===st)&&(!categoriaRapida||cat(x.ocorrencia||x.crime)[0]===categoriaRapida)&&(!t||chave(x.ocorrencia||x.crime).includes(t))&&(!b||chave(x.bairro).includes(b))&&(!tu||chave(x.turno)===tu))}
+function filtrarOcorrencias(){let t=chave($('tipo').value),b=chave($('bairro').value),tu=chave($('turno').value),u=$('unidade').value,a=$('aisc').value,s=$('sisc').value,st=$('setor').value;return base.filter(x=>coordValida(x)&&(!u||String(x.unidade_id)===u||String(x.subunidade_operacional_id||'')===u)&&(!a||x.aisc===a)&&(!s||x.sisc===s)&&(!st||x.setor===st)&&(!categoriaRapida||cat(x.ocorrencia||x.crime)[0]===categoriaRapida)&&(!t||chave(x.ocorrencia||x.crime).includes(t))&&(!b||chave(x.bairro).includes(b))&&(!tu||chave(x.turno)===tu))}
 function filtrarAbordagens(){
   let b=chave($('bairro').value),u=$('unidade').value,a=$('aisc').value,s=$('sisc').value,st=$('setor').value;
   return baseAbordagens.filter(function(x){

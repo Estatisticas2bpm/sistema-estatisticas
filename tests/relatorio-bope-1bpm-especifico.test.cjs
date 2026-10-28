@@ -11,7 +11,7 @@ const filter=extrair('function filtrarTerritorio(base){','function page(');
 let bope=true;
 const input={value:'',options:[{text:'Todas'},{text:'Força Tática'}],selectedIndex:0};
 const scope={
-  ehBopeRel:()=>bope,eh1BpmRel:()=>!bope,ini:{value:'2026-10-01'},fim:{value:'2026-10-12'},
+  ehBopeRel:()=>bope,eh1BpmRel:()=>!bope,unidadeSelecionadaRelCpc:()=>null,ini:{value:'2026-10-01'},fim:{value:'2026-10-12'},
   dateBR:v=>v.split('-').reverse().join('/'),
   escopoTerritorialVisivel:()=>'BOPE — todas as subunidades',
   $:()=>input,sisc:{value:''},companhia:{value:''},
@@ -50,8 +50,8 @@ assert.match(pagina,/REGISTROS POR COMPANHIA/);
 assert.match(pagina,/sem SISC/);
 assert.match(pagina,/não devem ser somados entre si/);
 assert.match(html,/subunidadeBopeWrap'\)\.hidden=false/);
-assert.match(html,/ehBopeRel\(\)\&\&Boolean\(\$\('subunidadeBope'\)\.value\)/);
+assert.match(html,/const semProgramasPrevencao=!\(window\.SistemaAuth/);
 assert.match(html,/const falhaConsulta=res\.find\(x=>x\?\.error\)\?\.error/);
 assert.doesNotMatch(html,/VISITAS REALIZADAS PELO POLÍCIA NA RUA PR6 E VTR AME/);
-assert.match(html,/AÇÕES PREVENTIVAS REGISTRADAS PELA UNIDADE/);
+assert.match(html,/AÇÕES PREVENTIVAS CADASTRADAS NO CPC \(ORIGEM NÃO IDENTIFICADA\)/);
 console.log('OK: relatório BOPE por subunidade e 1º BPM por SISC/CIA, com fontes e falhas explícitas.');
