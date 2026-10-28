@@ -185,6 +185,10 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
     <div class="kpi" style="--accent:var(--green)"><small>Veículos recuperados</small><strong id="kVeiculos">0</strong><em>resultado operacional</em></div>
     <div class="kpi" style="--accent:var(--amber)"><small>Com armas</small><strong id="kArmas">0</strong><em>ocorrências com registro</em></div>
     <div class="kpi" style="--accent:var(--green)"><small>Com drogas</small><strong id="kDrogas">0</strong><em>ocorrências com registro</em></div>
+    <div class="kpi" style="--accent:var(--teal)"><small>Abordagens — GIRO</small><strong id="kGiroAbordagens">—</strong><em>Registro móvel GIRO; período e unidade</em></div>
+    <div class="kpi" style="--accent:var(--teal)"><small>Pessoas abordadas — GIRO</small><strong id="kGiroPessoas">—</strong><em>Registro móvel GIRO; período e unidade</em></div>
+    <div class="kpi" style="--accent:var(--steel)"><small>Operações realizadas</small><strong title="Ainda não existe fonte consolidada homologada">N/D</strong><em>Sem fonte consolidada homologada</em></div>
+    <div class="kpi" style="--accent:var(--steel)"><small>Apresentações</small><strong title="Ainda não existe fonte consolidada homologada">N/D</strong><em>Sem fonte consolidada homologada</em></div>
   </section>
 
   <section class="panel" id="secIndicadoresCpc" data-cpc-areas="visao-geral">
@@ -437,6 +441,8 @@ function renderAbordagensGiroCpc(){
   if(u)lista=lista.filter(x=>String(x.unidade_id)===String(u));
   $('cpcGiroAbordagens').textContent=lista.length;
   $('cpcGiroPessoas').textContent=lista.reduce((s,x)=>s+n(x.quantidade_pessoas),0);
+  $('kGiroAbordagens').textContent=String(lista.length);
+  $('kGiroPessoas').textContent=String(lista.reduce((s,x)=>s+n(x.quantidade_pessoas),0));
   $('cpcGiroPe').textContent=lista.filter(x=>x.tipo_abordagem==='A_PE').length;
   $('cpcGiroMoto').textContent=lista.filter(x=>x.tipo_abordagem==='MOTO').length;
   $('cpcGiroVeiculo').textContent=lista.filter(x=>x.tipo_abordagem==='VEICULO').length;
