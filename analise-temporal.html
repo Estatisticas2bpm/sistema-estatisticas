@@ -15,7 +15,7 @@ function chave(v){return String(v??'').trim().normalize('NFD').replace(/[\u0300-
 function horaValor(v){let m=String(v||'').match(/^(\d{1,2}):/);if(!m)return null;let h=Number(m[1]);return h>=0&&h<=23?h:null}
 function turnoHora(h){return h<6?'MADRUGADA':h<12?'MANHÃ':h<18?'TARDE':'NOITE'}
 function chart(id,type,labels,data,label){charts[id]?.destroy();charts[id]=new Chart($(id),{type,data:{labels,datasets:[{label,data,borderWidth:2,borderRadius:6,tension:.3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}},x:{grid:{display:false}}}}})}
-function filtrar(d){let t=chave($('tipo').value),b=chave($('bairro').value);return d.filter(x=>(!unidadeEntrada||String(x.unidade_id)===unidadeEntrada)&&window.BopePainel.emEscopo(x,bopeSubTemporal)&&(!t||chave(x.ocorrencia||x.crime).includes(t))&&(!b||chave(x.bairro).includes(b)))}
+function filtrar(d){let t=chave($('tipo').value),b=chave($('bairro').value);return d.filter(x=>(!unidadeEntrada||String(x.unidade_id)===unidadeEntrada||String(x.subunidade_operacional_id||'')===unidadeEntrada)&&window.BopePainel.emEscopo(x,bopeSubTemporal)&&(!t||chave(x.ocorrencia||x.crime).includes(t))&&(!b||chave(x.bairro).includes(b)))}
 function maxItem(arr){let m=Math.max(...arr);let i=arr.indexOf(m);return{indice:i,valor:m}}
 function render(d){d=filtrar(d);let horas=Array(24).fill(0),dias=Array(7).fill(0),turnos={MADRUGADA:0,'MANHÃ':0,TARDE:0,NOITE:0},mat=Array.from({length:7},()=>Array(24).fill(0)),validos=0;
  d.forEach(x=>{let h=horaValor(x.hora_inicial);if(h===null)return;validos++;let dia=new Date(x.data_ocorrencia+'T12:00:00').getDay();horas[h]++;dias[dia]++;turnos[turnoHora(h)]++;mat[dia][h]++});
