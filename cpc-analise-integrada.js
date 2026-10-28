@@ -51,7 +51,7 @@ function hierarquiaIds(id,unidades){
 }
 function contem(a,b){return chave(a).includes(chave(b))}
 function filtro(o,a,ids){
-  if(ids&&!ids.has(String(o.unidade_id||'')))return false;
+  if(ids&&!ids.has(String(o.unidade_id||''))&&!ids.has(String(o.subunidade_operacional_id||'')))return false;
   if(a.p_aisc&&chave(o.aisc)!==chave(a.p_aisc))return false;
   if(a.p_sisc&&chave(o.sisc)!==chave(a.p_sisc))return false;
   if(a.p_setor&&chave(o.setor)!==chave(a.p_setor))return false;
