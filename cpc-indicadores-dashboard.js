@@ -118,7 +118,7 @@
     global.CpcDetalhamentoOrigem.reiniciar();
     if(!visiveis.length){destino.innerHTML='<p class="empty">Nenhuma unidade disponível para este filtro.</p>';return}
     destino.innerHTML=visiveis.map(u=>{
-      const ids=idsDescendentes(u.id,unidades),filtrar=rows=>(rows||[]).filter(x=>ids.has(String(x.unidade_id)));
+      const ids=idsDescendentes(u.id,unidades),filtrar=rows=>(rows||[]).filter(x=>ids.has(String(x.unidade_id||''))||ids.has(String(x.subunidade_operacional_id||'')));
       const sigla=String(u.sigla||'').toUpperCase();
       let extra=extras[sigla]||{status:'carregando'};
       if(extra.status==='ok'&&Array.isArray(extra.data)){
