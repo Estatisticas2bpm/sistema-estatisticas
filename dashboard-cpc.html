@@ -192,7 +192,7 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
   </section>
 
   <section class="panel" id="secIndicadoresCpc" data-cpc-areas="visao-geral">
-  <div class="sectionTitle"><div><h2>Indicadores estatísticos por unidade</h2><p>Indicadores por unidade com critérios próprios; clique em um indicador para conferir os registros de origem e selecione o número do documento para consultar o cadastro completo, sem edição.</p></div><span class="tag">SIE-CPC</span></div>
+  <div class="sectionTitle"><div><h2>Indicadores estatísticos por unidade e subunidade</h2><p>BOPE consolidado e suas companhias (Choque, Força Tática, Canil e GATE) são exibidos separadamente. Os recortes das companhias já integram o BOPE e não devem ser somados novamente ao total. Clique em um indicador para conferir os registros de origem.</p></div><span class="tag">SIE-CPC</span></div>
   <div id="cpcIndicadoresEspecificos" class="cpcSpecialGrid"><p class="empty">Consultando indicadores por unidade...</p></div>
   <section id="cpcDetalhamentoOrigem" class="cpcOrigemPainel" aria-labelledby="cpcOrigemTitulo" hidden>
     <div class="cpcOrigemCabecalho">
@@ -396,7 +396,26 @@ function popularTerritorio(){
   $('setor').innerHTML='<option value="">Todos</option>'+setores.map(x=>'<option>'+esc(x.codigo)+'</option>').join('');
   if(setores.some(x=>x.codigo===setorAtual))$('setor').value=setorAtual;
 }
-function popularUnidades(){if(unidadesCarregadas)return;const atual=new URLSearchParams(location.search).get('unidade')||'',lista=ordenarHierarquiaCpc();$('unidade').innerHTML='<option value="">Todas as unidades — CPC</option>'+lista.map(x=>'<option value="'+esc(x.u.id)+'">'+esc((x.nivel?'↳ '.repeat(Math.min(x.nivel,2)):'')+sigla(x.u.sigla)+' — '+x.u.nome+(x.u.agrega_descendentes?' · CONSOLIDADO':''))+'</option>').join('');if(lista.some(x=>String(x.u.id)===String(atual)))$('unidade').value=atual;unidadesCarregadas=true}
+function popularUnidades(){
+  if(unidadesCarregadas)return;
+  const atual=new URLSearchParams(location.search).get('unidade')||'';
+  const lista=ordenarHierarquiaCpc(),seletor=$('unidade');
+  seletor.replaceChildren(new Option('Todas as unidades — CPC',''));
+  let grupoBope=null;
+  lista.forEach(({u})=>{
+    const pai=unidadeH(u.parent_id);
+    const subBope=String(pai?.sigla||'').toUpperCase()==='BOPE'&&String(u.tipo||'').toUpperCase()==='SUBUNIDADE';
+    const texto=(subBope?'BOPE / ':'')+sigla(u.sigla)+' — '+u.nome+
+      (String(u.sigla).toUpperCase()==='BOPE'||u.agrega_descendentes?' · CONSOLIDADO':'');
+    const opcao=new Option(texto,u.id);
+    if(subBope){
+      if(!grupoBope){grupoBope=document.createElement('optgroup');grupoBope.label='BOPE — subunidades operacionais';seletor.add(grupoBope);}
+      grupoBope.appendChild(opcao);
+    }else{grupoBope=null;seletor.add(opcao)}
+  });
+  if(lista.some(({u})=>String(u.id)===String(atual)))seletor.value=atual;
+  unidadesCarregadas=true;
+}
 function atualizarUrl(){const p=new URLSearchParams();[['ini','ini'],['fim','fim'],['unidade','unidade']].forEach(([id,k])=>{if($(id).value)p.set(k,$(id).value)});const hash=abaCpcAtiva==='visao-geral'?'':'#'+abaCpcAtiva;history.replaceState(null,'',location.pathname+(p.toString()?'?'+p.toString():'')+hash)}
 function selecionarAbaCpc(aba,atualizarHistorico=true){
   if(!descricoesAbasCpc[aba])aba='visao-geral';abaCpcAtiva=aba;
