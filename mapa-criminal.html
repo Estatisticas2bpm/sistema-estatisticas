@@ -122,7 +122,7 @@ function renderCpc(ajustarVista){
         (x.cipa_area_tipo?'<br><b>Área:</b> '+esc(x.cipa_area_tipo):'')+
         '<br>'+esc(localOcorrencia(x))+
         (x.bairro?'<br>'+esc(x.bairro):'')+
-        '<br>'+esc(x.data_ocorrencia||'')+' '+esc(x.hora_inicial||'');
+        '<br>'+esc(x.data_ocorrencia||'')+' '+esc(x.hora_inicial||'')+linkConsultaOcorrencia(x);
       pontosProfissionaisCpc.push(MapaCpcProfissional.criarMarcador(L,x,conteudo,mapa.getZoom()));
     });
     abords.forEach(function(x){
@@ -150,6 +150,12 @@ function renderCpc(ajustarVista){
   const visao=$('visual').value==='calor'?'densidade sem marcadores':$('visual').value==='agrupado'?(grupoProfissionalCpc.disponivel?'agrupamento por proximidade':'pontos; serviço de agrupamento indisponível'):'pontos individuais por cor';
   $('status').textContent=ocorr.length+' ocorrência(s) georreferenciada(s) · '+abords.length+' abordagem(ns) GIRO · '+visao+'.';
 }
+
+function linkConsultaOcorrencia(x){
+  // A consulta verifica novamente a autorização da sessão antes de exibir os dados.
+  if(!x?.id)return '';
+  return '<br><a href="consulta.html?ocorrencia='+encodeURIComponent(x.id)+'" style="display:inline-block;margin-top:8px;font-weight:800">Abrir ocorrência e histórico</a>';
+}
 function render(ajustarVista=false){
   if(modoCpc)return renderCpc(ajustarVista);
   const fonte=$('fonte')?.value||'ocorrencias';
@@ -173,7 +179,7 @@ function render(ajustarVista=false){
         (x.cipa_area_tipo?'<br><b>Área:</b> '+esc(x.cipa_area_tipo):'')+
         '<br>'+esc(localOcorrencia(x))+
         (x.bairro?'<br>'+esc(x.bairro):'')+
-        '<br>'+esc(x.data_ocorrencia||'')+' '+esc(x.hora_inicial||'');
+        '<br>'+esc(x.data_ocorrencia||'')+' '+esc(x.hora_inicial||'')+linkConsultaOcorrencia(x);
       pontosProfissionaisUnidade.push(MapaUnidadeProfissional.criarMarcador(
         L,x,conteudo,mapa.getZoom(),'ocorrencia',unidadeAtivaMapa||x.unidade_sigla
       ));
