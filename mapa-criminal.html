@@ -6,7 +6,7 @@
 .cpcUnitPin img{display:block;position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:white}
 body.modo-cpc .quick{display:none}
 .giro-moto-marker{background:transparent!important;border:0!important}.giro-moto-marker span{display:grid;place-items:center;width:26px;height:26px;font-size:21px;line-height:1;filter:grayscale(1) brightness(.15);text-shadow:0 1px 1px #fff,0 0 2px #fff}.territoryNote{margin-top:10px;color:#52677a;font-size:11px}.territoryNote b{color:#29465f}@media(max-width:1200px){.filters{grid-template-columns:repeat(4,1fr)}}@media(max-width:800px){.filters{grid-template-columns:repeat(2,1fr)}#mapa{height:650px}}@media(max-width:600px){.filters{grid-template-columns:1fr}.head{align-items:flex-start;flex-direction:column}#mapa{height:560px}}</style>
-<script src="estatistica-indicadores.js?v=20261012-ciptur-escudo3"></script><script src="mapa-cpc-profissional.js?v=20261012-v1"></script><script src="mapa-unidade-profissional.js?v=20261015-bigtrail1"></script><script src="auth-config.js"></script><script src="auth-guard.js"></script><script src="bope-painel.js?v=20261020-bope-sub1"></script></head>
+<script src="estatistica-indicadores.js?v=20261012-ciptur-escudo3"></script><script src="mapa-cpc-profissional.js?v=20261012-v1"></script><script src="mapa-unidade-profissional.js?v=20261015-bigtrail1"></script><script src="ocorrencia-detalhe-mapa.js?v=20261028-modal1"></script><script src="auth-config.js"></script><script src="auth-guard.js"></script><script src="bope-painel.js?v=20261020-bope-sub1"></script></head>
 <body><header><div class="head"><div><h1 id="tituloMapa">Mapa Criminal</h1><p id="subtituloMapa">Distribuição geográfica com leitura operacional e territorial oficial</p></div><div class="headLinks"><a href="territorio-cpc.html" data-module="PAINEL_CPC" hidden>⌘ Matriz territorial</a><a href="index.html">← Página inicial</a></div></div></header>
 <main><section class="panel"><div class="presets"><button data-period="hoje">Hoje</button><button data-period="7dias">Últimos 7 dias</button><button data-period="mes" class="active">Mês atual</button><button data-period="semana">Semana atual</button></div>
 <div class="filters">
@@ -122,8 +122,8 @@ function renderCpc(ajustarVista){
         (x.cipa_area_tipo?'<br><b>Área:</b> '+esc(x.cipa_area_tipo):'')+
         '<br>'+esc(localOcorrencia(x))+
         (x.bairro?'<br>'+esc(x.bairro):'')+
-        '<br>'+esc(x.data_ocorrencia||'')+' '+esc(x.hora_inicial||'')+linkConsultaOcorrencia(x);
-      pontosProfissionaisCpc.push(vincularCliqueOcorrencia(MapaCpcProfissional.criarMarcador(L,x,conteudo,mapa.getZoom()),x));
+        '<br>'+esc(x.data_ocorrencia||'')+' '+esc(x.hora_inicial||'');
+      pontosProfissionaisCpc.push(SieDetalheOcorrenciaMapa.vincularMarcador(MapaCpcProfissional.criarMarcador(L,x,conteudo,mapa.getZoom()),x,db));
     });
     abords.forEach(function(x){
       const data=x.registrado_em?new Date(x.registrado_em).toLocaleString('pt-BR',{
@@ -152,26 +152,7 @@ function renderCpc(ajustarVista){
 }
 
 
-// Ao selecionar um marcador individual, abrir a ocorrência completa na consulta autorizada.
-// Os agrupamentos continuam com sua ação normal de aproximação.
-function vincularCliqueOcorrencia(marcador,registro){
-  const id=String(registro?.id||'').trim();
-  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))return marcador;
-  marcador.options.title='Abrir ocorrência e histórico';
-  marcador.on('click',function(){
-    const destino=new URL('consulta.html',window.location.href);
-    // Mantém eventual filtro de subunidade autorizado, como BOPE.
-    destino.search=window.location.search;
-    destino.searchParams.set('ocorrencia',id);
-    window.location.assign(destino.href);
-  });
-  return marcador;
-}
-function linkConsultaOcorrencia(x){
-  // A consulta verifica novamente a autorização da sessão antes de exibir os dados.
-  if(!x?.id)return '';
-  return '<br><a href="consulta.html?ocorrencia='+encodeURIComponent(x.id)+'" style="display:inline-block;margin-top:8px;font-weight:800">Abrir ocorrência e histórico</a>';
-}
+
 function render(ajustarVista=false){
   if(modoCpc)return renderCpc(ajustarVista);
   const fonte=$('fonte')?.value||'ocorrencias';
@@ -195,10 +176,10 @@ function render(ajustarVista=false){
         (x.cipa_area_tipo?'<br><b>Área:</b> '+esc(x.cipa_area_tipo):'')+
         '<br>'+esc(localOcorrencia(x))+
         (x.bairro?'<br>'+esc(x.bairro):'')+
-        '<br>'+esc(x.data_ocorrencia||'')+' '+esc(x.hora_inicial||'')+linkConsultaOcorrencia(x);
-      pontosProfissionaisUnidade.push(vincularCliqueOcorrencia(MapaUnidadeProfissional.criarMarcador(
+        '<br>'+esc(x.data_ocorrencia||'')+' '+esc(x.hora_inicial||'');
+      pontosProfissionaisUnidade.push(SieDetalheOcorrenciaMapa.vincularMarcador(MapaUnidadeProfissional.criarMarcador(
         L,x,conteudo,mapa.getZoom(),'ocorrencia',unidadeAtivaMapa||x.unidade_sigla
-      ),x));
+      ),x,db));
     });
     abords.forEach(function(x){
       const data=x.registrado_em?new Date(x.registrado_em).toLocaleString('pt-BR',{
