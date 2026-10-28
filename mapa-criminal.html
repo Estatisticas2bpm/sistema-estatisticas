@@ -20,7 +20,7 @@ body.modo-cpc .quick{display:none}
 <div class="quick"><button data-cat="" class="active">Todos</button><button data-cat="ROUBO">Roubo</button><button data-cat="FURTO">Furto</button><button data-cat="VIOLÊNCIA DOMÉSTICA">Violência doméstica</button><button data-cat="DROGAS">Drogas</button><button data-cat="TRÂNSITO">Trânsito</button></div>
 <div class="territoryNote"><b>Território:</b> AISC, SISC e Setor são classificados pelo bairro conforme a matriz oficial do CPC. A unidade que registrou a ocorrência permanece identificada separadamente.</div>
 </section>
-<section class="mapbox"><div id="mapa"></div><div class="status"><span id="status">Carregando mapa...</span><span>Use a roda do mouse para aproximar e afastar neste mapa completo.</span></div></section></main>
+<section class="mapbox"><div id="mapa"></div><div class="status"><span id="status">Carregando mapa...</span><span>Para abrir uma ocorrência e seu histórico, clique em um ponto individual. Nos agrupamentos, aproxime até separar os pontos. O mapa de calor não possui pontos clicáveis.</span></div></section></main>
 <script>
 const db=supabase.createClient('https://jppmhhukujigxupgskdk.supabase.co','sb_publishable_ZVnU35i2x9zwppQqYg7UYw_mzaT43aG'),$=id=>document.getElementById(id);
 let modoCpc=false,podeAbordagens=false,base=[],baseAbordagens=[],unidadesMapa=[],categoriaRapida='',catalogoTerritorial=null,parametrosEntradaAplicados=false,pontos=L.layerGroup(),calor=L.heatLayer([],{radius:34,blur:26,minOpacity:.18,maxZoom:18,gradient:{.18:'#2563eb',.4:'#22c55e',.62:'#facc15',.82:'#f97316',1:'#dc2626'}});
@@ -123,7 +123,7 @@ function renderCpc(ajustarVista){
         '<br>'+esc(localOcorrencia(x))+
         (x.bairro?'<br>'+esc(x.bairro):'')+
         '<br>'+esc(x.data_ocorrencia||'')+' '+esc(x.hora_inicial||'')+linkConsultaOcorrencia(x);
-      pontosProfissionaisCpc.push(MapaCpcProfissional.criarMarcador(L,x,conteudo,mapa.getZoom()));
+      pontosProfissionaisCpc.push(vincularCliqueOcorrencia(MapaCpcProfissional.criarMarcador(L,x,conteudo,mapa.getZoom()),x));
     });
     abords.forEach(function(x){
       const data=x.registrado_em?new Date(x.registrado_em).toLocaleString('pt-BR',{
@@ -151,6 +151,22 @@ function renderCpc(ajustarVista){
   $('status').textContent=ocorr.length+' ocorrência(s) georreferenciada(s) · '+abords.length+' abordagem(ns) GIRO · '+visao+'.';
 }
 
+
+// Ao selecionar um marcador individual, abrir a ocorrência completa na consulta autorizada.
+// Os agrupamentos continuam com sua ação normal de aproximação.
+function vincularCliqueOcorrencia(marcador,registro){
+  const id=String(registro?.id||'').trim();
+  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))return marcador;
+  marcador.options.title='Abrir ocorrência e histórico';
+  marcador.on('click',function(){
+    const destino=new URL('consulta.html',window.location.href);
+    // Mantém eventual filtro de subunidade autorizado, como BOPE.
+    destino.search=window.location.search;
+    destino.searchParams.set('ocorrencia',id);
+    window.location.assign(destino.href);
+  });
+  return marcador;
+}
 function linkConsultaOcorrencia(x){
   // A consulta verifica novamente a autorização da sessão antes de exibir os dados.
   if(!x?.id)return '';
@@ -180,9 +196,9 @@ function render(ajustarVista=false){
         '<br>'+esc(localOcorrencia(x))+
         (x.bairro?'<br>'+esc(x.bairro):'')+
         '<br>'+esc(x.data_ocorrencia||'')+' '+esc(x.hora_inicial||'')+linkConsultaOcorrencia(x);
-      pontosProfissionaisUnidade.push(MapaUnidadeProfissional.criarMarcador(
+      pontosProfissionaisUnidade.push(vincularCliqueOcorrencia(MapaUnidadeProfissional.criarMarcador(
         L,x,conteudo,mapa.getZoom(),'ocorrencia',unidadeAtivaMapa||x.unidade_sigla
-      ));
+      ),x));
     });
     abords.forEach(function(x){
       const data=x.registrado_em?new Date(x.registrado_em).toLocaleString('pt-BR',{
