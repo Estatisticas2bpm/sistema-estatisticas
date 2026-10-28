@@ -113,7 +113,17 @@
     if(!destino)return;
     const cpc=unidades.find(u=>String(u.sigla).toUpperCase()==='CPC');
     const selecionada=unidades.find(u=>String(u.id)===String(unidadeSelecionada));
-    const visiveis=selecionada?[selecionada]:unidades.filter(u=>String(u.parent_id)===String(cpc?.id));
+    // A hierarquia BOPE inclui companhias operacionais que guardam BOs
+    // com unidade_id=BOPE e subunidade_operacional_id específico.
+    // Mostrar cada unidade em um cartão próprio; os cartões são recortes
+    // dos mesmos BOs e não somas adicionais ao BOPE/CPC.
+    const bope=unidades.find(u=>String(u.sigla||'').toUpperCase()==='BOPE');
+    const subunidadesBope=bope?unidades.filter(u=>String(u.parent_id)===String(bope.id)&&String(u.tipo||'').toUpperCase()==='SUBUNIDADE')
+      .sort((a,b)=>String(a.sigla).localeCompare(String(b.sigla),'pt-BR')):[];
+    const principais=unidades.filter(u=>String(u.parent_id)===String(cpc?.id));
+    const visiveis=selecionada
+      ? (String(selecionada.id)===String(bope?.id)?[selecionada,...subunidadesBope]:[selecionada])
+      : principais.flatMap(u=>String(u.id)===String(bope?.id)?[u,...subunidadesBope]:[u]);
     const occ=home?.ocorrencias||[],tcos=home?.tcos||[];
     global.CpcDetalhamentoOrigem.reiniciar();
     if(!visiveis.length){destino.innerHTML='<p class="empty">Nenhuma unidade disponível para este filtro.</p>';return}
@@ -132,7 +142,8 @@
       const cards=global.EstatisticaIndicadores.cards(sigla,linhasOcorrencias,linhasTcos,extra);
       const err=extra.status==='erro'&&['CIPA','CIPG','GIRO','CAVALARIA','CIPTUR'].includes(sigla);
       const linhas=global.CpcRastreabilidade.registros(sigla,linhasOcorrencias,linhasTcos,extra.status==='ok'?extra.data:null);
-      return '<article class="cpcSpecialCard"><h3>'+esc(nome(sigla))+'</h3><p>'+esc(u.nome||'')+'</p><div class="cpcSpecialValues">'+
+      const subBope=String(u.parent_id||'')===String(bope?.id)&&String(u.tipo||'').toUpperCase()==='SUBUNIDADE';
+      return '<article class="cpcSpecialCard"><h3>'+esc((subBope?'BOPE / ':'')+nome(sigla))+'</h3><p>'+esc(u.nome||'')+(subBope?' · Subunidade operacional':'')+'</p><div class="cpcSpecialValues">'+
         cards.map(k=>'<button type="button" class="cpcIndicadorAbrir" data-abrir-indicador="'+esc(k.rotulo)+'" data-unidade-indicador="'+esc(sigla)+'" title="'+esc((k.fonte||'')+' · Abrir registros relacionados, somente leitura')+'" aria-label="Conferir registros relacionados a '+esc(k.rotulo)+' de '+esc(nome(sigla))+'"'+(k.valor==null?' disabled':'')+'><strong>'+esc(global.EstatisticaIndicadores.formatar(k))+'</strong><span>'+esc(k.rotulo)+'</span></button>').join('')+
         '</div>'+desenharSerie(serieEspecializada(sigla,extra,inicio,fim))+
         (err?'<small class="cpcSpecialWarning">Dados especializados indisponíveis. Consulte a unidade/permissões.</small>':'')+
