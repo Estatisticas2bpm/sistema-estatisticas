@@ -85,8 +85,8 @@ metricas as (
 ),
 naturezas_contagem as (
   select
-    e.id,
-    e.sigla,
+    e.id unidade_id,
+    e.sigla unidade_sigla,
     coalesce(nullif(btrim(b.ocorrencia),''),nullif(btrim(b.crime),''),'NÃO INFORMADO') natureza,
     count(*)::bigint total
   from base b
