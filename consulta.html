@@ -71,6 +71,7 @@
     const camposConsulta=[
       ['numero_bo','Número do BO'],['tipo_registro','Documento'],['data_ocorrencia','Data da ocorrência'],
       ['hora_inicial','Hora'],['ocorrencia','Ocorrência'],['crime','Tipificação'],
+      ['historico_resumido','Histórico resumido'],
       ['status_atendimento','Situação'],['municipio','Município'],['bairro','Bairro'],
       ['endereco','Endereço'],['companhia','Companhia'],['sisc','SISC'],
       ['turno','Turno'],['comandante','Comandante da viatura'],['vtr','Viatura'],
@@ -212,6 +213,10 @@
         if(voltar)voltar.href=window.BopePainel.url('index.html',bopeSubConsulta);
       }
       await carregar();
+      const ocorrenciaSolicitada=parametrosIniciais.get('ocorrencia');
+      if(ocorrenciaSolicitada && /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(ocorrenciaSolicitada)){
+        await visualizarOcorrencia(ocorrenciaSolicitada);
+      }
     })();
   </script>
 </body>
