@@ -187,14 +187,17 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
     <div class="kpi" style="--accent:var(--green)"><small>Com drogas</small><strong id="kDrogas">0</strong><em>ocorrências com registro</em></div>
     <div class="kpi" style="--accent:var(--teal)"><small>Abordagens — GIRO</small><strong id="kGiroAbordagens">—</strong><em id="kGiroAbordagensFonte">Fonte: registros móveis do GIRO; sem total CPC de abordagens</em></div>
     <div class="kpi" style="--accent:var(--teal)"><small>Pessoas abordadas — fontes disponíveis</small><strong id="kGiroPessoas">—</strong><em id="kPessoasAbordadasFonte">GIRO + Cavalaria (registros estruturados); cobertura parcial do CPC</em></div>
-    <div class="kpi" style="--accent:var(--steel)"><small>Operações realizadas</small><strong title="Ainda não existe fonte consolidada homologada">N/D</strong><em>Sem fonte consolidada homologada</em></div>
-    <div class="kpi" style="--accent:var(--steel)"><small>Apresentações</small><strong title="Ainda não existe fonte consolidada homologada">N/D</strong><em>Sem fonte consolidada homologada</em></div>
+    <div class="kpi" style="--accent:var(--steel)"><small>Operações documentadas</small><strong id="kOperacoesDocumentadas">N/D</strong><em id="kOperacoesFonte">Aguardando validação documental</em></div>
+    <div class="kpi" style="--accent:var(--steel)"><small>Apresentações documentadas</small><strong id="kApresentacoesDocumentadas">N/D</strong><em id="kApresentacoesFonte">Aguardando validação documental</em></div>
   </section>
   <p data-cpc-areas="visao-geral" style="font-size:12px;color:var(--muted);margin:4px 0 15px;line-height:1.5">
     <strong>Produtividade por fonte:</strong> abordagens registradas e pessoas abordadas representam medidas diferentes.
     Os indicadores especializados de GIRO e Cavalaria consideram período e unidade; filtros de bairro, companhia,
     natureza, AISC, SISC, setor e turno do BO não são aplicados automaticamente a esses serviços.
     Outras unidades ainda não possuem base de abordagens unificada; N/D não representa zero.
+    Operações e apresentações usam apenas atividades documentadas e validadas, sem inferências de BO, condução,
+    ordem de serviço ou local de entrega. Os filtros territoriais do BO não restringem esses registros.
+    <a href="produtividade-cpc.html">Conferir lançamentos e documentos de origem</a>.
   </p>
 
   <section class="panel" id="secIndicadoresCpc" data-cpc-areas="visao-geral">
@@ -358,7 +361,7 @@ const db=supabase.createClient(cfg.supabaseUrl,cfg.publishableKey);
 window.CpcDocumentoLeitura.configurar(db);
 window.CpcAnaliseIntegrada.iniciar();
 const $=id=>document.getElementById(id);
-let charts={},unidadesCarregadas=false,catalogoTerritorial=null,abordagensGiroCpc=[],servicosCavalariaCpc=null,hierarquiaUnidades=[];
+let charts={},unidadesCarregadas=false,catalogoTerritorial=null,abordagensGiroCpc=[],servicosCavalariaCpc=null,atividadesDocumentadasCpc=null,hierarquiaUnidades=[];
 let abaCpcAtiva='visao-geral';
 const descricoesAbasCpc={
   'visao-geral':['Visão geral','síntese executiva, indicadores gerais e resultados especializados das unidades.'],
@@ -522,6 +525,38 @@ function produtividadeAbordagensCpc(unidadeId,giros,servicos){
   return {girosFiltrados,cavFiltrados,pessoasGiro,pessoasCavalaria,abordagensGiro:girosFiltrados.length,
     pessoas:disponivel&&completa?pessoasGiro+pessoasCavalaria:null,dispGiro:incluiGiro&&Boolean(giro)};
 }
+function filtrarAtividadesCpc(registros,unidadeSelecionada){
+  if(!Array.isArray(registros))return null;
+  if(!unidadeSelecionada)return registros;
+  const selecionada=unidadeH(unidadeSelecionada);
+  if(!selecionada)return [];
+  const ids=new Set(idsDescH(selecionada.id).map(String));
+  // Um registro representa uma só atividade. Subunidade é um recorte,
+  // não outra linha a adicionar ao total do BOPE.
+  return registros.filter(x=>
+    ids.has(String(x.subunidade_id||''))||
+    (String(selecionada.tipo||'').toUpperCase()!=='SUBUNIDADE'&&ids.has(String(x.unidade_id||''))));
+}
+function indicadoresAtividadesDocumentadasCpc(registros,unidadeSelecionada){
+  const lista=filtrarAtividadesCpc(registros,unidadeSelecionada);
+  if(!lista)return {operacoes:null,apresentacoes:null,origemIndisponivel:true};
+  const atividades=lista.filter(x=>x.situacao==='VALIDADO');
+  const contar=tipo=>{const ids=new Set(atividades.filter(x=>x.tipo===tipo).map(x=>String(x.id)));return ids.size||null;};
+  return {operacoes:contar('OPERACAO'),apresentacoes:contar('APRESENTACAO'),origemIndisponivel:false};
+}
+function renderAtividadesDocumentadasCpc(){
+  const dados=indicadoresAtividadesDocumentadasCpc(atividadesDocumentadasCpc,$('unidade').value);
+  for(const [key,numero,origem] of [
+    ['kOperacoesDocumentadas',dados.operacoes,'kOperacoesFonte'],
+    ['kApresentacoesDocumentadas',dados.apresentacoes,'kApresentacoesFonte']
+  ]){
+    $(key).textContent=numero===null?'N/D':String(numero);
+    $(origem).textContent=dados.origemIndisponivel
+      ?'Fonte não disponível — consulte permissões e conexão'
+      :numero===null?'Nenhuma atividade validada; N/D não equivale a zero'
+      :'Registros individualizados, documentados e validados · filtros: período e unidade';
+  }
+}
 function renderAbordagensGiroCpc(){
   const resumo=produtividadeAbordagensCpc($('unidade').value,abordagensGiroCpc,servicosCavalariaCpc);
   const lista=resumo.girosFiltrados;
@@ -551,7 +586,22 @@ chart('chartUnidades','bar',grupos.map(x=>sigla(x.sigla)),[{label:'Ocorrências'
 const datas=[...new Set(serie.map(x=>x.data))].sort(),units=[...new Set(serie.map(x=>x.sigla))],mapa=new Map(serie.map(x=>[x.data+'|'+x.sigla,n(x.total)]));const datasets=units.map(s=>({label:sigla(s),data:datas.map(dt=>mapa.get(dt+'|'+s)||0),tension:.25,fill:false}));chart('chartSerie','line',datas.map(br),datasets,{interaction:{mode:'index',intersect:false},scales:{y:{beginAtZero:true,ticks:{precision:0}}}});
 rankList('topNaturezasGeral',d.top_naturezas_geral||[],'natureza');rankList('topBairros',d.top_bairros||[],'bairro');rankList('territorioAisc',d.territorio?.aisc||[],'codigo');rankList('territorioSisc',d.territorio?.sisc||[],'codigo');rankList('territorioSetores',d.territorio?.setores||[],'codigo');
 $('naturezas').innerHTML=top.length?top.map(x=>'<div class="naturezaBox"><h3>'+esc(sigla(x.sigla))+'</h3>'+((x.itens||[]).length?(x.itens||[]).map((i,idx)=>'<div class="rank"><i>'+(idx+1)+'º</i><span title="'+esc(i.natureza)+'">'+esc(i.natureza)+'</span><b>'+n(i.total)+'</b></div>').join(''):'<div class="status">Sem ocorrências no período.</div>')+'</div>').join(''):'<div class="empty">Sem dados para exibir.</div>';
-  renderAbordagensGiroCpc();renderResumo({...d,unidades:grupos});const selecionada=(d.unidades_disponiveis||[]).find(x=>x.id===$('unidade').value);$('scope').textContent='Abrangência · '+(selecionada?sigla(selecionada.sigla)+' — '+selecionada.nome:'todas as unidades subordinadas');$('heroScope').textContent=selecionada?sigla(selecionada.sigla)+' — '+selecionada.nome:'Todas as unidades subordinadas';$('heroPeriod').textContent=br($('ini').value)+' a '+br($('fim').value);sincronizarAnoMes();atualizarAtalhosCpc();atualizarUrl()}
+  renderAbordagensGiroCpc();renderAtividadesDocumentadasCpc();renderResumo({...d,unidades:grupos});const selecionada=(d.unidades_disponiveis||[]).find(x=>x.id===$('unidade').value);$('scope').textContent='Abrangência · '+(selecionada?sigla(selecionada.sigla)+' — '+selecionada.nome:'todas as unidades subordinadas');$('heroScope').textContent=selecionada?sigla(selecionada.sigla)+' — '+selecionada.nome:'Todas as unidades subordinadas';$('heroPeriod').textContent=br($('ini').value)+' a '+br($('fim').value);sincronizarAnoMes();atualizarAtalhosCpc();atualizarUrl()}
+async function consultarAtividadesDocumentadasCpc(inicio,fim){
+  const dados=[],passo=1000;
+  for(let pagina=0;pagina<200;pagina++){
+    const r=await db.from('cpc_atividades_documentadas')
+      .select('id,unidade_id,subunidade_id,tipo,situacao,data_atividade')
+      .eq('situacao','VALIDADO')
+      .gte('data_atividade',inicio).lte('data_atividade',fim)
+      .order('id',{ascending:true})
+      .range(pagina*passo,(pagina+1)*passo-1);
+    if(r.error)return {data:null,error:r.error};
+    const lote=r.data||[];dados.push(...lote);
+    if(lote.length<passo)return {data:dados,error:null};
+  }
+  return {data:null,error:new Error('Consulta documental excedeu o limite; reduza o período.')};
+}
 async function consultarCavalariaCpcPaginado(inicio,fim){
   const dados=[],passo=1000;
   for(let pagina=0;pagina<200;pagina++){
@@ -600,7 +650,7 @@ async function carregar(){
   $('loading').style.display='grid';
   $('status').textContent='Consultando dados de '+br(inicio)+' a '+br(fim)+'...';
   try{
-    const [r,ga,cv]=await Promise.all([consultarPainelCpc(args),consultarGiroCpcPaginado(inicio,fim),consultarCavalariaCpcPaginado(inicio,fim)]);
+    const [r,ga,cv,ad]=await Promise.all([consultarPainelCpc(args),consultarGiroCpcPaginado(inicio,fim),consultarCavalariaCpcPaginado(inicio,fim),consultarAtividadesDocumentadasCpc(inicio,fim)]);
     if(versao!==versaoConsultaCpc)return;
     if(r.error)throw r.error;
     if(ga.error)throw ga.error;
@@ -608,6 +658,8 @@ async function carregar(){
     if((r.data?.periodo?.inicio&&r.data.periodo.inicio!==inicio)||(r.data?.periodo?.fim&&r.data.periodo.fim!==fim))throw new Error('A consulta retornou um período diferente do solicitado.');
     abordagensGiroCpc=ga.data||[];
     servicosCavalariaCpc=cv.error?null:(cv.data||[]);
+    atividadesDocumentadasCpc=ad.error?null:(ad.data||[]);
+    if(ad.error)console.warn('Atividades documentadas CPC não disponíveis:',ad.error.message);
     if(cv.error)console.warn('Indicador CPC de pessoas abordadas sem dados da Cavalaria:',cv.error.message);
     popularUnidades();
     if(!args.p_unidade_id&&$('unidade').value){carregar();return}
