@@ -342,7 +342,7 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
     <div id="naturezas" class="naturezas"></div>
   </section>
 
-  <section class="panel" data-cpc-areas="visao-geral"><div class="sectionTitle"><div><h2>Aprofundar análise</h2><p>Abra as ferramentas especializadas preservando unidade e período selecionados</p></div><span class="tag">ATALHOS</span></div><div class="quick"><a id="linkTerritorioCpc" href="territorio-cpc.html">Matriz territorial <span>→</span></a><a href="#produtividade">Análises completas <span>→</span></a><a id="linkMapaCpc" href="mapa-criminal.html">Mapa criminal <span>→</span></a><a id="linkTemporalCpc" href="analise-temporal.html">Análise temporal <span>→</span></a><a id="linkRelatorioCpc" href="relatorio.html">Relatório consolidado <span>→</span></a></div></section>
+  <section class="panel" data-cpc-areas="visao-geral"><div class="sectionTitle"><div><h2>Aprofundar análise</h2><p>Abra as ferramentas especializadas preservando unidade e período selecionados</p></div><span class="tag">ATALHOS</span></div><div class="quick"><a id="linkTerritorioCpc" href="territorio-cpc.html">Matriz territorial <span>→</span></a><a href="#produtividade">Análises completas <span>→</span></a><a id="linkMapaCpc" href="mapa-criminal.html">Mapa criminal <span>→</span></a><a id="linkTemporalCpc" href="analise-temporal.html">Análise temporal <span>→</span></a><a id="linkRelatorioCpc" href="relatorio.html">Relatório consolidado <span>→</span></a></div><p id="cpcAtalhosEscopoAviso" role="status" aria-live="polite" hidden style="margin:12px 0 0;color:#77520f;font-size:12px;line-height:1.5"></p></section>
 </main>
 <footer>SIE-CPC — Polícia Militar de Roraima · Comando de Policiamento da Capital</footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -444,9 +444,42 @@ function aplicarAnoMes(){
 }
 function parametrosGlobaisCpc(){const p=new URLSearchParams();[['ini','ini'],['fim','fim'],['unidade','unidade'],['aisc','aisc'],['sisc','sisc'],['setor','setor'],['turno','turno'],['ocorrencia','tipo'],['bairro','bairro']].forEach(([id,k])=>{const v=$(id)?.value?.trim?.()||$(id)?.value;if(v)p.set(k,v)});return p}
 function atualizarAtalhosCpc(){
-  const p=parametrosGlobaisCpc(),qs=p.toString(),pRel=new URLSearchParams();['ini','fim'].forEach(k=>{if(p.get(k))pRel.set(k,p.get(k))});
-  [['linkMapaTopoCpc','mapa-criminal.html'],['linkMapaCpc','mapa-criminal.html'],['linkTemporalCpc','analise-temporal.html'],['linkTerritorioCpc','territorio-cpc.html']].forEach(([id,pagina])=>{const el=$(id);if(el)el.href=pagina+(qs?'?'+qs:'')});
-  if($('linkRelatorioCpc'))$('linkRelatorioCpc').href='relatorio.html'+(pRel.toString()?'?'+pRel.toString():'');
+  const origem=parametrosGlobaisCpc(),unidade=unidadeH($('unidade').value);
+  const siglaUnidade=String(unidade?.sigla||'').toUpperCase();
+  const unidadeEspecial=String(unidade?.tipo||'').toUpperCase()==='SUBUNIDADE'||
+    ['BOPE','CIPA','CIPTUR','CIPG','CAVALARIA','GIRO'].includes(siglaUnidade);
+  function parametros(chaves){
+    const p=new URLSearchParams();
+    chaves.forEach(chave=>{const v=chave==='companhia'?$('companhia').value:origem.get(chave);if(v)p.set(chave,v)});
+    return p;
+  }
+  function atribuir(id,pagina,chaves){
+    const a=$(id);if(!a)return;
+    const q=parametros(chaves).toString();a.href=pagina+(q?'?'+q:'');
+  }
+  const mapa=['ini','fim','unidade','aisc','sisc','setor','turno','tipo','bairro'];
+  atribuir('linkMapaTopoCpc','mapa-criminal.html',mapa);
+  atribuir('linkMapaCpc','mapa-criminal.html',mapa);
+  atribuir('linkTemporalCpc','analise-temporal.html',['ini','fim','unidade','tipo','bairro']);
+  atribuir('linkRelatorioCpc','relatorio.html',unidadeEspecial?
+    ['ini','fim','unidade']:['ini','fim','unidade','sisc','companhia']);
+  const matriz=$('linkTerritorioCpc');if(matriz)matriz.href='territorio-cpc.html';
+  const relatorio=$('linkRelatorioCpc');
+  if(relatorio)relatorio.innerHTML=(unidade?'Relatório — '+esc(sigla(unidade.sigla)):'Relatório consolidado')+' <span>→</span>';
+  const nomes={aisc:'AISC',sisc:'SISC',setor:'setor',turno:'turno',tipo:'natureza',bairro:'bairro',companhia:'companhia'};
+  const ativos=['aisc','sisc','setor','turno','tipo','bairro','companhia'].filter(k=>
+    k==='companhia'?Boolean($('companhia').value):Boolean(origem.get(k)));
+  const ignoradosRel=ativos.filter(k=>!((k==='sisc'||k==='companhia')&&!unidadeEspecial));
+  const ignoradosTemporal=ativos.filter(k=>!['tipo','bairro'].includes(k));
+  const aviso=$('cpcAtalhosEscopoAviso');
+  if(aviso){
+    const mensagens=[];
+    if(ignoradosRel.length)mensagens.push('Relatório: não aplica '+ignoradosRel.map(k=>nomes[k]).join(', ')+'.');
+    if(ignoradosTemporal.length)mensagens.push('Análise temporal: não aplica '+ignoradosTemporal.map(k=>nomes[k]).join(', ')+'.');
+    if($('companhia').value)mensagens.push('Mapa criminal: não aplica o filtro de companhia operacional.');
+    aviso.hidden=!mensagens.length;
+    aviso.textContent=mensagens.join(' ') + (mensagens.length?' A matriz territorial é uma referência institucional, não um resultado filtrado.':'');
+  }
 }
 function renderResumo(d){const r=d.resumo||{},u=d.unidades||[],topN=(d.top_naturezas_geral||[])[0],topB=(d.top_bairros||[])[0];let partes=[];const total=n(r.total_ocorrencias);if(!total){$('resumoExecutivo').textContent='Não há ocorrências no recorte selecionado. Ajuste o período ou os filtros para ampliar a consulta.';return}
 partes.push('Foram registradas '+total+' ocorrência'+(total===1?'':'s')+' no período selecionado.');
