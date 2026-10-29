@@ -161,7 +161,7 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
       <label>Setor<select id="setor"><option value="">Todos</option></select></label>
       <label>Turno<select id="turno"><option value="">Todos</option><option>MADRUGADA</option><option>MANHÃ</option><option>TARDE</option><option>NOITE</option></select></label>
       <label>Ocorrência / natureza<input id="ocorrencia" placeholder="Todas"></label>
-      <label>Bairro<input id="bairro" placeholder="Todos"></label>
+      <label>Bairro<input id="bairro" list="cpcBairrosSugestoes" placeholder="Todos" autocomplete="off"><datalist id="cpcBairrosSugestoes"></datalist></label>
       <label>Companhia<select id="companhia"><option value="">Todas</option><option value="1ª CIA">1ª Companhia</option><option value="2ª CIA">2ª Companhia</option><option value="3ª CIA">3ª Companhia</option></select></label>
     </div>
     <div class="filterActions" style="margin-top:12px"><button id="atualizar" class="btn" type="button">Aplicar filtros</button><button id="limpar" class="btn secondary" type="button">Limpar filtros</button></div>
@@ -383,6 +383,18 @@ function chart(id,type,labels,datasets,options={}){if(charts[id])charts[id].dest
 function rankList(id,itens,campoNome){const el=$(id),a=itens||[];el.innerHTML=a.length?a.map((x,i)=>'<div class="rankRow"><span class="rankPos">'+(i+1)+'º</span><span class="rankName" title="'+esc(x[campoNome])+'">'+esc(x[campoNome])+'</span><span class="rankValue">'+n(x.total)+'</span></div>').join(''):'<div class="empty">Sem dados para o filtro selecionado.</div>'}
 function popularTerritorio(){
   if(!catalogoTerritorial)return;
+  const sugestoes=$('cpcBairrosSugestoes');
+  if(sugestoes){
+    sugestoes.replaceChildren(...(catalogoTerritorial.bairros||[]).map(b=>{
+      const opt=document.createElement('option');
+      opt.value=b.nome;
+      const nomes=(catalogoTerritorial.aliases||[]).filter(a=>String(a.bairro_id)===String(b.id))
+        .map(a=>a.alias_chave).filter(a=>a!==String(b.nome).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase())
+        .slice(0,3);
+      opt.label=nomes.length?b.nome+' ('+nomes.join(', ')+')':b.nome;
+      return opt;
+    }));
+  }
   const aiscAtual=$('aisc').value,siscAtual=$('sisc').value,setorAtual=$('setor').value;
   $('aisc').innerHTML='<option value="">Todas</option>'+(catalogoTerritorial.aisc||[]).map(x=>'<option>'+esc(x.codigo)+'</option>').join('');
   if((catalogoTerritorial.aisc||[]).some(x=>x.codigo===aiscAtual))$('aisc').value=aiscAtual;
@@ -554,7 +566,7 @@ async function carregar(){
     popularUnidades();
     if(!args.p_unidade_id&&$('unidade').value){carregar();return}
     render(r.data);
-    window.CpcAnaliseIntegrada?.configurar(db,args,hierarquiaUnidades,r.data.resumo?.total_ocorrencias);
+    window.CpcAnaliseIntegrada?.configurar(db,args,hierarquiaUnidades,r.data.resumo?.total_ocorrencias,catalogoTerritorial);
     document.querySelector('main').classList.remove('cpcConsultaSemResultado');
     window.CpcIndicadoresDashboard.carregar(db,args,hierarquiaUnidades).catch(function(e){console.error(e);if(versao===versaoConsultaCpc)$('cpcIndicadoresEspecificos').textContent='Erro ao consultar indicadores especializados.'});
     $('status').textContent='Filtro aplicado: '+br(inicio)+' a '+br(fim)+' · '+n(r.data.resumo?.total_ocorrencias).toLocaleString('pt-BR')+' ocorrências policiais no escopo. Os indicadores especializados possuem critérios próprios descritos abaixo.';
