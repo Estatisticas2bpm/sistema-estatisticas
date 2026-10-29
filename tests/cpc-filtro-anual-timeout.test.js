@@ -34,6 +34,7 @@ const context={
   popularUnidades:()=>{},
   render:d=>rendered.push(d.periodo.inicio),
   consultarGiroCpcPaginado:async()=>({data:[],error:null}),
+  consultarCavalariaCpcPaginado:async()=>({data:[],error:null}),
   consultarPainelCpc:args=>{calls.push({...args});return new Promise(resolve=>pending.push({args,resolve}))},
   console:{error:()=>{}}
 };
