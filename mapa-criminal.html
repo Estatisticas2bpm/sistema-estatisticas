@@ -145,7 +145,7 @@ function popularCompanhiasBo(){
 }
 function aplicarParametrosEntrada(){
   if(parametrosEntradaAplicados)return;const q=new URLSearchParams(location.search);
-  const unidade=q.get('unidade');if(unidade&&[...$('unidade').options].some(o=>o.value===unidade))$('unidade').value=unidade;
+  const unidade=q.get('unidade');if(unidade&&[...$('unidade').options].some(o=>o.value===unidade)){$('unidade').value=unidade;popularCompanhiasBo()}
   const territorial=q.get('batalhao_territorial');
   if(territorial&&[...$('batalhaoTerritorial').options].some(o=>o.value===territorial)){
     $('batalhaoTerritorial').value=territorial;popularTerritorio();
