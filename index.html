@@ -321,13 +321,10 @@ function atualizarAreaValores(){
   else if(tipo==="BAIRRO")valores=(cpcTerritorio.bairros||[]).map(x=>x.nome);
   else if(tipo==="COMPANHIA")valores=companhiasMapaDisponiveis;
   valores=[...new Set(valores)].sort((a,b)=>String(a).localeCompare(String(b),"pt-BR",{numeric:true}));
-  areaValorMapa.innerHTML='<option value="">Todas</option>'+valores.map(v=>{
-    if(tipo!=='BAIRRO')return '<option>'+escHome(v)+'</option>';
-    const id=idBairroCpc(v),variantes=(cpcTerritorio.aliases||[])
-      .filter(a=>id&&String(a.bairro_id)===id&&a.alias_chave!==chaveBairroCpc(v))
-      .map(a=>a.alias_chave).slice(0,3);
-    return '<option value="'+escHome(v)+'">'+escHome(v+(variantes.length?' ('+variantes.join(', ')+')':''))+'</option>';
-  }).join("");
+  // Mostrar apenas o nome oficial do bairro; aliases seguem ativos no filtro,
+  // mas não são repetidos entre parênteses na lista de seleção.
+  areaValorMapa.innerHTML='<option value="">Todas</option>'+
+    valores.map(v=>'<option value="'+escHome(v)+'">'+escHome(v)+'</option>').join("");
   if(anterior&&valores.includes(anterior))areaValorMapa.value=anterior;
   else if(anterior&&tipo==="COMPANHIA"){
     // Não trocar o filtro silenciosamente para "Todas" ao mudar o período.
