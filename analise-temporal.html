@@ -25,11 +25,18 @@ function render(d){d=filtrar(d);let horas=Array(24).fill(0),dias=Array(7).fill(0
  let max=Math.max(1,...mat.flat()),html='<thead><tr><th>Dia</th>'+horas.map((_,i)=>'<th>'+String(i).padStart(2,'0')+'h</th>').join('')+'</tr></thead><tbody>';mat.forEach((r,di)=>{html+='<tr><td class="day">'+nomesDias[di]+'</td>'+r.map(v=>{let a=v?(.1+.85*v/max):.035;return '<td style="background:rgba(31,90,138,'+a.toFixed(2)+')">'+(v||'')+'</td>'}).join('')+'</tr>'});$('matriz').innerHTML=html+'</tbody>';
  $('status').textContent=d.length+' ocorrência(s) no filtro; '+validos+' com horário inicial válido.';$('loading').style.display='none';
 }
-async function carregar(){$('loading').style.display='grid';$('loading').textContent='Analisando horários...';let r=await db.rpc(bopeSubTemporal?'obter_dados_dashboard_territorial':'obter_dados_dashboard',{data_inicio:$('ini').value,data_fim:$('fim').value});if(r.error){$('loading').textContent='Erro ao carregar: '+r.error.message;return}render(r.data||[])}
+async function carregar(){$('loading').style.display='grid';$('loading').textContent='Analisando horários...';let r=await db.rpc((bopeSubTemporal||unidadeEntrada)?'obter_dados_dashboard_territorial':'obter_dados_dashboard',{data_inicio:$('ini').value,data_fim:$('fim').value});if(r.error){$('loading').textContent='Erro ao carregar: '+r.error.message;return}render(r.data||[])}
 $('atualizar').onclick=carregar;[$('tipo'),$('bairro')].forEach(x=>x.addEventListener('keydown',e=>{if(e.key==='Enter')carregar()}));let h=new Date();$('ini').value=qEntrada.get('ini')||iso(new Date(h.getFullYear(),h.getMonth(),1));$('fim').value=qEntrada.get('fim')||iso(h);$('tipo').value=qEntrada.get('tipo')||'';$('bairro').value=qEntrada.get('bairro')||'';
 (async()=>{
  if(window.SistemaAuth?.ready)await window.SistemaAuth.ready;
  bopeSubTemporal=window.BopePainel.filtro(window.SistemaAuth?.contexto?.sigla,location.search);
+ if(unidadeEntrada&&window.SistemaAuth?.contexto?.tipo==='COMANDO'){
+   const consultada=await db.from('unidades').select('id,sigla,nome').eq('id',unidadeEntrada).eq('ativo',true).maybeSingle();
+   if(consultada.error)throw new Error('Não foi possível conferir a unidade do recorte: '+consultada.error.message);
+   if(!consultada.data){$('loading').textContent='Unidade informada no link não encontrada ou não autorizada.';return;}
+   document.querySelector('header h1').textContent='Análise Temporal — '+consultada.data.sigla;
+   document.querySelector('header .head p').textContent='Ocorrências da '+consultada.data.nome+' · unidade selecionada no CPC';
+ }
  if(bopeSubTemporal){
    document.querySelector('header h1').textContent='Análise Temporal — '+bopeSubTemporal.nome;
    document.querySelector('header .head p').textContent='Ocorrências da '+bopeSubTemporal.nome+' · BOPE';
