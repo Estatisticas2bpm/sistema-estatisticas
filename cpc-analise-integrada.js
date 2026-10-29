@@ -50,6 +50,20 @@ function hierarquiaIds(id,unidades){
   return ids;
 }
 function contem(a,b){return chave(a).includes(chave(b))}
+function idBairroAnalise(valor){
+  const k=chave(valor).replace(/[^A-Z0-9]+/g,' ').trim();
+  if(!k)return null;
+  const territorio=config?.territorio||{};
+  const alias=(territorio.aliases||[]).find(x=>x.alias_chave===k);
+  if(alias)return String(alias.bairro_id);
+  const oficial=(territorio.bairros||[]).find(x=>chave(x.nome).replace(/[^A-Z0-9]+/g,' ').trim()===k);
+  return oficial?.id?String(oficial.id):null;
+}
+function bairroConfereAnalise(o,valor){
+  if(contem(o.bairro,valor)||contem(o.territorio_bairro,valor))return true;
+  const a=idBairroAnalise(valor),b=idBairroAnalise(o.bairro)||idBairroAnalise(o.territorio_bairro);
+  return Boolean(a&&b&&a===b);
+}
 function filtro(o,a,ids){
   if(ids&&!ids.has(String(o.unidade_id||''))&&!ids.has(String(o.subunidade_operacional_id||'')))return false;
   if(a.p_aisc&&chave(o.aisc)!==chave(a.p_aisc))return false;
@@ -57,7 +71,7 @@ function filtro(o,a,ids){
   if(a.p_setor&&chave(o.setor)!==chave(a.p_setor))return false;
   if(a.p_companhia&&chave(o.companhia)!==chave(a.p_companhia))return false;
   if(a.p_turno&&chave(o.turno)!==chave(a.p_turno))return false;
-  if(a.p_bairro&&!contem(o.bairro,a.p_bairro))return false;
+  if(a.p_bairro&&!bairroConfereAnalise(o,a.p_bairro))return false;
   if(a.p_ocorrencia){
     const nomes=[o.ocorrencia,o.crime,...(Array.isArray(o.naturezas_itens)?o.naturezas_itens.map(x=>typeof x==='string'?x:x.nome||x.natureza||''):[])];
     if(!nomes.some(x=>contem(x,a.p_ocorrencia)))return false;
@@ -143,7 +157,7 @@ function gerarGrupos(registros){
     if(!ni(nome))somar('Comandante · '+nome,o);
     somar('Documentos · '+tipoDocumento(o.tipo_registro),o);
     naturezas(o).forEach(n=>somar('Naturezas · '+n,o));
-    if(!ni(o.bairro))somar('Bairros · '+chave(o.bairro),o);
+    if(!ni(o.territorio_bairro)||!ni(o.bairro))somar('Bairros · '+chave(o.territorio_bairro||o.bairro),o);
     const endereco=norm(o.endereco)||norm(o.endereco_formatado);
     if(!ni(endereco))somar('Logradouros · '+endereco,o);
     const dia=diaSemana(o.data_ocorrencia);
@@ -287,8 +301,8 @@ function resetar(){
   if(botao){botao.disabled=false;botao.textContent='Carregar análise detalhada'}
   const a=$('cpcAnaliseConferencia');if(a)a.hidden=true;
 }
-function configurar(cliente,args,unidades,esperado){
-  db=cliente;config={args:{...args},unidades:[...(unidades||[])],esperado:Number.isFinite(Number(esperado))?Number(esperado):null};
+function configurar(cliente,args,unidades,esperado,territorio){
+  db=cliente;config={args:{...args},unidades:[...(unidades||[])],territorio:territorio||{},esperado:Number.isFinite(Number(esperado))?Number(esperado):null};
   resetar();
 }
 async function carregar(){
