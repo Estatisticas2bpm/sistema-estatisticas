@@ -87,5 +87,5 @@ assert.match(migration,/t\.info->>'bairro_id'=public\.territorio_por_bairro\(p_b
 assert.match(migration,/'aliases',coalesce\(\(/);
 assert.match(migration,/public\.territorio_cpc_bairro_aliases al/);
 assert.doesNotMatch(migration,/SECURITY DEFINER/i);
-assert.match(index,/variantes\.join\(', '\)/);
+assert.doesNotMatch(index,/variantes\.join\(', '\)/,'A lista não deve adicionar os aliases entre parênteses');
 console.log('Mapa CPC: aliases territoriais vinculam Santa Tereza/Teresa e Nova Canaã/Canaã, sem confundir outros bairros.');

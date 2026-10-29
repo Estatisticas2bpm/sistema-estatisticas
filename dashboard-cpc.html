@@ -387,11 +387,9 @@ function popularTerritorio(){
   if(sugestoes){
     sugestoes.replaceChildren(...(catalogoTerritorial.bairros||[]).map(b=>{
       const opt=document.createElement('option');
+      // datalist: apenas um nome, sem label duplicado; aliases continuam
+      // reconhecidos pelas consultas do painel e da análise detalhada.
       opt.value=b.nome;
-      const nomes=(catalogoTerritorial.aliases||[]).filter(a=>String(a.bairro_id)===String(b.id))
-        .map(a=>a.alias_chave).filter(a=>a!==String(b.nome).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase())
-        .slice(0,3);
-      opt.label=nomes.length?b.nome+' ('+nomes.join(', ')+')':b.nome;
       return opt;
     }));
   }
