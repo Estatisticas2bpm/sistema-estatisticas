@@ -12,7 +12,7 @@ for(const id of ['cpcAnaliseIntegrada','cpcAnaliseCarregar','cpcAnaliseStatus','
 assert.match(html,/Painel Estatístico Integrado do CPC/);
 assert.match(html,/<main>\s*<section class="panel">/,'filtros continuam visíveis durante o carregamento');
 assert.match(html,/cpc-analise-integrada\.js\?v=20261014-unificado2/);
-assert.match(html,/CpcAnaliseIntegrada\?\.configurar\(db,args,hierarquiaUnidades,r\.data\.resumo\?\.total_ocorrencias\)/);
+assert.match(html,/CpcAnaliseIntegrada\?\.configurar\(db,args,hierarquiaUnidades,r\.data\.resumo\?\.total_ocorrencias,catalogoTerritorial\)/);
 assert.match(html,/CpcAnaliseIntegrada\?\.resetar\(\)/);
 assert.doesNotMatch(html,/<a href="dashboard\.html">/,'CPC não aponta para dashboard duplicado');
 assert.match(home,/var antigo=nav\.querySelector\('a\[href\^="dashboard\.html"\]'\);if\(antigo\)antigo\.style\.display="none"/);
