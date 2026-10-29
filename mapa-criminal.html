@@ -12,13 +12,15 @@ body.modo-cpc .quick{display:none}
 <div class="filters">
 <label>Data inicial<input id="ini" type="date"></label><label>Data final<input id="fim" type="date"></label>
 <label>Unidade que registrou<select id="unidade"><option value="">Todas acessíveis</option></select></label>
-<label>AISC<select id="aisc"><option value="">Todas</option></select></label><label>SISC<select id="sisc"><option value="">Todas</option></select></label><label>Setor<select id="setor"><option value="">Todos</option></select></label>
-<label>Ocorrência<input id="tipo" placeholder="Todas"></label><label>Bairro<input id="bairro" placeholder="Todos"></label>
+  <label>Batalhão responsável pela área<select id="batalhaoTerritorial"><option value="">Todos os territórios</option></select></label>
+<label>AISC<select id="aisc"><option value="">Todas</option></select></label><label>SISC<select id="sisc"><option value="">Todas</option></select></label><label>Setor (ex.: 4.1)<select id="setor"><option value="">Todos</option></select></label>
+  <label>Companhia informada no BO<select id="companhiaBo"><option value="">Todas</option></select></label>
+<label>Ocorrência<input id="tipo" placeholder="Todas"></label><label>Bairro<input id="bairro" list="bairrosMapaSugestoes" autocomplete="off" placeholder="Todos"><datalist id="bairrosMapaSugestoes"></datalist></label>
 <label>Turno<select id="turno"><option value="">Todos</option><option>MADRUGADA</option><option>MANHÃ</option><option>TARDE</option><option>NOITE</option></select></label>
 <label id="fonteWrap" hidden>Camada<select id="fonte"><option value="ambos">Ocorrências + abordagens</option><option value="ocorrencias">Somente ocorrências</option><option value="abordagens">Somente abordagens GIRO</option></select></label><label>Visualização<select id="visual"><option value="pontos">Pontos individuais</option><option value="agrupado" hidden disabled>Agrupamento automático</option><option value="calor">Mapa de calor</option></select></label><button class="btn" id="atualizar">Atualizar mapa</button><button class="btn sieCpcExportar" type="button" id="exportarVisaoCpc" hidden>Exportar visão (CSV)</button>
 </div>
 <div class="quick"><button data-cat="" class="active">Todos</button><button data-cat="ROUBO">Roubo</button><button data-cat="FURTO">Furto</button><button data-cat="VIOLÊNCIA DOMÉSTICA">Violência doméstica</button><button data-cat="DROGAS">Drogas</button><button data-cat="TRÂNSITO">Trânsito</button></div>
-<div class="territoryNote"><b>Território:</b> AISC, SISC e Setor são classificados pelo bairro conforme a matriz oficial do CPC. A unidade que registrou a ocorrência permanece identificada separadamente.</div>
+<div class="territoryNote"><b>Responsabilidade territorial:</b> o batalhão responsável, AISC, SISC e Setor (como 4.1) são determinados pelo bairro na matriz oficial do CPC, independentemente de quem registrou a ocorrência. <b>Companhia informada no BO</b> indica o campo preenchido no documento; não equivale a uma delimitação territorial homologada. Abordagens GIRO não possuem companhia de BO.</div>
 </section>
 <section class="mapbox"><div id="mapa"></div><div class="status"><span id="status">Carregando mapa...</span><span>Para abrir uma ocorrência e seu histórico, clique em um ponto individual. Nos agrupamentos, aproxime até separar os pontos. O mapa de calor não possui pontos clicáveis.</span></div></section></main>
 <script>
@@ -72,7 +74,7 @@ function dadosTerritoriaisAbordagem(bairro){
   const setor=(t.setores||[]).find(x=>String(x.id)===String(b?.setor_id));
   const sisc=(t.sisc||[]).find(x=>String(x.id)===String(setor?.sisc_id));
   const aisc=(t.aisc||[]).find(x=>String(x.id)===String(sisc?.aisc_id));
-  return {aisc:aisc?.codigo||null,sisc:sisc?.codigo||null,setor:setor?.codigo||null};
+  return {aisc:aisc?.codigo||null,sisc:sisc?.codigo||null,setor:setor?.codigo||null,batalhao_territorial_id:aisc?.unidade_id||null};
 }
 async function consultarAbordagensCompletas(inicio,fim){
   const rows=[],passo=1000;
@@ -95,24 +97,92 @@ function cat(v){let k=chave(v);if(k.includes('ROUBO'))return['ROUBO','#dc2626'];
 function coordValida(x){if(x.latitude===null||x.latitude===undefined||x.longitude===null||x.longitude===undefined||String(x.latitude).trim()===''||String(x.longitude).trim()==='')return false;let la=Number(x.latitude),lo=Number(x.longitude);return Number.isFinite(la)&&Number.isFinite(lo)&&la>=-2&&la<=6&&lo>=-66&&lo<=-58}
 function localOcorrencia(x){let end=String(x.endereco_formatado||x.endereco||'').trim();if(end)return end;let c=String(x.cipa_coordenadas_texto||'').trim();if(c)return 'Coordenadas: '+c;return 'Coordenadas: '+Number(x.latitude).toFixed(6)+', '+Number(x.longitude).toFixed(6)}
 function popularUnidades(){let unidadesAtivas=modoCpc&&unidadesMapa.length?unidadesMapa.filter(x=>chave(x.sigla)!=='CPC'):base.filter(x=>x.unidade_id).map(x=>({id:x.unidade_id,sigla:x.unidade_sigla,nome:x.unidade_nome})).concat(baseAbordagens.filter(x=>x.unidade_id).map(x=>({id:x.unidade_id,sigla:'GIRO',nome:'Grupamento Independente de Intervenção Rápida Ostensiva'}))),us=[...new Map(unidadesAtivas.map(x=>[x.id,x])).values()].sort((a,b)=>sigla(a.sigla).localeCompare(sigla(b.sigla),'pt-BR',{numeric:true})),ant=$('unidade').value;$('unidade').innerHTML='<option value="">Todas acessíveis</option>'+us.map(u=>'<option value="'+esc(u.id)+'">'+esc(sigla(u.sigla))+' — '+esc(u.nome||'')+'</option>').join('');if(us.some(u=>String(u.id)===String(ant)))$('unidade').value=ant}
-function popularTerritorio(){if(!catalogoTerritorial)return;let aAnt=$('aisc').value,sAnt=$('sisc').value,stAnt=$('setor').value;$('aisc').innerHTML='<option value="">Todas</option>'+(catalogoTerritorial.aisc||[]).map(x=>'<option>'+esc(x.codigo)+'</option>').join('');if((catalogoTerritorial.aisc||[]).some(x=>x.codigo===aAnt))$('aisc').value=aAnt;let ao=(catalogoTerritorial.aisc||[]).find(x=>x.codigo===$('aisc').value),ss=(catalogoTerritorial.sisc||[]).filter(x=>!ao||x.aisc_id===ao.id);$('sisc').innerHTML='<option value="">Todas</option>'+ss.map(x=>'<option>'+esc(x.codigo)+'</option>').join('');if(ss.some(x=>x.codigo===sAnt))$('sisc').value=sAnt;let so=(catalogoTerritorial.sisc||[]).find(x=>x.codigo===$('sisc').value),ids=so?[so.id]:ss.map(x=>x.id),sts=(catalogoTerritorial.setores||[]).filter(x=>!ids.length||ids.includes(x.sisc_id));$('setor').innerHTML='<option value="">Todos</option>'+sts.map(x=>'<option>'+esc(x.codigo)+'</option>').join('');if(sts.some(x=>x.codigo===stAnt))$('setor').value=stAnt}
+function popularTerritorio(){
+  if(!catalogoTerritorial)return;
+  const aAnt=$('aisc').value,sAnt=$('sisc').value,stAnt=$('setor').value;
+  const btAnt=$('batalhaoTerritorial')?.value||'';
+  const batalhoes=[...new Map((catalogoTerritorial.aisc||[])
+    .filter(a=>a.unidade_id).map(a=>[String(a.unidade_id),{id:String(a.unidade_id),sigla:a.unidade_sigla,nome:a.unidade_nome}])).values()];
+  $('batalhaoTerritorial').innerHTML='<option value="">Todos os territórios</option>'+
+    batalhoes.map(b=>'<option value="'+esc(b.id)+'">'+esc(sigla(b.sigla))+' — '+esc(b.nome||'')+'</option>').join('');
+  if(batalhoes.some(b=>b.id===btAnt))$('batalhaoTerritorial').value=btAnt;
+  const aisc=(catalogoTerritorial.aisc||[]).filter(x=>!$('batalhaoTerritorial').value||
+    String(x.unidade_id)===String($('batalhaoTerritorial').value));
+  $('aisc').innerHTML='<option value="">Todas</option>'+aisc.map(x=>'<option>'+esc(x.codigo)+'</option>').join('');
+  if(aisc.some(x=>x.codigo===aAnt))$('aisc').value=aAnt;
+  const ao=aisc.find(x=>x.codigo===$('aisc').value);
+  const aiscIds=new Set(ao?[ao.id]:aisc.map(x=>x.id));
+  const ss=(catalogoTerritorial.sisc||[]).filter(x=>aiscIds.has(x.aisc_id));
+  $('sisc').innerHTML='<option value="">Todas</option>'+ss.map(x=>'<option>'+esc(x.codigo)+'</option>').join('');
+  if(ss.some(x=>x.codigo===sAnt))$('sisc').value=sAnt;
+  const so=ss.find(x=>x.codigo===$('sisc').value);
+  const ids=new Set(so?[so.id]:ss.map(x=>x.id));
+  const sts=(catalogoTerritorial.setores||[]).filter(x=>ids.has(x.sisc_id));
+  $('setor').innerHTML='<option value="">Todos</option>'+sts.map(x=>'<option>'+esc(x.codigo)+'</option>').join('');
+  if(sts.some(x=>x.codigo===stAnt))$('setor').value=stAnt;
+  const sugestoes=$('bairrosMapaSugestoes');
+  if(sugestoes){
+    sugestoes.replaceChildren(...(catalogoTerritorial.bairros||[]).map(b=>{
+      const opcao=document.createElement('option');
+      opcao.value=b.nome;return opcao;
+    }));
+  }
+}
+function popularCompanhiasBo(){
+  const seletor=$('companhiaBo'),anterior=seletor.value,unidade=$('unidade').value;
+  const companhias=[...new Set((base||[])
+    .filter(x=>!unidade||String(x.unidade_id)===unidade||String(x.subunidade_operacional_id||'')===unidade)
+    .map(x=>String(x.companhia||'').trim()).filter(Boolean))]
+    .sort((a,b)=>a.localeCompare(b,'pt-BR',{numeric:true}));
+  seletor.innerHTML='<option value="">Todas</option>'+
+    companhias.map(nome=>'<option value="'+esc(nome)+'">'+esc(nome)+'</option>').join('');
+  if(companhias.includes(anterior))seletor.value=anterior;
+  else if(anterior){
+    // Não apagar silenciosamente o filtro ao selecionar outro período/unidade.
+    seletor.add(new Option(anterior+' (sem registros no recorte)',anterior));
+    seletor.value=anterior;
+  }
+}
 function aplicarParametrosEntrada(){
   if(parametrosEntradaAplicados)return;const q=new URLSearchParams(location.search);
-  const unidade=q.get('unidade');if(unidade&&[...$('unidade').options].some(o=>o.value===unidade))$('unidade').value=unidade;
+  const unidade=q.get('unidade');if(unidade&&[...$('unidade').options].some(o=>o.value===unidade)){$('unidade').value=unidade;popularCompanhiasBo()}
+  const territorial=q.get('batalhao_territorial');
+  if(territorial&&[...$('batalhaoTerritorial').options].some(o=>o.value===territorial)){
+    $('batalhaoTerritorial').value=territorial;popularTerritorio();
+  }
   const aisc=q.get('aisc');if(aisc&&[...$('aisc').options].some(o=>o.value===aisc)){$('aisc').value=aisc;popularTerritorio()}
   const sisc=q.get('sisc');if(sisc&&[...$('sisc').options].some(o=>o.value===sisc)){$('sisc').value=sisc;popularTerritorio()}
   const setor=q.get('setor');if(setor&&[...$('setor').options].some(o=>o.value===setor))$('setor').value=setor;
+  const cia=q.get('companhia');if(cia&&[...$('companhiaBo').options].some(o=>o.value===cia))$('companhiaBo').value=cia;
   [['tipo','tipo'],['bairro','bairro'],['turno','turno']].forEach(([id,k])=>{if(q.get(k))$(id).value=q.get(k)});
   parametrosEntradaAplicados=true;
 }
-function filtrarOcorrencias(){let t=chave($('tipo').value),b=chave($('bairro').value),tu=chave($('turno').value),u=$('unidade').value,a=$('aisc').value,s=$('sisc').value,st=$('setor').value;return base.filter(x=>coordValida(x)&&(!u||String(x.unidade_id)===u||String(x.subunidade_operacional_id||'')===u)&&(!a||x.aisc===a)&&(!s||x.sisc===s)&&(!st||x.setor===st)&&(!categoriaRapida||cat(x.ocorrencia||x.crime)[0]===categoriaRapida)&&(!t||chave(x.ocorrencia||x.crime).includes(t))&&(!b||bairroCorrespondeMapa(x.bairro,$('bairro').value,x.territorio_bairro))&&(!tu||chave(x.turno)===tu))}
+function filtrarOcorrencias(){
+  const t=chave($('tipo').value),b=chave($('bairro').value),tu=chave($('turno').value);
+  const u=$('unidade').value,a=$('aisc').value,s=$('sisc').value,st=$('setor').value;
+  const bt=$('batalhaoTerritorial')?.value||'',cia=chave($('companhiaBo')?.value||'');
+  return base.filter(x=>coordValida(x)
+    &&(!u||String(x.unidade_id)===u||String(x.subunidade_operacional_id||'')===u)
+    &&(!bt||String(x.unidade_territorial_id||'')===bt)
+    &&(!cia||chave(x.companhia)===cia)
+    &&(!a||x.aisc===a)&&(!s||x.sisc===s)&&(!st||x.setor===st)
+    &&(!categoriaRapida||cat(x.ocorrencia||x.crime)[0]===categoriaRapida)
+    &&(!t||chave(x.ocorrencia||x.crime).includes(t))
+    &&(!b||bairroCorrespondeMapa(x.bairro,$('bairro').value,x.territorio_bairro))
+    &&(!tu||chave(x.turno)===tu));
+}
 function filtrarAbordagens(){
-  let b=chave($('bairro').value),u=$('unidade').value,a=$('aisc').value,s=$('sisc').value,st=$('setor').value;
+  const b=chave($('bairro').value),u=$('unidade').value,a=$('aisc').value,
+    s=$('sisc').value,st=$('setor').value,bt=$('batalhaoTerritorial')?.value||'';
+  // Os registros móveis do GIRO não possuem campo de companhia do BO.
+  if($('companhiaBo')?.value)return [];
   return baseAbordagens.filter(function(x){
-    if(!coordValida(x)||(u&&String(x.unidade_id)!==u)||(b&&!bairroCorrespondeMapa(x.bairro,$('bairro').value)))return false;
-    if(!a&&!s&&!st)return true;
+    if(!coordValida(x)||(u&&String(x.unidade_id)!==u)||
+      (b&&!bairroCorrespondeMapa(x.bairro,$('bairro').value)))return false;
+    if(!a&&!s&&!st&&!bt)return true;
     const terr=dadosTerritoriaisAbordagem(x.bairro);
-    return (!a||terr.aisc===a)&&(!s||terr.sisc===s)&&(!st||terr.setor===st);
+    return (!a||terr.aisc===a)&&(!s||terr.sisc===s)&&(!st||terr.setor===st)&&
+      (!bt||String(terr.batalhao_territorial_id||'')===bt);
   });
 }
 function rotuloTipoAbordagem(v){return v==='A_PE'?'A PÉ':v==='MOTO'?'MOTO':v==='VEICULO'?'VEÍCULO':v}
@@ -238,7 +308,7 @@ async function carregar(){
   ]);
   if(r.error){$('status').textContent='Erro ao carregar georreferenciamento: '+r.error.message;return}
   if(g.error){$('status').textContent='Erro ao carregar abordagens: '+g.error.message;return}
-  base=window.BopePainel.filtrar(r.data||[],bopeSubMapa).filter(coordValida);baseAbordagens=(g.data||[]).filter(coordValida);popularUnidades();aplicarParametrosEntrada();render(true)
+  base=window.BopePainel.filtrar(r.data||[],bopeSubMapa).filter(coordValida);baseAbordagens=(g.data||[]).filter(coordValida);popularUnidades();popularCompanhiasBo();aplicarParametrosEntrada();render(true)
 }
 function periodo(p){let h=new Date(),i=new Date(h);if(p==='7dias')i.setDate(h.getDate()-6);else if(p==='mes')i=new Date(h.getFullYear(),h.getMonth(),1);else if(p==='semana'){let d=h.getDay(),dif=d===0?-6:1-d;i.setDate(h.getDate()+dif)}$('ini').value=iso(i);$('fim').value=iso(h);document.querySelectorAll('[data-period]').forEach(x=>x.classList.toggle('active',x.dataset.period===p));carregar()}
 document.querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>periodo(b.dataset.period));document.querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>{categoriaRapida=b.dataset.cat;document.querySelectorAll('[data-cat]').forEach(x=>x.classList.toggle('active',x===b));render()});
@@ -255,7 +325,7 @@ mapa.on('zoomend',function(){
     const tema=MapaUnidadeProfissional.categorias[pt.options.sieCategoria];
     if(tema)pt.setIcon(MapaUnidadeProfissional.icone(L,tema,mapa.getZoom(),pt.options.sieAbordagemGiro?'abordagem':'ocorrencia',pt.options.sieUnidade));
   });
-});$('visual').onchange=render;$('fonte').onchange=render;$('turno').onchange=render;$('bairro').oninput=render;$('unidade').onchange=render;$('aisc').onchange=()=>{$('sisc').value='';$('setor').value='';popularTerritorio();render()};$('sisc').onchange=()=>{$('setor').value='';popularTerritorio();render()};$('setor').onchange=render;$('tipo').oninput=()=>{categoriaRapida='';document.querySelectorAll('[data-cat]').forEach(x=>x.classList.toggle('active',x.dataset.cat===''));render()};
+});$('visual').onchange=render;$('fonte').onchange=render;$('turno').onchange=render;$('bairro').oninput=render;$('unidade').onchange=()=>{popularCompanhiasBo();render()};$('batalhaoTerritorial').onchange=()=>{$('aisc').value='';$('sisc').value='';$('setor').value='';popularTerritorio();render()};$('companhiaBo').onchange=render;$('aisc').onchange=()=>{$('sisc').value='';$('setor').value='';popularTerritorio();render()};$('sisc').onchange=()=>{$('setor').value='';popularTerritorio();render()};$('setor').onchange=render;$('tipo').oninput=()=>{categoriaRapida='';document.querySelectorAll('[data-cat]').forEach(x=>x.classList.toggle('active',x.dataset.cat===''));render()};
 let bopeSubMapa=null;
 let h=new Date(),qEntrada=new URLSearchParams(location.search);$('ini').value=qEntrada.get('ini')||iso(new Date(h.getFullYear(),h.getMonth(),1));$('fim').value=qEntrada.get('fim')||iso(h);
 (async()=>{if(window.SistemaAuth?.ready)await window.SistemaAuth.ready;const contexto=window.SistemaAuth?.contexto||{};modoCpc=contexto.tipo==='COMANDO';unidadeAtivaMapa=String(contexto.sigla||'').toUpperCase();
