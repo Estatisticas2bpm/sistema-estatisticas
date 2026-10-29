@@ -57,7 +57,7 @@ assert.match(dash,/Dashboard Operacional — '\+sub\.nome/);
 assert.match(dash,/&subunidade='\+encodeURIComponent/);
 assert.match(relatorio,/const filtro=window\.BopePainel\?\.filtro\('BOPE',location\.search\)/);
 assert.match(mapa,/base=window\.BopePainel\.filtrar\(r\.data\|\|\[\],bopeSubMapa\)/);
-assert.match(temporal,/\(bopeSubTemporal\|\|unidadeEntrada\)\?'obter_dados_dashboard_territorial'/);
+assert.match(temporal,/\(bopeSubTemporal\|\|unidadeEntrada\|\|bairro\)\?'obter_dados_dashboard_territorial'/);
 assert.match(temporal,/window\.BopePainel\.emEscopo\(x,bopeSubTemporal\)/);
 assert.match(consulta,/idsAutorizados\(banco,bopeSubConsulta,null,bopeUnidadeConsulta\)/);
 for(const [name,html] of Object.entries({home,dash,mapa,temporal,consulta,relatorio})){
