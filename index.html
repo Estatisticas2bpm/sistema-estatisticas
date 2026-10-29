@@ -306,7 +306,34 @@ function renderResumoCiptur(d,dAnt,autos,autosAnt,hoje,pc){
 }
 function aplicarModoCpc(){document.body.classList.add("modo-cpc");heroEyebrow.innerHTML='<i class="pulse"></i> Central executiva do Comando';heroTitulo.textContent="Panorama Estatístico do CPC";cpcEscopoHero.hidden=false;cpcUnidadesPanel.hidden=false;atalhosCpcTitulo.hidden=false;mapaTitulo.textContent="Mapa Estatístico Consolidado do CPC";mapaDescricao.textContent="Distribuição geográfica dos registros das unidades subordinadas, com filtros por unidade e área";camadaGiroMapa.hidden=false;camadaGiroMapa.value="ocorrencias";visualizacaoMapa.querySelector('option[value="agrupado"]').hidden=false;visualizacaoMapa.querySelector('option[value="agrupado"]').disabled=false;visualizacaoMapa.value="agrupado";exportarMapaCpc.hidden=false;atualizarLegendaMapa();searchTitulo.textContent="Consultar ocorrências das unidades";searchDescricao.textContent="Pesquise nos registros acessíveis ao CPC por BO, natureza ou bairro.";topOcorrenciasDescricao.textContent="Naturezas mais registradas pelas unidades subordinadas";topBairrosDescricao.textContent="Concentração territorial consolidada das unidades";var nav=document.getElementById("atalhosHome"),ordem=["dashboard-cpc.html","territorio-cpc.html","dashboard.html","mapa-criminal.html","analise-temporal.html","consulta.html","relatorio.html","auditoria.html","usuarios.html","fluxos.html"];Array.from(nav.querySelectorAll("a")).sort(function(a,b){var pa=(a.getAttribute("href")||"").split("?")[0],pb=(b.getAttribute("href")||"").split("?")[0],ia=ordem.indexOf(pa),ib=ordem.indexOf(pb);return(ia<0?99:ia)-(ib<0?99:ib)}).forEach(function(a){nav.appendChild(a)});var painel=nav.querySelector('a[href="dashboard-cpc.html"]');if(painel)painel.classList.add("cpcPrimary");var antigo=nav.querySelector('a[href^="dashboard.html"]');if(antigo)antigo.style.display="none"}
 function popularFiltrosMapaCpc(){unidadeMapa.innerHTML='<option value="">Todas as unidades</option>'+ordenarUnidadesCpc().map(function(x){var u=x.u,prefixo=x.nivel?'↳ '.repeat(Math.min(x.nivel,2)):'';return '<option value="'+escHome(u.id)+'">'+escHome(prefixo+siglaHome(u.sigla)+' — '+u.nome+(filhosUnidadeCpc(u.id).length?' · CONSOLIDADO':''))+'</option>'}).join("");atualizarAreaValores()}
-function atualizarAreaValores(){if(!modoCpc)return;var tipo=areaTipoMapa.value,valores=[];areaValorMapa.disabled=!tipo;if(!tipo){areaValorMapa.innerHTML='<option value="">Todas</option>';return}if(tipo==="AISC"){valores=(cpcTerritorio.aisc||[]).map(function(x){return x.codigo})}else if(tipo==="SISC"){valores=(cpcTerritorio.sisc||[]).map(function(x){return x.codigo})}else if(tipo==="SETOR"){valores=(cpcTerritorio.setores||[]).map(function(x){return x.codigo})}else if(tipo==="BAIRRO"){valores=(cpcTerritorio.bairros||[]).map(function(x){return x.nome})}else if(tipo==="COMPANHIA"){valores=[...new Set(dadosPorUnidade(cpcAtual,unidadeMapa.value).map(function(x){return String(x.companhia||"").trim()}).filter(Boolean))]}valores=[...new Set(valores)].sort(function(a,b){return String(a).localeCompare(String(b),"pt-BR",{numeric:true})});areaValorMapa.innerHTML='<option value="">Todas</option>'+valores.map(function(v){return '<option>'+escHome(v)+'</option>'}).join("")}
+// A lista de companhias vem do mapa consultado no período e unidade escolhidos,
+ // nunca dos BOs do mês corrente (que podem ter abrangência diferente).
+let companhiasMapaDisponiveis=[];
+function atualizarAreaValores(){
+  if(!modoCpc)return;
+  const tipo=areaTipoMapa.value,anterior=areaValorMapa.value;
+  let valores=[];
+  areaValorMapa.disabled=!tipo;
+  if(!tipo){areaValorMapa.innerHTML='<option value="">Todas</option>';return}
+  if(tipo==="AISC")valores=(cpcTerritorio.aisc||[]).map(x=>x.codigo);
+  else if(tipo==="SISC")valores=(cpcTerritorio.sisc||[]).map(x=>x.codigo);
+  else if(tipo==="SETOR")valores=(cpcTerritorio.setores||[]).map(x=>x.codigo);
+  else if(tipo==="BAIRRO")valores=(cpcTerritorio.bairros||[]).map(x=>x.nome);
+  else if(tipo==="COMPANHIA")valores=companhiasMapaDisponiveis;
+  valores=[...new Set(valores)].sort((a,b)=>String(a).localeCompare(String(b),"pt-BR",{numeric:true}));
+  areaValorMapa.innerHTML='<option value="">Todas</option>'+valores.map(v=>'<option>'+escHome(v)+'</option>').join("");
+  if(anterior&&valores.includes(anterior))areaValorMapa.value=anterior;
+  else if(anterior&&tipo==="COMPANHIA"){
+    // Não trocar o filtro silenciosamente para "Todas" ao mudar o período.
+    areaValorMapa.add(new Option(anterior+' (sem registros neste recorte)',anterior));
+    areaValorMapa.value=anterior;
+  }
+}
+function filtrarCompanhiaMapaCpc(registros){
+  if(!modoCpc||areaTipoMapa.value!=="COMPANHIA"||!areaValorMapa.value)return registros;
+  const companhia=String(areaValorMapa.value).trim().toUpperCase();
+  return (registros||[]).filter(x=>String(x.companhia||'').trim().toUpperCase()===companhia);
+}
 
 var cpcEspecializados={atual:{},anterior:{}};
 const tiposEspecializadosCpc=['CIPA','CIPG','CAVALARIA','CIPTUR','GIRO'];
@@ -603,13 +630,18 @@ async function carregarMapa(){
   if(r.error){mapStatus.textContent="Não foi possível carregar o mapa: "+r.error.message;return}
   if(g&&g.error){mapStatus.textContent="Não foi possível carregar as abordagens: "+g.error.message;return}
   const registrosEnriquecidos=await enriquecerOcorrenciasMapa(r.data||[]);
+  if(requisicao!==requisicaoMapaAtual)return;
+  if(modoCpc){
+    companhiasMapaDisponiveis=[...new Set(registrosEnriquecidos.map(x=>String(x.companhia||'').trim()).filter(Boolean))];
+    if(areaTipoMapa.value==='COMPANHIA')atualizarAreaValores();
+  }
   let idsBopeMapa=null;
   if(modoBope&&bopeSubAtiva){
     try{idsBopeMapa=await window.BopePainel.idsAutorizados(db,bopeSubAtiva,p,bopeIdUnidadeAtiva)}
     catch(e){mapStatus.textContent='Não foi possível filtrar o mapa da subunidade: '+(e.message||e);return}
   }
   if(requisicao!==requisicaoMapaAtual)return;
-  dadosMapaAtuais=registrosEnriquecidos.filter(function(x){return (!idsBopeMapa||idsBopeMapa.has(String(x.id)))&&x.latitude!=null&&x.longitude!=null&&Number.isFinite(Number(x.latitude))&&Number.isFinite(Number(x.longitude))&&Math.abs(Number(x.latitude))<=90&&Math.abs(Number(x.longitude))<=180});
+  dadosMapaAtuais=filtrarCompanhiaMapaCpc(registrosEnriquecidos).filter(function(x){return (!idsBopeMapa||idsBopeMapa.has(String(x.id)))&&x.latitude!=null&&x.longitude!=null&&Number.isFinite(Number(x.latitude))&&Number.isFinite(Number(x.longitude))&&Math.abs(Number(x.latitude))<=90&&Math.abs(Number(x.longitude))<=180});
   abordagensMapaAtuais=(g?.data||[]).filter(function(x){return x.latitude!=null&&x.longitude!=null&&Number.isFinite(Number(x.latitude))&&Number.isFinite(Number(x.longitude))&&Math.abs(Number(x.latitude))<=90&&Math.abs(Number(x.longitude))<=180});
   renderizarMapa()
 }
@@ -646,6 +678,6 @@ total.textContent=d.length;conducoes.textContent=somar(d,"conducoes_operacionais
  draw("topOcorrencias",rank(rr[5].eventos,"tipo_evento",""),[["#175b48","#3a9a70"],["#236d53","#5ab18d"],["#367a62","#73c2a0"],["#4c8a75","#8bd1b4"],["#629884","#a3dcc6"]]);
  draw("topBairros",rank(rr[5].servicos||[],"posto_codigo","instituicao"),[["#0d5273","#1b90a0"],["#266b86","#40a5b1"],["#3d8297","#63b6bd"],["#5897aa","#81c7ca"],["#76aebb","#a0d5d6"]]);
 }tipoMapa.innerHTML='<option value="">Todos os tipos de ocorrência</option>'+((cats.tipos||[]).map(function(t){return '<option>'+escHome(t.nome)+'</option>'}).join(""));SieFiltroTiposMapa.instalar(tipoMapa);carregarMapa()}
-periodoMapa.onchange=function(){var custom=this.value==="personalizado";mapaInicio.style.display=custom?"inline-block":"none";mapaFim.style.display=custom?"inline-block":"none";if(!custom)carregarMapa()};tipoMapa.onchange=carregarMapa;camadaGiroMapa.onchange=function(){if(modoCpc)carregarMapa();else renderizarMapa()};visualizacaoMapa.onchange=function(){renderizarMapa(false)};exportarMapaCpc.onclick=function(){var ocorr=camadaGiroMapa.value==="abordagens"?[]:dadosMapaAtuais,ab=camadaGiroMapa.value==="ocorrencias"?[]:abordagensMapaAtuais;const exportOcc=modoCpc?ocorr:ocorr.map(x=>Object.assign({},x,{unidade_sigla:siglaAtivaMapa()||x.unidade_sigla}));const qtd=MapaCpcProfissional.exportarVisao(mapa,exportOcc,ab,modoCpc?"sie-cpc-mapa-estatistico":"sie-mapa-"+(siglaAtivaMapa().toLowerCase()||"unidade"));mapStatus.textContent=qtd+" registro(s) visíveis exportados em CSV. Os filtros e o enquadramento atual foram respeitados."};aplicarMapa.onclick=carregarMapa;unidadeMapa.onchange=function(){atualizarAreaValores();carregarMapa()};areaTipoMapa.onchange=function(){atualizarAreaValores();carregarMapa()};areaValorMapa.onchange=carregarMapa;mapaInicio.style.display="none";mapaFim.style.display="none";carregar();
+periodoMapa.onchange=function(){var custom=this.value==="personalizado";mapaInicio.style.display=custom?"inline-block":"none";mapaFim.style.display=custom?"inline-block":"none";if(!custom)carregarMapa()};tipoMapa.onchange=carregarMapa;camadaGiroMapa.onchange=function(){if(modoCpc)carregarMapa();else renderizarMapa()};visualizacaoMapa.onchange=function(){renderizarMapa(false)};exportarMapaCpc.onclick=function(){var ocorr=camadaGiroMapa.value==="abordagens"?[]:dadosMapaAtuais,ab=camadaGiroMapa.value==="ocorrencias"?[]:abordagensMapaAtuais;const exportOcc=modoCpc?ocorr:ocorr.map(x=>Object.assign({},x,{unidade_sigla:siglaAtivaMapa()||x.unidade_sigla}));const qtd=MapaCpcProfissional.exportarVisao(mapa,exportOcc,ab,modoCpc?"sie-cpc-mapa-estatistico":"sie-mapa-"+(siglaAtivaMapa().toLowerCase()||"unidade"));mapStatus.textContent=qtd+" registro(s) visíveis exportados em CSV. Os filtros e o enquadramento atual foram respeitados."};aplicarMapa.onclick=carregarMapa;unidadeMapa.onchange=function(){areaValorMapa.value='';atualizarAreaValores();carregarMapa()};areaTipoMapa.onchange=function(){areaValorMapa.value='';atualizarAreaValores();carregarMapa()};areaValorMapa.onchange=carregarMapa;mapaInicio.style.display="none";mapaFim.style.display="none";carregar();
 (async()=>{const authReady=window.SistemaAuth?.ready,auth=authReady?await authReady:window.SistemaAuth;const sigla=String(auth?.contexto?.sigla||auth?.perfil?.unidades?.sigla||'').toUpperCase();if(sigla==='1BPM')aplicarModo1Bpm()})();
 </script></body></html>
