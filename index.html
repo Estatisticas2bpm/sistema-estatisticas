@@ -321,7 +321,13 @@ function atualizarAreaValores(){
   else if(tipo==="BAIRRO")valores=(cpcTerritorio.bairros||[]).map(x=>x.nome);
   else if(tipo==="COMPANHIA")valores=companhiasMapaDisponiveis;
   valores=[...new Set(valores)].sort((a,b)=>String(a).localeCompare(String(b),"pt-BR",{numeric:true}));
-  areaValorMapa.innerHTML='<option value="">Todas</option>'+valores.map(v=>'<option>'+escHome(v)+'</option>').join("");
+  areaValorMapa.innerHTML='<option value="">Todas</option>'+valores.map(v=>{
+    if(tipo!=='BAIRRO')return '<option>'+escHome(v)+'</option>';
+    const id=idBairroCpc(v),variantes=(cpcTerritorio.aliases||[])
+      .filter(a=>id&&String(a.bairro_id)===id&&a.alias_chave!==chaveBairroCpc(v))
+      .map(a=>a.alias_chave).slice(0,3);
+    return '<option value="'+escHome(v)+'">'+escHome(v+(variantes.length?' ('+variantes.join(', ')+')':''))+'</option>';
+  }).join("");
   if(anterior&&valores.includes(anterior))areaValorMapa.value=anterior;
   else if(anterior&&tipo==="COMPANHIA"){
     // Não trocar o filtro silenciosamente para "Todas" ao mudar o período.
@@ -463,14 +469,30 @@ function atualizarLegendaMapa(registros,abordagens){
 }
 function iconeUnidadeCpc(sigla){return MapaCpcProfissional.iconePonto(L,sigla,mapa.getZoom())}
 function normalizarBairroCpc(valor){return String(valor||'').trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase()}
+function chaveBairroCpc(valor){return normalizarBairroCpc(valor).replace(/[^A-Z0-9]+/g,' ').trim()}
+function idBairroCpc(valor){
+  const chave=chaveBairroCpc(valor);
+  if(!chave)return null;
+  const alias=(cpcTerritorio.aliases||[]).find(a=>a.alias_chave===chave);
+  if(alias)return String(alias.bairro_id);
+  const oficial=(cpcTerritorio.bairros||[]).find(b=>chaveBairroCpc(b.nome)===chave);
+  return oficial?.id?String(oficial.id):null;
+}
+function bairrosEquivalentesCpc(a,b){
+  if(!chaveBairroCpc(a)||!chaveBairroCpc(b))return false;
+  if(chaveBairroCpc(a)===chaveBairroCpc(b))return true;
+  const ida=idBairroCpc(a),idb=idBairroCpc(b);
+  return Boolean(ida&&idb&&ida===idb);
+}
 function filtrarTerritorioAbordagensCpc(registros){
   const tipo=areaTipoMapa.value,valor=areaValorMapa.value;
   if(!tipo||!valor)return registros;
   if(tipo==='COMPANHIA')return [];
   const bairros=cpcTerritorio.bairros||[],setores=cpcTerritorio.setores||[],sisc=cpcTerritorio.sisc||[],aisc=cpcTerritorio.aisc||[];
   return registros.filter(function(x){
-    if(tipo==='BAIRRO')return normalizarBairroCpc(x.bairro)===normalizarBairroCpc(valor);
-    const bairro=bairros.find(b=>normalizarBairroCpc(b.nome)===normalizarBairroCpc(x.bairro));
+    if(tipo==='BAIRRO')return bairrosEquivalentesCpc(x.bairro,valor);
+    const bairroId=idBairroCpc(x.bairro);
+    const bairro=bairros.find(b=>bairroId&&String(b.id)===bairroId);
     if(!bairro)return false;
     const setor=setores.find(y=>String(y.id)===String(bairro.setor_id));
     if(tipo==='SETOR')return normalizarBairroCpc(setor?.codigo)===normalizarBairroCpc(valor);
