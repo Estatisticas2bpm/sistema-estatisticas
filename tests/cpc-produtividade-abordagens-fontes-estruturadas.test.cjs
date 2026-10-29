@@ -45,6 +45,6 @@ assert.match(html,/consultarGiroCpcPaginado\(inicio,fim\),consultarCavalariaCpcP
 assert.match(html,/servicosCavalariaCpc=cv\.error\?null:\(cv\.data\|\|\[\]\)/);
 assert.match(html,/Sem fonte estruturada de abordagens para a unidade selecionada/);
 assert.match(html,/Pessoas abordadas — fontes disponíveis/);
-assert.match(html,/Operações realizadas<\/small><strong title="Ainda não existe fonte consolidada homologada">N\/D/);
-assert.match(html,/Apresentações<\/small><strong title="Ainda não existe fonte consolidada homologada">N\/D/);
+assert.match(html,/Operações documentadas<\/small><strong id="kOperacoesDocumentadas">N\/D/);
+assert.match(html,/Apresentações documentadas<\/small><strong id="kApresentacoesDocumentadas">N\/D/);
 console.log('CPC: indicador rastreável GIRO + Cavalaria com unidade, período, fonte e N/D por ausência de dados.');
