@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SIE-CPC — Operações e apresentações documentadas</title>
+<style>
+*{box-sizing:border-box}:root{--navy:#071b33;--blue:#0e4f8a;--bg:#eff3f8;--ink:#193047;--muted:#607387;--line:#d8e2ea;--green:#206d53;--red:#a73333}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 Inter,Segoe UI,Arial,sans-serif}
+header{background:linear-gradient(110deg,#081d37,#10416d 68%,#176473);color:white;padding:27px 4% 34px}
+.wrap{width:min(1170px,94%);margin:auto}header .wrap{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+header h1{font-size:clamp(24px,3vw,35px);margin:0 0 5px}header p{margin:0;color:#c7dbe9}
+a{color:var(--blue)}header a{color:white;font-weight:700;text-decoration:none;border:1px solid #ffffff66;padding:10px 13px;border-radius:9px}
+main{padding:23px 0 60px}.panel{background:#fff;border:1px solid var(--line);border-radius:15px;padding:22px;margin-bottom:17px;box-shadow:0 5px 25px #071b3310}
+h2{font-size:19px;margin:0 0 8px}p{margin:6px 0 15px}.muted{color:var(--muted)}
+.notice{padding:12px 15px;border:1px solid #b9d8e9;background:#f0f8ff;border-radius:10px;color:#25506b}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin:19px 0}
+label{display:block;font-size:12px;font-weight:750}
+label input,label select,label textarea{display:block;width:100%;margin-top:5px;font:inherit;border:1px solid #c4d3df;border-radius:9px;padding:10px;background:white;color:var(--ink)}
+textarea{min-height:90px;resize:vertical}.span2{grid-column:span 2}.span3{grid-column:span 3}
+button{font:inherit;border:0;border-radius:9px;background:var(--blue);color:#fff;padding:11px 14px;cursor:pointer;font-weight:750}
+button:disabled{opacity:.45;cursor:not-allowed}button.secondary{background:#4d657b}button.warn{background:#a33d3d}
+.actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px}.state{margin-top:14px;padding:11px 12px;border-radius:9px;background:#edf5fb;color:#164c70}.state.erro{background:#fff1f1;color:#9b2929}.state.ok{background:#e8f7ee;color:#186242}
+.tablewrap{overflow:auto}table{border-collapse:collapse;width:100%;min-width:830px}th,td{padding:10px;text-align:left;border-bottom:1px solid #e6edf4;vertical-align:top}th{font-size:11px;color:#5f7183;background:#f5f8fa}
+tr td button{padding:7px 10px;font-size:12px;margin:3px}.tag{display:inline-block;padding:3px 8px;border-radius:8px;background:#e8f0f7;font-size:11px;font-weight:800}
+code{font-size:12px;background:#f2f5f8;padding:2px 5px;border-radius:4px}
+@media(max-width:750px){.grid{grid-template-columns:1fr}.span2,.span3{grid-column:span 1}.panel{padding:17px}}
+</style>
+<script src="auth-config.js"></script><script src="auth-guard.js"></script>
+</head><body>
+<header><div class="wrap"><div><h1>Operações e apresentações documentadas</h1><p>SIE-CPC · origem auditável da produtividade operacional</p></div><a href="dashboard-cpc.html">Voltar ao painel CPC</a></div></header>
+<main class="wrap">
+<section class="panel"><h2>Critérios de contabilização</h2>
+<p class="notice">Cada lançamento representa <strong>uma atividade identificável</strong>, comprovada por documento. A operação deve ter sido executada; a apresentação precisa possuir registro formal da entrega/apresentação à autoridade ou órgão competente. A emissão de BO, o campo “local de entrega do relatório”, conduções e ordens não comprovam sozinhos a atividade.</p>
+<p class="muted">O lançamento começa como <strong>Pendente</strong> e não entra no painel do CPC até ser validado pela estatística ou administração da própria unidade. O cancelamento mantém o registro para auditoria. Este indicador conta <strong>atividades</strong>, não quantidade de pessoas, materiais ou documentos.</p>
+</section>
+<section class="panel" id="registroPanel" hidden><h2>Registrar atividade da unidade</h2>
+<p class="muted" id="nomeUnidade">Unidade operacional ativa</p>
+<form id="form">
+<div class="grid">
+<label>Tipo de atividade *<select id="tipo" required><option value="OPERACAO">Operação executada</option><option value="APRESENTACAO">Apresentação documentada</option></select></label>
+<label>Data efetiva *<input id="dataAtividade" type="date" required></label>
+<label>Subunidade responsável<select id="subunidade"><option value="">Unidade principal / não especificada</option></select></label>
+<label class="span2">Identificador único da atividade *<input id="referenciaAtividade" maxlength="160" required placeholder="Ex.: OP-001/2026 ou APRES-001/2026"></label>
+<label>Documento comprobatório *<input id="documentoReferencia" maxlength="200" required placeholder="Ex.: SEI, ROP, relatório ou BO nº ..."></label>
+<label class="span2">Local da atividade *<input id="localAtividade" maxlength="240" required placeholder="Local da operação ou da apresentação"></label>
+<label class="span3">Descrição / resultado comprovado *<textarea id="descricao" maxlength="3000" required placeholder="O que foi executado, finalidade e qual documento comprova o resultado"></textarea></label>
+</div>
+<div class="actions"><button type="submit" id="salvar">Registrar como pendente</button><button type="reset" class="secondary">Limpar</button></div>
+<p id="status" class="state" role="status" aria-live="polite">Nenhum lançamento realizado.</p>
+</form></section>
+<section class="panel">
+<h2>Conferência e rastreabilidade</h2><p class="muted">Registros acessíveis à sua unidade/perfil. Somente atividades <strong>validadas</strong> entram no painel estatístico.</p>
+<div class="actions"><button id="atualizar" class="secondary" type="button">Atualizar registros</button><span id="resumo">Consultando...</span></div>
+<div id="lista" class="tablewrap" style="margin-top:16px" aria-live="polite"></div>
+</section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+let auth=null,usuarioUnidadeId=null,permiteRevisao=false,permiteRegistro=false;
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const br=v=>v?String(v).slice(0,10).split('-').reverse().join('/'):'—';
+const tipoNome=v=>v==='OPERACAO'?'Operação':'Apresentação';
+function estado(msg,tipo){$('status').textContent=msg;$('status').className='state'+(tipo?' '+tipo:'')}
+function hoje(){const x=new Date(),local=new Date(x.getTime()-x.getTimezoneOffset()*60000);return local.toISOString().slice(0,10)}
+function dadosFormulario(unidadeId,userId){
+  const payload={
+    unidade_id:unidadeId,subunidade_id:$('subunidade').value||null,
+    tipo:$('tipo').value,referencia_atividade:$('referenciaAtividade').value.trim(),
+    documento_referencia:$('documentoReferencia').value.trim(),
+    data_atividade:$('dataAtividade').value,local_atividade:$('localAtividade').value.trim(),
+    descricao:$('descricao').value.trim(),situacao:'PENDENTE',criado_por:userId
+  };
+  if(!payload.referencia_atividade||!payload.documento_referencia||!payload.data_atividade
+     ||!payload.local_atividade||payload.descricao.length<10)throw Error('Preencha a identificação, o documento, a data, o local e uma descrição com pelo menos 10 caracteres.');
+  return payload;
+}
+async function carregarSubunidades(){
+  if(!usuarioUnidadeId)return;
+  const r=await auth.client.from('unidades').select('id,sigla,nome')
+    .eq('parent_id',usuarioUnidadeId).eq('ativo',true).eq('tipo','SUBUNIDADE')
+    .order('nome',{ascending:true});
+  if(r.error)throw r.error;
+  $('subunidade').replaceChildren(new Option('Unidade principal / não especificada',''),
+    ...(r.data||[]).map(x=>new Option(x.nome+' ('+x.sigla+')',x.id)));
+}
+async function listar(){
+  $('resumo').textContent='Consultando registros...';
+  let q=auth.client.from('cpc_atividades_documentadas')
+    .select('id,unidade_id,subunidade_id,tipo,referencia_atividade,documento_referencia,data_atividade,local_atividade,descricao,situacao,criado_em,validado_em')
+    .order('data_atividade',{ascending:false}).order('criado_em',{ascending:false}).limit(200);
+  if(usuarioUnidadeId)q=q.eq('unidade_id',usuarioUnidadeId);
+  const r=await q;
+  if(r.error){$('resumo').textContent='Falha de consulta';$('lista').textContent=r.error.message;return}
+  const rows=r.data||[];
+  $('resumo').textContent=rows.length+' registro(s) recente(s) · '+rows.filter(x=>x.situacao==='VALIDADO').length+' validado(s)';
+  if(!rows.length){$('lista').innerHTML='<p class="muted">Nenhuma operação ou apresentação documentada foi registrada.</p>';return}
+  $('lista').innerHTML='<table><thead><tr><th>Data</th><th>Tipo / unidade</th><th>Atividade / documento</th><th>Local / descrição</th><th>Situação / revisão</th></tr></thead><tbody>'+
+    rows.map(x=>{
+      const revisavel=permiteRevisao&&String(x.unidade_id)===String(usuarioUnidadeId)
+        &&(x.situacao==='PENDENTE'||x.situacao==='VALIDADO');
+      const btns=revisavel
+        ?(x.situacao==='PENDENTE'?'<button type="button" data-id="'+esc(x.id)+'" data-situacao="VALIDADO">Validar</button>':'')
+          +'<button class="warn" type="button" data-id="'+esc(x.id)+'" data-situacao="CANCELADO">Cancelar</button>'
+        :'';
+      return '<tr><td>'+esc(br(x.data_atividade))+'</td><td>'+esc(tipoNome(x.tipo))+'<br><code>'+esc(x.unidade_id.slice(0,8))+'</code></td>'
+        +'<td><strong>'+esc(x.referencia_atividade)+'</strong><br>'+esc(x.documento_referencia)+'</td>'
+        +'<td>'+esc(x.local_atividade)+'<br><span class="muted">'+esc(x.descricao)+'</span></td>'
+        +'<td><span class="tag">'+esc(x.situacao)+'</span><br>'+btns+'</td></tr>';
+    }).join('')+'</tbody></table>';
+  $('lista').querySelectorAll('[data-situacao]').forEach(btn=>btn.onclick=()=>revisar(btn.dataset.id,btn.dataset.situacao));
+}
+async function revisar(id,situacao){
+  if(!permiteRevisao)return;
+  if(!confirm(situacao==='VALIDADO'
+    ?'Validar esta atividade e permitir que integre o painel CPC?'
+    :'Cancelar esta atividade, preservando o histórico?'))return;
+  const r=await auth.client.from('cpc_atividades_documentadas')
+    .update({situacao}).eq('id',id).eq('unidade_id',usuarioUnidadeId)
+    .select('id').single();
+  if(r.error){alert('Não foi possível revisar: '+r.error.message);return}
+  await listar();
+}
+$('form').onsubmit=async e=>{
+  e.preventDefault();if(!permiteRegistro)return;
+  const btn=$('salvar');btn.disabled=true;estado('Salvando lançamento pendente...');
+  try{
+    const p=dadosFormulario(usuarioUnidadeId,auth.user.id);
+    const r=await auth.client.from('cpc_atividades_documentadas').insert([p]).select('id').single();
+    if(r.error)throw r.error;
+    $('form').reset();$('dataAtividade').value=hoje();
+    estado('Atividade registrada como pendente. Ainda não compõe o painel CPC.','ok');
+    await listar();
+  }catch(err){estado('Não foi possível registrar: '+(err.message||err),'erro')}
+  finally{btn.disabled=false}
+};
+$('atualizar').onclick=listar;
+(async()=>{
+ try{
+   auth=window.SistemaAuth?.client&&window.SistemaAuth?.user?window.SistemaAuth:await window.SistemaAuth?.ready;
+   if(!auth?.client)return;
+   const p=String(auth.perfil?.perfil||'').toUpperCase(),sigla=String(auth.contexto?.sigla||'').toUpperCase();
+   usuarioUnidadeId=sigla==='CPC'?null:auth.contexto?.unidade_id||null;
+   permiteRegistro=Boolean(usuarioUnidadeId)&&['ADMIN','ESTATISTICA','OPERADOR'].includes(p);
+   permiteRevisao=Boolean(usuarioUnidadeId)&&['ADMIN','ESTATISTICA'].includes(p);
+   $('registroPanel').hidden=!permiteRegistro;
+   if(permiteRegistro){
+     $('nomeUnidade').textContent='Unidade: '+(auth.contexto?.nome||sigla)+' · validação restrita a ADMIN/ESTATISTICA';
+     $('dataAtividade').value=hoje();await carregarSubunidades();
+   }
+   await listar();
+ }catch(err){$('resumo').textContent='Erro ao iniciar: '+(err.message||err)}
+})();
+</script></body></html>
