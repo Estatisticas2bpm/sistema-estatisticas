@@ -338,7 +338,6 @@
 
           <div class="campo"><label for="vtr">VTR</label><input id="vtr" name="vtr" type="text" placeholder="Ex.: 133"></div>
           <div class="campo"><label for="statusAtendimento">Situação *</label><select id="statusAtendimento" required><option value="ATENDIDA">ATENDIDA</option><option value="DEMANDA REPRIMIDA">DEMANDA REPRIMIDA</option></select></div>
-          <div class="campo duplo" id="campoMotivo" style="display:none"><label for="motivoRepressao">Motivo da demanda reprimida *</label><input id="motivoRepressao" type="text" placeholder="Ex.: falta de viatura disponível"></div>
           <div class="campo"><label for="municipio">Município *</label><input id="municipio" type="text" value="BOA VISTA" required></div>
 
           <div class="campo">
@@ -359,8 +358,8 @@
             <input id="numeroBo" name="numeroBo" type="text" required>
           </div>
 
-          <div class="campo duplo">
-            <label for="companhia">CIA — Unidade de Apuração indicada no BO</label>
+          <div class="campo">
+            <label for="companhia">CIA (Unidade de Apuração)</label>
             <input id="companhia" name="companhia" type="text" list="listaCompanhias" maxlength="120"
               autocomplete="off" placeholder="Ex.: 1ª CIA, 2ª CIA ou 3ª CIA">
             <datalist id="listaCompanhias">
@@ -390,6 +389,7 @@
               <option>NI — Não Informado</option>
             </select>
           </div>
+          <div class="campo inteiro" id="campoMotivo" style="display:none"><label for="motivoRepressao">Motivo da demanda reprimida *</label><input id="motivoRepressao" type="text" placeholder="Ex.: falta de viatura disponível"></div>
         </div>
       </section>
 
@@ -588,13 +588,14 @@
       </section>
 
       <section>
-        <h2>6. Resumo e materialidade</h2>
+        <h2>6. Histórico completo e materialidade</h2>
 
         <div class="grade">
           <div class="campo inteiro">
-            <label for="mo">Histórico resumido / MO</label>
-            <textarea id="mo" name="mo"
-                      placeholder="Resumo objetivo do fato, sem nomes das pessoas."></textarea>
+            <label for="mo">Relato/HISTÓRICO integral do PDF</label>
+            <textarea id="mo" name="mo" rows="10"
+                      placeholder="O relato completo do documento será copiado aqui, sem resumo, cortes ou alterações de redação."></textarea>
+            <small class="nota">O histórico é transcrito integralmente da seção RELATO/HISTÓRICO do PDF, preservando os parágrafos e as informações originais. Confira o texto antes de salvar.</small>
           </div>
 
           <div class="campo inteiro">
@@ -1611,6 +1612,17 @@
       });
       return "RESUMO: " + resumo.replace(/\s+/g," ").trim().toUpperCase();
     }
+    // Transcrição documental: não resumir, reordenar, ocultar nomes,
+    // remover expressões ou converter o relato para caixa alta.
+    // A única delimitação é entre o título RELATO/HISTÓRICO e ASSINATURAS.
+    function extrairRelatoHistoricoIntegralPdf(texto) {
+      const documento = String(texto || "").replace(/\r\n?/g,"\n");
+      const abertura = /(?:^|\n)[ \t]*RELATO\s*\/\s*HIST[ÓO]RICO\s*:?\s*/i.exec(documento);
+      if (!abertura) return "";
+      const restante = documento.slice(abertura.index + abertura[0].length);
+      const fechamento = /(?:^|\n)[ \t]*ASSINATURAS?\b/i.exec(restante);
+      return (fechamento ? restante.slice(0,fechamento.index) : restante).trim();
+    }
     function limparRelatoPdfBruto(valor) {
       const linhasIgnoradas = [
         /^Impresso por:/i,
@@ -1943,8 +1955,10 @@
         const bemDoRelato = extrairBemSubtraidoDoRelato(historico ? historico[1] : "", natureza ? natureza[1] : "");
         if (bemDoRelato) itensOperacionais.subtraidos.push(bemDoRelato);
       }
-      const relatoFonte = historico ? limparRelatoPdfBruto(historico[1]) : "";
-      const relato = resumirRelatoPdf(relatoFonte, pessoas, itensOperacionais);
+      // O campo exibido no cadastro é a íntegra documental. As versões
+      // legadas do resumo (v2/v3/v5) não devem modificar esse preenchimento.
+      const relatoFonte = extrairRelatoHistoricoIntegralPdf(texto);
+      const relato = relatoFonte;
       if (pessoas.vitimas.length || pessoas.infratores.length) pessoas.envolvidos = [];
       else pessoas.envolvidos = pessoas.envolvidos.filter(pessoa => !pessoa.policialMilitar);
       return {
