@@ -285,7 +285,7 @@
       .remover-item { width:100%; }
     }
   </style>
-<script src="auth-config.js"></script><script src="auth-guard.js"></script><script src="pdf-companhia.js?v=20261030-1"></script></head>
+<script src="auth-config.js"></script><script src="auth-guard.js"></script><script src="pdf-companhia.js?v=20261030-1"></script><script src="pdf-historico.js?v=20261030-1"></script></head>
 
 <body>
   <header>
@@ -592,10 +592,10 @@
 
         <div class="grade">
           <div class="campo inteiro">
-            <label for="mo">Relato/HISTÓRICO integral do PDF</label>
+            <label for="mo">Relato/HISTÓRICO completo (texto contínuo)</label>
             <textarea id="mo" name="mo" rows="10"
-                      placeholder="O relato completo do documento será copiado aqui, sem resumo, cortes ou alterações de redação."></textarea>
-            <small class="nota">O histórico é transcrito integralmente da seção RELATO/HISTÓRICO do PDF, preservando os parágrafos e as informações originais. Confira o texto antes de salvar.</small>
+                      placeholder="O relato do BO será preenchido integralmente, em maiúsculas e sem os cabeçalhos de impressão."></textarea>
+            <small class="nota">O histórico é transcrito integralmente, em maiúsculas e texto contínuo, sem cabeçalhos, rodapés de páginas nem assinaturas. Confira a leitura antes de salvar.</small>
           </div>
 
           <div class="campo inteiro">
@@ -1612,16 +1612,11 @@
       });
       return "RESUMO: " + resumo.replace(/\s+/g," ").trim().toUpperCase();
     }
-    // Transcrição documental: não resumir, reordenar, ocultar nomes,
-    // remover expressões ou converter o relato para caixa alta.
-    // A única delimitação é entre o título RELATO/HISTÓRICO e ASSINATURAS.
+    // Transcreve a narrativa integral, removendo apenas artefatos de
+    // paginação/impressão e o bloco terminal identificado da guarnição.
+    // Não resume nem infere fatos ausentes do BO.
     function extrairRelatoHistoricoIntegralPdf(texto) {
-      const documento = String(texto || "").replace(/\r\n?/g,"\n");
-      const abertura = /(?:^|\n)[ \t]*RELATO\s*\/\s*HIST[ÓO]RICO\s*:?\s*/i.exec(documento);
-      if (!abertura) return "";
-      const restante = documento.slice(abertura.index + abertura[0].length);
-      const fechamento = /(?:^|\n)[ \t]*ASSINATURAS?\b/i.exec(restante);
-      return (fechamento ? restante.slice(0,fechamento.index) : restante).trim();
+      return window.PdfHistorico?.extrair(texto) || "";
     }
     function limparRelatoPdfBruto(valor) {
       const linhasIgnoradas = [
