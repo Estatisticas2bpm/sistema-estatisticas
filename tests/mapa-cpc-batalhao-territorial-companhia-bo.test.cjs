@@ -7,9 +7,9 @@ const trecho=(inicio,fim)=>{
 };
 const campos=Object.fromEntries(['tipo','bairro','turno','unidade','aisc','sisc','setor','batalhaoTerritorial','companhiaBo'].map(k=>[k,{value:''}]));
 const bo=[
- {id:'bope-leste',unidade_id:'bope',unidade_territorial_id:'bpm1',companhia:'2ª CIA',aisc:'AISC LESTE',sisc:'SISC 1',setor:'1.1',bairro:'CENTRO',ocorrencia:'FURTO'},
- {id:'bpm2-leste',unidade_id:'bpm2',unidade_territorial_id:'bpm1',companhia:'1ª CIA',aisc:'AISC LESTE',sisc:'SISC 1',setor:'1.1',bairro:'CENTRO',ocorrencia:'ROUBO'},
- {id:'bpm2-oeste',unidade_id:'bpm2',unidade_territorial_id:'bpm2',companhia:'3ª CIA',aisc:'AISC OESTE',sisc:'SISC 4',setor:'4.1',bairro:'SANTA TERESA',ocorrencia:'FURTO'}
+ {id:'bope-leste',unidade_id:'bope',unidade_territorial_id:'bpm1',cia_unidade_apuracao:'2ª CIA',aisc:'AISC LESTE',sisc:'SISC 1',setor:'1.1',bairro:'CENTRO',ocorrencia:'FURTO'},
+ {id:'bpm2-leste',unidade_id:'bpm2',unidade_territorial_id:'bpm1',cia_unidade_apuracao:'1ª CIA',aisc:'AISC LESTE',sisc:'SISC 1',setor:'1.1',bairro:'CENTRO',ocorrencia:'ROUBO'},
+ {id:'bpm2-oeste',unidade_id:'bpm2',unidade_territorial_id:'bpm2',cia_unidade_apuracao:'3ª CIA',aisc:'AISC OESTE',sisc:'SISC 4',setor:'4.1',bairro:'SANTA TERESA',ocorrencia:'FURTO'}
 ];
 const abordagens=[
  {id:'giro-leste',unidade_id:'giro',bairro:'CENTRO'},
@@ -58,4 +58,5 @@ assert.match(html,/popularCompanhiasBo\(\);aplicarParametrosEntrada\(\)/);
 assert.match(html,/AISC, SISC e Setor/);
 assert.match(html,/não equivale a uma delimitação territorial homologada/);
 assert.match(html,/function popularCompanhiasBo\(\)/);
+assert.match(html,/chave\(x\.cia_unidade_apuracao\)===cia/);
 console.log('Mapa CPC: unidade atuante e batalhão territorial independentes, companhia do BO isolada e setor 4.1 oficial.');
