@@ -132,7 +132,7 @@ function popularCompanhiasBo(){
   const seletor=$('companhiaBo'),anterior=seletor.value,unidade=$('unidade').value;
   const companhias=[...new Set((base||[])
     .filter(x=>!unidade||String(x.unidade_id)===unidade||String(x.subunidade_operacional_id||'')===unidade)
-    .map(x=>String(x.companhia||'').trim()).filter(Boolean))]
+    .map(x=>String(x.cia_unidade_apuracao||'').trim()).filter(Boolean))]
     .sort((a,b)=>a.localeCompare(b,'pt-BR',{numeric:true}));
   seletor.innerHTML='<option value="">Todas</option>'+
     companhias.map(nome=>'<option value="'+esc(nome)+'">'+esc(nome)+'</option>').join('');
@@ -164,7 +164,7 @@ function filtrarOcorrencias(){
   return base.filter(x=>coordValida(x)
     &&(!u||String(x.unidade_id)===u||String(x.subunidade_operacional_id||'')===u)
     &&(!bt||String(x.unidade_territorial_id||'')===bt)
-    &&(!cia||chave(x.companhia)===cia)
+    &&(!cia||chave(x.cia_unidade_apuracao)===cia)
     &&(!a||x.aisc===a)&&(!s||x.sisc===s)&&(!st||x.setor===st)
     &&(!categoriaRapida||cat(x.ocorrencia||x.crime)[0]===categoriaRapida)
     &&(!t||chave(x.ocorrencia||x.crime).includes(t))
