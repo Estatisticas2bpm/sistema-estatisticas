@@ -285,7 +285,7 @@
       .remover-item { width:100%; }
     }
   </style>
-<script src="auth-config.js"></script><script src="auth-guard.js"></script></head>
+<script src="auth-config.js"></script><script src="auth-guard.js"></script><script src="pdf-companhia.js?v=20261030-1"></script></head>
 
 <body>
   <header>
@@ -357,6 +357,16 @@
           <div class="campo">
             <label for="numeroBo">Nº BO/ROP *</label>
             <input id="numeroBo" name="numeroBo" type="text" required>
+          </div>
+
+          <div class="campo duplo">
+            <label for="companhia">CIA — Unidade de Apuração indicada no BO</label>
+            <input id="companhia" name="companhia" type="text" list="listaCompanhias" maxlength="120"
+              autocomplete="off" placeholder="Ex.: 1ª CIA, 2ª CIA ou 3ª CIA">
+            <datalist id="listaCompanhias">
+              <option value="1ª CIA"></option><option value="2ª CIA"></option><option value="3ª CIA"></option>
+            </datalist>
+            <small id="statusCompanhiaPdf" class="nota" role="status" aria-live="polite">Se o PDF informar a CIA na Unidade de Apuração, ela será pré-preenchida. Confira antes de salvar; não representa necessariamente a área de responsabilidade territorial.</small>
           </div>
 
           <div class="campo">
@@ -1927,6 +1937,7 @@
       const local = texto.match(/Local do Fato[\s\S]*?Munic[íi]pio:\s*([^\n]+)[\s\S]*?Bairro:\s*([^\n]+)[\s\S]*?Logradouro:\s*([^\n]*?)(?:\s+N[º°]:\s*([^\n]+))?\n/i);
       const pessoas = extrairPessoasPdf(texto);
       const guarnicaoCiptur = PDF_CORE && PDF_CORE.extrairGuarnicaoCiptur ? PDF_CORE.extrairGuarnicaoCiptur(texto) : {cmt:"",mot:"",ptr1:"",ptr2:"",tor:false};
+      const ciaDocumento = window.PdfCompanhia?.extrair(texto) || {companhia:"",unidadeApuracao:"",ambigua:false};
       const itensOperacionais = extrairItensOperacionaisPdf(objetos ? objetos[1] : "");
       if (!itensOperacionais.subtraidos.length) {
         const bemDoRelato = extrairBemSubtraidoDoRelato(historico ? historico[1] : "", natureza ? natureza[1] : "");
@@ -1943,6 +1954,9 @@
         horaFinal: fim ? fim[1] : "",
         municipio: local ? local[1].replace(/\s*\([^)]*\)\s*$/," ").trim() : "",
         vtr: vtr ? vtr[1] : "",
+        companhiaExtraida: ciaDocumento.companhia,
+        unidadeApuracaoTexto: ciaDocumento.unidadeApuracao,
+        companhiaAmbigua: ciaDocumento.ambigua,
         comandanteExtraido: comandante ? comandante[1].trim() : (guarnicaoCiptur.cmt || ""),
         guarnicaoCiptur,
         comandante:{valor:null,sugestao:null,score:0,origem:null,automatico:false,ambiguo:false},
@@ -2150,6 +2164,15 @@
       document.getElementById("horaInicial").value = dados.horaInicial;
       document.getElementById("horaFinal").value = dados.horaFinal;
       document.getElementById("vtr").value = dados.vtr;
+      document.getElementById("companhia").value = dados.companhiaExtraida || "";
+      const fonteCompanhia = document.getElementById("statusCompanhiaPdf");
+      if (fonteCompanhia) fonteCompanhia.textContent = dados.companhiaAmbigua
+        ? "O PDF contém mais de uma CIA na Unidade de Apuração. Confira e preencha manualmente; nenhuma foi escolhida."
+        : dados.companhiaExtraida
+          ? "Pré-preenchido a partir da Unidade de Apuração do PDF: "+(dados.unidadeApuracaoTexto||dados.companhiaExtraida)+". Confirme antes de salvar."
+          : dados.unidadeApuracaoTexto
+            ? "Unidade de Apuração identificada, mas sem CIA explícita: "+dados.unidadeApuracaoTexto+". Informe manualmente apenas se constar no documento."
+            : "Unidade de Apuração/CIA não identificada no PDF. Não será inferida pelo bairro ou unidade logada.";
       document.getElementById("statusAtendimento").value = "ATENDIDA";
       document.getElementById("municipio").value = normalizarCatalogo(dados.municipio || "BOA VISTA");
       const tipo = melhorItemCatalogo(catalogos.tipos, dados.natureza, true);
@@ -2212,7 +2235,7 @@
       const totalVeiculos = dados.itensOperacionais.recuperados.filter(item => tiposVeiculo.has(item.tipo)).reduce((total,item)=>total+(Number(item.quantidade)||0),0);
       definirResultadoImportado("resultadoVeiculo","veiculosRecuperados",totalVeiculos);
       const enderecoPreparado = await preencherEnderecoPdfAutomatico(dados);
-      ["tipoRegistro","numeroBo","data","horaInicial","horaFinal","vtr","municipio","ocorrencia","crime","mo","materialidade","localEntrega","quantArmaBranca","armaBranca","balanca","disparo","autoResistencia","foragidos","numeroConduzidos","orientacoes","veiculosRecuperados"].forEach(id=>marcarCampoPdf(id,false));
+      ["tipoRegistro","numeroBo","data","horaInicial","horaFinal","vtr","companhia","municipio","ocorrencia","crime","mo","materialidade","localEntrega","quantArmaBranca","armaBranca","balanca","disparo","autoResistencia","foragidos","numeroConduzidos","orientacoes","veiculosRecuperados"].forEach(id=>marcarCampoPdf(id,false));
       marcarCampoPdf("comandante",!(dados.comandante&&dados.comandante.automatico));
       ["guarnicaoMot","guarnicaoPtr1","guarnicaoPtr2"].forEach(id=>marcarCampoPdf(id,false));
       ["nacVitima","sexoVitima","idadeVitima","nacInfrator","sexoInfrator","idadeInfrator"].forEach(id=>marcarCampoPdf(id,false));
@@ -2592,7 +2615,7 @@
       if (subunidadeOperacional) await subunidadesBopeProntas;
       const pessoasSalvas = separarPessoas(x.observacao_final);
       x.observacao_final = pessoasSalvas.texto;
-      const mapa = {data_ocorrencia:"data",status_atendimento:"statusAtendimento",motivo_repressao:"motivoRepressao",municipio:"municipio",vtr:"vtr",tipo_registro:"tipoRegistro",numero_bo:"numeroBo",hora_inicial:"horaInicial",hora_final:"horaFinal",ocorrencia:"ocorrencia",crime:"crime",numero_conduzidos:"numeroConduzidos",orientacoes:"orientacoes",veiculos_recuperados:"veiculosRecuperados",endereco:"endereco",numero_endereco:"numeroEndereco",bairro:"bairro",local_entrega:"localEntrega",vitima_nacionalidade:"nacVitima",vitima_sexo:"sexoVitima",vitima_idade:"idadeVitima",infrator_nacionalidade:"nacInfrator",infrator_sexo:"sexoInfrator",infrator_idade:"idadeInfrator",comandante:"comandante",historico_resumido:"mo",materialidade:"materialidade",observacao:"observacao1",entorpecentes:"entorpecentes",maconha:"maconha",cocaina:"cocaina",pasta_base:"pastaBase",crack:"crack",skank:"skank",quantidade_armas:"quantArmas",quantidade_arma_branca:"quantArmaBranca",arma_branca:"armaBranca",armas:"armas",quantidade_municoes:"quantMunicoes",municoes:"municoes",veiculos_restricao:"veiculosRestricao",foragidos:"foragidos",disparo:"disparo",auto_resistencia:"autoResistencia",quantidade_autos_infracao:"quantAutoInfracao",auto_infracao:"autoInfracao",balanca_precisao:"balanca",observacao_final:"observacaoFinal",latitude:"latitude",longitude:"longitude",endereco_formatado:"enderecoFormatado"};
+      const mapa = {data_ocorrencia:"data",status_atendimento:"statusAtendimento",motivo_repressao:"motivoRepressao",municipio:"municipio",vtr:"vtr",tipo_registro:"tipoRegistro",numero_bo:"numeroBo",companhia:"companhia",hora_inicial:"horaInicial",hora_final:"horaFinal",ocorrencia:"ocorrencia",crime:"crime",numero_conduzidos:"numeroConduzidos",orientacoes:"orientacoes",veiculos_recuperados:"veiculosRecuperados",endereco:"endereco",numero_endereco:"numeroEndereco",bairro:"bairro",local_entrega:"localEntrega",vitima_nacionalidade:"nacVitima",vitima_sexo:"sexoVitima",vitima_idade:"idadeVitima",infrator_nacionalidade:"nacInfrator",infrator_sexo:"sexoInfrator",infrator_idade:"idadeInfrator",comandante:"comandante",historico_resumido:"mo",materialidade:"materialidade",observacao:"observacao1",entorpecentes:"entorpecentes",maconha:"maconha",cocaina:"cocaina",pasta_base:"pastaBase",crack:"crack",skank:"skank",quantidade_armas:"quantArmas",quantidade_arma_branca:"quantArmaBranca",arma_branca:"armaBranca",armas:"armas",quantidade_municoes:"quantMunicoes",municoes:"municoes",veiculos_restricao:"veiculosRestricao",foragidos:"foragidos",disparo:"disparo",auto_resistencia:"autoResistencia",quantidade_autos_infracao:"quantAutoInfracao",auto_infracao:"autoInfracao",balanca_precisao:"balanca",observacao_final:"observacaoFinal",latitude:"latitude",longitude:"longitude",endereco_formatado:"enderecoFormatado"};
       Object.keys(mapa).forEach(k => definirCampo(mapa[k],x[k]));
       definirCampo("origemOcorrenciaBope",x.origem_ocorrencia);
       definirCampo("origemOcorrenciaBopeDetalhe",x.origem_ocorrencia_detalhe);
@@ -2765,6 +2788,7 @@
           tipo_registro: tratarNI(document.getElementById("tipoRegistro").value),
           subunidade_operacional_id: subunidadeOperacional ? subunidadeOperacional.value || null : null,
           numero_bo: document.getElementById("numeroBo").value.trim(),
+          companhia: document.getElementById("companhia").value.trim() || null,
           hora_inicial: document.getElementById("horaInicial").value,
           hora_final: document.getElementById("horaFinal").value || null,
 
