@@ -14,7 +14,7 @@ const relatorio=read('relatorio.html');
 const relCipa=read('relatorio-cipa.js');
 
 assert.match(cadastro,/const ehCipaCadastro=siglaCadastro==='CIPA'/);
-assert.match(cadastro,/ehGiroCadastro\|\|ehCipaCadastro/);
+assert.match(cadastro,/const blocoGrupamento=ehBatalhaoTerritorialCadastro/);
 assert.match(cadastro,/CipaCadastro\?\.salvar/);
 assert.match(cadastro,/cipa-cadastro\.js/);
 

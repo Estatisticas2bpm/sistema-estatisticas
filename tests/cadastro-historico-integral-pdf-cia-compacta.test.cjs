@@ -41,7 +41,8 @@ const impresso='RELATO/HISTÓRICO\nEncontrava-\nse no local. A vítima informou 
 assert.equal(extrair(impresso),'ENCONTRAVA-SE NO LOCAL. A VÍTIMA INFORMOU QUE ESTAVA SEPARADA DO SUPOSTO AUTOR HAVIA UM ANO. ERA O QUE TINHA A RELATAR.');
 assert.equal(extrair('RELATO/HISTÓRICO\nA VTR 235 foi empregada.\nASSINATURAS'),'A VTR 235 FOI EMPREGADA.');
 const bloco=base.slice(base.indexOf('function extrairDadosOcorrenciaPdf(texto) {'),base.indexOf('async function preencherEnderecoPdfAutomatico(dados)'));
-assert.match(bloco,/const relatoFonte = extrairRelatoHistoricoIntegralPdf\(texto\)/);
+assert.match(bloco,/const relatoAnalise = extrairRelatoHistoricoIntegralPdf\(texto\)/);
+assert.match(bloco,/const relatoFonte = relatoAnalise\.texto/);
 assert.match(bloco,/const relato = relatoFonte;/);
 assert.doesNotMatch(bloco,/resumirRelatoPdf\s*\(/);
 assert.doesNotMatch(bloco,/limparRelatoPdfBruto\s*\(/);
@@ -51,13 +52,13 @@ assert.match(base,/document\.getElementById\("mo"\)\.value = dados\.historico;/)
 assert.match(base,/document\.getElementById\("materialidade"\)\.value = dados\.materialidade;/);
 assert.match(base,/historico_resumido: document\.getElementById\("mo"\)\.value \|\| null/);
 assert.match(base,/materialidade: document\.getElementById\("materialidade"\)\.value \|\| null/);
-assert.match(base,/return window\.PdfHistorico\?\.extrair\(texto\) \|\| "";/);
+assert.match(base,/return window\.PdfHistorico\?\.analisar\(texto\)/);
 assert.match(base,/Relato\/HISTÓRICO completo \(texto contínuo\)/);
 assert.match(base,/textarea id="mo" name="mo" rows="10"/);
-assert.match(base,/<div class="campo">\s*<label for="companhia">CIA \(Unidade de Apuração\)<\/label>/);
+assert.match(base,/<div class="campo" id="campoCompanhia">\s*<label for="companhia">CIA \(Unidade de Apuração\)<\/label>/);
 assert.doesNotMatch(base,/<div class="campo duplo">\s*<label for="companhia">/);
 assert.match(base,/class="campo inteiro" id="campoMotivo"/);
 assert.match(base,/CIA \(Unidade de Apuração\)/);
-assert.match(base,/<script src="pdf-historico\.js\?v=20261030-1"><\/script>/);
+assert.match(base,/<script src="pdf-historico\.js\?v=20261031-1"><\/script>/);
 assert.match(rota,/cadastro-base\.html/);
 console.log('Histórico integral normalizado, paginação limpa, CIA compacta e materialidade separada.');

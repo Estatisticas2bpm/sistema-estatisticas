@@ -331,6 +331,37 @@
     return dados;
   }
 
+  function extrairVtr(texto) {
+    const fonte = String(texto || "");
+    const candidatos = [];
+    const regex = /\b(?:VTR|VIATURA)\s*(?:PM\s*)?(?:N[º°]\s*)?(?:-|:)?\s*(?:TOR\s*)?(\d{2,5})\b/gi;
+    let achado;
+    while ((achado = regex.exec(fonte))) {
+      const valor = achado[1];
+      const cauda = fonte.slice(achado.index, achado.index + 320);
+      const blocoGuarnicao = /\b(?:CMT|CMD|COMANDANTE|MOT|MOTORISTA|PTR\s*[1-4]?|P[1-4]|PATRULHEIRO|SEG)\s*(?::|-)/i.test(cauda);
+      candidatos.push({valor, origem:blocoGuarnicao ? "identificação da guarnição" : "menção explícita à VTR", indice:achado.index});
+    }
+    const valores = [...new Set(candidatos.map(item => item.valor))];
+    if (!valores.length) return {valor:"",automatico:false,ambiguo:false,candidatos:[],origem:null};
+    if (valores.length > 1) return {valor:"",automatico:false,ambiguo:true,candidatos:valores,origem:"identificações conflitantes"};
+    const preferido = candidatos.find(item => item.origem === "identificação da guarnição") || candidatos[0];
+    return {valor:valores[0],automatico:true,ambiguo:false,candidatos:valores,origem:preferido.origem};
+  }
+
+  function detectarGrupamento(texto, natureza) {
+    const documento = normalizar(texto);
+    const classificacao = normalizar(natureza);
+    const tatico = /\bTATICO SETORIAL\b/.test(documento);
+    const ameExplicito = /\b(?:EQUIPE|GUARNICAO|VIATURA|VTR|ATENDIMENTO)\s+(?:DO\s+|DA\s+)?AME\b|\bAME\s*[-:]\s*ATENDIMENTO A MULHER\b/.test(documento);
+    const mariaDaPenha = /\bMARIA DA PENHA\b|\bVIOLENCIA DOMESTICA\b|\bVIOLENCIA CONTRA A MULHER\b/.test(classificacao + " " + documento);
+    if (tatico && ameExplicito) return {valor:null,conflito:true,confirmacao:true,origem:"O PDF identifica Tático Setorial e AME."};
+    if (tatico) return {valor:"TÁTICO SETORIAL",conflito:false,confirmacao:false,origem:"menção explícita no PDF"};
+    if (ameExplicito) return {valor:"AME",conflito:false,confirmacao:true,origem:"menção explícita à equipe AME"};
+    if (mariaDaPenha) return {valor:"AME",conflito:false,confirmacao:true,origem:"sugestão pela natureza Maria da Penha/violência doméstica"};
+    return {valor:null,conflito:false,confirmacao:false,origem:null};
+  }
+
   function limparHistorico(valor) {
     return String(valor || "")
       .replace(/(?:Era o que tinha|Era o que havia|Diante dos fatos, era o que havia) a relatar\.?/gi, " ")
@@ -433,6 +464,8 @@
     extrairGuarnicaoCiptur,
     associarLocalEntrega,
     extrairItensOperacionais,
+    extrairVtr,
+    detectarGrupamento,
     limparHistorico,
     anonimizarNomes,
     resumirHistorico

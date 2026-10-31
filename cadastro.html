@@ -20,12 +20,21 @@
     const ehCipturCadastro=siglaCadastro==='CIPTUR';
     const ehGiroCadastro=siglaCadastro==='GIRO';
     const ehCipaCadastro=siglaCadastro==='CIPA';
+    const ehBatalhaoTerritorialCadastro=['1BPM','2BPM'].includes(siglaCadastro);
     const unidadesBopeSemGrupamento=new Set(['CANIL','FORCA_TATICA','CHOQUE','GATE']);
     const ehUnidadeBopeCadastro=unidadesBopeSemGrupamento.has(siglaCadastro);
     const ehBopeCadastro=siglaCadastro==='BOPE';
-    const resposta=await fetch('cadastro-base.html?v=20261007-cipa-data-gps',{cache:'no-store'});
+    const resposta=await fetch('cadastro-base.html?v=20261031-pdf-operacional1',{cache:'no-store'});
     if(!resposta.ok) throw new Error('Falha ao carregar a base do cadastro.');
     let html=await resposta.text();
+    // Os enxertos abaixo usam trechos literais do cadastro-base. Normalizar as
+    // quebras mantém o mesmo comportamento no GitHub Pages, Windows e testes.
+    html=html.replace(/\r\n?/g,'\n');
+    const configuracaoCadastro='<scr'+'ipt>window.SIE_CADASTRO_SIGLA='+JSON.stringify(siglaCadastro)+';window.SIE_CADASTRO_PERMITE_CIA='+JSON.stringify(ehBatalhaoTerritorialCadastro)+';</scr'+'ipt>';
+    html=html.replace('<head>','<head>'+configuracaoCadastro);
+    if(!ehBatalhaoTerritorialCadastro){
+      html=html.replace('<div class="campo" id="campoCompanhia">','<div class="campo" id="campoCompanhia" hidden aria-hidden="true">');
+    }
 
     // Novos cadastros: o documento é sempre BO. ROP/TCO ficam somente para compatibilidade histórica.
     html=html.replaceAll('<option>ROP</option>','');
@@ -42,13 +51,11 @@
     // Tipo de documento visível = BO. O grupamento operacional varia conforme a unidade.
     // CIPTUR usa somente TOR. GIRO não possui subgrupamento especializado neste cadastro.
     // As unidades operacionais do BOPE (CANIL, FORÇA TÁTICA, CHOQUE e GATE) também não usam Tático Setorial/AME.
-    const blocoGrupamento=(ehGiroCadastro||ehCipaCadastro)
-      ? ''
-      : (ehUnidadeBopeCadastro||ehBopeCadastro)
-        ? ''
-        : (ehCipturCadastro
+    const blocoGrupamento=ehBatalhaoTerritorialCadastro
+      ? '<div class="campo duplo"><label>Guarnição especializada</label><div class="selecao-grupamento" style="display:flex;gap:10px;flex-wrap:wrap"><label class="resultado-opcao" style="min-width:190px"><input id="grupamentoTatico" type="checkbox"> TÁTICO SETORIAL</label><label class="resultado-opcao" style="min-width:190px"><input id="grupamentoAme" type="checkbox"> AME</label></div><span class="nota" id="statusGrupamentoPdf" role="status" aria-live="polite">Marque somente quando o BO tiver sido atendido por um desses grupamentos. As opções são exclusivas.</span></div>'
+      : (ehCipturCadastro
         ? '<div class="campo duplo"><label>Guarnição especializada</label><div class="selecao-grupamento" style="display:flex;gap:10px;flex-wrap:wrap"><label class="resultado-opcao" style="min-width:280px"><input id="grupamentoTor" type="checkbox"> TOR — TÁTICO OSTENSIVO RODOVIÁRIO</label></div><span class="nota">Marque TOR somente quando o BO tiver sido atendido pelo Tático Ostensivo Rodoviário.</span></div>'
-        : '<div class="campo duplo"><label>Guarnição especializada</label><div class="selecao-grupamento" style="display:flex;gap:10px;flex-wrap:wrap"><label class="resultado-opcao" style="min-width:190px"><input id="grupamentoTatico" type="checkbox"> TÁTICO SETORIAL</label><label class="resultado-opcao" style="min-width:190px"><input id="grupamentoAme" type="checkbox"> AME</label></div><span class="nota">Marque somente quando o BO tiver sido atendido por um desses grupamentos. As opções são exclusivas.</span></div>');
+        : '');
     const blocoOrigemBope=ehBopeCadastro
       ? '<div class="campo duplo"><label for="subunidadeOperacional">Unidade operacional do BOPE *</label><select id="subunidadeOperacional" name="subunidadeOperacional" required aria-describedby="statusSubunidadesBope"><option value="">Selecione a unidade responsável</option></select><span class="nota" id="statusSubunidadesBope" role="status" aria-live="polite">Carregando unidades operacionais do BOPE...</span><button class="botao-secundario" id="recarregarSubunidadesBope" type="button" hidden>Tentar carregar novamente</button></div>'
       : '';
@@ -169,6 +176,31 @@
     html=html.replace(
       "    const idEdicao = new URLSearchParams(location.search).get(\"id\");\n    let registroOriginalEdicao = null;",
       "    const idEdicao = new URLSearchParams(location.search).get(\"id\");\n    let registroOriginalEdicao = null;\n    const grupamentoTatico = document.getElementById(\"grupamentoTatico\");\n    const grupamentoAme = document.getElementById(\"grupamentoAme\");\n    const grupamentoTor = document.getElementById(\"grupamentoTor\");\n    const tipoDocumentoExibicao = document.getElementById(\"tipoDocumentoExibicao\");\n    function chaveTipoRegistro(v){return String(v||\"\").trim().normalize(\"NFD\").replace(/[\\u0300-\\u036f]/g,\"\").toUpperCase();}\n    function grupamentoSelecionado(){if(grupamentoTor?.checked)return \"TOR\";if(grupamentoTatico?.checked)return \"TÁTICO SETORIAL\";if(grupamentoAme?.checked)return \"AME\";return null;}\n    function extrairGrupamentoObservacao(valor){\n      const texto=String(valor||\"\");const pos=texto.indexOf(MARCADOR_PESSOAS);if(pos<0)return null;\n      try{return JSON.parse(texto.slice(pos+MARCADOR_PESSOAS.length)).grupamento_atendimento||null}catch(_){return null}\n    }\n    function extrairGuarnicaoObservacao(valor){\n      const texto=String(valor||\"\");const pos=texto.indexOf(MARCADOR_PESSOAS);if(pos<0)return {};\n      try{return JSON.parse(texto.slice(pos+MARCADOR_PESSOAS.length)).guarnicao_componentes||{}}catch(_){return {}}\n    }\n    function componentesGuarnicaoAtual(){return{mot:document.getElementById(\"guarnicaoMot\")?.value.trim()||null,ptr1:document.getElementById(\"guarnicaoPtr1\")?.value.trim()||null,ptr2:document.getElementById(\"guarnicaoPtr2\")?.value.trim()||null}}\n    montarObservacaoFinal=function(){\n      const texto=document.getElementById(\"observacaoFinal\").value.trim();\n      const dados={vitimas:pessoasAdicionais(\"vitima\"),infratores:pessoasAdicionais(\"infrator\"),envolvidos:pessoasAdicionais(\"envolvido\"),grupamento_atendimento:grupamentoSelecionado(),guarnicao_componentes:componentesGuarnicaoAtual()};\n      const temEstruturado=dados.vitimas.length||dados.infratores.length||dados.envolvidos.length||dados.grupamento_atendimento||dados.guarnicao_componentes.mot||dados.guarnicao_componentes.ptr1||dados.guarnicao_componentes.ptr2;\n      return temEstruturado?(texto?texto+\"\\n\":\"\")+MARCADOR_PESSOAS+JSON.stringify(dados):(texto||null);\n    };\n    function sincronizarGrupamentoComTipo(origem=null){\n      const tipo=document.getElementById(\"tipoRegistro\");\n      let bruto=origem?chaveTipoRegistro(origem.tipo_registro):\"\";\n      const grupo=origem?chaveTipoRegistro(origem.grupamento_atendimento||extrairGrupamentoObservacao(origem.observacao_final)):\"\";\n      if(origem){\n        if(grupamentoTor)grupamentoTor.checked=grupo===\"TOR\"||bruto===\"TOR\";\n        if(grupamentoTatico)grupamentoTatico.checked=Boolean(origem?.tatico_setorial)||bruto===\"TS\"||bruto===\"TATICO SETORIAL\"||grupo===\"TATICO SETORIAL\";\n        if(grupamentoAme)grupamentoAme.checked=bruto===\"AME\"||grupo===\"AME\";\n      }\n      if(grupamentoTatico?.checked&&grupamentoAme)grupamentoAme.checked=false;\n      if(grupamentoAme?.checked&&grupamentoTatico)grupamentoTatico.checked=false;\n      if(origem&&[\"ROP\",\"TCO\",\"NI\"].includes(bruto)){if(grupamentoTor)grupamentoTor.checked=false;if(grupamentoTatico)grupamentoTatico.checked=false;if(grupamentoAme)grupamentoAme.checked=false;tipo.value=bruto;tipoDocumentoExibicao.value=bruto;return;}\n      tipoDocumentoExibicao.value=\"BO\";\n      if(idEdicao&&registroOriginalEdicao&&[\"ROP\",\"TCO\",\"NI\"].includes(chaveTipoRegistro(registroOriginalEdicao.tipo_registro))){tipo.value=chaveTipoRegistro(registroOriginalEdicao.tipo_registro);tipoDocumentoExibicao.value=tipo.value;}else tipo.value=\"BO\";\n    }\n    grupamentoTatico?.addEventListener(\"change\",()=>{if(grupamentoTatico.checked&&grupamentoAme)grupamentoAme.checked=false;sincronizarGrupamentoComTipo();});\n    grupamentoAme?.addEventListener(\"change\",()=>{if(grupamentoAme.checked&&grupamentoTatico)grupamentoTatico.checked=false;sincronizarGrupamentoComTipo();});\n    grupamentoTor?.addEventListener(\"change\",()=>sincronizarGrupamentoComTipo());\n    document.querySelectorAll(\"[data-local-rapido]\").forEach(btn=>btn.addEventListener(\"click\",()=>{document.getElementById(\"localEntrega\").value=btn.dataset.localRapido||\"\";}));\n    sincronizarGrupamentoComTipo();"
+    );
+    html=html.replace(
+      `    grupamentoTatico?.addEventListener("change",()=>{if(grupamentoTatico.checked&&grupamentoAme)grupamentoAme.checked=false;sincronizarGrupamentoComTipo();});
+    grupamentoAme?.addEventListener("change",()=>{if(grupamentoAme.checked&&grupamentoTatico)grupamentoTatico.checked=false;sincronizarGrupamentoComTipo();});`,
+      `    let grupamentoCorrigidoManualmente=false;
+    let ultimaDeteccaoGrupamentoPdf=null;
+    function statusGrupamento(mensagem){const status=document.getElementById("statusGrupamentoPdf");if(status)status.textContent=mensagem;}
+    function aplicarDeteccaoGrupamento(resultado){
+      if(!grupamentoTatico&&!grupamentoAme)return;
+      ultimaDeteccaoGrupamentoPdf=resultado||null;grupamentoCorrigidoManualmente=false;
+      grupamentoTatico.checked=false;grupamentoAme.checked=false;
+      if(resultado?.conflito){statusGrupamento("O PDF menciona AME e Tático Setorial. Confira e selecione manualmente apenas a equipe que realizou o atendimento.");return;}
+      if(resultado?.valor==="TÁTICO SETORIAL")grupamentoTatico.checked=true;
+      if(resultado?.valor==="AME")grupamentoAme.checked=true;
+      if(resultado?.valor)statusGrupamento((resultado.confirmacao?"Sugestão automática — confirme: ":"Identificação automática: ")+resultado.valor+" ("+(resultado.origem||"documento")+").");
+      else statusGrupamento("Nenhum grupamento especializado foi identificado automaticamente.");
+      sincronizarGrupamentoComTipo();
+    }
+    window.aplicarSugestaoGrupamentoPdf=aplicarDeteccaoGrupamento;
+    grupamentoTatico?.addEventListener("change",evento=>{if(evento.isTrusted){grupamentoCorrigidoManualmente=true;statusGrupamento("Seleção ajustada manualmente pelo operador.");}if(grupamentoTatico.checked&&grupamentoAme)grupamentoAme.checked=false;sincronizarGrupamentoComTipo();});
+    grupamentoAme?.addEventListener("change",evento=>{if(evento.isTrusted){grupamentoCorrigidoManualmente=true;statusGrupamento("Seleção ajustada manualmente pelo operador.");}if(grupamentoAme.checked&&grupamentoTatico)grupamentoTatico.checked=false;sincronizarGrupamentoComTipo();});
+    document.getElementById("ocorrencia")?.addEventListener("change",()=>{
+      if(grupamentoCorrigidoManualmente||ultimaDeteccaoGrupamentoPdf?.valor==="TÁTICO SETORIAL"||ultimaDeteccaoGrupamentoPdf?.conflito)return;
+      aplicarDeteccaoGrupamento(window.PdfImporterCore?.detectarGrupamento?.("",document.getElementById("ocorrencia").value));
+    });`
     );
     html=html.replace(
       '      const pessoasSalvas = separarPessoas(x.observacao_final);\n      x.observacao_final = pessoasSalvas.texto;',

@@ -44,7 +44,7 @@ assert.match(base,/<script src="pdf-companhia\.js\?v=20261030-1"><\/script>/);
 assert.match(base,/<input id="companhia" name="companhia"/);
 assert.match(base,/ciaDocumento = window\.PdfCompanhia\?\.extrair\(texto\)/);
 assert.match(base,/companhiaExtraida: ciaDocumento\.companhia/);
-assert.match(base,/document\.getElementById\("companhia"\)\.value = dados\.companhiaExtraida \|\| ""/);
+assert.match(base,/if \(permiteCia\) document\.getElementById\("companhia"\)\.value = dados\.companhiaExtraida \|\| ""/);
 assert.match(base,/numero_bo:"numeroBo",cia_unidade_apuracao:"companhia"/);
 assert.match(base,/cia_unidade_apuracao: document\.getElementById\("companhia"\)\.value\.trim\(\) \|\| null/);
 assert.match(base,/não representa necessariamente a área de responsabilidade territorial/);
