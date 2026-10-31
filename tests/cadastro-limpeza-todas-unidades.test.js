@@ -54,6 +54,21 @@ async function montar(sigla) {
     }
     if (sigla === 'CIPTUR') assert.match(html, /id="grupamentoTor"/);
     if (sigla === 'CIPA') assert.match(html, /CipaCadastro\?\.salvar/);
+    if (['1BPM', '2BPM'].includes(sigla)) {
+      assert.match(html, /window\.SIE_CADASTRO_PERMITE_CIA=true/,
+        sigla + ': deve habilitar o campo CIA');
+      assert.match(html, /<div class="campo" id="campoCompanhia">/);
+      assert.match(html, /id="grupamentoTatico"/);
+      assert.match(html, /id="grupamentoAme"/);
+      assert.doesNotMatch(html, /id="grupamentoTor"/);
+    } else {
+      assert.match(html, /window\.SIE_CADASTRO_PERMITE_CIA=false/,
+        sigla + ': nao deve expor o campo CIA');
+      assert.match(html, /id="campoCompanhia" hidden aria-hidden="true"/);
+      assert.doesNotMatch(html, /id="grupamentoTatico"/);
+      assert.doesNotMatch(html, /id="grupamentoAme"/);
+      if (sigla !== 'CIPTUR') assert.doesNotMatch(html, /id="grupamentoTor"/);
+    }
   }
   const cipg = await montar('CIPG');
   assert.match(cipg.destino, /^cipg-produtividade\.html/);

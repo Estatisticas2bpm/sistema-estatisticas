@@ -285,7 +285,7 @@
       .remover-item { width:100%; }
     }
   </style>
-<script src="auth-config.js"></script><script src="auth-guard.js"></script><script src="pdf-companhia.js?v=20261030-1"></script><script src="pdf-historico.js?v=20261030-1"></script></head>
+<script src="auth-config.js"></script><script src="auth-guard.js"></script><script src="pdf-companhia.js?v=20261030-1"></script><script src="pdf-historico.js?v=20261031-1"></script></head>
 
 <body>
   <header>
@@ -358,7 +358,7 @@
             <input id="numeroBo" name="numeroBo" type="text" required>
           </div>
 
-          <div class="campo">
+          <div class="campo" id="campoCompanhia">
             <label for="companhia">CIA (Unidade de Apuração)</label>
             <input id="companhia" name="companhia" type="text" list="listaCompanhias" maxlength="120"
               autocomplete="off" placeholder="Ex.: 1ª CIA, 2ª CIA ou 3ª CIA">
@@ -765,7 +765,7 @@
     <form class="modal-conteudo" id="formNovoBairro" method="dialog"><h3>Cadastrar novo bairro</h3><p>Cadastre apenas se o bairro ainda não estiver na lista.</p><div class="campo"><label for="novoBairro">Nome do bairro</label><input id="novoBairro" maxlength="100" required></div><div class="modal-acoes"><button class="botao-secundario" id="cancelarNovoBairro" type="button">Cancelar</button><button type="submit">Salvar bairro</button></div></form>
   </dialog>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="pdf-importer-core.js?v=20261001-guarnicao1"></script>
+  <script src="pdf-importer-core.js?v=20261031-operacional1"></script>
   <script src="verificacao-quantidades-operacionais.js?v=20261018-auditoria1"></script>
   <script src="bope-subunidades.js?v=20261015-1"></script>
   <script>
@@ -1616,7 +1616,7 @@
     // paginação/impressão e o bloco terminal identificado da guarnição.
     // Não resume nem infere fatos ausentes do BO.
     function extrairRelatoHistoricoIntegralPdf(texto) {
-      return window.PdfHistorico?.extrair(texto) || "";
+      return window.PdfHistorico?.analisar(texto) || {texto:"",inicioEncontrado:false,fimEncontrado:false,necessitaConferencia:true,motivo:"Leitor do histórico indisponível."};
     }
     function limparRelatoPdfBruto(valor) {
       const linhasIgnoradas = [
@@ -1936,7 +1936,7 @@
         || texto.match(/(?:^|\s)0*(\d{4,10})\s*\/\s*(20\d{2})(?:\s|$)/m);
       const inicio = texto.match(/Data\/Hora do Fato In[íi]cio:\s*(\d{2}\/\d{2}\/\d{4})\s*(\d{2}:\d{2})/i);
       const fim = texto.match(/Data\/Hora do Fato Fim:\s*\d{2}\/\d{2}\/\d{4}\s*(\d{2}:\d{2})/i);
-      const vtr = texto.match(/(?:VTR|Viatura)\s*(?:N[º°])?\s*[-:]?\s*(?:TOR\s*)?(\d{2,5})/i);
+      const vtrDocumento = PDF_CORE?.extrairVtr ? PDF_CORE.extrairVtr(texto) : {valor:"",automatico:false,ambiguo:false,candidatos:[],origem:null};
       const comandante = texto.match(/Comandante da Guarni[çc][ãa]o:\s*([^\n]+)/i);
       const natureza = texto.match(/Natureza\s+Meio\(s\) Empregado\(s\)\s*([\s\S]*?)(?=ENVOLVIDO\(S\))/i);
       const historico = texto.match(/RELATO\/HIST[ÓO]RICO\s*([\s\S]*?)(?=ASSINATURAS)/i);
@@ -1945,6 +1945,7 @@
       const pessoas = extrairPessoasPdf(texto);
       const guarnicaoCiptur = PDF_CORE && PDF_CORE.extrairGuarnicaoCiptur ? PDF_CORE.extrairGuarnicaoCiptur(texto) : {cmt:"",mot:"",ptr1:"",ptr2:"",tor:false};
       const ciaDocumento = window.PdfCompanhia?.extrair(texto) || {companhia:"",unidadeApuracao:"",ambigua:false};
+      const grupamentoPdf = PDF_CORE?.detectarGrupamento ? PDF_CORE.detectarGrupamento(texto,natureza ? natureza[1] : "") : {valor:null,conflito:false,confirmacao:false,origem:null};
       const itensOperacionais = extrairItensOperacionaisPdf(objetos ? objetos[1] : "");
       if (!itensOperacionais.subtraidos.length) {
         const bemDoRelato = extrairBemSubtraidoDoRelato(historico ? historico[1] : "", natureza ? natureza[1] : "");
@@ -1952,7 +1953,8 @@
       }
       // O campo exibido no cadastro é a íntegra documental. As versões
       // legadas do resumo (v2/v3/v5) não devem modificar esse preenchimento.
-      const relatoFonte = extrairRelatoHistoricoIntegralPdf(texto);
+      const relatoAnalise = extrairRelatoHistoricoIntegralPdf(texto);
+      const relatoFonte = relatoAnalise.texto;
       const relato = relatoFonte;
       if (pessoas.vitimas.length || pessoas.infratores.length) pessoas.envolvidos = [];
       else pessoas.envolvidos = pessoas.envolvidos.filter(pessoa => !pessoa.policialMilitar);
@@ -1962,7 +1964,8 @@
         horaInicial: inicio ? inicio[2] : "",
         horaFinal: fim ? fim[1] : "",
         municipio: local ? local[1].replace(/\s*\([^)]*\)\s*$/," ").trim() : "",
-        vtr: vtr ? vtr[1] : "",
+        vtr: vtrDocumento.valor,
+        vtrAnalise: vtrDocumento,
         companhiaExtraida: ciaDocumento.companhia,
         unidadeApuracaoTexto: ciaDocumento.unidadeApuracao,
         companhiaAmbigua: ciaDocumento.ambigua,
@@ -1973,6 +1976,8 @@
         natureza: natureza ? natureza[1].replace(/N[ãa]o Houve/gi," ").replace(/\s+/g," ").trim() : "",
         historico: relato,
         historicoFonte: relatoFonte,
+        historicoAnalise: relatoAnalise,
+        grupamentoPdf,
         materialidade: objetos ? resumirMaterialidadePdf(objetos[1]) : "",
         enderecoReferencia: local ? `${local[3].trim()}${local[4] ? ", nº " + local[4].trim() : ""} - ${local[2].trim()}` : "",
         logradouroPdf: local ? local[3].trim() : "",
@@ -2172,8 +2177,11 @@
       document.getElementById("data").value = dados.data;
       document.getElementById("horaInicial").value = dados.horaInicial;
       document.getElementById("horaFinal").value = dados.horaFinal;
-      document.getElementById("vtr").value = dados.vtr;
-      document.getElementById("companhia").value = dados.companhiaExtraida || "";
+      document.getElementById("vtr").value = dados.vtr || "";
+      const permiteCia = window.SIE_CADASTRO_PERMITE_CIA !== false;
+      // Em unidades especializadas o campo fica oculto e não deve ser alterado:
+      // isso preserva valores históricos durante eventual reimportação na edição.
+      if (permiteCia) document.getElementById("companhia").value = dados.companhiaExtraida || "";
       const fonteCompanhia = document.getElementById("statusCompanhiaPdf");
       if (fonteCompanhia) fonteCompanhia.textContent = dados.companhiaAmbigua
         ? "O PDF contém mais de uma CIA na Unidade de Apuração. Confira e preencha manualmente; nenhuma foi escolhida."
@@ -2244,7 +2252,10 @@
       const totalVeiculos = dados.itensOperacionais.recuperados.filter(item => tiposVeiculo.has(item.tipo)).reduce((total,item)=>total+(Number(item.quantidade)||0),0);
       definirResultadoImportado("resultadoVeiculo","veiculosRecuperados",totalVeiculos);
       const enderecoPreparado = await preencherEnderecoPdfAutomatico(dados);
+      window.aplicarSugestaoGrupamentoPdf?.(dados.grupamentoPdf);
       ["tipoRegistro","numeroBo","data","horaInicial","horaFinal","vtr","companhia","municipio","ocorrencia","crime","mo","materialidade","localEntrega","quantArmaBranca","armaBranca","balanca","disparo","autoResistencia","foragidos","numeroConduzidos","orientacoes","veiculosRecuperados"].forEach(id=>marcarCampoPdf(id,false));
+      if (dados.vtrAnalise?.ambiguo) marcarCampoPdf("vtr",true,"✓ Mais de uma VTR encontrada — conferir manualmente");
+      if (dados.historicoAnalise?.necessitaConferencia) marcarCampoPdf("mo",true,"✓ Limites do histórico não confirmados — conferir");
       marcarCampoPdf("comandante",!(dados.comandante&&dados.comandante.automatico));
       ["guarnicaoMot","guarnicaoPtr1","guarnicaoPtr2"].forEach(id=>marcarCampoPdf(id,false));
       ["nacVitima","sexoVitima","idadeVitima","nacInfrator","sexoInfrator","idadeInfrator"].forEach(id=>marcarCampoPdf(id,false));
@@ -2306,7 +2317,15 @@
         importacaoPdfPendente = true;
         const totalPessoas = dados.pessoas.vitimas.length + dados.pessoas.infratores.length + dados.pessoas.envolvidos.length;
         const totalItens = dados.itensOperacionais.armas.length + dados.itensOperacionais.municoes.length + dados.itensOperacionais.entorpecentes.length + dados.itensOperacionais.recuperados.length + dados.itensOperacionais.subtraidos.length + dados.itensOperacionais.armasBrancas.length;
-        const pendencias = [!document.getElementById("ocorrencia").value && "tipo de ocorrência", !document.getElementById("comandante").value && (dados.comandante.ambiguo ? "comandante ambíguo" : "comandante"), !enderecoPreparado.confirmado && "confirmar endereço no mapa"].filter(Boolean);
+        const pendencias = [
+          !document.getElementById("ocorrencia").value && "tipo de ocorrência",
+          !document.getElementById("comandante").value && (dados.comandante.ambiguo ? "comandante ambíguo" : "comandante"),
+          dados.vtrAnalise?.ambiguo && "VTR conflitante/ambígua",
+          dados.historicoAnalise?.necessitaConferencia && (dados.historicoAnalise.motivo || "limites do histórico"),
+          dados.grupamentoPdf?.conflito && "grupamento especializado conflitante",
+          dados.grupamentoPdf?.confirmacao && dados.grupamentoPdf?.valor === "AME" && "confirmar atuação do AME",
+          !enderecoPreparado.confirmado && "confirmar endereço no mapa"
+        ].filter(Boolean);
         const comandanteInfo = dados.comandante.valor || dados.comandante.sugestao ? `${dados.comandante.valor || dados.comandante.sugestao} (${Math.round(dados.comandante.score*100)}%, ${dados.comandante.origem || "associação"})` : dados.comandante.ambiguo ? "mais de um candidato semelhante; escolha manualmente" : "não identificado com segurança";
         const localInfo = dados.localEntrega.valor || dados.localEntrega.sugestao ? `${dados.localEntrega.valor || dados.localEntrega.sugestao} (${Math.round(dados.localEntrega.score*100)}%)` : "não identificado com segurança";
         statusImportacaoPdf.className = "status-importacao sucesso";

@@ -10,7 +10,7 @@ const carregador=fs.readFileSync(path.join(root,'bope-subunidades.js'),'utf8');
 assert.match(cadastro,/const unidadesBopeSemGrupamento=new Set\(\['CANIL','FORCA_TATICA','CHOQUE','GATE'\]\)/);
 assert.match(cadastro,/const ehUnidadeBopeCadastro=unidadesBopeSemGrupamento\.has\(siglaCadastro\)/);
 assert.match(cadastro,/const ehBopeCadastro=siglaCadastro==='BOPE'/);
-assert.match(cadastro,/ehUnidadeBopeCadastro\|\|ehBopeCadastro/);
+assert.match(cadastro,/const blocoGrupamento=ehBatalhaoTerritorialCadastro/);
 assert.match(cadastro,/Unidade operacional do BOPE \*/);
 assert.match(cadastro,/statusSubunidadesBope/);
 assert.match(cadastro,/recarregarSubunidadesBope/);
