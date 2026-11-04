@@ -1175,6 +1175,23 @@
     configuracaoResultados.forEach(([checkId,campoId,entradaId]) => {
       document.getElementById(checkId).addEventListener("change", () => atualizarCampoResultado(checkId,campoId,entradaId,true));
     });
+    // O resultado INFORMATIVO só existe no cadastro especializado da CIPA.
+    // Trata-se de BO para fins documentais, sem resultado operacional constatado.
+    const resultadoInformativoCipa = document.getElementById("resultadoInformativo");
+    if (resultadoInformativoCipa) {
+      resultadoInformativoCipa.addEventListener("change", () => {
+        if (!resultadoInformativoCipa.checked) return;
+        configuracaoResultados.forEach(([checkId,campoId,entradaId]) => {
+          document.getElementById(checkId).checked = false;
+          atualizarCampoResultado(checkId,campoId,entradaId,true);
+        });
+      });
+      configuracaoResultados.forEach(([checkId]) => {
+        document.getElementById(checkId).addEventListener("change", () => {
+          if (document.getElementById(checkId).checked) resultadoInformativoCipa.checked = false;
+        });
+      });
+    }
     function marcarResultadosExistentes(registro) {
       const providencias = [registro.providencia_1,registro.providencia_2].filter(Boolean);
       const definicoes = [
@@ -1188,8 +1205,17 @@
         if (entradaId === "outroResultadoDescricao" && marcado) document.getElementById(entradaId).value = registro.detalhes || "OUTRO RESULTADO";
         atualizarCampoResultado(checkId,campoId,entradaId,false);
       });
+      if (resultadoInformativoCipa) {
+        resultadoInformativoCipa.checked = providencias.includes("INFORMATIVO");
+        // Não ocultar resultados contraditórios já existentes: exigem
+        // conferência humana antes de qualquer regravação do registro.
+        const status = document.getElementById("statusInformativoCipa");
+        if (status && resultadoInformativoCipa.checked && definicoes.some(item => item[3]))
+          status.textContent = "Registro com INFORMATIVO e resultado operacional ao mesmo tempo. Confira e selecione apenas a opção correta antes de salvar.";
+      }
     }
     function providenciasDosResultados() {
+      if (resultadoInformativoCipa?.checked) return ["INFORMATIVO"];
       const lista = [];
       if (document.getElementById("resultadoConducao").checked) lista.push("CONDUÇÃO");
       if (document.getElementById("resultadoOrientacao").checked) lista.push("ORIENTAÇÃO");
@@ -2171,6 +2197,8 @@
 
     async function preencherRascunhoPdf(dados) {
       if (!catalogos.tipos.length) await carregarCatalogos();
+      // Importar outro PPE nunca herda marcação informativa anterior.
+      if (resultadoInformativoCipa) resultadoInformativoCipa.checked = false;
       limparIndicadoresPdf();
       document.getElementById("tipoRegistro").value = "BO";
       document.getElementById("numeroBo").value = dados.numeroBo;
@@ -2722,6 +2750,8 @@
         const el=document.getElementById(id);
         if (!el || !String(el.value||"").trim()) return mostrarErroCampo(id,msg);
       }
+      if (resultadoInformativoCipa?.checked && configuracaoResultados.some(([checkId]) => document.getElementById(checkId).checked))
+        return mostrarErroCampo("resultadoInformativo","Informativo não pode ser combinado com condução, orientação, veículo recuperado ou outro resultado.");
       if (document.getElementById("resultadoConducao").checked && !Number(document.getElementById("numeroConduzidos").value)) return mostrarErroCampo("numeroConduzidos","Informe a quantidade de conduzidos.");
       if (document.getElementById("resultadoOrientacao").checked && !Number(document.getElementById("orientacoes").value)) return mostrarErroCampo("orientacoes","Informe a quantidade de orientações.");
       if (document.getElementById("resultadoVeiculo").checked && !Number(document.getElementById("veiculosRecuperados").value)) return mostrarErroCampo("veiculosRecuperados","Informe a quantidade de veículos recuperados.");
