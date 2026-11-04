@@ -77,6 +77,19 @@
       html=html.replace('  <dialog id="modalBairro">',modalOrigemBope+'  <dialog id="modalBairro">');
     }
     if(ehCipaCadastro){
+      // BO meramente informativo é resultado documental próprio da CIPA.
+      // Não alterar o formulário das outras unidades do CPC.
+      const resultadoOutroBase='<label class="resultado-opcao"><input id="resultadoOutro" type="checkbox"> Outro resultado</label>';
+      if(!html.includes(resultadoOutroBase))throw new Error('Não foi possível adicionar Informativo: estrutura dos resultados mudou.');
+      html=html.replace(resultadoOutroBase,resultadoOutroBase+'<label class="resultado-opcao"><input id="resultadoInformativo" type="checkbox" aria-describedby="statusInformativoCipa"> Informativo</label>');
+      html=html.replace(
+        'Marque somente os resultados que ocorreram neste atendimento.</small>',
+        'Marque somente os resultados que ocorreram neste atendimento. <span id="statusInformativoCipa">Informativo: BO apenas para registro, sem infração criminal ou administrativa constatada. Não pode ser combinado com os demais resultados.</span></small>'
+      );
+      html=html.replace('</style>',
+        '.resultados-grid:has(#resultadoInformativo){grid-template-columns:repeat(5,minmax(0,1fr))}\n'+
+        '@media(max-width:900px){.resultados-grid:has(#resultadoInformativo){grid-template-columns:repeat(2,minmax(0,1fr))}}\n'+
+        '@media(max-width:600px){.resultados-grid:has(#resultadoInformativo){grid-template-columns:1fr}}\n</style>');
       // A data operacional exibida para a CIPA é a data da elaboração do PPE,
       // distinta da data do fato que permanece no texto original do documento.
       html=html.replace(

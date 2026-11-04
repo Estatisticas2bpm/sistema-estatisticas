@@ -72,7 +72,7 @@
       ['numero_bo','Número do BO'],['tipo_registro','Documento'],['data_ocorrencia','Data da ocorrência'],
       ['hora_inicial','Hora'],['ocorrencia','Ocorrência'],['crime','Tipificação'],
       ['historico_resumido','Histórico resumido'],
-      ['status_atendimento','Situação'],['municipio','Município'],['bairro','Bairro'],
+      ['status_atendimento','Situação'],['providencia_1','Resultado do atendimento 1'],['providencia_2','Resultado do atendimento 2'],['municipio','Município'],['bairro','Bairro'],
       ['endereco','Endereço'],['companhia','Companhia'],['sisc','SISC'],
       ['turno','Turno'],['comandante','Comandante da viatura'],['vtr','Viatura'],
       ['numero_prisoes','Prisões'],['numero_conduzidos','Conduzidos'],
@@ -92,7 +92,7 @@
         return;
       }
       detalheConteudo.innerHTML=camposConsulta.filter(([chave])=>
-        !['origem_ocorrencia','origem_ocorrencia_detalhe','auto_resistencia_resultou_morte','latitude','longitude'].includes(chave)
+        !['origem_ocorrencia','origem_ocorrencia_detalhe','auto_resistencia_resultou_morte','latitude','longitude','providencia_1','providencia_2'].includes(chave)
         || (r.data[chave]!==null&&r.data[chave]!==undefined&&String(r.data[chave])!=='')
       ).map(([chave,rotulo])=>{
         const valor=chave==='data_ocorrencia'&&r.data[chave]?formatarData(r.data[chave]):r.data[chave];
@@ -159,7 +159,10 @@
           ? '<a class="btnTco" href="tco.html?bo_id='+encodeURIComponent(item.id)+'">'+textoBotaoTco+'</a>'
           : '';
         const visualizar='<button type="button" class="btnVisualizar" data-id="'+escapar(item.id)+'">Visualizar</button>';
-        const acoesEscrita=podeEditar?botaoTco+'<a class="btnEditar" href="cadastro-base.html?id='+encodeURIComponent(item.id)+'">Editar</a><button class="btnExcluir" data-id="'+escapar(item.id)+'" data-bo="'+escapar(item.numero_bo)+'">Excluir</button>':'';
+        // A CIPA precisa do roteador de cadastro para montar os campos do PPE,
+        // incluindo Informativo, também quando o operador reabre o BO.
+        const paginaEdicao=String(window.SistemaAuth?.contexto?.sigla||window.SistemaAuth?.perfil?.unidades?.sigla||'').toUpperCase()==='CIPA'?'cadastro.html':'cadastro-base.html';
+        const acoesEscrita=podeEditar?botaoTco+'<a class="btnEditar" href="'+paginaEdicao+'?id='+encodeURIComponent(item.id)+'">Editar</a><button class="btnExcluir" data-id="'+escapar(item.id)+'" data-bo="'+escapar(item.numero_bo)+'">Excluir</button>':'';
         return "<tr><td>" + formatarData(item.data_ocorrencia) + "</td><td>" +
           escapar(item.tipo_registro || "—") + "</td><td>" + escapar(item.numero_bo) +
           "</td><td>" + renderTcos(item) + "</td><td>" + escapar(item.ocorrencia) + "</td><td>" + escapar(item.bairro || "—") + "</td><td class=\"acoes-linha\">"+visualizar+acoesEscrita+"</td></tr>";
