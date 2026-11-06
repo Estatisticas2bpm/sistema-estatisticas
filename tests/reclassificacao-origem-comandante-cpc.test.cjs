@@ -23,6 +23,10 @@ assert.match(cpc,/#cpcEnvolvimentoReservado\[hidden\]\{display:none!important\}/
 assert.match(cpc,/reservado\.hidden=true/);
 assert.match(cpc,/payload\.pode_ver_envolvimento===true/);
 assert.match(cpc,/reservado\.hidden=false/);
+assert.match(cpc,/id="chartCpcEnvolvimentoReservado"/,"Gráfico exclusivo de envolvidos no CPC");
+assert.match(cpc,/if\(!habilitado\)return;/,"O gráfico só pode ser renderizado após verificação do servidor");
+assert.match(cpc,/charts\.chartCpcEnvolvimentoReservado\?\.destroy\(\)/,"Atualização deve limpar gráfico anterior");
+assert.match(cpc,/chart\('chartCpcEnvolvimentoReservado','bar'/);
 assert.match(cpc,/id="cpcAutoridadesTotal"/);
 assert.match(cpc,/id="cpcEnvolvidosTotal"/);
 assert.match(unidade,/id="chartOrigemAcionamento"/);
