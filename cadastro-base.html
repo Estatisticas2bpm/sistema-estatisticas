@@ -215,6 +215,11 @@
     .adicionar-pessoa { width:auto; min-width:0; padding:9px 13px; font-size:14px; }
     .pessoa-adicional { grid-column:1/-1; display:grid; grid-template-columns:2fr 1fr 1fr auto; gap:14px; align-items:end; padding:14px; border:1px solid #dbe4ee; border-radius:12px; background:#f8fafc; }
     .pessoa-adicional .campo { margin:0; }
+    .institucional-pessoa{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:12px;padding:12px;border:1px solid #cbd5e1;border-radius:9px;background:#f1f5f9}
+    .institucional-pessoa .campo{margin:0}
+    .institucional-pessoa .nota{grid-column:1/-1;line-height:1.45;color:#475569}
+    @media(max-width:650px){.institucional-pessoa{grid-template-columns:1fr}}
+
     .remover-pessoa { background:#b91c1c; width:42px; min-width:42px; padding:9px 0; }
     .grupo-estruturado { grid-column:1/-1; padding:16px; border:1px solid #dbe4ee; border-radius:12px; background:#f8fafc; }
     .grupo-estruturado + .grupo-estruturado { margin-top:4px; }
@@ -285,7 +290,7 @@
       .remover-item { width:100%; }
     }
   </style>
-<script src="auth-config.js"></script><script src="auth-guard.js"></script><script src="pdf-companhia.js?v=20261030-1"></script><script src="pdf-historico.js?v=20261031-1"></script></head>
+<script src="auth-config.js"></script><script src="auth-guard.js"></script><script src="pdf-companhia.js?v=20261030-1"></script><script src="pdf-historico.js?v=20261031-1"></script><script src="pdf-envolvimento-institucional.js?v=20261106-1"></script></head>
 
 <body>
   <header>
@@ -523,6 +528,13 @@
             <label for="idadeVitima">Idade</label>
             <input id="idadeVitima" name="idadeVitima" type="number" min="0" max="130">
           </div>
+          <div class="institucional-pessoa" id="blocoInstitucionalVitima">
+            <div class="campo"><label for="institucionalSituacaoVitima">A vítima é policial ou autoridade?</label>
+              <select id="institucionalSituacaoVitima"><option value="">Não identificado / a conferir</option><option value="SIM">Sim</option><option value="NAO">Não</option></select></div>
+            <div class="campo" id="campoInstitucionalTipoVitima" hidden><label for="institucionalTipoVitima">Tipo de policial ou autoridade</label>
+              <select id="institucionalTipoVitima"><option value="">Selecione o tipo</option></select></div>
+            <small class="nota" id="institucionalAvisoVitima">Não assinale “Não” apenas por ausência de informação no PDF. Confira a qualificação da pessoa.</small>
+          </div>
           <div id="vitimasAdicionais" style="display:contents"></div>
 
           <div class="cabecalho-pessoas"><div class="subtitulo">Infrator 1</div><button class="botao-adicionar adicionar-pessoa" id="adicionarInfrator" type="button">+ Adicionar infrator</button></div>
@@ -562,6 +574,13 @@
           <div class="campo">
             <label for="idadeInfrator">Idade</label>
             <input id="idadeInfrator" name="idadeInfrator" type="number" min="0" max="130">
+          </div>
+          <div class="institucional-pessoa" id="blocoInstitucionalInfrator">
+            <div class="campo"><label for="institucionalSituacaoInfrator">O suspeito/infrator é policial ou autoridade?</label>
+              <select id="institucionalSituacaoInfrator"><option value="">Não identificado / a conferir</option><option value="SIM">Sim</option><option value="NAO">Não</option></select></div>
+            <div class="campo" id="campoInstitucionalTipoInfrator" hidden><label for="institucionalTipoInfrator">Tipo de policial ou autoridade</label>
+              <select id="institucionalTipoInfrator"><option value="">Selecione o tipo</option></select></div>
+            <small class="nota" id="institucionalAvisoInfrator">Preenchimento documental, sem presumir culpabilidade. Confira os dados antes de salvar.</small>
           </div>
           <div id="infratoresAdicionais" style="display:contents"></div>
 
@@ -1737,7 +1756,42 @@
         campo.disabled=estado;
         campo.closest(".campo").hidden=estado;
       }
+      const condicao=document.getElementById("institucionalSituacaoVitima");
+      if(estado)condicao.value="";
+      condicao.disabled=estado;
+      if(estado)document.getElementById("institucionalTipoVitima").value="";
+      document.getElementById("blocoInstitucionalVitima").hidden=estado;
+      atualizarInstitucional("Vitima");
     }
+    function opcoesInstitucionais() {
+      return '<option value="">Selecione o tipo</option>'+
+        (window.PdfEnvolvimentoInstitucional?.CATEGORIAS||[]).map(c=>
+          '<option value="'+c.value+'">'+c.label+'</option>').join("");
+    }
+    function atualizarInstitucional(sufixo) {
+      const situacao=document.getElementById("institucionalSituacao"+sufixo);
+      const tipo=document.getElementById("institucionalTipo"+sufixo);
+      const campo=document.getElementById("campoInstitucionalTipo"+sufixo);
+      campo.hidden=situacao.value!=="SIM";
+      tipo.required=situacao.value==="SIM"&&!situacao.disabled;
+      if(situacao.value!=="SIM")tipo.value="";
+    }
+    function preencherInstitucional(sufixo,origem) {
+      const dados=origem||{},situacao=document.getElementById("institucionalSituacao"+sufixo);
+      const tipo=document.getElementById("institucionalTipo"+sufixo);
+      const valido=window.PdfEnvolvimentoInstitucional?.CATEGORIAS?.some(c=>c.value===dados.tipo);
+      situacao.value=dados.situacao==="SIM"?"SIM":dados.situacao==="NAO"?"NAO":"";
+      tipo.value=situacao.value==="SIM"&&valido?dados.tipo:"";
+      atualizarInstitucional(sufixo);
+      const aviso=document.getElementById("institucionalAviso"+sufixo);
+      aviso.textContent=dados.conflito?"O PDF contém informações divergentes sobre a função da pessoa. Confira manualmente.":
+        (dados.situacao==="SIM"&&dados.origem?"Sugestão do PDF ("+dados.origem+"). Confira a identificação antes de salvar.":
+        "A ausência de indicação no PDF não significa que a pessoa não seja policial ou autoridade.");
+    }
+    ["Vitima","Infrator"].forEach(sufixo=>{
+      document.getElementById("institucionalTipo"+sufixo).innerHTML=opcoesInstitucionais();
+      document.getElementById("institucionalSituacao"+sufixo).addEventListener("change",()=>atualizarInstitucional(sufixo));
+    });
     document.getElementById("tipoVitima").addEventListener("change",atualizarTipoVitimaPrincipal);
     function preencherPessoaPrincipal(prefixo, pessoa) {
       if(prefixo==="vitima"){
@@ -1746,6 +1800,7 @@
       document.getElementById(prefixo === "vitima" ? "nacVitima" : "nacInfrator").value = pessoa ? pessoa.nacionalidade || "" : "";
       document.getElementById(prefixo === "vitima" ? "sexoVitima" : "sexoInfrator").value = pessoa ? pessoa.sexo || "" : "";
       document.getElementById(prefixo === "vitima" ? "idadeVitima" : "idadeInfrator").value = pessoa ? pessoa.idade || "" : "";
+      preencherInstitucional(prefixo==="vitima"?"Vitima":"Infrator",pessoa?.institucional);
       if(prefixo==="vitima")atualizarTipoVitimaPrincipal();
     }
     function extrairPessoasPdf(texto) {
@@ -1765,7 +1820,8 @@
           nacionalidade:nacionalidadeCodigo(nacionalidade && nacionalidade[1]),
           sexo:sexoCodigo(sexo && sexo[1]),
           idade:idade ? idade[1] : "",
-          policialMilitar:/Profiss[ãa]o:\s*Policial Militar/i.test(bloco)
+          policialMilitar:/Profiss[ãa]o:\s*Policial Militar/i.test(bloco),
+          bloco
         };
         if (papel.includes("VITIMA")) pessoas.vitimas.push(pessoa);
         else if (papel.includes("AUTOR") || papel.includes("INFRATOR") || papel.includes("SUSPEITO")) pessoas.infratores.push(pessoa);
@@ -1982,6 +2038,13 @@
       const relatoAnalise = extrairRelatoHistoricoIntegralPdf(texto);
       const relatoFonte = relatoAnalise.texto;
       const relato = relatoFonte;
+      const instituicoes=window.PdfEnvolvimentoInstitucional?.analisarPessoas(pessoas,relatoFonte)||{vitimas:[],infratores:[]};
+      ["vitimas","infratores"].forEach(papel=>{
+        pessoas[papel].forEach((pessoa,indice)=>{
+          pessoa.institucional=instituicoes[papel]?.[indice]||{situacao:"",tipo:""};
+        });
+      });
+      [...pessoas.vitimas,...pessoas.infratores,...pessoas.envolvidos].forEach(pessoa=>delete pessoa.bloco);
       if (pessoas.vitimas.length || pessoas.infratores.length) pessoas.envolvidos = [];
       else pessoas.envolvidos = pessoas.envolvidos.filter(pessoa => !pessoa.policialMilitar);
       return {
@@ -2431,7 +2494,26 @@
       const seletorTipo=tipo==="vitima"
         ? `<div class="campo"><label>${configuracao.rotulo} ${numero} — Tipo de vítima</label><select data-pessoa="tipo"><option value="PESSOA_FISICA">Pessoa física</option><option value="ESTADO_RORAIMA">Estado de Roraima — ente público</option></select></div>`
         : "";
-      bloco.innerHTML = seletorTipo+`<div class="campo"><label>${configuracao.rotulo} ${numero} — Nacionalidade</label><select data-pessoa="nacionalidade">${document.getElementById(configuracao.nacionalidade).innerHTML}</select></div><div class="campo"><label>Sexo</label><select data-pessoa="sexo">${document.getElementById(configuracao.sexo).innerHTML}</select></div><div class="campo"><label>Idade</label><input data-pessoa="idade" type="number" min="0" max="130"></div><button class="botao-adicionar remover-pessoa" type="button" title="Remover esta pessoa">×</button>`;
+      const institucional=tipo==="vitima"||tipo==="infrator"
+        ? `<div class="institucional-pessoa"><div class="campo"><label>${configuracao.rotulo} ${numero} — É policial ou autoridade?</label><select data-pessoa="institucionalSituacao"><option value="">Não identificado / a conferir</option><option value="SIM">Sim</option><option value="NAO">Não</option></select></div><div class="campo" data-institucional-tipo-campo hidden><label>Tipo de policial ou autoridade</label><select data-pessoa="institucionalTipo">${opcoesInstitucionais()}</select></div><small class="nota" data-institucional-aviso>A identificação do documento deve ser conferida antes de salvar.</small></div>`
+        : "";
+      bloco.innerHTML = seletorTipo+`<div class="campo"><label>${configuracao.rotulo} ${numero} — Nacionalidade</label><select data-pessoa="nacionalidade">${document.getElementById(configuracao.nacionalidade).innerHTML}</select></div><div class="campo"><label>Sexo</label><select data-pessoa="sexo">${document.getElementById(configuracao.sexo).innerHTML}</select></div><div class="campo"><label>Idade</label><input data-pessoa="idade" type="number" min="0" max="130"></div>`+institucional+`<button class="botao-adicionar remover-pessoa" type="button" title="Remover esta pessoa">×</button>`;
+      if(institucional){
+        const situacao=bloco.querySelector('[data-pessoa="institucionalSituacao"]');
+        const categoria=bloco.querySelector('[data-pessoa="institucionalTipo"]');
+        const dadosInstitucionais=dados.institucional||{};
+        situacao.value=dadosInstitucionais.situacao==="SIM"?"SIM":dadosInstitucionais.situacao==="NAO"?"NAO":"";
+        categoria.value=dadosInstitucionais.tipo||"";
+        const atualizar=()=>{
+          bloco.querySelector("[data-institucional-tipo-campo]").hidden=situacao.value!=="SIM";
+          categoria.required=situacao.value==="SIM";
+          if(situacao.value!=="SIM")categoria.value="";
+        };
+        situacao.addEventListener("change",atualizar);
+        if(dadosInstitucionais.conflito)bloco.querySelector("[data-institucional-aviso]").textContent="PDF divergente: confira a classificação manualmente.";
+        else if(dadosInstitucionais.situacao==="SIM")bloco.querySelector("[data-institucional-aviso]").textContent="Sugestão do PDF — confirme antes de salvar.";
+        atualizar();
+      }
       bloco.querySelector('[data-pessoa="nacionalidade"]').value = dados.nacionalidade || "";
       bloco.querySelector('[data-pessoa="sexo"]').value = dados.sexo || "";
       bloco.querySelector('[data-pessoa="idade"]').value = dados.idade || "";
@@ -2446,6 +2528,12 @@
             campo.disabled=estado;
             campo.closest(".campo").hidden=estado;
           }
+          const situacao=bloco.querySelector('[data-pessoa="institucionalSituacao"]');
+          if(estado)situacao.value="";
+          situacao.disabled=estado;
+          if(estado)bloco.querySelector('[data-pessoa="institucionalTipo"]').value="";
+          bloco.querySelector(".institucional-pessoa").hidden=estado;
+          situacao.dispatchEvent(new Event("change"));
         };
         seletor.addEventListener("change",atualizarTipo);
         atualizarTipo();
@@ -2462,9 +2550,13 @@
           ...(tipo==="vitima"?{tipo:tipoVitima}:{}),
           nacionalidade: tipoVitima==="ESTADO_RORAIMA"?null:tratarNI(bloco.querySelector('[data-pessoa="nacionalidade"]').value),
           sexo: tipoVitima==="ESTADO_RORAIMA"?null:tratarNI(bloco.querySelector('[data-pessoa="sexo"]').value),
-          idade: tipoVitima==="ESTADO_RORAIMA"?null:(bloco.querySelector('[data-pessoa="idade"]').value || null)
+          idade: tipoVitima==="ESTADO_RORAIMA"?null:(bloco.querySelector('[data-pessoa="idade"]').value || null),
+          ...(tipo==="vitima"||tipo==="infrator"?{institucional:{
+            situacao:bloco.querySelector('[data-pessoa="institucionalSituacao"]').value||"",
+            tipo:bloco.querySelector('[data-pessoa="institucionalSituacao"]').value==="SIM"?bloco.querySelector('[data-pessoa="institucionalTipo"]').value:""
+          }}:{})
         };
-      }).filter(p => p.tipo==="ESTADO_RORAIMA" || p.nacionalidade || p.sexo || p.idade);
+      }).filter(p => p.tipo==="ESTADO_RORAIMA" || p.nacionalidade || p.sexo || p.idade || p.institucional?.situacao);
     }
     function separarPessoas(valor) {
       const texto = String(valor || "");
@@ -2472,13 +2564,18 @@
       if (posicao < 0) return {texto, vitimas:[], infratores:[], envolvidos:[]};
       try {
         const dados = JSON.parse(texto.slice(posicao + MARCADOR_PESSOAS.length));
-        return {texto:texto.slice(0,posicao).trim(),vitimas:dados.vitimas || [],infratores:dados.infratores || [],envolvidos:dados.envolvidos || []};
+        return {texto:texto.slice(0,posicao).trim(),vitimas:dados.vitimas || [],infratores:dados.infratores || [],envolvidos:dados.envolvidos || [],institucionaisPrincipais:dados.institucionaisPrincipais || {}};
       } catch (_) { return {texto,vitimas:[],infratores:[],envolvidos:[]}; }
     }
     function montarObservacaoFinal() {
       const texto = document.getElementById("observacaoFinal").value.trim();
-      const dados = {vitimas:pessoasAdicionais("vitima"),infratores:pessoasAdicionais("infrator"),envolvidos:pessoasAdicionais("envolvido")};
-      return dados.vitimas.length || dados.infratores.length || dados.envolvidos.length
+      const dados = {vitimas:pessoasAdicionais("vitima"),infratores:pessoasAdicionais("infrator"),envolvidos:pessoasAdicionais("envolvido"),
+        institucionaisPrincipais:{
+          vitima:{situacao:document.getElementById("institucionalSituacaoVitima").value||"",tipo:document.getElementById("institucionalSituacaoVitima").value==="SIM"?document.getElementById("institucionalTipoVitima").value:""},
+          infrator:{situacao:document.getElementById("institucionalSituacaoInfrator").value||"",tipo:document.getElementById("institucionalSituacaoInfrator").value==="SIM"?document.getElementById("institucionalTipoInfrator").value:""}
+        }};
+      return dados.vitimas.length || dados.infratores.length || dados.envolvidos.length ||
+        dados.institucionaisPrincipais.vitima.situacao || dados.institucionaisPrincipais.infrator.situacao
         ? (texto ? texto + "\n" : "") + MARCADOR_PESSOAS + JSON.stringify(dados)
         : (texto || null);
     }
@@ -2671,6 +2768,8 @@
       if (subunidadeOperacional) await subunidadesBopeProntas;
       const pessoasSalvas = separarPessoas(x.observacao_final);
       x.observacao_final = pessoasSalvas.texto;
+      preencherInstitucional("Vitima",pessoasSalvas.institucionaisPrincipais?.vitima);
+      preencherInstitucional("Infrator",pessoasSalvas.institucionaisPrincipais?.infrator);
       const mapa = {data_ocorrencia:"data",status_atendimento:"statusAtendimento",motivo_repressao:"motivoRepressao",municipio:"municipio",vtr:"vtr",tipo_registro:"tipoRegistro",numero_bo:"numeroBo",cia_unidade_apuracao:"companhia",hora_inicial:"horaInicial",hora_final:"horaFinal",ocorrencia:"ocorrencia",crime:"crime",numero_conduzidos:"numeroConduzidos",orientacoes:"orientacoes",veiculos_recuperados:"veiculosRecuperados",endereco:"endereco",numero_endereco:"numeroEndereco",bairro:"bairro",local_entrega:"localEntrega",vitima_nacionalidade:"nacVitima",vitima_sexo:"sexoVitima",vitima_idade:"idadeVitima",infrator_nacionalidade:"nacInfrator",infrator_sexo:"sexoInfrator",infrator_idade:"idadeInfrator",comandante:"comandante",historico_resumido:"mo",materialidade:"materialidade",observacao:"observacao1",entorpecentes:"entorpecentes",maconha:"maconha",cocaina:"cocaina",pasta_base:"pastaBase",crack:"crack",skank:"skank",quantidade_armas:"quantArmas",quantidade_arma_branca:"quantArmaBranca",arma_branca:"armaBranca",armas:"armas",quantidade_municoes:"quantMunicoes",municoes:"municoes",veiculos_restricao:"veiculosRestricao",foragidos:"foragidos",disparo:"disparo",auto_resistencia:"autoResistencia",quantidade_autos_infracao:"quantAutoInfracao",auto_infracao:"autoInfracao",balanca_precisao:"balanca",observacao_final:"observacaoFinal",latitude:"latitude",longitude:"longitude",endereco_formatado:"enderecoFormatado"};
       Object.keys(mapa).forEach(k => definirCampo(mapa[k],x[k]));
       definirCampo("origemOcorrenciaBope",x.origem_ocorrencia);
@@ -2749,6 +2848,18 @@
       for (const [id,msg] of obrigatorios) {
         const el=document.getElementById(id);
         if (!el || !String(el.value||"").trim()) return mostrarErroCampo(id,msg);
+      }
+      for(const sufixo of ["Vitima","Infrator"]){
+        const situacao=document.getElementById("institucionalSituacao"+sufixo);
+        const tipo=document.getElementById("institucionalTipo"+sufixo);
+        if(!situacao.disabled&&situacao.value==="SIM"&&!tipo.value)
+          return mostrarErroCampo("institucionalTipo"+sufixo,"Informe o tipo de policial ou autoridade antes de salvar.");
+      }
+      for(const bloco of document.querySelectorAll(".pessoa-adicional[data-tipo='vitima'],.pessoa-adicional[data-tipo='infrator']")){
+        const situacao=bloco.querySelector('[data-pessoa="institucionalSituacao"]');
+        const categoria=bloco.querySelector('[data-pessoa="institucionalTipo"]');
+        if(situacao&&!situacao.disabled&&situacao.value==="SIM"&&!categoria?.value)
+          return mostrarErroCampo("institucionalTipo"+(bloco.dataset.tipo==="vitima"?"Vitima":"Infrator"),"Informe o tipo de policial ou autoridade da pessoa adicional.");
       }
       if (resultadoInformativoCipa?.checked && configuracaoResultados.some(([checkId]) => document.getElementById(checkId).checked))
         return mostrarErroCampo("resultadoInformativo","Informativo não pode ser combinado com condução, orientação, veículo recuperado ou outro resultado.");
