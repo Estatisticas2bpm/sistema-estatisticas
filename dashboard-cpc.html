@@ -134,6 +134,7 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
 .cpcOrigemInstitucionalChart{position:relative;height:300px;max-width:100%}
 .cpcOrigemInstitucionalCards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .cpcOrigemInstitucionalCards .kpi{min-height:107px}
+#cpcEnvolvimentoReservado[hidden]{display:none!important}
 .cpcOrigemInstitucionalInfo{color:#566b80;font-size:12px;line-height:1.6;margin:11px 0 0}
 @media(max-width:920px){.cpcOrigemInstitucionalGrid{grid-template-columns:1fr}}
 @media(max-width:530px){.cpcOrigemInstitucionalCards{grid-template-columns:1fr}.cpcOrigemInstitucionalChart{height:290px}}
@@ -212,8 +213,8 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
 
 <section class="panel" id="secCpcOrigemPoliciais" data-cpc-areas="visao-geral produtividade perfis comparativos">
   <div class="sectionTitle">
-    <div><h2>Origem das ocorrências e policiais envolvidos</h2>
-      <p>BOs distintos no recorte de unidade, período e território selecionado. A classificação considera os campos do cadastro, nunca os policiais que apenas atenderam a ocorrência.</p>
+    <div><h2>Origem das ocorrências e envolvimento institucional</h2>
+      <p>Origens dos BOs conforme filtros de unidade, período e território. Os indicadores de policiais e autoridades são reservados ao Comandante do CPC, considerando exclusivamente novos cadastros a partir de 06/11/2026.</p>
     </div><span class="tag">BOs CLASSIFICADOS</span>
   </div>
   <div class="cpcOrigemInstitucionalGrid">
@@ -221,13 +222,18 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
       <div class="cpcOrigemInstitucionalChart"><canvas id="chartCpcOrigemAtendimento" role="img" aria-label="Ocorrências por origem do acionamento"></canvas></div>
       <p class="cpcOrigemInstitucionalInfo" id="cpcOrigemClassificacao" role="status">Consultando origens documentadas...</p>
     </div>
-    <div><h3>Ocorrências envolvendo policiais</h3>
+    <div id="cpcEnvolvimentoReservado" hidden>
+      <h3>Ocorrências envolvendo policiais e autoridades</h3>
       <div class="cpcOrigemInstitucionalCards">
+        <div class="kpi" style="--accent:var(--blue)"><small>BOs com policiais ou autoridades</small><strong id="cpcEnvolvidosTotal">—</strong></div>
         <div class="kpi" style="--accent:var(--steel)"><small>BOs com policial envolvido</small><strong id="cpcPoliciaisTotal">—</strong></div>
+        <div class="kpi" style="--accent:var(--teal)"><small>BOs com autoridade não policial</small><strong id="cpcAutoridadesTotal">—</strong></div>
         <div class="kpi" style="--accent:var(--teal)"><small>Vítimas policiais</small><strong id="cpcPoliciaisVitimas">—</strong></div>
         <div class="kpi" style="--accent:var(--amber)"><small>Suspeitos/infratores policiais</small><strong id="cpcPoliciaisInfratores">—</strong></div>
+        <div class="kpi" style="--accent:var(--teal)"><small>Vítimas autoridades não policiais</small><strong id="cpcAutoridadesVitimas">—</strong></div>
+        <div class="kpi" style="--accent:var(--amber)"><small>Suspeitos/infratores autoridades não policiais</small><strong id="cpcAutoridadesInfratores">—</strong></div>
       </div>
-      <p class="cpcOrigemInstitucionalInfo" id="cpcPoliciaisClassificacao" role="status">Somente classificação funcional explicitamente registrada. Ausência de informação não significa ausência de policiais.</p>
+      <p class="cpcOrigemInstitucionalInfo" id="cpcPoliciaisClassificacao" role="status">Apenas classificações explícitas de novos cadastros realizados desde 06/11/2026 (horário de Boa Vista). Os históricos não foram reclassificados nesta categoria.</p>
     </div>
   </div>
 </section>
@@ -612,34 +618,44 @@ function renderAbordagensGiroCpc(){
 }
 function renderOrigemPoliciaisCpc(payload,erro){
   const categorias=window.SIEIndicadoresEnvolvimento?.ORIGENS||[];
-  const valido=!erro&&payload?.autorizado===true&&payload?.origens&&payload?.policiais&&categorias.length;
+  const valido=!erro&&payload?.autorizado===true&&payload?.origens&&categorias.length;
+  const reservado=$('cpcEnvolvimentoReservado');
+  // Um painel sem dados válidos não deve exibir totais de outro recorte.
+  reservado.hidden=true;
   if(!valido){
-    $('cpcPoliciaisTotal').textContent='N/D';
-    $('cpcPoliciaisVitimas').textContent='N/D';
-    $('cpcPoliciaisInfratores').textContent='N/D';
-    $('cpcOrigemClassificacao').textContent='Origem não disponível para este filtro. Os resultados anteriores foram limpos.';
-    $('cpcPoliciaisClassificacao').textContent='Classificação funcional indisponível. N/D não representa zero.';
+    $('cpcOrigemClassificacao').textContent='Origem indisponível para este filtro; os resultados anteriores foram limpos.';
     charts.chartCpcOrigemAtendimento?.destroy();
     delete charts.chartCpcOrigemAtendimento;
     return;
   }
-  const total=n(payload.total),contagens=payload.origens,politicos=payload.policiais;
-  const valores=categorias.map(item=>n(contagens[item.valor]));
+  const total=n(payload.total),contagens=payload.origens;
   chart('chartCpcOrigemAtendimento','bar',categorias.map(item=>item.rotulo),
-    [{label:'BOs',data:valores,backgroundColor:['#125b94','#1e8a78','#b57a22','#615a9d','#3773a6','#64748b','#b5beca'],
+    [{label:'BOs',data:categorias.map(item=>n(contagens[item.valor])),
+      backgroundColor:['#125b94','#1e8a78','#b57a22','#615a9d','#3773a6','#64748b','#b5beca'],
       borderRadius:5}],{indexAxis:'y',plugins:{legend:{display:false}},scales:{
         x:{beginAtZero:true,ticks:{precision:0}},y:{grid:{display:false}}}});
-  $('cpcPoliciaisTotal').textContent=n(politicos.total);
-  $('cpcPoliciaisVitimas').textContent=n(politicos.vitimas);
-  $('cpcPoliciaisInfratores').textContent=n(politicos.infratores);
-  const comOrigem=n(payload.origem_informada);
   $('cpcOrigemClassificacao').textContent=total?
-    comOrigem+' de '+total+' BO(s) possuem origem informada. '+n(contagens.NAO_INFORMADA)+' sem classificação.':
+    n(payload.origem_informada)+' de '+total+' BO(s) possuem origem informada. '+n(contagens.NAO_INFORMADA)+' sem classificação.':
     'Sem BOs no período e nos filtros selecionados.';
-  $('cpcPoliciaisClassificacao').textContent=total?
-    'Ao menos uma condição funcional preenchida em '+n(politicos.classificados)+' de '+total+' BO(s); '+n(politicos.sem_classificacao)+' sem classificação funcional. O total conta BOs únicos, sem duplicidade entre vítima e infrator.':
-    'Sem BOs no período e nos filtros selecionados.';
+  // A RPC aplica a autorização no SERVIDOR. Oculte também a interface
+  // quando o perfil não for COMANDANTE vinculado à unidade CPC.
+  const habilitado=payload.pode_ver_envolvimento===true && payload.policiais && payload.autoridades;
+  if(!habilitado)return;
+  reservado.hidden=false;
+  const p=payload.policiais,a=payload.autoridades;
+  $('cpcEnvolvidosTotal').textContent=n(payload.envolvidos_total);
+  $('cpcPoliciaisTotal').textContent=n(p.total);
+  $('cpcPoliciaisVitimas').textContent=n(p.vitimas);
+  $('cpcPoliciaisInfratores').textContent=n(p.infratores);
+  $('cpcAutoridadesTotal').textContent=n(a.total);
+  $('cpcAutoridadesVitimas').textContent=n(a.vitimas);
+  $('cpcAutoridadesInfratores').textContent=n(a.infratores);
+  $('cpcPoliciaisClassificacao').textContent=
+    'Cadastros realizados desde 06/11/2026: '+n(p.novos_cadastros)+
+    ' no recorte selecionado; '+n(p.classificados)+' com ao menos uma condição funcional preenchida e '+
+    n(p.sem_classificacao)+' sem classificação. Totais por BO distinto; a mesma ocorrência pode conter vítima e infrator classificados. Histórico anterior não reclassificado.';
 }
+
 function render(d){const r=d.resumo||{},u=d.unidades||[],grupos=agruparMetricas(u),top=agruparTopNaturezas(d.top_naturezas||[]),serie=agruparSerie(d.serie_diaria||[]);
 $('kOcorrencias').textContent=n(r.total_ocorrencias);$('kConducoes').textContent=n(r.conducoes);$('kPrisoes').textContent=n(r.prisoes);$('kTcos').textContent=n(r.tcos);$('kVeiculos').textContent=n(r.veiculos_recuperados);$('kArmas').textContent=n(r.ocorrencias_armas);$('kDrogas').textContent=n(r.ocorrencias_drogas);
 renderTabelaUnidades(grupos);
