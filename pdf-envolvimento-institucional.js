@@ -28,8 +28,13 @@ function qualificacoes(bloco){
  const rx=/\b(?:PROFISSAO|CARGO|FUNCAO|OCUPACAO|POSTO|PATENTE|GRADUACAO)\s*:\s*([\s\S]*?)(?=\b(?:NACIONALIDADE|SEXO|IDADE|NASC|ESTADO CIVIL|CPF|RG|TELEFONE|ENDERECO|NOME CIVIL|NOME SOCIAL|FILIACAO|ESCOLARIDADE|DOCUMENTO)\s*:|$)/g;
  return [...v.matchAll(rx)].map(m=>m[1].slice(0,90));
 }
+// SOUZA/SOUSA e uma variacao frequente entre qualificacao e relato.
+// Normalizar SOMENTE na comparacao: nao altera nomes nem historico.
+function chaveComparacaoNome(valor){
+ return norm(valor).replace(/\bSOUSA\b/g,"SOUZA");
+}
 function noRelato(pessoa,papel,relato,quantidade){
- const t=norm(relato),nome=norm(pessoa?.nome);
+ const t=chaveComparacaoNome(relato),nome=chaveComparacaoNome(pessoa?.nome);
  if(!t)return "";
  if(nome.length>=7){
    let i=t.indexOf(nome);
