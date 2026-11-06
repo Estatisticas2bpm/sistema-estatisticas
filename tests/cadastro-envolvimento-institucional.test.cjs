@@ -53,7 +53,7 @@ for(const p of ['Vitima','Infrator']){
  assert.ok(html.includes('id="institucionalSituacao'+p+'"'));
  assert.ok(html.includes('id="institucionalTipo'+p+'"'));
 }
-assert.match(html,/pdf-envolvimento-institucional\.js\?v=20261106-1/);
+assert.match(html,/pdf-envolvimento-institucional\.js\?v=20261106-2/);
 assert.match(html,/pessoa\.institucional=instituicoes\[papel\]/);
 assert.match(html,/preencherInstitucional\(prefixo==="vitima"\?"Vitima":"Infrator",pessoa\?\.institucional\)/);
 assert.match(html,/institucionaisPrincipais:dados\.institucionaisPrincipais/);
