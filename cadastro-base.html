@@ -215,6 +215,7 @@
     .adicionar-pessoa { width:auto; min-width:0; padding:9px 13px; font-size:14px; }
     .pessoa-adicional { grid-column:1/-1; display:grid; grid-template-columns:2fr 1fr 1fr auto; gap:14px; align-items:end; padding:14px; border:1px solid #dbe4ee; border-radius:12px; background:#f8fafc; }
     .pessoa-adicional .campo { margin:0; }
+    #campoOrigemAcionamentoDetalhe[hidden]{display:none!important}
     .institucional-pessoa{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:12px;padding:12px;border:1px solid #cbd5e1;border-radius:9px;background:#f1f5f9}
     .institucional-pessoa .campo{margin:0}
     .institucional-pessoa[hidden],.institucional-pessoa .campo[hidden]{display:none!important}
@@ -291,7 +292,7 @@
       .remover-item { width:100%; }
     }
   </style>
-<script src="auth-config.js"></script><script src="auth-guard.js"></script><script src="pdf-companhia.js?v=20261030-1"></script><script src="pdf-historico.js?v=20261031-1"></script><script src="pdf-envolvimento-institucional.js?v=20261106-2"></script></head>
+<script src="auth-config.js"></script><script src="auth-guard.js"></script><script src="pdf-companhia.js?v=20261030-1"></script><script src="pdf-historico.js?v=20261031-1"></script><script src="pdf-envolvimento-institucional.js?v=20261106-2"></script><script src="pdf-origem-acionamento.js?v=20261106-1"></script></head>
 
 <body>
   <header>
@@ -345,6 +346,23 @@
           <div class="campo"><label for="vtr">VTR</label><input id="vtr" name="vtr" type="text" placeholder="Ex.: 133"></div>
           <div class="campo"><label for="statusAtendimento">Situação *</label><select id="statusAtendimento" required><option value="ATENDIDA">ATENDIDA</option><option value="DEMANDA REPRIMIDA">DEMANDA REPRIMIDA</option></select></div>
           <div class="campo"><label for="municipio">Município *</label><input id="municipio" type="text" value="BOA VISTA" required></div>
+           <div class="campo">
+             <label for="origemAcionamento">Origem do acionamento / atendimento</label>
+             <select id="origemAcionamento" name="origemAcionamento">
+               <option value="">Não identificada — conferir</option>
+               <option value="CICC">CICC — Centro Integrado de Comando e Controle</option>
+               <option value="PATRULHAMENTO">Patrulhamento</option>
+               <option value="ABORDAGEM">Abordagem</option>
+               <option value="MISSAO">Missão / ordem de serviço</option>
+               <option value="OPERACAO">Operação</option>
+               <option value="OUTRA">Outra origem</option>
+             </select>
+             <small id="statusOrigemAcionamentoPdf" class="nota" role="status" aria-live="polite">Ao importar um PDF, o início do relato será analisado. Confira a origem antes de salvar.</small>
+           </div>
+           <div class="campo" id="campoOrigemAcionamentoDetalhe" hidden>
+             <label for="origemAcionamentoDetalhe">Descreva a outra origem *</label>
+             <input id="origemAcionamentoDetalhe" type="text" maxlength="160" placeholder="Ex.: solicitação direta de morador">
+           </div>
 
           <div class="campo">
             <label for="tipoRegistro">Tipo *</label>
@@ -1413,6 +1431,30 @@
     const horaInicial = document.getElementById("horaInicial");
     const turno = document.getElementById("turno");
     const formulario = document.getElementById("formOcorrencia");
+    const origemAcionamentoCampo=document.getElementById("origemAcionamento");
+    const origemAcionamentoDetalhe=document.getElementById("origemAcionamentoDetalhe");
+    const statusOrigemAcionamentoPdf=document.getElementById("statusOrigemAcionamentoPdf");
+    function ajustarOrigemAcionamento(){
+      const outra=origemAcionamentoCampo.value==="OUTRA";
+      document.getElementById("campoOrigemAcionamentoDetalhe").hidden=!outra;
+      origemAcionamentoDetalhe.required=outra;
+      if(!outra)origemAcionamentoDetalhe.value="";
+    }
+    function aplicarOrigemAcionamentoPdf(analise){
+      const identificada=analise?.automatico===true && ["CICC","PATRULHAMENTO","ABORDAGEM","MISSAO","OPERACAO"].includes(analise?.valor);
+      origemAcionamentoCampo.value=identificada?analise.valor:"";
+      origemAcionamentoDetalhe.value="";
+      ajustarOrigemAcionamento();
+      statusOrigemAcionamentoPdf.textContent=analise?.conflito
+        ?"Há diferentes possibilidades no início do relato. Escolha a origem manualmente."
+        : identificada
+          ?"Sugestão do início do histórico: "+origemAcionamentoCampo.options[origemAcionamentoCampo.selectedIndex].text+". Confira antes de salvar."
+          :"Origem não identificada com segurança no início do histórico. Selecione manualmente quando souber.";
+    }
+    origemAcionamentoCampo.addEventListener("change",evento=>{
+      ajustarOrigemAcionamento();
+      if(evento.isTrusted)statusOrigemAcionamentoPdf.textContent="Origem informada ou corrigida manualmente pelo operador.";
+    });
     const origemOcorrenciaBope=document.getElementById("origemOcorrenciaBope");
     const origemOcorrenciaBopeDetalhe=document.getElementById("origemOcorrenciaBopeDetalhe");
     let catalogoOrigensBope=[];
@@ -2039,6 +2081,8 @@
       const relatoAnalise = extrairRelatoHistoricoIntegralPdf(texto);
       const relatoFonte = relatoAnalise.texto;
       const relato = relatoFonte;
+      const origemAcionamento = window.PdfOrigemAcionamento?.analisar(relatoFonte)
+        || {valor:"",automatico:false,conflito:false};
       const instituicoes=window.PdfEnvolvimentoInstitucional?.analisarPessoas(pessoas,relatoFonte)||{vitimas:[],infratores:[]};
       ["vitimas","infratores"].forEach(papel=>{
         pessoas[papel].forEach((pessoa,indice)=>{
@@ -2066,6 +2110,7 @@
         natureza: natureza ? natureza[1].replace(/N[ãa]o Houve/gi," ").replace(/\s+/g," ").trim() : "",
         historico: relato,
         historicoFonte: relatoFonte,
+        origemAcionamento,
         historicoAnalise: relatoAnalise,
         grupamentoPdf,
         materialidade: objetos ? resumirMaterialidadePdf(objetos[1]) : "",
@@ -2270,6 +2315,7 @@
       document.getElementById("horaInicial").value = dados.horaInicial;
       document.getElementById("horaFinal").value = dados.horaFinal;
       document.getElementById("vtr").value = dados.vtr || "";
+      aplicarOrigemAcionamentoPdf(dados.origemAcionamento);
       const permiteCia = window.SIE_CADASTRO_PERMITE_CIA !== false;
       // Em unidades especializadas o campo fica oculto e não deve ser alterado:
       // isso preserva valores históricos durante eventual reimportação na edição.
@@ -2771,8 +2817,12 @@
       x.observacao_final = pessoasSalvas.texto;
       preencherInstitucional("Vitima",pessoasSalvas.institucionaisPrincipais?.vitima);
       preencherInstitucional("Infrator",pessoasSalvas.institucionaisPrincipais?.infrator);
-      const mapa = {data_ocorrencia:"data",status_atendimento:"statusAtendimento",motivo_repressao:"motivoRepressao",municipio:"municipio",vtr:"vtr",tipo_registro:"tipoRegistro",numero_bo:"numeroBo",cia_unidade_apuracao:"companhia",hora_inicial:"horaInicial",hora_final:"horaFinal",ocorrencia:"ocorrencia",crime:"crime",numero_conduzidos:"numeroConduzidos",orientacoes:"orientacoes",veiculos_recuperados:"veiculosRecuperados",endereco:"endereco",numero_endereco:"numeroEndereco",bairro:"bairro",local_entrega:"localEntrega",vitima_nacionalidade:"nacVitima",vitima_sexo:"sexoVitima",vitima_idade:"idadeVitima",infrator_nacionalidade:"nacInfrator",infrator_sexo:"sexoInfrator",infrator_idade:"idadeInfrator",comandante:"comandante",historico_resumido:"mo",materialidade:"materialidade",observacao:"observacao1",entorpecentes:"entorpecentes",maconha:"maconha",cocaina:"cocaina",pasta_base:"pastaBase",crack:"crack",skank:"skank",quantidade_armas:"quantArmas",quantidade_arma_branca:"quantArmaBranca",arma_branca:"armaBranca",armas:"armas",quantidade_municoes:"quantMunicoes",municoes:"municoes",veiculos_restricao:"veiculosRestricao",foragidos:"foragidos",disparo:"disparo",auto_resistencia:"autoResistencia",quantidade_autos_infracao:"quantAutoInfracao",auto_infracao:"autoInfracao",balanca_precisao:"balanca",observacao_final:"observacaoFinal",latitude:"latitude",longitude:"longitude",endereco_formatado:"enderecoFormatado"};
+      const mapa = {data_ocorrencia:"data",status_atendimento:"statusAtendimento",motivo_repressao:"motivoRepressao",municipio:"municipio",vtr:"vtr",tipo_registro:"tipoRegistro",numero_bo:"numeroBo",cia_unidade_apuracao:"companhia",origem_acionamento:"origemAcionamento",origem_acionamento_detalhe:"origemAcionamentoDetalhe",hora_inicial:"horaInicial",hora_final:"horaFinal",ocorrencia:"ocorrencia",crime:"crime",numero_conduzidos:"numeroConduzidos",orientacoes:"orientacoes",veiculos_recuperados:"veiculosRecuperados",endereco:"endereco",numero_endereco:"numeroEndereco",bairro:"bairro",local_entrega:"localEntrega",vitima_nacionalidade:"nacVitima",vitima_sexo:"sexoVitima",vitima_idade:"idadeVitima",infrator_nacionalidade:"nacInfrator",infrator_sexo:"sexoInfrator",infrator_idade:"idadeInfrator",comandante:"comandante",historico_resumido:"mo",materialidade:"materialidade",observacao:"observacao1",entorpecentes:"entorpecentes",maconha:"maconha",cocaina:"cocaina",pasta_base:"pastaBase",crack:"crack",skank:"skank",quantidade_armas:"quantArmas",quantidade_arma_branca:"quantArmaBranca",arma_branca:"armaBranca",armas:"armas",quantidade_municoes:"quantMunicoes",municoes:"municoes",veiculos_restricao:"veiculosRestricao",foragidos:"foragidos",disparo:"disparo",auto_resistencia:"autoResistencia",quantidade_autos_infracao:"quantAutoInfracao",auto_infracao:"autoInfracao",balanca_precisao:"balanca",observacao_final:"observacaoFinal",latitude:"latitude",longitude:"longitude",endereco_formatado:"enderecoFormatado"};
       Object.keys(mapa).forEach(k => definirCampo(mapa[k],x[k]));
+      ajustarOrigemAcionamento();
+      statusOrigemAcionamentoPdf.textContent=x.origem_acionamento
+        ?"Origem salva no registro. Confira antes de alterar."
+        :"Origem não informada neste registro. Informe manualmente se houver evidência.";
       definirCampo("origemOcorrenciaBope",x.origem_ocorrencia);
       definirCampo("origemOcorrenciaBopeDetalhe",x.origem_ocorrencia_detalhe);
       if(origemOcorrenciaBope)origemOcorrenciaBope.dispatchEvent(new Event("change"));
@@ -2862,6 +2912,8 @@
         if(situacao&&!situacao.disabled&&situacao.value==="SIM"&&!categoria?.value)
           return mostrarErroCampo("institucionalTipo"+(bloco.dataset.tipo==="vitima"?"Vitima":"Infrator"),"Informe o tipo de policial ou autoridade da pessoa adicional.");
       }
+      if(origemAcionamentoCampo.value==="OUTRA"&&!origemAcionamentoDetalhe.value.trim())
+        return mostrarErroCampo("origemAcionamentoDetalhe","Descreva a origem do atendimento quando selecionar Outra.");
       if (resultadoInformativoCipa?.checked && configuracaoResultados.some(([checkId]) => document.getElementById(checkId).checked))
         return mostrarErroCampo("resultadoInformativo","Informativo não pode ser combinado com condução, orientação, veículo recuperado ou outro resultado.");
       if (document.getElementById("resultadoConducao").checked && !Number(document.getElementById("numeroConduzidos").value)) return mostrarErroCampo("numeroConduzidos","Informe a quantidade de conduzidos.");
@@ -3018,6 +3070,8 @@
           disparo: tratarNI(document.getElementById("disparo").value),
           auto_resistencia: tratarNI(document.getElementById("autoResistencia").value),
           auto_resistencia_resultou_morte: document.getElementById("autoResistenciaMorte").value || null,
+          origem_acionamento: origemAcionamentoCampo.value || null,
+          origem_acionamento_detalhe: origemAcionamentoCampo.value==="OUTRA" ? origemAcionamentoDetalhe.value.trim() || null : null,
           origem_ocorrencia: document.getElementById("origemOcorrenciaBope")?.value || null,
           origem_ocorrencia_detalhe: document.getElementById("origemOcorrenciaBopeDetalhe")?.value.trim() || null,
 

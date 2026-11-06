@@ -14,11 +14,14 @@
     ['numero_prisoes','Prisões'],['numero_conduzidos','Conduzidos'],
     ['auto_resistencia','Auto de resistência/prisão'],
     ['auto_resistencia_resultou_morte','Auto de resistência com resultado morte'],
+    ['origem_acionamento','Origem do acionamento / atendimento'],
+    ['origem_acionamento_detalhe','Detalhes da origem do atendimento'],
     ['origem_ocorrencia','Origem da ocorrência — BOPE'],
     ['origem_ocorrencia_detalhe','Detalhes da origem — BOPE'],
     ['latitude','Latitude GPS'],['longitude','Longitude GPS']
   ];
   const opcionais=new Set([
+    'origem_acionamento','origem_acionamento_detalhe',
     'origem_ocorrencia','origem_ocorrencia_detalhe',
     'auto_resistencia_resultou_morte','latitude','longitude'
   ]);
