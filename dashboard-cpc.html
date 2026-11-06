@@ -129,11 +129,20 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
 .cpcAnaliseNumero{border:1px solid #b8d6e9;background:#f0f8ff;color:#0a5485;font:inherit;font-weight:800;cursor:pointer;border-radius:6px;padding:5px 9px}
 .cpcAnaliseNumero:hover{background:#dcefff}.cpcAnaliseNumero:focus-visible{outline:3px solid #1b7ba6;outline-offset:2px}
 .cpcAnaliseZero{color:#8b9baa}.cpcAnaliseGrafico{height:230px;position:relative;margin:10px 0}
+.cpcOrigemInstitucionalGrid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:19px}
+.cpcOrigemInstitucionalGrid h3{font-size:16px;color:#16344d;margin:5px 0 12px}
+.cpcOrigemInstitucionalChart{position:relative;height:300px;max-width:100%}
+.cpcOrigemInstitucionalCards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.cpcOrigemInstitucionalCards .kpi{min-height:107px}
+.cpcOrigemInstitucionalInfo{color:#566b80;font-size:12px;line-height:1.6;margin:11px 0 0}
+@media(max-width:920px){.cpcOrigemInstitucionalGrid{grid-template-columns:1fr}}
+@media(max-width:530px){.cpcOrigemInstitucionalCards{grid-template-columns:1fr}.cpcOrigemInstitucionalChart{height:290px}}
+
 
 
 </style>
 <script src="auth-config.js"></script>
-<script src="auth-guard.js"></script><script src="estatistica-indicadores.js?v=20261012-1"></script><script src="cipa-home.js?v=20261012-rastreabilidade3"></script><script src="cipg-home.js?v=20261012-rastreabilidade3"></script><script src="cpc-rastreabilidade.js?v=20261014-documento1"></script><script src="cpc-detalhamento-origem.js?v=20261014-documento2"></script><script src="cpc-documento-leitura.js?v=20261014-documento2"></script><script src="cpc-indicadores-dashboard.js?v=20261013-indicadores1"></script><script src="cpc-analise-integrada.js?v=20261014-unificado2"></script>
+<script src="auth-guard.js"></script><script src="estatistica-indicadores.js?v=20261012-1"></script><script src="cipa-home.js?v=20261012-rastreabilidade3"></script><script src="cipg-home.js?v=20261012-rastreabilidade3"></script><script src="cpc-rastreabilidade.js?v=20261014-documento1"></script><script src="cpc-detalhamento-origem.js?v=20261014-documento2"></script><script src="cpc-documento-leitura.js?v=20261014-documento2"></script><script src="cpc-indicadores-dashboard.js?v=20261013-indicadores1"></script><script src="cpc-analise-integrada.js?v=20261014-unificado2"></script><script src="indicadores-origem-envolvimento.js?v=20261106-1"></script>
 </head>
 <body>
 <div id="loading" class="loading">Carregando central executiva do CPC...</div>
@@ -200,6 +209,28 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
     <a href="produtividade-cpc.html">Conferir lançamentos e documentos de origem</a>.
   </p>
 
+
+<section class="panel" id="secCpcOrigemPoliciais" data-cpc-areas="visao-geral produtividade perfis comparativos">
+  <div class="sectionTitle">
+    <div><h2>Origem das ocorrências e policiais envolvidos</h2>
+      <p>BOs distintos no recorte de unidade, período e território selecionado. A classificação considera os campos do cadastro, nunca os policiais que apenas atenderam a ocorrência.</p>
+    </div><span class="tag">BOs CLASSIFICADOS</span>
+  </div>
+  <div class="cpcOrigemInstitucionalGrid">
+    <div><h3>Distribuição por origem do acionamento</h3>
+      <div class="cpcOrigemInstitucionalChart"><canvas id="chartCpcOrigemAtendimento" role="img" aria-label="Ocorrências por origem do acionamento"></canvas></div>
+      <p class="cpcOrigemInstitucionalInfo" id="cpcOrigemClassificacao" role="status">Consultando origens documentadas...</p>
+    </div>
+    <div><h3>Ocorrências envolvendo policiais</h3>
+      <div class="cpcOrigemInstitucionalCards">
+        <div class="kpi" style="--accent:var(--steel)"><small>BOs com policial envolvido</small><strong id="cpcPoliciaisTotal">—</strong></div>
+        <div class="kpi" style="--accent:var(--teal)"><small>Vítimas policiais</small><strong id="cpcPoliciaisVitimas">—</strong></div>
+        <div class="kpi" style="--accent:var(--amber)"><small>Suspeitos/infratores policiais</small><strong id="cpcPoliciaisInfratores">—</strong></div>
+      </div>
+      <p class="cpcOrigemInstitucionalInfo" id="cpcPoliciaisClassificacao" role="status">Somente classificação funcional explicitamente registrada. Ausência de informação não significa ausência de policiais.</p>
+    </div>
+  </div>
+</section>
   <section class="panel" id="secIndicadoresCpc" data-cpc-areas="visao-geral">
   <div class="sectionTitle"><div><h2>Indicadores estatísticos por unidade e subunidade</h2><p>BOPE consolidado e suas companhias (Choque, Força Tática, Canil e GATE) são exibidos separadamente. Os recortes das companhias já integram o BOPE e não devem ser somados novamente ao total. Clique em um indicador para conferir os registros de origem.</p></div><span class="tag">SIE-CPC</span></div>
   <div id="cpcIndicadoresEspecificos" class="cpcSpecialGrid"><p class="empty">Consultando indicadores por unidade...</p></div>
