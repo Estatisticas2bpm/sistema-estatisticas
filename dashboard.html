@@ -370,24 +370,10 @@ body.dashboard-comando .drill-table table{min-width:0}
   <p class="sub">A área de desmatamento constatada é informada separadamente quando constar no documento. Não se presume desmatamento a partir da área embargada.</p>
 </section>
 <section class="section" id="secOrigemEnvolvimento">
-  <h2>Origem das ocorrências e envolvimento de policiais</h2>
-  <p class="sub">Distribuição dos BOs pelo início do atendimento e identificação funcional da vítima ou do suspeito/infrator. Respeita os filtros deste painel. A guarnição atendente não integra essa contagem.</p>
-  <div class="grid2">
-    <div>
-      <h3>Origem do acionamento / atendimento</h3>
-      <div class="chartbox"><canvas id="chartOrigemAcionamento" role="img" aria-label="Gráfico de ocorrências por origem do acionamento"></canvas></div>
-      <p class="sub" id="origemAcionamentoCobertura" role="status">Analisando origens documentadas...</p>
-    </div>
-    <div>
-      <h3>BOs envolvendo policiais</h3>
-      <div class="cards">
-        <div class="card steel"><small>Ocorrências com policial envolvido</small><strong id="kOcorrenciasPoliciais">—</strong></div>
-        <div class="card teal"><small>Vítimas policiais</small><strong id="kVitimasPoliciais">—</strong></div>
-        <div class="card amber"><small>Suspeitos/infratores policiais</small><strong id="kInfratoresPoliciais">—</strong></div>
-      </div>
-      <p class="sub" id="ocorrenciasPoliciaisCobertura" role="status">Apenas participantes classificados no cadastro. A falta de identificação não equivale a “não policial”.</p>
-    </div>
-  </div>
+  <h2>Origem das ocorrências</h2>
+  <p class="sub">Distribuição dos BOs por CICC, patrulhamento, abordagem, missão, operação e outras origens, conforme o início do atendimento. A classificação retroativa considera somente históricos com evidência explícita. Respeita os filtros desta unidade.</p>
+  <div class="chartbox"><canvas id="chartOrigemAcionamento" role="img" aria-label="Gráfico de ocorrências por origem do acionamento"></canvas></div>
+  <p class="sub" id="origemAcionamentoCobertura" role="status">Analisando origens documentadas...</p>
 </section>
 <section class="section"><h2>Documentos Produzidos</h2><p class="sub">BO, TCO, ROP e demais documentos do período</p><div class="grid2"><div class="chartbox"><canvas id="chartDocs"></canvas></div><div class="tablewrap"><table><thead><tr><th>Documento</th><th>Atual</th><th>Comparado</th><th>Variação</th></tr></thead><tbody id="tabDocs"></tbody></table></div></div></section>
 <section class="section"><h2>Principais Ocorrências</h2><p class="sub">Incidência por natureza. Um mesmo BO pode aparecer em mais de uma natureza quando o registro possuir múltiplas classificações.</p><div class="grid2"><div class="chartbox"><canvas id="chartOcorrencias"></canvas></div><div class="tablewrap"><table><thead><tr><th>#</th><th>Ocorrência</th><th>Quantidade</th><th>Bairros recorrentes</th><th>Idade</th></tr></thead><tbody id="tabOcorrencias"></tbody></table></div></div></section>
@@ -962,7 +948,6 @@ function renderOrigemPoliciais(registros){
   const r=modulo?.resumir(registros);
   if(!r){
     $('origemAcionamentoCobertura').textContent='Indicadores indisponíveis. Atualize a página.';
-    $('ocorrenciasPoliciaisCobertura').textContent='Indicadores indisponíveis. Atualize a página.';
     return;
   }
   const categorias=modulo.ORIGENS;
@@ -977,15 +962,7 @@ function renderOrigemPoliciais(registros){
   $('origemAcionamentoCobertura').textContent=r.total?
     r.origemInformada+' de '+r.total+' BO(s) com origem informada; '+r.origens.NAO_INFORMADA+' sem classificação.':
     'Sem BOs no recorte selecionado.';
-  $('kOcorrenciasPoliciais').textContent=r.policiais.total;
-  $('kVitimasPoliciais').textContent=r.policiais.vitimas;
-  $('kInfratoresPoliciais').textContent=r.policiais.infratores;
-  vincularCardDrill('kOcorrenciasPoliciais','BOs envolvendo policiais',r.ocorrenciasPoliciais);
-  vincularCardDrill('kVitimasPoliciais','BOs com vítimas policiais',r.ocorrenciasVitimasPoliciais);
-  vincularCardDrill('kInfratoresPoliciais','BOs com suspeitos/infratores policiais',r.ocorrenciasInfratoresPoliciais);
-  $('ocorrenciasPoliciaisCobertura').textContent=r.total?
-    'Identificação funcional preenchida em pelo menos um campo de '+r.policiais.classificados+' de '+r.total+' BO(s). '+r.policiais.semClassificacao+' sem classificação; não presumir ausência de policiais. Cada BO conta apenas uma vez no total.':
-    'Sem BOs no recorte selecionado.';
+
 }
 function render(){drillActions.clear();drillSeq=0;let a=filtrar(atual),p=filtrar(anterior),ta=filtrarTcos(tcosAtual),tp=filtrarTcos(tcosAnterior);renderCiptur();renderCipturTor(a);renderGiroAbordagens();renderCavalaria();renderCipg();renderCipa(a,p);renderOrigemPoliciais(a);let at=a.filter(x=>x.status_atendimento!=='DEMANDA REPRIMIDA'),rep=a.filter(x=>x.status_atendimento==='DEMANDA REPRIMIDA');kTotal.textContent=a.length;kAtendidas.textContent=at.length;kReprimidas.textContent=rep.length;kDocumentos.textContent=a.length+ta.length;kConduzidos.textContent=soma(a,'conducoes_operacionais');vTotal.textContent=comparar.value==='nenhum'?'':`${variacao(a.length,p.length)} em relação ao comparado`;vincularCardDrill('kTotal','Todas as ocorrências do período',a);vincularCardDrill('kAtendidas','Ocorrências atendidas',at);vincularCardDrill('kReprimidas','Demandas reprimidas',rep);vincularCardDrill('kDocumentos','Documentos produzidos',documentosPeriodo(a,ta),{preservarDuplicados:true,subtitulo:'BOs, TCOs e demais documentos que compõem este indicador.'});vincularCardDrill('kConduzidos','Ocorrências com conduções',a.filter(x=>num(x.conducoes_operacionais)>0),{subtitulo:'Ocorrências que registraram uma ou mais conduções.'});
 let docs=docsComTco(a,ta),docsP=Object.fromEntries(docsComTco(p,tp));let docsLista=documentosPeriodo(a,ta);function listaDoc(tipo){return tipo==='TCO'?ta.map(t=>({...t,_doc:'TCO',id:t.ocorrencia_id||t.id})):a.filter(o=>norm(o.tipo_registro)===tipo).map(o=>({...o,_doc:tipo}))}rows('tabDocs',docs.map(x=>`<tr><td>${esc(x[0])}</td><td>${drillNumero(x[1],'Documentos '+x[0],listaDoc(x[0]),{preservarDuplicados:true})}</td><td>${docsP[x[0]]||0}</td><td class="${classeVariacao('Documentos produzidos',x[1],docsP[x[0]]||0)}">${variacao(x[1],docsP[x[0]]||0)}</td></tr>`).join(''));chart('chartDocs','doughnut',docs.map(x=>x[0]),docs.map(x=>x[1]),'Documentos',docs.map(x=>corDocumento(x[0])),idx=>abrirDetalhes('Documentos '+docs[idx][0],listaDoc(docs[idx][0]),{preservarDuplicados:true}));
