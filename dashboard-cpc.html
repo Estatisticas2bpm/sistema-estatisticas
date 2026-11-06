@@ -233,6 +233,10 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
         <div class="kpi" style="--accent:var(--teal)"><small>Vítimas autoridades não policiais</small><strong id="cpcAutoridadesVitimas">—</strong></div>
         <div class="kpi" style="--accent:var(--amber)"><small>Suspeitos/infratores autoridades não policiais</small><strong id="cpcAutoridadesInfratores">—</strong></div>
       </div>
+      <div class="cpcOrigemInstitucionalChart" style="height:235px;margin-top:14px">
+        <canvas id="chartCpcEnvolvimentoReservado" role="img" aria-label="Gráfico de BOs com vítimas e suspeitos policiais ou autoridades"></canvas>
+      </div>
+      <p class="cpcOrigemInstitucionalInfo">Cada barra mostra BOs distintos dentro do seu grupo. Um mesmo BO pode constar em mais de um grupo; o total consolidado não duplica o registro.</p>
       <p class="cpcOrigemInstitucionalInfo" id="cpcPoliciaisClassificacao" role="status">Apenas classificações explícitas de novos cadastros realizados desde 06/11/2026 (horário de Boa Vista). Os históricos não foram reclassificados nesta categoria.</p>
     </div>
   </div>
@@ -622,6 +626,8 @@ function renderOrigemPoliciaisCpc(payload,erro){
   const reservado=$('cpcEnvolvimentoReservado');
   // Um painel sem dados válidos não deve exibir totais de outro recorte.
   reservado.hidden=true;
+  charts.chartCpcEnvolvimentoReservado?.destroy();
+  delete charts.chartCpcEnvolvimentoReservado;
   if(!valido){
     $('cpcOrigemClassificacao').textContent='Origem indisponível para este filtro; os resultados anteriores foram limpos.';
     charts.chartCpcOrigemAtendimento?.destroy();
@@ -650,6 +656,12 @@ function renderOrigemPoliciaisCpc(payload,erro){
   $('cpcAutoridadesTotal').textContent=n(a.total);
   $('cpcAutoridadesVitimas').textContent=n(a.vitimas);
   $('cpcAutoridadesInfratores').textContent=n(a.infratores);
+  chart('chartCpcEnvolvimentoReservado','bar',
+    ['Vítimas policiais','Suspeitos policiais','Vítimas autoridades','Suspeitos autoridades'],
+    [{label:'BOs por papel institucional',data:[n(p.vitimas),n(p.infratores),n(a.vitimas),n(a.infratores)],
+      backgroundColor:['#1d6d9b','#9f7a2f','#247f73','#8f6283'],borderRadius:5}],
+    {indexAxis:'y',plugins:{legend:{display:false}},scales:{
+      x:{beginAtZero:true,ticks:{precision:0}},y:{grid:{display:false}}}});
   $('cpcPoliciaisClassificacao').textContent=
     'Cadastros realizados desde 06/11/2026: '+n(p.novos_cadastros)+
     ' no recorte selecionado; '+n(p.classificados)+' com ao menos uma condição funcional preenchida e '+
