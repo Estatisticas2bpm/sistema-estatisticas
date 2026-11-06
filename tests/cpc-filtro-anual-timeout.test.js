@@ -24,7 +24,8 @@ elements.ini.value='2026-10-01';elements.fim.value='2026-10-12';
 const main={classList:classList()};
 const pending=[],rendered=[],calls=[];
 const context={
-  db:{},
+  db:{rpc:(nome,args)=>{assert.equal(nome,'obter_indicadores_origem_envolvimento_cpc');assert.equal(args.data_inicio,elements.ini.value);return Promise.resolve({data:{autorizado:true,origens:{},policiais:{}},error:null})}},
+  renderOrigemPoliciaisCpc:()=>{},
   window:{SistemaAuth:{ready:Promise.resolve()},CpcIndicadoresDashboard:{carregar:()=>Promise.resolve()}},
   document:{querySelector:()=>main},
   $:id=>elements[id],
