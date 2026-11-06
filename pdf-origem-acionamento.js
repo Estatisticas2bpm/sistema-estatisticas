@@ -69,7 +69,10 @@
       ? centrais[0] : primeiro;
     // Referências distintas, explícitas e próximas no início podem apontar
     // cenários simultâneos. Operador deve classificar e não assumir.
-    const concorrentes=achados.filter(x=>x.valor!==escolhido.valor && Math.abs(x.posicao-escolhido.posicao)<=65);
+    const concorrentes=achados.filter(x=>x.valor!==escolhido.valor &&
+      Math.abs(x.posicao-escolhido.posicao)<=65 &&
+      // A abordagem no curso do patrulhamento é uma ação subsequente.
+      !(escolhido.valor==="PATRULHAMENTO" && x.valor==="ABORDAGEM"));
     if(concorrentes.length && escolhido.valor!=="CICC"){
       return {valor:"",automatico:false,conflito:true,evidencia:escolhido.evidencia,
         motivo:"O início do relato menciona mais de uma possível origem. Confira e selecione manualmente."};
