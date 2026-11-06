@@ -67,7 +67,7 @@ dialog.cpcDocOverlay{border:0;margin:0;max-width:none;max-height:none;width:100%
 .drill-ref-cpc:hover{color:#092d4e}.drill-ref-cpc:focus-visible,.cpcDocFechar:focus-visible,.cpcDocVinculo:focus-visible{outline:3px solid #277ba9;outline-offset:2px}
 body.dashboard-comando .drill-table table{min-width:0}
 @media(max-width:700px){.cpcDocOverlay{padding:0}.cpcDocJanela{height:100dvh;max-height:100dvh;border-radius:0}.cpcDocTopo{padding:15px}.cpcDocCorpo{padding:12px}.cpcDocGrupo dl{grid-template-columns:1fr}}
-</style><script src="auth-config.js"></script><script src="auth-guard.js"></script><script src="bope-painel.js?v=20261020-bope-sub1"></script><script src="cipg-dashboard.js?v=20261009-3"></script></head>
+</style><script src="auth-config.js"></script><script src="auth-guard.js"></script><script src="bope-painel.js?v=20261020-bope-sub1"></script><script src="cipg-dashboard.js?v=20261009-3"></script><script src="indicadores-origem-envolvimento.js?v=20261106-1"></script></head>
 <body><div class="loading" id="loading">Carregando dados estatísticos...</div><header><div class="head"><div><h1>Dashboard Completo</h1><p>Análise estatística operacional da unidade ativa</p></div><div><a href="index.html">← Página inicial</a></div></div></header><main>
 <section class="panel"><div class="presets"><button data-period="hoje">Hoje</button><button data-period="semana">Semana atual</button><button data-period="mes">Mês atual</button><button data-period="trimestre">Trimestre</button><button data-period="semestre">Semestre</button><button data-period="ano">Ano</button></div><div class="filters">
 <label>Data inicial<input id="ini" type="date"></label><label id="cipaMunicipioWrap" hidden>Município<input id="cipaMunicipio" placeholder="Todos"></label><label id="cipaAreaWrap" hidden>Área<select id="cipaArea"><option value="">Todas</option><option>URBANA</option><option>RURAL</option></select></label><label id="cipaOrigemWrap" hidden>Origem<input id="cipaOrigemFiltro" placeholder="Todas"></label>
@@ -368,6 +368,26 @@ body.dashboard-comando .drill-table table{min-width:0}
     <div><h3 style="margin:0 0 8px;color:var(--navy)">Termos de embargo do período</h3><div class="tablewrap"><table><thead><tr><th>Nº Termo</th><th>Data</th><th>Área (ha)</th></tr></thead><tbody id="tabCipaEmbargosDetalhe"></tbody></table></div></div>
   </div>
   <p class="sub">A área de desmatamento constatada é informada separadamente quando constar no documento. Não se presume desmatamento a partir da área embargada.</p>
+</section>
+<section class="section" id="secOrigemEnvolvimento">
+  <h2>Origem das ocorrências e envolvimento de policiais</h2>
+  <p class="sub">Distribuição dos BOs pelo início do atendimento e identificação funcional da vítima ou do suspeito/infrator. Respeita os filtros deste painel. A guarnição atendente não integra essa contagem.</p>
+  <div class="grid2">
+    <div>
+      <h3>Origem do acionamento / atendimento</h3>
+      <div class="chartbox"><canvas id="chartOrigemAcionamento" role="img" aria-label="Gráfico de ocorrências por origem do acionamento"></canvas></div>
+      <p class="sub" id="origemAcionamentoCobertura" role="status">Analisando origens documentadas...</p>
+    </div>
+    <div>
+      <h3>BOs envolvendo policiais</h3>
+      <div class="cards">
+        <div class="card steel"><small>Ocorrências com policial envolvido</small><strong id="kOcorrenciasPoliciais">—</strong></div>
+        <div class="card teal"><small>Vítimas policiais</small><strong id="kVitimasPoliciais">—</strong></div>
+        <div class="card amber"><small>Suspeitos/infratores policiais</small><strong id="kInfratoresPoliciais">—</strong></div>
+      </div>
+      <p class="sub" id="ocorrenciasPoliciaisCobertura" role="status">Apenas participantes classificados no cadastro. A falta de identificação não equivale a “não policial”.</p>
+    </div>
+  </div>
 </section>
 <section class="section"><h2>Documentos Produzidos</h2><p class="sub">BO, TCO, ROP e demais documentos do período</p><div class="grid2"><div class="chartbox"><canvas id="chartDocs"></canvas></div><div class="tablewrap"><table><thead><tr><th>Documento</th><th>Atual</th><th>Comparado</th><th>Variação</th></tr></thead><tbody id="tabDocs"></tbody></table></div></div></section>
 <section class="section"><h2>Principais Ocorrências</h2><p class="sub">Incidência por natureza. Um mesmo BO pode aparecer em mais de uma natureza quando o registro possuir múltiplas classificações.</p><div class="grid2"><div class="chartbox"><canvas id="chartOcorrencias"></canvas></div><div class="tablewrap"><table><thead><tr><th>#</th><th>Ocorrência</th><th>Quantidade</th><th>Bairros recorrentes</th><th>Idade</th></tr></thead><tbody id="tabOcorrencias"></tbody></table></div></div></section>
@@ -937,7 +957,37 @@ function renderCipa(a,p){
     rows(tabela,valores.map(x=>'<tr><td>'+esc(x[0])+'</td><td>'+x[1]+'</td></tr>').join(''));
   }
 }
-function render(){drillActions.clear();drillSeq=0;let a=filtrar(atual),p=filtrar(anterior),ta=filtrarTcos(tcosAtual),tp=filtrarTcos(tcosAnterior);renderCiptur();renderCipturTor(a);renderGiroAbordagens();renderCavalaria();renderCipg();renderCipa(a,p);let at=a.filter(x=>x.status_atendimento!=='DEMANDA REPRIMIDA'),rep=a.filter(x=>x.status_atendimento==='DEMANDA REPRIMIDA');kTotal.textContent=a.length;kAtendidas.textContent=at.length;kReprimidas.textContent=rep.length;kDocumentos.textContent=a.length+ta.length;kConduzidos.textContent=soma(a,'conducoes_operacionais');vTotal.textContent=comparar.value==='nenhum'?'':`${variacao(a.length,p.length)} em relação ao comparado`;vincularCardDrill('kTotal','Todas as ocorrências do período',a);vincularCardDrill('kAtendidas','Ocorrências atendidas',at);vincularCardDrill('kReprimidas','Demandas reprimidas',rep);vincularCardDrill('kDocumentos','Documentos produzidos',documentosPeriodo(a,ta),{preservarDuplicados:true,subtitulo:'BOs, TCOs e demais documentos que compõem este indicador.'});vincularCardDrill('kConduzidos','Ocorrências com conduções',a.filter(x=>num(x.conducoes_operacionais)>0),{subtitulo:'Ocorrências que registraram uma ou mais conduções.'});
+function renderOrigemPoliciais(registros){
+  const modulo=window.SIEIndicadoresEnvolvimento;
+  const r=modulo?.resumir(registros);
+  if(!r){
+    $('origemAcionamentoCobertura').textContent='Indicadores indisponíveis. Atualize a página.';
+    $('ocorrenciasPoliciaisCobertura').textContent='Indicadores indisponíveis. Atualize a página.';
+    return;
+  }
+  const categorias=modulo.ORIGENS;
+  chart('chartOrigemAcionamento','bar',categorias.map(x=>x.rotulo),
+    categorias.map(x=>r.origens[x.valor]),'BOs por origem',
+    ['#125b94','#1e8a78','#b57a22','#615a9d','#3773a6','#64748b','#b5beca'],
+    indice=>{
+      const item=categorias[indice];
+      if(!item||!r.origens[item.valor])return;
+      abrirDetalhes('Origem do atendimento — '+item.rotulo,r.grupos[item.valor]);
+    });
+  $('origemAcionamentoCobertura').textContent=r.total?
+    r.origemInformada+' de '+r.total+' BO(s) com origem informada; '+r.origens.NAO_INFORMADA+' sem classificação.':
+    'Sem BOs no recorte selecionado.';
+  $('kOcorrenciasPoliciais').textContent=r.policiais.total;
+  $('kVitimasPoliciais').textContent=r.policiais.vitimas;
+  $('kInfratoresPoliciais').textContent=r.policiais.infratores;
+  vincularCardDrill('kOcorrenciasPoliciais','BOs envolvendo policiais',r.ocorrenciasPoliciais);
+  vincularCardDrill('kVitimasPoliciais','BOs com vítimas policiais',r.ocorrenciasVitimasPoliciais);
+  vincularCardDrill('kInfratoresPoliciais','BOs com suspeitos/infratores policiais',r.ocorrenciasInfratoresPoliciais);
+  $('ocorrenciasPoliciaisCobertura').textContent=r.total?
+    'Identificação funcional preenchida em pelo menos um campo de '+r.policiais.classificados+' de '+r.total+' BO(s). '+r.policiais.semClassificacao+' sem classificação; não presumir ausência de policiais. Cada BO conta apenas uma vez no total.':
+    'Sem BOs no recorte selecionado.';
+}
+function render(){drillActions.clear();drillSeq=0;let a=filtrar(atual),p=filtrar(anterior),ta=filtrarTcos(tcosAtual),tp=filtrarTcos(tcosAnterior);renderCiptur();renderCipturTor(a);renderGiroAbordagens();renderCavalaria();renderCipg();renderCipa(a,p);renderOrigemPoliciais(a);let at=a.filter(x=>x.status_atendimento!=='DEMANDA REPRIMIDA'),rep=a.filter(x=>x.status_atendimento==='DEMANDA REPRIMIDA');kTotal.textContent=a.length;kAtendidas.textContent=at.length;kReprimidas.textContent=rep.length;kDocumentos.textContent=a.length+ta.length;kConduzidos.textContent=soma(a,'conducoes_operacionais');vTotal.textContent=comparar.value==='nenhum'?'':`${variacao(a.length,p.length)} em relação ao comparado`;vincularCardDrill('kTotal','Todas as ocorrências do período',a);vincularCardDrill('kAtendidas','Ocorrências atendidas',at);vincularCardDrill('kReprimidas','Demandas reprimidas',rep);vincularCardDrill('kDocumentos','Documentos produzidos',documentosPeriodo(a,ta),{preservarDuplicados:true,subtitulo:'BOs, TCOs e demais documentos que compõem este indicador.'});vincularCardDrill('kConduzidos','Ocorrências com conduções',a.filter(x=>num(x.conducoes_operacionais)>0),{subtitulo:'Ocorrências que registraram uma ou mais conduções.'});
 let docs=docsComTco(a,ta),docsP=Object.fromEntries(docsComTco(p,tp));let docsLista=documentosPeriodo(a,ta);function listaDoc(tipo){return tipo==='TCO'?ta.map(t=>({...t,_doc:'TCO',id:t.ocorrencia_id||t.id})):a.filter(o=>norm(o.tipo_registro)===tipo).map(o=>({...o,_doc:tipo}))}rows('tabDocs',docs.map(x=>`<tr><td>${esc(x[0])}</td><td>${drillNumero(x[1],'Documentos '+x[0],listaDoc(x[0]),{preservarDuplicados:true})}</td><td>${docsP[x[0]]||0}</td><td class="${classeVariacao('Documentos produzidos',x[1],docsP[x[0]]||0)}">${variacao(x[1],docsP[x[0]]||0)}</td></tr>`).join(''));chart('chartDocs','doughnut',docs.map(x=>x[0]),docs.map(x=>x[1]),'Documentos',docs.map(x=>corDocumento(x[0])),idx=>abrirDetalhes('Documentos '+docs[idx][0],listaDoc(docs[idx][0]),{preservarDuplicados:true}));
 let ocorr=rankNaturezas(a,15);rows('tabOcorrencias',ocorr.map((x,i)=>{let g=a.filter(y=>naturezasOcorrencia(y).includes(x[0])),bs=rank(g,x=>normalizarBairro(x.bairro),3).map(z=>z[0]).join(' / '),idades=listaPessoas(g,'infrator').map(y=>num(y.idade)).filter(Boolean);return `<tr><td class="rank">${i+1}º</td><td>${esc(x[0])}</td><td>${drillNumero(x[1],x[0],g)}</td><td>${esc(bs)}</td><td>${idades.length?Math.min(...idades)+' a '+Math.max(...idades)+' anos':'NI'}</td></tr>`}).join(''));let ocorrTop=ocorr.slice(0,10);chart('chartOcorrencias','bar',ocorrTop.map(x=>x[0]),ocorrTop.map(x=>x[1]),'Ocorrências',CORES.blue,idx=>{let nome=ocorrTop[idx][0];abrirDetalhes(nome,a.filter(y=>naturezasOcorrencia(y).includes(nome)))});
 let bs=rank(a,x=>normalizarBairro(x.bairro),999),bp=Object.fromEntries(rank(p,x=>normalizarBairro(x.bairro)));rows('tabBairros',bs.map((x,i)=>{let g=a.filter(y=>normalizarBairro(y.bairro)===x[0]);return `<tr><td class="rank">${i+1}º</td><td>${esc(x[0])}</td><td>${drillNumero(x[1],'Ocorrências no bairro '+x[0],g)}</td><td>${a.length?(x[1]*100/a.length).toFixed(1):0}%</td><td>${bp[x[0]]||0}</td><td class="${cls(x[1],bp[x[0]]||0)}">${variacao(x[1],bp[x[0]]||0)}</td></tr>`}).join(''));let bairrosTop=bs.slice(0,12);chart('chartBairros','bar',bairrosTop.map(x=>x[0]),bairrosTop.map(x=>x[1]),'Bairros',CORES.teal,idx=>{let nome=bairrosTop[idx][0];abrirDetalhes('Ocorrências no bairro '+nome,a.filter(y=>normalizarBairro(y.bairro)===nome))});
