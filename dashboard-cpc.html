@@ -610,6 +610,36 @@ function renderAbordagensGiroCpc(){
   const itens=Object.entries(dias).sort((a,b)=>a[0].localeCompare(b[0]));
   chart('chartCpcGiroAbordagens','line',itens.map(x=>br(x[0])),[{label:'Abordagens',data:itens.map(x=>x[1]),tension:.25,fill:false}],{scales:{y:{beginAtZero:true,ticks:{precision:0}}}});
 }
+function renderOrigemPoliciaisCpc(payload,erro){
+  const categorias=window.SIEIndicadoresEnvolvimento?.ORIGENS||[];
+  const valido=!erro&&payload?.autorizado===true&&payload?.origens&&payload?.policiais&&categorias.length;
+  if(!valido){
+    $('cpcPoliciaisTotal').textContent='N/D';
+    $('cpcPoliciaisVitimas').textContent='N/D';
+    $('cpcPoliciaisInfratores').textContent='N/D';
+    $('cpcOrigemClassificacao').textContent='Origem não disponível para este filtro. Os resultados anteriores foram limpos.';
+    $('cpcPoliciaisClassificacao').textContent='Classificação funcional indisponível. N/D não representa zero.';
+    charts.chartCpcOrigemAtendimento?.destroy();
+    delete charts.chartCpcOrigemAtendimento;
+    return;
+  }
+  const total=n(payload.total),contagens=payload.origens,politicos=payload.policiais;
+  const valores=categorias.map(item=>n(contagens[item.valor]));
+  chart('chartCpcOrigemAtendimento','bar',categorias.map(item=>item.rotulo),
+    [{label:'BOs',data:valores,backgroundColor:['#125b94','#1e8a78','#b57a22','#615a9d','#3773a6','#64748b','#b5beca'],
+      borderRadius:5}],{indexAxis:'y',plugins:{legend:{display:false}},scales:{
+        x:{beginAtZero:true,ticks:{precision:0}},y:{grid:{display:false}}}});
+  $('cpcPoliciaisTotal').textContent=n(politicos.total);
+  $('cpcPoliciaisVitimas').textContent=n(politicos.vitimas);
+  $('cpcPoliciaisInfratores').textContent=n(politicos.infratores);
+  const comOrigem=n(payload.origem_informada);
+  $('cpcOrigemClassificacao').textContent=total?
+    comOrigem+' de '+total+' BO(s) possuem origem informada. '+n(contagens.NAO_INFORMADA)+' sem classificação.':
+    'Sem BOs no período e nos filtros selecionados.';
+  $('cpcPoliciaisClassificacao').textContent=total?
+    'Ao menos uma condição funcional preenchida em '+n(politicos.classificados)+' de '+total+' BO(s); '+n(politicos.sem_classificacao)+' sem classificação funcional. O total conta BOs únicos, sem duplicidade entre vítima e infrator.':
+    'Sem BOs no período e nos filtros selecionados.';
+}
 function render(d){const r=d.resumo||{},u=d.unidades||[],grupos=agruparMetricas(u),top=agruparTopNaturezas(d.top_naturezas||[]),serie=agruparSerie(d.serie_diaria||[]);
 $('kOcorrencias').textContent=n(r.total_ocorrencias);$('kConducoes').textContent=n(r.conducoes);$('kPrisoes').textContent=n(r.prisoes);$('kTcos').textContent=n(r.tcos);$('kVeiculos').textContent=n(r.veiculos_recuperados);$('kArmas').textContent=n(r.ocorrencias_armas);$('kDrogas').textContent=n(r.ocorrencias_drogas);
 renderTabelaUnidades(grupos);
@@ -662,6 +692,7 @@ async function consultarGiroCpcPaginado(inicio,fim){
 let versaoConsultaCpc=0;
 async function carregar(){
   const versao=++versaoConsultaCpc;
+  renderOrigemPoliciaisCpc(null,'aguardando dados');
   window.CpcAnaliseIntegrada?.resetar();
   const ready=window.SistemaAuth?.ready;
   if(ready)await ready;
@@ -681,7 +712,7 @@ async function carregar(){
   $('loading').style.display='grid';
   $('status').textContent='Consultando dados de '+br(inicio)+' a '+br(fim)+'...';
   try{
-    const [r,ga,cv,ad]=await Promise.all([consultarPainelCpc(args),consultarGiroCpcPaginado(inicio,fim),consultarCavalariaCpcPaginado(inicio,fim),consultarAtividadesDocumentadasCpc(inicio,fim)]);
+    const [r,ga,cv,ad,ocpi]=await Promise.all([consultarPainelCpc(args),consultarGiroCpcPaginado(inicio,fim),consultarCavalariaCpcPaginado(inicio,fim),consultarAtividadesDocumentadasCpc(inicio,fim),db.rpc('obter_indicadores_origem_envolvimento_cpc',args)]);
     if(versao!==versaoConsultaCpc)return;
     if(r.error)throw r.error;
     if(ga.error)throw ga.error;
@@ -695,6 +726,7 @@ async function carregar(){
     popularUnidades();
     if(!args.p_unidade_id&&$('unidade').value){carregar();return}
     render(r.data);
+    renderOrigemPoliciaisCpc(ocpi.data,ocpi.error||(!ocpi.data?.autorizado?'sem autorização':null));
     window.CpcAnaliseIntegrada?.configurar(db,args,hierarquiaUnidades,r.data.resumo?.total_ocorrencias,catalogoTerritorial);
     document.querySelector('main').classList.remove('cpcConsultaSemResultado');
     window.CpcIndicadoresDashboard.carregar(db,args,hierarquiaUnidades).catch(function(e){console.error(e);if(versao===versaoConsultaCpc)$('cpcIndicadoresEspecificos').textContent='Erro ao consultar indicadores especializados.'});
