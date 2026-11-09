@@ -164,7 +164,8 @@
       } finally {
         ocupado = false;
         lista.disabled = false;
-        exibirSelecionado();
+        salvar.disabled = !itemAtual();
+        excluir.disabled = !itemAtual();
       }
     }
 
