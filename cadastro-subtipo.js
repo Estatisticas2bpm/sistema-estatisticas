@@ -306,6 +306,35 @@
       finally{ salvar.disabled=false;salvar.textContent='Salvar subtipo'; }
     });
 
+    // Mantém seleções abertas no formulário coerentes com correções do catálogo.
+    window.addEventListener('sie:catalogo-ocorrencia-alterado', function(evento) {
+      const d = evento.detail || {};
+      if(d.entidade === 'TIPO') {
+        if(d.acao === 'DESATIVAR') {
+          naturezasSelecionadas = naturezasSelecionadas.filter(n => Number(n.tipo_id) !== Number(d.id));
+        } else {
+          naturezasSelecionadas.forEach(n => {
+            if(Number(n.tipo_id) === Number(d.id)) n.nome = d.nomeAtual;
+          });
+        }
+      } else if(d.entidade === 'SUBTIPO') {
+        naturezasSelecionadas.forEach(n => {
+          if(Number(n.tipo_id) !== Number(d.tipoId)) return;
+          if(d.acao === 'DESATIVAR') {
+            n.subtipos = n.subtipos.filter(s => Number(s.id) !== Number(d.id));
+          } else {
+            n.subtipos.forEach(s => {
+              if(Number(s.id) === Number(d.id)) {
+                s.nome = d.nomeAtual;
+                s.fundamento_legal = d.fundamentoLegal || null;
+              }
+            });
+          }
+        });
+      }
+      renderizar();
+    });
+
     // Antes do código principal salvar, incorpora o que estiver nos campos e
     // mantém os campos legados com a primeira natureza/subtipo para compatibilidade.
     formulario.addEventListener('submit',function(){
