@@ -121,6 +121,7 @@ export function intencaoEstatistica(pergunta) {
     ["produtividade", /\b(PRODUTIVIDADE|UNIDADES?|BATALHOES?|COMANDO|RESULTADOS?|ATUACOES?|PRISOES?|CONDUCOES?|APREEN(S|D)|ARMAS?|VEICULOS?)\b/u],
     ["qualidade_dos_dados", /\b(QUALIDADE|RASCUNHOS?|FINALIZAD|DUPLICAD|INCONSISTEN|INCOMPLET|AUDITORIA|DIVERGEN)\w*/u],
     ["aprofundamento", /\b(INSIGHT|HIPOTESE|APROFUND|INVESTIG|EXPLIC|POR QUE|QUESTOES|PROBLEMAS?)\w*/u],
+    ["narrativas", /\b(RELATOS?|HISTORIC[OA]S?|NARRATIVAS?|DESCRIC(OES|AO)|MODUS OPERANDI|MODO DE AGIR|PADROES DESCRITOS|MENC(OES|AO)|OBSERVAC(OES|AO)|CAMERAS?|MOTOCICLETAS?)\b/u],
     ["transito", /\b(SINISTROS?|TRANSITO|ACIDENTES?)\b/u]
   ];
   const temas = regras.filter(([,regex])=>regex.test(texto)).map(([id])=>id);
