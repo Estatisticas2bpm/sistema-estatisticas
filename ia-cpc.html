@@ -210,7 +210,9 @@
         perguntasAnteriores.push(pergunta);if(perguntasAnteriores.length>3)perguntasAnteriores.shift();
         atualizarOrcamento(data.cota);
         graficoComparacao(data.comparacao_total);
+        const provisoria=data.qualidade?.exclusivamente_preliminar===true;
         status.textContent='Consulta concluída: '+String(data.registros||0)+' registros ativos no período analisado.'+
+          (provisoria?' ATENÇÃO: todos são rascunhos; análise exclusivamente preliminar, sem conclusões definitivas.':'')+
           (data.sem_cobranca?' Nenhuma chamada paga foi necessária.':'');
       }catch(err){
         respostaItem.classList.add('erro');
