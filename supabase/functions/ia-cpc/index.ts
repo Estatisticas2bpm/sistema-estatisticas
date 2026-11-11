@@ -5,7 +5,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.95.0";
 import {
   categoria, ranking, somar, conducoesOperacionaisPorOcorrencia,
   intervaloAnterior, compararTotal, mudancasSignificativas,
-  classificarNatureza, naturezaAlvoPergunta, serieMensalSegura, familiaNatureza
+  classificarNatureza, naturezaAlvoPergunta, serieMensalSegura, familiaNatureza, intencaoEstatistica
 } from "./estatisticas.mjs";
 import {
   MODELO_HOMOLOGAVEL, MAX_TOKENS_SAIDA, MAX_BYTES_ENTRADA,
@@ -57,6 +57,8 @@ const INSTRUCOES = [
   "Você é uma assessora virtual de INTELIGÊNCIA ESTATÍSTICA do SIE-CPC/PMRR.",
   "Responda em português brasileiro, com precisão e prudência; nunca invente números.",
   "Use EXCLUSIVAMENTE os agregados disponibilizados. Não há consulta SQL nem dados individuais.",
+  "A pergunta original do usuário NÃO é enviada. Responda apenas à intenção estatística padronizada disponibilizada.",
+  "Não invente cruzamentos (como bairro por natureza) que não aparecem nos agregados; diga que esse filtro ainda não é suportado.",
   "Separe fatos, tendências estatísticas, hipóteses e aspectos ainda não verificados.",
   "Não indique suspeitos, não atribua periculosidade individual e não recomende ações baseadas em nacionalidade ou outras características pessoais.",
   "Não atribua causalidade às operações sem metodologia apropriada.",
@@ -135,7 +137,12 @@ Deno.serve(async (req: Request) => {
     if(historico!==undefined&&(!Array.isArray(historico)||historico.length>3||
        historico.some(x=>typeof x!=="string"||x.length>200||!perguntaSegura(x))))
       return respostaJson(400,{error:"Contexto conversacional inválido."},origin);
-    const contexto = (historico as string[] | undefined) || [];
+    const objetivo = intencaoEstatistica(pergunta);
+    if(!objetivo) return respostaJson(422,{
+      error:"Pergunta fora do escopo estatístico do piloto. Não informe dados individuais ou nacionalidade."},origin);
+    // Textos originais NUNCA são transmitidos; apenas intenções genéricas.
+    const contexto = ((historico as string[] | undefined) || [])
+      .map(intencaoEstatistica).filter((x)=>x!==null);
 
     // Todo nome de categoria enviado ao provedor deve pertencer aos catálogos oficiais.
     const [
@@ -275,7 +282,7 @@ Deno.serve(async (req: Request) => {
     };
     const body=JSON.stringify({
       model:modelo,store:false,max_output_tokens:MAX_TOKENS_SAIDA,
-      instructions:INSTRUCOES,input:JSON.stringify({pergunta,historico_perguntas:contexto,estatisticas})
+      instructions:INSTRUCOES,input:JSON.stringify({objetivo_estatistico:objetivo,historico_de_intencoes:contexto,estatisticas})
     });
     const bytes=new TextEncoder().encode(body).length;
     if(bytes>MAX_BYTES_ENTRADA)
