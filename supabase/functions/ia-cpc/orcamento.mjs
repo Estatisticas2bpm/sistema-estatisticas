@@ -7,10 +7,12 @@ export const PRECO_USD_SAIDA_1M = 1.20;
 export const MAX_TOKENS_SAIDA = 800;
 export const MAX_BYTES_ENTRADA = 80000;
 
-// Exige câmbio configurado conservadoramente. Não consulta serviços externos de câmbio.
+// Exige câmbio institucional de reserva conservador (mínimo 8 BRL/USD),
+// INDEPENDENTEMENTE da cotação de mercado, com margem financeira adicional 2x.
+// Não consulta serviços externos de câmbio.
 export function cambioReservaValido(valor) {
   const numero = Number(valor);
-  return Number.isFinite(numero) && numero >= 1 && numero <= 30 ? numero : null;
+  return Number.isFinite(numero) && numero >= 8 && numero <= 30 ? numero : null;
 }
 export function calcularReservaCentavos(bytesEntrada, cambioReserva) {
   const cambio = cambioReservaValido(cambioReserva);
