@@ -1,6 +1,7 @@
 // SIE-CPC | Assistente estatístico: acesso restrito e dados agregados.
 // Desativado por padrão. Consulte docs/IA_CPC_PILOTO.md antes de publicar.
 import { createClient } from "npm:@supabase/supabase-js@2.95.0";
+import { categoria, ranking, somar, conducoesOperacionaisPorOcorrencia } from "./estatisticas.mjs";
 
 const MAX_REGISTROS = 10000;
 const TAMANHO_PAGINA = 500;
@@ -26,20 +27,6 @@ function dataValida(v: unknown): v is string {
   if (typeof v !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
   return !Number.isNaN(Date.parse(v + "T00:00:00Z"))
     && new Date(v + "T00:00:00Z").toISOString().slice(0, 10) === v;
-}
-function categoria(v: unknown): string {
-  const texto = String(v ?? "").replace(/\s+/g, " ").trim();
-  if (!texto || texto.length > 65 || !/^[\p{L}\p{N} .,()\-\/]+$/u.test(texto)) return "NÃO CLASSIFICADO";
-  return texto.toUpperCase();
-}
-function ranking(m: Map<string, number>, maximo = 10) {
-  // Suprime células pequenas e limita campos livres para minimizar risco de identificação.
-  return [...m.entries()].filter(([, quantidade]) => quantidade >= 5)
-    .sort((a, b) => b[1] - a[1]).slice(0, maximo)
-    .map(([nome, quantidade]) => ({ nome, quantidade }));
-}
-function somar(m: Map<string, number>, k: string, quantidade = 1) {
-  m.set(k, (m.get(k) || 0) + quantidade);
 }
 
 Deno.serve(async (req: Request) => {
@@ -181,7 +168,7 @@ Deno.serve(async (req: Request) => {
         conduzidos += nConduzidos;
         prisoes += nPrisoes;
         // Mesma regra da RPC pública conducoes_estatisticas(): evita dupla contagem.
-        conducoesOperacionais += Math.max(nConduzidos, nPrisoes);
+        conducoesOperacionais += conducoesOperacionaisPorOcorrencia(nConduzidos, nPrisoes);
         armas += Number(o.quantidade_armas) || 0;
         veiculosRecuperados += Number(o.veiculos_recuperados) || 0;
         somar(porUnidade, nomeUnidade.get(o.unidade_id) || "NÃO CLASSIFICADA");
