@@ -62,6 +62,8 @@ const path = require("node:path");
   assert.equal(familiaNatureza("ROUBO DE ARMA DE FOGO"),"ROUBO");
   assert.equal(familiaNatureza("TENTATIVA DE FURTO"),null);
   assert.equal(familiaNatureza("VEÍCULO RECUPERADO COM RESTRIÇÃO DE ROUBO"),null);
+  assert.equal(classificarNatureza("FURTO E ROUBO",null,catalogo),"NÃO CLASSIFICADO");
+  assert.equal(classificarNatureza("ROUBO OU FURTO",null,catalogo),"NÃO CLASSIFICADO");
   assert.equal(familiaNatureza("FURTO E ROUBO"),null);
   assert.equal(familiaNatureza("ROUBO OU FURTO"),null);
   assert.equal(familiaNatureza("MARIA DA PENHA / VIOLÊNCIA DOMÉSTICA"),"MARIA DA PENHA / VIOLÊNCIA DOMÉSTICA");
