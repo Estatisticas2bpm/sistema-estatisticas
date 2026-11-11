@@ -16,6 +16,7 @@ import {
 } from "./orcamento.mjs";
 
 const MAX_REGISTROS = 10000;
+const MAX_REGISTROS_RELATOS = 2500;
 const TAMANHO_PAGINA = 500;
 const MAX_DIAS = 366;
 
@@ -202,7 +203,8 @@ Deno.serve(async (req: Request) => {
           .range(offset,offset+TAMANHO_PAGINA-1);
         if(error) throw new Error("Falha na leitura dos indicadores");
         const reg=rows||[];
-        if(processados+reg.length>MAX_REGISTROS) throw new RangeError("periodo_maior_limite");
+        if(processados+reg.length>(lerRelatos?MAX_REGISTROS_RELATOS:MAX_REGISTROS))
+          throw new RangeError("periodo_maior_limite");
         for(const o of reg){
           processados++;resultado.total++;
           if(o.status_registro==="rascunho") resultado.rascunhos++;
@@ -232,7 +234,9 @@ Deno.serve(async (req: Request) => {
     let atual:Apuracao,previo:Apuracao;
     try{atual=await apurar(inicio,fim);previo=await apurar(anterior.inicio,anterior.fim);}
     catch(err){
-      if(err instanceof RangeError) return respostaJson(413,{error:"Período amplo demais (máximo 10 mil registros nos dois períodos). Reduza o intervalo."},origin);
+      if(err instanceof RangeError) return respostaJson(413,{error:lerRelatos?
+        "Período amplo demais para leitura segura de relatos (máximo 2.500 registros nos dois períodos). Reduza o intervalo.":
+        "Período amplo demais (máximo 10 mil registros nos dois períodos). Reduza o intervalo."},origin);
       throw err;
     }
     if(atual.total===0&&previo.total===0)
@@ -273,6 +277,8 @@ Deno.serve(async (req: Request) => {
       analise_textual:lerRelatos ? {
         periodo_atual:publicarContadoresRelatos(atual.relatos!),
         periodo_anterior:publicarContadoresRelatos(previo.relatos!),
+        variacoes_mencoes:mudancasSignificativas(
+          atual.relatos!.mencoes,previo.relatos!.mencoes),
         metodologia:"Marcadores por regras locais, não IA semântica; zero relatos ou menções não equivale a ausência do fato. Nunca há trechos, nomes, endereços ou identificadores no envio.",
         cuidados:"Não inferir envolvimento de policial/autoridade em registros passados; classificação policial envolve estatística apenas de novos cadastros. Proibido inferir suspeitos ou periculosidade."
       }:undefined,
