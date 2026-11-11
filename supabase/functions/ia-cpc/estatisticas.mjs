@@ -49,3 +49,29 @@ export function mudancasSignificativas(mapaAtual, mapaAnterior, maximo=10) {
   return saida.sort((a,b)=>Math.abs(b.diferenca)-Math.abs(a.diferenca))
     .slice(0,maximo);
 }
+
+// Usa apenas termos de catálogos; texto livre nunca é exportado.
+// Prioriza a natureza padronizada de "ocorrencia" e só depois "crime".
+// Agrupamento por prefixo seguro exige natureza-mãe cadastrada oficialmente.
+export function classificarNatureza(ocorrencia, crime, catalogo) {
+  const candidato=[ocorrencia,crime].map(categoria);
+  for(const valor of candidato) {
+    if(catalogo.has(valor))return valor;
+  }
+  for(const valor of candidato) {
+    if(/^FURTO [\p{L}\p{N}]/u.test(valor)&&catalogo.has("FURTO"))return "FURTO";
+    if(/^ROUBO [\p{L}\p{N}]/u.test(valor)&&catalogo.has("ROUBO"))return "ROUBO";
+  }
+  return "NÃO CLASSIFICADO";
+}
+export function naturezaAlvoPergunta(pergunta, catalogo) {
+  const texto=String(pergunta||"").toUpperCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  const opcoes=[
+    {expr:/\bFURTOS?\b/,nome:"FURTO"},
+    {expr:/\bROUBOS?\b/,nome:"ROUBO"},
+    {expr:/MARIA DA PENHA|VIOLENCIA DOMESTICA/,nome:"MARIA DA PENHA / VIOLÊNCIA DOMÉSTICA"}
+  ];
+  const candidatas=opcoes.filter(x=>x.expr.test(texto)&&catalogo.has(x.nome));
+  return candidatas.length===1?candidatas[0].nome:null;
+}
