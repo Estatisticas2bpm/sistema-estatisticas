@@ -6,6 +6,7 @@ const path=require("node:path");
  assert.equal(m.MODELO_HOMOLOGAVEL,"gpt-5.6-luna");
  assert.equal(m.cambioReservaValido("8"),8);
  assert.equal(m.cambioReservaValido("0"),null);
+ assert.equal(m.cambioReservaValido("7"),null,"Câmbio inferior ao piso conservador deve bloquear a IA");
  assert.equal(m.cambioReservaValido("100"),null);
  assert.equal(m.calcularReservaCentavos(90000,8),null);
  assert.equal(m.calcularReservaCentavos(1000,""),null);
