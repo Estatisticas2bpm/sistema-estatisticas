@@ -42,16 +42,16 @@ O histórico de conversa é **temporário na página** (perde-se ao recarregar).
 
 ## 2A. Expansão para análise contextual de relatos e observações — proposta NÃO ativada
 
-O banco existente contém os campos \`historico_resumido\`, \`detalhes\`, \`observacao\` e \`observacao_final\`. A verificação estrutural (sem leitura de relatos individuais) encontrou 4.075 dos 5.312 registros ativos com \`historico_resumido\` preenchido. O potencial analítico justifica tratar os relatos como fonte auxiliar, não como fonte automaticamente validada.
+O banco existente contém os campos `historico_resumido`, `detalhes`, `observacao` e `observacao_final`. A verificação estrutural (sem leitura de relatos individuais) encontrou 4.075 dos 5.312 registros ativos com `historico_resumido` preenchido. O potencial analítico justifica tratar os relatos como fonte auxiliar, não como fonte automaticamente validada.
 
 ### Funcionamento da primeira entrega
 
 - A Edge Function pode buscar os campos narrativos somente após autenticação, validação de sessão, lista individual de duas contas e solicitação expressa de análise de relatos.
-- **Barreira adicional:** segredo \`IA_CPC_RELATOS_ENABLED=true\`, ausente por padrão, e \`IA_CPC_ENABLED=true\`. O módulo de relato permanece bloqueado até homologação, mesmo que a IA estatística geral seja liberada.
+- **Barreira adicional:** segredo `IA_CPC_RELATOS_ENABLED=true`, ausente por padrão, e `IA_CPC_ENABLED=true`. O módulo de relato permanece bloqueado até homologação, mesmo que a IA estatística geral seja liberada.
 - A análise é realizada localmente na Edge Function, por dicionário explícito de menções (arma de fogo, arma branca, motocicleta, automóvel, residência, comércio, via pública, câmera, ameaça e danos materiais).
-- O código não produz lista de nomes, trechos, números de BO, locais específicos, endereços, placas, pessoas ou citações do histórico.
+- O código não produz lista de nomes, trechos, números de BO, locais específicos, endereços, placas, pessoas ou citações do histórico. Os resultados são contagens de **menções**, não classificação semântica de atos efetivamente praticados.
 - **Não envia o texto dos relatos ao serviço OpenAI.** Envia somente contagens de marcadores com pelo menos 5 registros, totais de documentos com/sem texto e metodologia/ressalvas.
-- O texto é limitado a 16 mil caracteres por registro para análise local; ocorrências longas são contabilizadas como truncadas.
+- O texto é limitado a 16 mil caracteres por registro para análise local; ocorrências longas são contabilizadas como truncadas. A leitura contextual é limitada a 2.500 registros no total dos dois períodos, para reduzir carga de memória e tempo de execução.
 - Um marcador significa **menção textual**, não fato confirmado, arma utilizada, autoria, causalidade ou modus operandi comprovado. Negativas, citações de terceiros e referências à própria guarnição podem gerar falso positivo.
 - Não inferir envolvimento de policiais ou autoridades no histórico; manter o indicador restrito ao CPC e somente para novos registros, conforme a regra estatística anterior do projeto. Não reclassificar nada automaticamente.
 - Nenhuma classificação retroativa é persistida: os agregados são produzidos sob demanda, em memória, sem modificações no banco.
