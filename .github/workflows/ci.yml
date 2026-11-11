@@ -52,3 +52,62 @@ jobs:
           set -euo pipefail
           mapfile -t paginas < <(find . -maxdepth 1 -type f -name '*.html' -print | sort)
           node tests/check-html-scripts.js "${paginas[@]}"
+
+  validar-sql-ia:
+    name: PostgreSQL isolado — autorização e orçamento da IA
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: sie_cpc_sintetico
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d sie_cpc_sintetico"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: sie_cpc_sintetico
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validar SQL de homologação em dados fictícios
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v psql || (sudo apt-get update -qq && sudo apt-get install -y postgresql-client)
+          psql -v ON_ERROR_STOP=1 -f tests/ia-cpc-db-fixture.sql
+          psql -v ON_ERROR_STOP=1 -f docs/sql/ia_cpc_cota_pendente_aprovacao.sql
+          psql -v ON_ERROR_STOP=1 -f tests/ia-cpc-db.test.sql
+
+      - name: Duas reservas simultâneas não superam R$ 100
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Recria apenas o saldo de um banco de TESTES descartável.
+          psql -v ON_ERROR_STOP=1 -c "TRUNCATE private.ia_cpc_consumo"
+          psql -v ON_ERROR_STOP=1 -c "INSERT INTO private.ia_cpc_consumo (usuario_id,modelo,mes_referencia,reserva_centavos) VALUES ('00000000-0000-4000-8000-000000000001','gpt-5.6-luna',date_trunc('month',now() AT TIME ZONE 'America/Boa_Vista')::date,9975)"
+          SQL_CONCORRENTE="SELECT public.ia_cpc_reservar_orcamento('00000000-0000-4000-8000-000000000001','gpt-5.6-luna',25)->>'permitido'"
+          psql -v ON_ERROR_STOP=1 -Atqc "$SQL_CONCORRENTE" > "$RUNNER_TEMP/ia-cpc-simultanea-1.log" &
+          pid1=$!
+          psql -v ON_ERROR_STOP=1 -Atqc "$SQL_CONCORRENTE" > "$RUNNER_TEMP/ia-cpc-simultanea-2.log" &
+          pid2=$!
+          wait "$pid1"
+          wait "$pid2"
+          cat "$RUNNER_TEMP"/ia-cpc-simultanea-*.log
+          verdadeiros=$(grep -hxc 'true' "$RUNNER_TEMP"/ia-cpc-simultanea-*.log || true)
+          falsos=$(grep -hxc 'false' "$RUNNER_TEMP"/ia-cpc-simultanea-*.log || true)
+          test "$verdadeiros" -eq 1
+          test "$falsos" -eq 1
+          soma=$(psql -Atqc "SELECT sum(coalesce(custo_final_centavos,reserva_centavos)) FROM private.ia_cpc_consumo")
+          test "$soma" -eq 10000
+          echo "OK — sob concorrência, exatamente uma reserva foi aprovada e o teto foi respeitado."
