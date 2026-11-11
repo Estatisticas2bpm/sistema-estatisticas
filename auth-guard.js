@@ -2,6 +2,7 @@
   const cfg=window.SISTEMA_AUTH_CONFIG;
   const pathname=(location.pathname.split('/').pop()||'index.html').toLowerCase();
   let contextoAtual=null;
+  let acessoIaIndividual=false; // negado por padrão até RPC do usuário autorizá-lo
   const permissoesEscritaOperacional=new Set(['cadastro','tco','acoes']);
 
   function esconderAdministracaoDesativada(){
@@ -74,10 +75,9 @@
   function pode(perfil,permissao){
     if(!permissao)return true;
     // Fluxos da Seção está suspenso para todos, inclusive ADMIN.
-    // IA restrita: ADMIN em qualquer unidade; COMANDANTE só no contexto CPC.
-    // A Edge Function repete a autorização consultando a unidade PRINCIPAL no banco.
-    if(permissao==='ia_cpc')return normalizarPerfil(perfil)==='ADMIN'||
-      (normalizarPerfil(perfil)==='COMANDANTE'&&String(contextoAtual?.sigla||'').toUpperCase()==='CPC');
+    // Lista individual (exatamente 1 ADMIN e 1 COMANDANTE CPC) consultada ao banco.
+    // Em erro ou ausência de migração, a interface permanece bloqueada.
+    if(permissao==='ia_cpc')return acessoIaIndividual;
     if(permissao==='fluxos')return false;
     // Modo TV do CPC temporariamente suspenso até todas as unidades terem
     // no mínimo três meses de registros. Bloqueia todos os perfis, inclusive
@@ -400,6 +400,15 @@
       if(await exigirMfaSeNecessario(client))return null;
 
       await carregarContextoUnidade(client,perfil);
+      // Consultar o direito individual apenas nas páginas que contêm acesso à IA.
+      // A verificação no backend é independente e obrigatória.
+      if(['index.html','dashboard-cpc.html','ia-cpc.html'].includes(pathname)&&
+          ['ADMIN','COMANDANTE'].includes(normalizarPerfil(perfil.perfil))){
+        try{
+          const r=await client.rpc('ia_cpc_permitido');
+          acessoIaIndividual=!r.error&&r.data===true;
+        }catch(_){acessoIaIndividual=false;}
+      }
 
       if(!paginaEspecializadaPermitida(perfil)){
         location.replace(cfg.homePage+'?erro=unidade-nao-autorizada');
