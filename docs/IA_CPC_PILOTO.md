@@ -22,18 +22,23 @@ O piloto cobre períodos de até 366 dias, no máximo 10 mil registros por solic
 
 1. Criar projeto de API institucional com faturamento e orçamento após autorização para processamento externo de dados.
 2. Implantar a Edge Function **supabase/functions/ia-cpc/index.ts** no mesmo Supabase com JWT obrigatório (verify_jwt = true). Conferir CLI e documentação atual.
-3. Configurar os segredos Supabase, sem valores no repositório:
+3. Antes de ativar, aplicar o controle de cota revisado, verificar a revogação de EXECUTE para anon e authenticated e testar bloqueio de concorrência e de usuários sem permissão.
+4. Configurar os segredos Supabase, sem valores no repositório:
    - **OPENAI_API_KEY**: chave secreta do projeto aprovado.
    - **OPENAI_MODEL**: opcional, padrão gpt-6-luna, ou outro modelo homologado.
    - **IA_CPC_ALLOWED_ORIGINS**: origens exatas HTTPS do site, separadas por vírgula, sem barra final; sem ela todas as chamadas são negadas.
    - **IA_CPC_ENABLED**: ausente ou false até o aceite; true somente após homologação.
    - **SUPABASE_URL** e **SUPABASE_SERVICE_ROLE_KEY**: segredos do projeto no ambiente de execução; nunca no frontend.
-4. Confirmar que nenhuma chave secreta foi enviada ao GitHub, que a função exige autenticação e que há autorização institucional para tráfego externo.
-5. Ativar apenas após testes com dados sintéticos e aprovação de segurança e da área responsável pelos dados.
+5. Confirmar que nenhuma chave secreta foi enviada ao GitHub, que a função exige autenticação e que há autorização institucional para tráfego externo.
+6. Ativar apenas após testes com dados sintéticos e aprovação de segurança e da área responsável pelos dados.
 
 ## Controle de custos
 
-O piloto é desativado até IA_CPC_ENABLED=true. Cada pergunta gera uma chamada paga quando habilitado. A agregação local reduz o consumo, mas **esta primeira versão ainda não possui teto financeiro rígido**. Antes da liberação, configurar alertas e orçamento no provedor e implementar cota persistente no backend, se o comando exigir bloqueio automático. Alertas de faturamento, por si sós, não impedem extrapolação.
+O piloto é desativado até IA_CPC_ENABLED=true. Cada pergunta gera uma chamada paga quando habilitado. Antes de habilitar, o DBA deverá revisar e aplicar o script **docs/sql/ia_cpc_cota_pendente_aprovacao.sql** em ambiente autorizado, depois homologar a RPC pública **ia_cpc_reservar_cota(uuid)** com EXECUTE exclusivo do papel service_role.
+
+A reserva de chamada é atômica usando lock transacional e a tabela existente logs_sistema. São permitidas **3 reservas por minuto por usuário, 20 por dia por usuário e 300 por mês globalmente**, por intervalos UTC. A cota é reservada antes de consultar o banco e chamar o provedor; mesmo chamadas fracassadas consomem uma reserva. Quando a função não existe, falha ou bloqueia, **nenhuma chamada é enviada à OpenAI**.
+
+Isso é um limite rigoroso de quantidade de chamadas, **não um teto financeiro em reais**: custos por token, impostos e câmbio variam. Configurar também orçamento/alertas da API, sem considerar alertas um bloqueio definitivo. O modelo padrão gpt-6-luna deve ser revisado na implantação, assim como o número máximo de tokens de saída (800).
 
 ## Homologação obrigatória
 
@@ -45,7 +50,9 @@ O piloto é desativado até IA_CPC_ENABLED=true. Cada pergunta gera uma chamada 
 - [ ] Período invertido, data futura, mais de 366 dias e limite de registros.
 - [ ] Conferir totais com os dashboards, documentando rascunhos e finalizados.
 - [ ] Conferir que nenhum dado nominal, relato ou BO completo é enviado à API.
-- [ ] Revisar custo real, cotas e auditoria antes do uso regular.
+- [ ] Aplicar e validar o controle atômico de cotas com conta de teste, sem ativar o provedor.
+- [ ] Verificar auditoria sem registrar perguntas ou dados pessoais.
+- [ ] Revisar custos reais e alertas da API antes do uso regular.
 - [ ] Registrar a autorização institucional de segurança e publicação.
 
-**Arquivos:** auth-config.js, auth-guard.js, index.html, dashboard-cpc.html, ia-cpc.html, supabase/functions/ia-cpc/index.ts, testes e este documento. Sem migrações ou alterações no banco de dados de produção.
+**Arquivos:** auth-config.js, auth-guard.js, index.html, dashboard-cpc.html, ia-cpc.html, supabase/functions/ia-cpc/index.ts, supabase/functions/ia-cpc/estatisticas.mjs, testes e este documento. Script SQL de cota ainda **não aplicado**. Nenhuma alteração realizada no banco de dados de produção.
