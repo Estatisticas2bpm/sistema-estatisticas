@@ -53,7 +53,19 @@ assert.match(fn,/serieMensalSegura/);
 assert.match(fn,/Conduções|conducoesOperacionaisPorOcorrencia/);
 assert.match(estatistica,/quantidade >= 5/);
 assert.match(financeiro,/MODELO_HOMOLOGAVEL = "gpt-5.6-luna"/);
-assert.doesNotMatch(fn,/historico_resumido|numero_bo|endereco_formatado|vitima_nome|infrator_nome/);
+// A Edge Function lê "historico_resumido" localmente, mas NÃO transmite
+// essa informação, nem os demais campos sensíveis, à API externa.
+assert.match(fn,/IA_CPC_RELATOS_ENABLED/);
+assert.match(fn,/registrarContadoresRelatos/);
+assert.match(fn,/publicarContadoresRelatos/);
+assert.match(fn,/analise_textual/);
+const inicioPayload=fn.indexOf('const body=JSON.stringify(');
+const fimPayload=fn.indexOf('const bytes=',inicioPayload);
+assert(inicioPayload>=0&&fimPayload>inicioPayload,'Payload externo deve ser localizável');
+const payload=fn.slice(inicioPayload,fimPayload);
+assert.doesNotMatch(payload,/historico_resumido|observacao_final|numero_bo|endereco_formatado|vitima_nome|infrator_nome/);
+assert.match(payload,/objetivo_estatistico:objetivo/);
+assert.doesNotMatch(payload,/pergunta\s*[,}]/);
 
 assert.match(sql,/CREATE TABLE IF NOT EXISTS private\.ia_cpc_usuarios/);
 assert.match(sql,/CREATE UNIQUE INDEX IF NOT EXISTS ia_cpc_um_ativo_por_categoria/);
