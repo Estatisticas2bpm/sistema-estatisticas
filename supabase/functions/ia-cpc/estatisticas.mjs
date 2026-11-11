@@ -96,3 +96,35 @@ export function familiaNatureza(categoriaOficial) {
     return "MARIA DA PENHA / VIOLÊNCIA DOMÉSTICA";
   return null;
 }
+
+// Converte perguntas livres em intenção estatística LIMITADA. Não encaminhar
+// o texto do usuário nem o histórico literal à API externa.
+export function intencaoEstatistica(pergunta) {
+  if (typeof pergunta !== "string" || !pergunta.trim() || pergunta.length > 500)
+    return null;
+  const texto = pergunta.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase().replace(/\s+/g, " ").trim();
+
+  // Consultas individuais e recortes por nacionalidade não são recursos do piloto.
+  // O bloqueio é semântico de propósito, sem envio do conteúdo a terceiros.
+  if (/\b(CPF|RG|MATRICULA|EMAIL|TELEFONE|ENDERECO|PLACA|DOCUMENTO|NOME|IDENTIDADE|IDENTIFICAR|SUSPEITO|INFRATOR|VITIMA|POLICIAL|POLICIAIS|NACIONALIDADE|VENEZUELAN|ESTRANGEIR|ETNIA|RACA|COR DA PELE)\w*/u.test(texto))
+    return null;
+
+  const regras = [
+    ["resumo", /\b(RESUMO|BRIEFING|PANORAMA|CENARIO|SITUACAO|DIAGNOSTICO)\b/u],
+    ["ocorrencias", /\b(OCORRENCIAS?|CRIMES?|CRIMINAL|FURTOS?|ROUBOS?|VIOLENCIA|MARIA DA PENHA)\b/u],
+    ["comparacao_temporal", /\b(COMPARA|COMPARATIV|EVOLU|CRESC|AUMENT|DIMINUI|REDUZ|VARIAC|TENDENC|MUDANC|ANTES|DEPOIS|PERIODO)\w*/u],
+    ["distribuicao_territorial", /\b(BAIRROS?|REGIOES?|TERRITORIO|TERRITORIAL|AREA|LOCALIZACAO|CONCENTRACAO|ONDE)\b/u],
+    ["horarios", /\b(HORARIOS?|HORAS?|TURNO|DIA DA SEMANA|NOITE|MADRUGADA|TARDE|MANHA)\b/u],
+    ["produtividade", /\b(PRODUTIVIDADE|UNIDADES?|BATALHOES?|COMANDO|RESULTADOS?|ATUACOES?|PRISOES?|CONDUCOES?|APREEN(S|D)|ARMAS?|VEICULOS?)\b/u],
+    ["qualidade_dos_dados", /\b(QUALIDADE|RASCUNHOS?|FINALIZAD|DUPLICAD|INCONSISTEN|INCOMPLET|AUDITORIA|DIVERGEN)\w*/u],
+    ["aprofundamento", /\b(INSIGHT|HIPOTESE|APROFUND|INVESTIG|EXPLIC|POR QUE|QUESTOES|PROBLEMAS?)\w*/u],
+    ["transito", /\b(SINISTROS?|TRANSITO|ACIDENTES?)\b/u]
+  ];
+  const temas = regras.filter(([,regex])=>regex.test(texto)).map(([id])=>id);
+  if (!temas.length) return null;
+  return {
+    temas,
+    enquadramento: "Somente estatísticas agregadas já disponíveis; explicar limites de filtros e cruzamentos. Não inferir individualmente.",
+  };
+}
