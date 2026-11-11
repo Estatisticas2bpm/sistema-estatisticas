@@ -89,7 +89,17 @@ https://developers.openai.com/api/docs/models/gpt-5.6-luna
 - tests/ia-cpc-orcamento.test.cjs
 - CI GitHub Actions valida HTML/JS do repositório.
 
-As validações são testes de contrato e unitários com exemplos sintéticos. **Não constituem teste de integração com contas reais, com a API paga ou da migração SQL aplicada.**
+Além dos testes de contrato e das regras estatísticas, o CI executa a proposta de SQL em um serviço **PostgreSQL 17 descartável**, alimentado exclusivamente por identidades e registros sintéticos. São validados:
+- PRÉ-ATIVAÇÃO: acesso negado sem cadastramento individual;
+- exclusividade de um ADMIN e um COMANDANTE do CPC, inclusive bloqueio de outros usuários com o mesmo perfil;
+- RLS e impossibilidade de usuário comum executar RPCs financeiras;
+- desativação de usuário e troca de unidade principal;
+- bloqueio de modelo não homologado;
+- teto mensal estimado de R$ 100, alerta de R$ 80, reconciliação e rejeição de dupla finalização;
+- limites de 3 reservas/minuto, 20/dia e 300/mês;
+- duas reservas concorrentes, comprovando que somente uma consome o último saldo disponível.
+
+**Isto é homologação da migração em PostgreSQL isolado**, não implantação da migração no Supabase real. Ainda faltam teste de infraestrutura Supabase/Auth/PostgREST, contas reais, revisão jurídica, autorização institucional, qualidade estatística e teste da API paga, nessa ordem.
 
 ## 7. Próximas fases
 
