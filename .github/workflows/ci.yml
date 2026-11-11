@@ -104,8 +104,8 @@ jobs:
           wait "$pid1"
           wait "$pid2"
           cat "$RUNNER_TEMP"/ia-cpc-simultanea-*.log
-          verdadeiros=$(grep -hxc 'true' "$RUNNER_TEMP"/ia-cpc-simultanea-*.log || true)
-          falsos=$(grep -hxc 'false' "$RUNNER_TEMP"/ia-cpc-simultanea-*.log || true)
+          verdadeiros=$(awk '$0=="true"{n++} END{print n+0}' "$RUNNER_TEMP"/ia-cpc-simultanea-*.log)
+          falsos=$(awk '$0=="false"{n++} END{print n+0}' "$RUNNER_TEMP"/ia-cpc-simultanea-*.log)
           test "$verdadeiros" -eq 1
           test "$falsos" -eq 1
           soma=$(psql -Atqc "SELECT sum(coalesce(custo_final_centavos,reserva_centavos)) FROM private.ia_cpc_consumo")
