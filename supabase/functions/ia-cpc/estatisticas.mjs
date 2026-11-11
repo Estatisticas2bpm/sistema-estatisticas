@@ -58,6 +58,8 @@ export function classificarNatureza(ocorrencia, crime, catalogo) {
   // exato para sobrescrever a natureza primária que só exige agrupamento.
   for (const valor of [ocorrencia, crime].map(categoria)) {
     if (catalogo.has(valor)) return valor;
+    // Registro misto não pode virar automaticamente furto ou roubo consumado.
+    if (/^(?:FURTO\s+(?:E|OU|\/)\s+ROUBO|ROUBO\s+(?:E|OU|\/)\s+FURTO)\b/u.test(valor)) continue;
     if (/^FURTO [\p{L}\p{N}]/u.test(valor) && catalogo.has("FURTO")) return "FURTO";
     if (/^ROUBO [\p{L}\p{N}]/u.test(valor) && catalogo.has("ROUBO")) return "ROUBO";
   }
