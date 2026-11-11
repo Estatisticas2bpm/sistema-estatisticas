@@ -83,3 +83,16 @@ export function serieMensalSegura(porMes) {
   return meses.sort((a,b)=>a[0].localeCompare(b[0]))
     .map(([mes,quantidade])=>({mes,quantidade}));
 }
+
+// Família estatística: naturezas principais + subtipos comprovadamente ligados.
+// Tentativas e registros de localização/recuperação NÃO contam como consumação.
+export function familiaNatureza(categoriaOficial) {
+  const valor=categoria(categoriaOficial);
+  if (/^FURTO(?:$|\s)/u.test(valor) &&
+      !/^FURTO\s+(?:E|OU|\/)\s+ROUBO\b/u.test(valor)) return "FURTO";
+  if (/^ROUBO(?:$|\s)/u.test(valor) &&
+      !/^ROUBO\s+(?:E|OU|\/)\s+FURTO\b/u.test(valor)) return "ROUBO";
+  if (valor === "MARIA DA PENHA / VIOLÊNCIA DOMÉSTICA")
+    return "MARIA DA PENHA / VIOLÊNCIA DOMÉSTICA";
+  return null;
+}
