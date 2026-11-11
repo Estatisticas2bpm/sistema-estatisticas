@@ -48,6 +48,7 @@
       <h2>Consulta institucional</h2>
       <p class="aviso">Utilize somente perguntas sobre indicadores agregados. Não informe nomes de vítimas, infratores, policiais, CPF, endereços, números de BO ou outros dados pessoais. A IA não altera o banco nem consulta relatos individuais.</p>
       <p class="nota">Os dados são contabilizados a partir dos registros ativos do SIE-CPC. Rascunhos e registros finalizados serão diferenciados; os resultados devem ser conferidos com os painéis oficiais.</p>
+      <p class="nota"><strong>Uso controlado:</strong> no máximo 3 consultas por minuto, 20 por usuário ao dia e 300 consultas mensais em todo o CPC. A cota só é aplicada depois da homologação.</p>
     </section>
     <section class="card">
       <h2>Faça uma pergunta estatística</h2>
@@ -115,7 +116,7 @@
         }
         if(!data?.resposta)throw new Error(data?.error||'Resposta não disponível.');
         resultado.textContent=data.resposta;
-        status.textContent='Consulta concluída: '+String(data.registros||0)+' registros ativos no recorte informado.';
+        status.textContent='Consulta concluída: '+String(data.registros||0)+' registros ativos no período.' + (data.cota ? ' Restam '+data.cota.restante_dia+' consultas hoje para este usuário.' : '');
       } catch(e) {
         resultado.classList.add('erro');
         resultado.textContent=e.message||'Erro ao consultar assistente.';
