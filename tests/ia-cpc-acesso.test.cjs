@@ -41,6 +41,15 @@ assert.match(fn,/compararTotal/);
 assert.match(fn,/mudancasSignificativas/);
 assert.match(fn,/tipos_ocorrencia/);
 assert.match(fn,/perguntaSegura/);
+assert.match(fn,/intencaoEstatistica\(pergunta\)/);
+assert.match(fn,/objetivo_estatistico:objetivo/);
+assert.match(fn,/historico_de_intencoes:contexto/);
+assert.doesNotMatch(fn,/input:JSON\.stringify\(\{pergunta[,}]/,
+  "Pergunta literal não pode ser transmitida à OpenAI");
+assert.match(fn,/qualidade\.atual\.exclusivamente_preliminar/);
+assert.match(fn,/familias_natureza/);
+assert.match(fn,/serieMensalSegura/);
+
 assert.match(fn,/Conduções|conducoesOperacionaisPorOcorrencia/);
 assert.match(estatistica,/quantidade >= 5/);
 assert.match(financeiro,/MODELO_HOMOLOGAVEL = "gpt-5.6-luna"/);
