@@ -1,0 +1,20 @@
+const assert=require("node:assert/strict");
+const {pathToFileURL}=require("node:url");
+const path=require("node:path");
+(async()=>{
+ const m=await import(pathToFileURL(path.join(__dirname,"..","supabase","functions","ia-cpc","orcamento.mjs")));
+ assert.equal(m.MODELO_HOMOLOGAVEL,"gpt-5.6-luna");
+ assert.equal(m.cambioReservaValido("8"),8);
+ assert.equal(m.cambioReservaValido("0"),null);
+ assert.equal(m.cambioReservaValido("100"),null);
+ assert.equal(m.calcularReservaCentavos(90000,8),null);
+ assert.equal(m.calcularReservaCentavos(1000,""),null);
+ const reserva=m.calcularReservaCentavos(10000,8);
+ const custo=m.calcularCustoCentavos(10000,800,8);
+ assert(Number.isInteger(reserva)&&reserva>0);
+ assert(custo<=reserva,"A reserva deve cobrir o uso máximo previsto no modelo");
+ assert.equal(m.calcularCustoCentavos(-1,20,8),null);
+ assert.equal(m.calcularCustoCentavos(100,801,8)>0,true);
+ assert(m.calcularReservaCentavos(60000,12)>m.calcularReservaCentavos(1000,12));
+ console.log("OK — reserva por tokens/câmbio e limites conservadores de custo.");
+})().catch(e=>{console.error(e);process.exitCode=1;});
