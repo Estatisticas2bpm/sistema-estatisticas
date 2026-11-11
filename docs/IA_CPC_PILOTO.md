@@ -26,7 +26,7 @@ Fase 1 implementada em código: totais de ocorrências, rascunhos/finalizados, u
 
 Fases 2 e parte da 3 implementadas em código: comparação de dois períodos consecutivos de mesma duração, variação absoluta/percentual, rankings e mudanças relevantes por unidade, natureza e bairro. Questões com menos de cinco casos em qualquer um dos períodos não são apresentadas nas comparações; alertas de categorias requerem também variação relativa de 25% e absoluta de cinco casos. O front oferece resumos de 7, 15 e 30 dias, gráfico simples comparativo e perguntas sugeridas.
 
-**Limitações importantes:** resultados que estão em rascunho podem distorcer tendências; a cobertura histórica dos campos não é uniforme. A natureza é consolidada primeiro pelo campo padronizado `ocorrencia` e, na falta de correspondência, pelo campo `crime`: o valor enviado tem de constar do catálogo oficial, ou ser agrupado de forma conservadora em FURTO/ROUBO por prefixo. Tentativas permanecem classificadas separadamente. Naturezas e bairros fora do catálogo são classificados como "NÃO CLASSIFICADO", para evitar enviar textos livres ou identificadores ao provedor. Contagens de campos incompletos não podem ser apresentadas como total criminal definitivo. É necessário auditar a cobertura real antes de confiar nos rankings. O piloto interpreta perguntas sobre "últimos N dias" pelo formulário (limite 366 dias), identifica perguntas focalizadas em FURTO/ROUBO/MARIA DA PENHA e somente divulga contagens dessas naturezas com pelo menos 5 registros. O piloto não faz comparações por nacionalidade, subtipo, análise causal, avaliação especializada de operações, CIPA/CIPTUR/BOPE, ou consulta ao relato integral. Não pressupor dados que não existam.
+**Limitações importantes:** resultados que estão em rascunho podem distorcer tendências; a cobertura histórica dos campos não é uniforme. A natureza é consolidada primeiro pelo campo padronizado `ocorrencia` e, na falta de correspondência, pelo campo `crime`: o valor enviado tem de constar do catálogo oficial, ou ser agrupado de forma conservadora em FURTO/ROUBO por prefixo. Tentativas permanecem classificadas separadamente. Naturezas e bairros fora do catálogo são classificados como "NÃO CLASSIFICADO", para evitar enviar textos livres ou identificadores ao provedor. Contagens de campos incompletos não podem ser apresentadas como total criminal definitivo. É necessário auditar a cobertura real antes de confiar nos rankings. O piloto interpreta perguntas sobre "últimos N dias" pelo formulário (limite 366 dias), identifica perguntas focalizadas em FURTO/ROUBO/MARIA DA PENHA e somente divulga contagens dessas naturezas com pelo menos 5 registros. O piloto não faz comparações por nacionalidade, subtipo, análise causal ou avaliação especializada de operações CIPA/CIPTUR/BOPE. Foi adicionada análise LOCAL limitada de menções em relatos, bloqueada por padrão, sem compartilhamento de textos integrais. Não pressupor dados que não existam.
 
 ### Proteção adicional dos dados no piloto
 
@@ -39,6 +39,34 @@ Fases 2 e parte da 3 implementadas em código: comparação de dois períodos co
 - Tais barreiras reduzem, mas não eliminam, riscos de privacidade. Revisão de segurança e autorização institucional continuam obrigatórias.
 
 O histórico de conversa é **temporário na página** (perde-se ao recarregar). O backend não armazena perguntas/respostas. Persistência protegida e relatórios PDF institucionais são etapas futuras, não implementadas.
+
+## 2A. Expansão para análise contextual de relatos e observações — proposta NÃO ativada
+
+O banco existente contém os campos \`historico_resumido\`, \`detalhes\`, \`observacao\` e \`observacao_final\`. A verificação estrutural (sem leitura de relatos individuais) encontrou 4.075 dos 5.312 registros ativos com \`historico_resumido\` preenchido. O potencial analítico justifica tratar os relatos como fonte auxiliar, não como fonte automaticamente validada.
+
+### Funcionamento da primeira entrega
+
+- A Edge Function pode buscar os campos narrativos somente após autenticação, validação de sessão, lista individual de duas contas e solicitação expressa de análise de relatos.
+- **Barreira adicional:** segredo \`IA_CPC_RELATOS_ENABLED=true\`, ausente por padrão, e \`IA_CPC_ENABLED=true\`. O módulo de relato permanece bloqueado até homologação, mesmo que a IA estatística geral seja liberada.
+- A análise é realizada localmente na Edge Function, por dicionário explícito de menções (arma de fogo, arma branca, motocicleta, automóvel, residência, comércio, via pública, câmera, ameaça e danos materiais).
+- O código não produz lista de nomes, trechos, números de BO, locais específicos, endereços, placas, pessoas ou citações do histórico.
+- **Não envia o texto dos relatos ao serviço OpenAI.** Envia somente contagens de marcadores com pelo menos 5 registros, totais de documentos com/sem texto e metodologia/ressalvas.
+- O texto é limitado a 16 mil caracteres por registro para análise local; ocorrências longas são contabilizadas como truncadas.
+- Um marcador significa **menção textual**, não fato confirmado, arma utilizada, autoria, causalidade ou modus operandi comprovado. Negativas, citações de terceiros e referências à própria guarnição podem gerar falso positivo.
+- Não inferir envolvimento de policiais ou autoridades no histórico; manter o indicador restrito ao CPC e somente para novos registros, conforme a regra estatística anterior do projeto. Não reclassificar nada automaticamente.
+- Nenhuma classificação retroativa é persistida: os agregados são produzidos sob demanda, em memória, sem modificações no banco.
+- Não usar os marcadores para atribuir periculosidade a pessoas, discriminar grupos ou direcionar ações individuais.
+
+**Limitação técnica:** esta primeira implementação reconhece sinais textuais por regras fixas, não compreende semanticamente o relato inteiro. Para perguntas investigativas mais complexas ou sínteses narrativas profundas seria necessário um processamento semântico protegido, com avaliação de segurança e base válida para o tratamento dos dados, de preferência dentro do ambiente controlado. O fato de a aplicação ser privada ou acessada somente por profissionais da segurança pública não elimina a necessidade de proteger dados pessoais e informações restritas.
+
+### Homologação específica ainda necessária
+
+- [ ] Testes sintéticos de falsos positivos e negativos com relatos criados para teste, incluindo negações e cenários de trânsito, ambiental, patrulhamento e policial.
+- [ ] Verificar performance e timeout com muitos relatos sem transportar texto ao provedor.
+- [ ] Validar controles de acesso, logs, isolamento de unidades e orçamento.
+- [ ] Aprovar expressamente a ampliação de escopo técnico e ativar a flag apenas após validação; nenhum dado real é enviado à OpenAI durante essa etapa.
+- [ ] Rever as categorias de marcadores com a equipe responsável pela estatística; nenhum resultado individualizado deve ser usado como prova.
+
 
 ## 3. Orçamento financeiro: R$ 100,00 / mês
 
@@ -63,9 +91,9 @@ https://developers.openai.com/api/docs/models/gpt-5.6-luna
 - OPENAI_MODEL: deve ser exatamente gpt-5.6-luna na versão piloto; sem fallback inválido.
 - IA_CPC_BRL_USD_RESERVA: câmbio conservador documentado, entre 8 e 30 BRL/USD, aprovado internamente.
 - store:false na API Responses; isso não dispensa avaliação jurídica/institucional sobre os dados trafegados.
-- Nenhum SQL arbitrário gerado pelo modelo; nenhum documento BO ou relato é enviado; campos categóricos precisam constar de catálogos.
+- Nenhum SQL arbitrário gerado pelo modelo; nenhum BO, trecho de relato ou texto de observação é enviado ao provedor externo. Textos narrativos só são processados localmente em contagens agregadas quando a funcionalidade for homologada; campos categóricos precisam constar de catálogos.
 - O controle de acesso **não depende de CORS**; ele exige token, sessão e lista individual.
-- Até homologação, não enviar dados policiais reais ou informações pessoais/sigilosas ao fornecedor.
+- Até homologação, não enviar dados policiais reais ou informações pessoais/sigilosas ao fornecedor. A chave IA_CPC_RELATOS_ENABLED fica ausente/false por padrão.
 
 ## 5. Etapas de implantação/aceite, ainda PENDENTES
 
