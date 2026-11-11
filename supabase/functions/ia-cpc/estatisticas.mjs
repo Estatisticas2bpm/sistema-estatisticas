@@ -19,3 +19,33 @@ export function conducoesOperacionaisPorOcorrencia(conduzidos, prisoes) {
   const nPrisoes = Number(prisoes) || 0;
   return Math.max(0, nConduzidos, nPrisoes);
 }
+
+export function intervaloAnterior(inicio, fim) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(inicio) ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(fim)) return null;
+  const t1=Date.parse(inicio+"T00:00:00Z"), t2=Date.parse(fim+"T00:00:00Z");
+  if (!Number.isFinite(t1)||!Number.isFinite(t2)||t2<t1)return null;
+  const duracao=t2-t1+86400000;
+  const iso=t=>new Date(t).toISOString().slice(0,10);
+  return {inicio:iso(t1-duracao), fim:iso(t1-86400000)};
+}
+export function compararTotal(atual, anterior) {
+  const a=Number(atual)||0,b=Number(anterior)||0;
+  const diferenca=a-b;
+  return {atual:a,anterior:b,diferenca,
+    variacao_percentual:b>0?Math.round((diferenca/b)*10000)/100:null,
+    base_comparavel:b>=5&&a>=5};
+}
+export function mudancasSignificativas(mapaAtual, mapaAnterior, maximo=10) {
+  const saida=[];
+  for(const [nome,atual] of mapaAtual.entries()) {
+    const anterior=mapaAnterior.get(nome)||0;
+    // Nenhuma célula pequena (inclusive na comparação) sai para o provedor.
+    if(atual<5||anterior<5)continue;
+    const m=compararTotal(atual,anterior);
+    if(Math.abs(m.diferenca)<5||Math.abs(m.variacao_percentual)<25)continue;
+    saida.push({nome,...m});
+  }
+  return saida.sort((a,b)=>Math.abs(b.diferenca)-Math.abs(a.diferenca))
+    .slice(0,maximo);
+}
