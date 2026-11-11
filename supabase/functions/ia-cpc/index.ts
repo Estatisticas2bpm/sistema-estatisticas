@@ -4,7 +4,8 @@
 import { createClient } from "npm:@supabase/supabase-js@2.95.0";
 import {
   categoria, ranking, somar, conducoesOperacionaisPorOcorrencia,
-  intervaloAnterior, compararTotal, mudancasSignificativas
+  intervaloAnterior, compararTotal, mudancasSignificativas,
+  classificarNatureza, naturezaAlvoPergunta
 } from "./estatisticas.mjs";
 import {
   MODELO_HOMOLOGAVEL, MAX_TOKENS_SAIDA, MAX_BYTES_ENTRADA,
@@ -149,9 +150,8 @@ Deno.serve(async (req: Request) => {
     const nomesUnidade = new Map((unidades||[]).map(u=>[u.id,categoria(u.sigla)]));
     const nomesBairro = new Set((bairros||[]).map(b=>categoria(b.nome)));
     const nomesTipo = new Set((tipos||[]).map(t=>categoria(t.nome)));
-    const classificarTipo=(crime:unknown) => {
-      const c=categoria(crime);return nomesTipo.has(c)?c:"NÃO CLASSIFICADO";
-    };
+    const classificarTipo=(ocorrencia:unknown,crime:unknown) =>
+      classificarNatureza(ocorrencia,crime,nomesTipo);
     const classificarBairro=(bairro:unknown) => {
       const c=categoria(bairro);return nomesBairro.has(c)?c:"NÃO CLASSIFICADO";
     };
@@ -171,7 +171,7 @@ Deno.serve(async (req: Request) => {
       const resultado=vazio();
       for(let offset=0;offset<=MAX_REGISTROS;offset+=TAMANHO_PAGINA){
         const {data:rows,error}=await admin.from("ocorrencias")
-          .select("id,data_ocorrencia,hora_inicial,unidade_id,crime,bairro,status_registro,numero_conduzidos,numero_prisoes,quantidade_armas,veiculos_recuperados")
+          .select("id,data_ocorrencia,hora_inicial,unidade_id,ocorrencia,crime,bairro,status_registro,numero_conduzidos,numero_prisoes,quantidade_armas,veiculos_recuperados")
           .eq("ativo",true).gte("data_ocorrencia",de).lte("data_ocorrencia",ate)
           .order("data_ocorrencia",{ascending:true}).order("id",{ascending:true})
           .range(offset,offset+TAMANHO_PAGINA-1);
@@ -188,7 +188,7 @@ Deno.serve(async (req: Request) => {
           resultado.armas+=Number(o.quantidade_armas)||0;
           resultado.veiculos+=Number(o.veiculos_recuperados)||0;
           somar(resultado.porUnidade,nomesUnidade.get(o.unidade_id)||"NÃO CLASSIFICADA");
-          somar(resultado.porNatureza,classificarTipo(o.crime));
+          somar(resultado.porNatureza,classificarTipo(o.ocorrencia,o.crime));
           somar(resultado.porBairro,classificarBairro(o.bairro));
           somar(resultado.porMes,String(o.data_ocorrencia).slice(0,7));
           if(o.hora_inicial && /^\d\d:/.test(o.hora_inicial))
@@ -218,7 +218,17 @@ Deno.serve(async (req: Request) => {
       evolucao_mensal:[...a.porMes.entries()].sort((a,b)=>a[0].localeCompare(b[0]))
         .map(([mes,quantidade])=>({mes,quantidade}))
     });
+    const naturezaAlvo=naturezaAlvoPergunta(pergunta,nomesTipo);
+    const contagemFoco=(m:Map<string,number>)=>{
+      const quantidade=naturezaAlvo?(m.get(naturezaAlvo)||0):null;
+      return quantidade===null?null:quantidade>=5?quantidade:"menos_de_5";
+    };
     const estatisticas={
+      foco_da_pergunta:naturezaAlvo?{
+        natureza:naturezaAlvo,ocorrencias_periodo_atual:contagemFoco(atual.porNatureza),
+        ocorrencias_periodo_anterior:contagemFoco(previo.porNatureza),
+        cuidado:"Contagens inferiores a 5 não são divulgadas. Filtro por subtipo exige módulo específico."
+      }:null,
       fonte:"public.ocorrencias: registros ativos; sem BO individual, sem histórico integral",
       periodo:{inicio,fim},periodo_anterior:anterior,
       atual:sumarizar(atual),anterior:sumarizar(previo),
