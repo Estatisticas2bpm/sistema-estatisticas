@@ -33,6 +33,19 @@
     .saida { border:1px solid var(--borda); border-radius:9px; padding:16px; background:#f8fbfe; min-height:70px; white-space:pre-wrap; overflow-wrap:anywhere; }
     .erro { color:#972c33; background:#fff1f2; border-color:#ebbdc1; }
     #situacao { margin:12px 0; font-size:13px; font-weight:700; }
+    .chat { display:grid; gap:14px; max-height:550px; overflow-y:auto; padding:6px 2px; }
+    .mensagem { border:1px solid var(--borda); padding:15px; border-radius:12px; max-width:95%; white-space:pre-wrap; overflow-wrap:anywhere; }
+    .mensagem.usuario { margin-left:auto; background:#eaf3f9; border-color:#c4daea; }
+    .mensagem.assistente { background:#f8fbfe; }
+    .mensagem .autor { display:block; font-size:11px; font-weight:900; color:#44647d; margin-bottom:6px; text-transform:uppercase; letter-spacing:.5px; }
+    .barra-bg { height:10px; border-radius:20px; overflow:hidden; background:#dfebf4; margin:10px 0 4px; }
+    .barra { height:100%; background:#0d4c7a; width:0; transition:width .2s; }
+    .comparacao { margin:13px 0; display:grid; gap:8px; }
+    .comparacao .faixa { display:grid; grid-template-columns:120px minmax(40px,1fr) 65px; gap:9px; align-items:center; font-size:12px; }
+    .comparacao .trilho { height:12px; background:#e9eff6; border-radius:8px; overflow:hidden; }
+    .comparacao .trilho span { display:block; background:#165884; height:100%; border-radius:8px; }
+    .resumo button { background:#eaf3f9; color:#174c71; border:1px solid #bdd3e3; }
+    .info-limite { font-size:12px; color:#566f83; margin-top:8px; }
     [hidden] { display:none!important; }
     @media (max-width:620px) { .filtros>label { width:100%; } header { padding:24px 18px; } }
   </style>
@@ -40,18 +53,32 @@
 <body>
   <header>
     <a class="retorno" href="dashboard-cpc.html">← Voltar ao Painel CPC</a>
-    <h1>Inteligência Operacional — CPC</h1>
-    <p>Assistente de análise estatística. Acesso exclusivo aos administradores do SIE-CPC e aos comandantes vinculados à unidade CPC.</p>
+    <h1>Assistente de Inteligência Operacional — SIE-CPC</h1>
+    <p>Assistente de análise estatística. Piloto institucional para as duas contas designadas: administrador e comandante do CPC.</p>
   </header>
   <main id="conteudo" hidden>
     <section class="card" aria-label="Orientações de segurança">
       <h2>Consulta institucional</h2>
       <p class="aviso">Utilize somente perguntas sobre indicadores agregados. Não informe nomes de vítimas, infratores, policiais, CPF, endereços, números de BO ou outros dados pessoais. A IA não altera o banco nem consulta relatos individuais.</p>
       <p class="nota">Os dados são contabilizados a partir dos registros ativos do SIE-CPC. Rascunhos e registros finalizados serão diferenciados; os resultados devem ser conferidos com os painéis oficiais.</p>
-      <p class="nota"><strong>Uso controlado:</strong> no máximo 3 consultas por minuto, 20 por usuário ao dia e 300 consultas mensais em todo o CPC. A cota só é aplicada depois da homologação.</p>
+      <p class="nota"><strong>Proteção financeira:</strong> orçamento global de R$ 100/mês, com alerta aos R$ 80; 3 consultas/minuto, 20/dia por usuário e até 300/mês. Cada chamada paga requer reserva prévia no servidor.</p>
+      <p class="nota">O histórico é temporário, apenas nesta página, e não é salvo no navegador nem no servidor. Relatórios oficiais precisam de validação humana.</p>
+      <h2>Orçamento compartilhado</h2>
+      <div id="orcamentoEstado" role="status">Consumo disponível após homologação e primeira consulta.</div>
+      <div class="barra-bg"><div id="orcamentoBarra" class="barra"></div></div>
+      <p id="orcamentoNota" class="info-limite">Nenhuma cobrança é realizada enquanto o módulo estiver inativo.</p>
     </section>
     <section class="card">
-      <h2>Faça uma pergunta estatística</h2>
+      <h2>Resumo de Inteligência Operacional</h2>
+      <p class="nota">Peça um briefing comparado a um período anterior de mesma duração. Dados incompletos e hipóteses serão identificados.</p>
+      <div class="exemplos resumo">
+        <button type="button" data-resumo="7">Últimos 7 dias</button>
+        <button type="button" data-resumo="15">Últimos 15 dias</button>
+        <button type="button" data-resumo="30">Últimos 30 dias</button>
+      </div>
+    </section>
+    <section class="card">
+      <h2>Pergunte à assistente</h2>
       <form id="formConsulta">
         <div class="filtros">
           <label>Data inicial <input id="dataInicio" type="date" required></label>
@@ -63,6 +90,7 @@
           <button type="button" data-exemplo="Quais unidades tiveram mais ocorrências no período?">Comparar unidades</button>
           <button type="button" data-exemplo="Quais foram as naturezas de ocorrência mais frequentes?">Principais naturezas</button>
           <button type="button" data-exemplo="Quais bairros concentraram mais registros?">Bairros com mais registros</button>
+          <button type="button" data-exemplo="Que tendências estatísticas merecem aprofundamento em comparação ao período anterior?">Tendências e hipóteses</button>
           <button type="button" data-exemplo="Resuma os principais indicadores e as limitações desses dados.">Resumo executivo</button>
         </div>
         <button type="submit" id="enviar">Consultar IA</button>
@@ -70,58 +98,117 @@
       </form>
     </section>
     <section class="card">
-      <h2>Resultado</h2>
-      <div id="resultado" class="saida" aria-live="polite">A resposta será exibida aqui após a consulta.</div>
-      <p class="nota">Resposta gerada por IA com base em dados agregados; não substitui o julgamento do comando nem a verificação das fontes.</p>
+      <h2>Conversa e análises</h2>
+      <div id="historico" class="chat" aria-live="polite" aria-label="Histórico da conversa nesta sessão">
+        <div class="mensagem assistente"><span class="autor">Assistente de inteligência</span>Faça uma pergunta sobre indicadores agregados ou solicite um resumo para começar. As respostas sempre devem ser verificadas com os painéis do SIE-CPC.</div>
+      </div>
+      <div id="comparacaoContainer" class="comparacao" hidden aria-label="Comparação estatística dos dois períodos"></div>
+      <p class="nota">Informações agregadas do SIE-CPC; as tendências não comprovam causalidade nem substituem a avaliação institucional.</p>
     </section>
   </main>
   <script>
   (async function () {
-    const autorizado = await window.SistemaAuth?.ready;
-    if (!autorizado || !autorizado.pode('ia_cpc')) return;
-    const root=document.getElementById('conteudo');
-    root.hidden=false;
-    const form=document.getElementById('formConsulta');
-    const status=document.getElementById('situacao');
-    const resultado=document.getElementById('resultado');
-    const enviar=document.getElementById('enviar');
-    const hoje=new Date();
-    const dataLocal=(d)=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
-    const anterior=new Date(hoje); anterior.setDate(hoje.getDate()-29);
-    document.getElementById('dataInicio').value=dataLocal(anterior);
-    document.getElementById('dataFim').value=dataLocal(hoje);
-    document.querySelectorAll('[data-exemplo]').forEach((b)=>{
-      b.addEventListener('click',()=>{document.getElementById('pergunta').value=b.dataset.exemplo;document.getElementById('pergunta').focus();});
-    });
-    form.addEventListener('submit',async (event)=>{
-      event.preventDefault();
+    const autorizado=await window.SistemaAuth?.ready;
+    if(!autorizado||!autorizado.pode('ia_cpc'))return;
+    document.getElementById('conteudo').hidden=false;
+    const get=id=>document.getElementById(id);
+    const form=get('formConsulta'),status=get('situacao'),enviar=get('enviar');
+    const historico=get('historico'),caixa=get('pergunta');
+    const perguntasAnteriores=[];
+
+    function dataLocal(d){return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');}
+    function definirPeriodo(dias){
+      const hoje=new Date(),anterior=new Date(hoje);
+      anterior.setDate(hoje.getDate()-dias+1);
+      get('dataInicio').value=dataLocal(anterior);
+      get('dataFim').value=dataLocal(hoje);
+    }
+    definirPeriodo(30);
+    function adicionarMensagem(autor,texto,tipo){
+      const item=document.createElement('div');
+      item.className='mensagem '+(tipo||'assistente');
+      const cab=document.createElement('span');
+      cab.className='autor';cab.textContent=autor;
+      const corpo=document.createElement('div');corpo.textContent=texto;
+      item.append(cab,corpo);historico.append(item);
+      historico.scrollTop=historico.scrollHeight;
+      return item;
+    }
+    function graficoComparacao(medida){
+      const box=get('comparacaoContainer');box.replaceChildren();box.hidden=true;
+      if(!medida||!Number.isFinite(medida.atual)||!Number.isFinite(medida.anterior))return;
+      const max=Math.max(1,medida.atual,medida.anterior);
+      const heading=document.createElement('strong');
+      heading.textContent='Total de ocorrências: período atual × anterior';
+      box.append(heading);
+      [['Atual',medida.atual],['Anterior',medida.anterior]].forEach(([nome,valor])=>{
+        const row=document.createElement('div');row.className='faixa';
+        const a=document.createElement('span');a.textContent=nome;
+        const trilho=document.createElement('div');trilho.className='trilho';
+        const barra=document.createElement('span');barra.style.width=(100*valor/max)+'%';
+        trilho.append(barra);
+        const n=document.createElement('strong');n.textContent=String(valor);
+        row.append(a,trilho,n);box.append(row);
+      });
+      const nota=document.createElement('small');
+      nota.textContent=medida.variacao_percentual===null?
+        'Sem base anterior para calcular variação percentual.':
+        ('Variação: '+medida.variacao_percentual.toLocaleString('pt-BR')+'%. Compare a cobertura de cadastros e rascunhos.');
+      box.append(nota);box.hidden=false;
+    }
+    function atualizarOrcamento(cota){
+      if(!cota||!Number.isFinite(cota.restante_centavos))return;
+      const gasto=Math.max(0,10000-cota.restante_centavos);
+      get('orcamentoBarra').style.width=Math.min(100,gasto/100)+'%';
+      const moeda=n=>(n/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+      get('orcamentoEstado').textContent='Comprometido no mês: '+moeda(gasto)+' de R$ 100,00. Saldo estimado: '+moeda(cota.restante_centavos)+'.';
+      get('orcamentoNota').textContent=(cota.alerta_80?'Atenção: orçamento atingiu 80%. ':'')+
+        (cota.reserva_pendente?'Reserva máxima mantida por falta de medição final. ':'')+
+        'Estimativas conservadoras; conferir faturamento real e câmbio aprovado.';
+    }
+
+    document.querySelectorAll('[data-exemplo]').forEach(b=>b.addEventListener('click',()=>{
+      caixa.value=b.dataset.exemplo;caixa.focus();
+    }));
+    document.querySelectorAll('[data-resumo]').forEach(b=>b.addEventListener('click',()=>{
       if(enviar.disabled)return;
-      const pergunta=document.getElementById('pergunta').value.trim();
-      if (!pergunta) return;
+      const dias=Number(b.dataset.resumo);
+      if(![7,15,30].includes(dias))return;
+      definirPeriodo(dias);
+      caixa.value='Elabore um Resumo de Inteligência Operacional dos últimos '+dias+
+        ' dias: compare com período anterior igual, destaque variações verificáveis, ressalvas, qualidade dos dados e três questões para aprofundamento.';
+      form.requestSubmit();
+    }));
+    form.addEventListener('submit',async event=>{
+      event.preventDefault();if(enviar.disabled)return;
+      const pergunta=caixa.value.trim();if(!pergunta)return;
+      const perguntasContexto=[...perguntasAnteriores].slice(-3);
       enviar.disabled=true;
-      status.textContent='Consultando indicadores e preparando resposta...';
-      resultado.classList.remove('erro');
-      resultado.textContent='Processando consulta.';
-      try {
-        const {data,error}=await autorizado.client.functions.invoke('ia-cpc',{
-          body:{
-            pergunta,
-            data_inicio:document.getElementById('dataInicio').value,
-            data_fim:document.getElementById('dataFim').value
-          }
-        });
-        if(error) {
+      status.textContent='Apurando indicadores e comparando períodos...';
+      adicionarMensagem('Sua pergunta',pergunta,'usuario');
+      const respostaItem=adicionarMensagem('Assistente de inteligência','Analisando estatísticas...','assistente');
+      const conteudo=respostaItem.lastChild;
+      try{
+        const {data,error}=await autorizado.client.functions.invoke('ia-cpc',{body:{
+          pergunta,data_inicio:get('dataInicio').value,data_fim:get('dataFim').value,
+          historico:perguntasContexto
+        }});
+        if(error){
           const body=await error.context?.json?.().catch(()=>null);
-          throw new Error(body?.error||'Não foi possível acessar a IA. A integração pode estar aguardando ativação.');
+          throw new Error(body?.error||'Consulta indisponível; a integração pode aguardar homologação.');
         }
         if(!data?.resposta)throw new Error(data?.error||'Resposta não disponível.');
-        resultado.textContent=data.resposta;
-        status.textContent='Consulta concluída: '+String(data.registros||0)+' registros ativos no período.' + (data.cota ? ' Restam '+data.cota.restante_dia+' consultas hoje para este usuário.' : '');
-      } catch(e) {
-        resultado.classList.add('erro');
-        resultado.textContent=e.message||'Erro ao consultar assistente.';
+        conteudo.textContent=data.resposta;
+        perguntasAnteriores.push(pergunta);if(perguntasAnteriores.length>3)perguntasAnteriores.shift();
+        atualizarOrcamento(data.cota);
+        graficoComparacao(data.comparacao_total);
+        status.textContent='Consulta concluída: '+String(data.registros||0)+' registros ativos no período analisado.'+
+          (data.sem_cobranca?' Nenhuma chamada paga foi necessária.':'');
+      }catch(err){
+        respostaItem.classList.add('erro');
+        conteudo.textContent=err.message||'Não foi possível concluir a consulta.';
         status.textContent='Consulta não concluída.';
-      } finally { enviar.disabled=false; }
+      }finally{enviar.disabled=false;}
     });
   })();
   </script>
