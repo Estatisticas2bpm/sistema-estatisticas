@@ -54,13 +54,12 @@ export function mudancasSignificativas(mapaAtual, mapaAnterior, maximo=10) {
 // Prioriza a natureza padronizada de "ocorrencia" e só depois "crime".
 // Agrupamento por prefixo seguro exige natureza-mãe cadastrada oficialmente.
 export function classificarNatureza(ocorrencia, crime, catalogo) {
-  const candidato=[ocorrencia,crime].map(categoria);
-  for(const valor of candidato) {
-    if(catalogo.has(valor))return valor;
-  }
-  for(const valor of candidato) {
-    if(/^FURTO [\p{L}\p{N}]/u.test(valor)&&catalogo.has("FURTO"))return "FURTO";
-    if(/^ROUBO [\p{L}\p{N}]/u.test(valor)&&catalogo.has("ROUBO"))return "ROUBO";
+  // Preserva a prioridade do campo principal: não usar um "crime" secundário
+  // exato para sobrescrever a natureza primária que só exige agrupamento.
+  for (const valor of [ocorrencia, crime].map(categoria)) {
+    if (catalogo.has(valor)) return valor;
+    if (/^FURTO [\p{L}\p{N}]/u.test(valor) && catalogo.has("FURTO")) return "FURTO";
+    if (/^ROUBO [\p{L}\p{N}]/u.test(valor) && catalogo.has("ROUBO")) return "ROUBO";
   }
   return "NÃO CLASSIFICADO";
 }
@@ -74,4 +73,13 @@ export function naturezaAlvoPergunta(pergunta, catalogo) {
   ];
   const candidatas=opcoes.filter(x=>x.expr.test(texto)&&catalogo.has(x.nome));
   return candidatas.length===1?candidatas[0].nome:null;
+}
+
+// Não libera séries temporais com pequenos grupos. Se um mês tem menos de
+// cinco registros, omite toda a série em vez de permitir inferência por subtração.
+export function serieMensalSegura(porMes) {
+  const meses=[...porMes.entries()];
+  if (meses.some(([,quantidade])=>quantidade<5)) return [];
+  return meses.sort((a,b)=>a[0].localeCompare(b[0]))
+    .map(([mes,quantidade])=>({mes,quantidade}));
 }
