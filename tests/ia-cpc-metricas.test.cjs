@@ -6,7 +6,7 @@ const path = require("node:path");
   const functions = await import(pathToFileURL(path.join(
     __dirname, "..", "supabase", "functions", "ia-cpc", "estatisticas.mjs"
   )));
-  const { categoria, ranking, somar, conducoesOperacionaisPorOcorrencia, intervaloAnterior, compararTotal, mudancasSignificativas, classificarNatureza, naturezaAlvoPergunta } = functions;
+  const { categoria, ranking, somar, conducoesOperacionaisPorOcorrencia, intervaloAnterior, compararTotal, mudancasSignificativas, classificarNatureza, naturezaAlvoPergunta, serieMensalSegura } = functions;
 
   assert.equal(categoria("  Lesão Corporal  "), "LESÃO CORPORAL");
   assert.equal(categoria("Rua 2 < nome >"), "NÃO CLASSIFICADO", "Texto com tags deve ser recusado");
@@ -48,5 +48,14 @@ const path = require("node:path");
   assert.equal(naturezaAlvoPergunta("Quantos furtos ocorreram no período?",catalogo),"FURTO");
   assert.equal(naturezaAlvoPergunta("Como evoluiu Maria da Penha?",catalogo),"MARIA DA PENHA / VIOLÊNCIA DOMÉSTICA");
   assert.equal(naturezaAlvoPergunta("Quais furtos e roubos?",catalogo),null);
+
+  // Natureza principal deve prevalecer sobre outro campo secundário.
+  assert.equal(classificarNatureza("FURTO QUALIFICADO","ROUBO",catalogo),"FURTO");
+  assert.equal(classificarNatureza("ROUBO A PEDESTRE","FURTO",catalogo),"ROUBO");
+  assert.deepEqual(serieMensalSegura(new Map([["2026-09",8],["2026-10",3]])),[],
+    "Uma única célula pequena suprime toda a série e impede inferência por diferença");
+  assert.deepEqual(serieMensalSegura(new Map([["2026-10",9],["2026-09",5]])),[
+    {mes:"2026-09",quantidade:5},{mes:"2026-10",quantidade:9}
+  ]);
   console.log("OK — regras estatísticas IA CPC testadas com dados sintéticos.");
 })().catch(err => { console.error(err); process.exitCode = 1; });
