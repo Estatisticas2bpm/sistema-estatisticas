@@ -192,12 +192,11 @@ Deno.serve(async (req: Request) => {
       for(let offset=0;offset<=MAX_REGISTROS;offset+=TAMANHO_PAGINA){
         // Campos narrativos são buscados APENAS quando o usuário pede análise
         // contextual e o módulo está habilitado. O modelo externo nunca os recebe.
-        const colunasBase="id,data_ocorrencia,hora_inicial,unidade_id,ocorrencia,crime,bairro,status_registro,numero_conduzidos,numero_prisoes,quantidade_armas,veiculos_recuperados";
-        const colunas=lerRelatos
-          ? colunasBase+",historico_resumido,detalhes,observacao,observacao_final"
-          : colunasBase;
-        const {data:rows,error}=await admin.from("ocorrencias")
-          .select(colunas)
+        // Seleções literais mantêm os tipos Supabase verificáveis pelo Deno.
+        const consulta=lerRelatos
+          ? admin.from("ocorrencias").select("id,data_ocorrencia,hora_inicial,unidade_id,ocorrencia,crime,bairro,status_registro,numero_conduzidos,numero_prisoes,quantidade_armas,veiculos_recuperados,historico_resumido,detalhes,observacao,observacao_final")
+          : admin.from("ocorrencias").select("id,data_ocorrencia,hora_inicial,unidade_id,ocorrencia,crime,bairro,status_registro,numero_conduzidos,numero_prisoes,quantidade_armas,veiculos_recuperados");
+        const {data:rows,error}=await consulta
           .eq("ativo",true).gte("data_ocorrencia",de).lte("data_ocorrencia",ate)
           .order("data_ocorrencia",{ascending:true}).order("id",{ascending:true})
           .range(offset,offset+TAMANHO_PAGINA-1);
