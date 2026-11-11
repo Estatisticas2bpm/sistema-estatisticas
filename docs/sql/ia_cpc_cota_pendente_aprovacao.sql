@@ -94,7 +94,7 @@ DECLARE
   v_minuto integer := 0; v_dia integer := 0; v_mes_consultas integer := 0;
   v_utilizado integer := 0; v_id uuid;
 BEGIN
-  IF p_usuario_id IS NULL OR p_modelo <> 'gpt-5.6-luna'
+  IF p_usuario_id IS NULL OR p_modelo IS DISTINCT FROM 'gpt-5.6-luna'
     OR p_reserva_centavos IS NULL OR p_reserva_centavos < 1 OR p_reserva_centavos > 1000 THEN
      RETURN jsonb_build_object('permitido',false,'motivo','configuracao_invalida');
   END IF;
