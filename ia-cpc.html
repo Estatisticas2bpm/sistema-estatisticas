@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>SIE-CPC — Inteligência Operacional</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="auth-config.js"></script>
+  <script src="auth-guard.js"></script>
+  <style>
+    :root { color-scheme:light; --azul:#092743; --borda:#d5e0e9; --fundo:#eef3f8; --texto:#23384d; }
+    * { box-sizing:border-box; }
+    body { margin:0; font:15px/1.55 Inter,Segoe UI,Arial,sans-serif; color:var(--texto); background:var(--fundo); }
+    header { padding:30px max(18px,calc((100vw - 1100px)/2)); color:#fff; background:linear-gradient(112deg,#061a30,#174767); }
+    header h1 { margin:5px 0; font-size:clamp(25px,4vw,36px); }
+    header p { margin:0; color:#d8e8f2; max-width:730px; }
+    .retorno { color:#c6e9ff; font-weight:800; text-decoration:none; }
+    main { max-width:1100px; padding:22px 18px 80px; margin:0 auto; }
+    .card { background:#fff; border:1px solid var(--borda); border-radius:14px; padding:20px; margin-bottom:16px; box-shadow:0 3px 12px #092b4510; }
+    h2 { margin:0 0 8px; font-size:19px; color:var(--azul); }
+    .nota { font-size:13px; color:#536b7f; margin:6px 0 12px; }
+    .aviso { border-left:4px solid #b7791f; background:#fff6e7; color:#714813; padding:12px; border-radius:6px; }
+    .filtros { display:flex; flex-wrap:wrap; gap:12px; margin:12px 0; }
+    label { display:block; font-weight:800; font-size:13px; }
+    input,textarea { display:block; width:100%; border:1px solid #afc4d4; border-radius:8px; background:#fff; color:#17344a; padding:10px; font:inherit; margin-top:5px; }
+    textarea { resize:vertical; min-height:120px; }
+    button { font:800 14px Inter,Segoe UI,Arial,sans-serif; padding:11px 18px; color:#fff; background:#0d4c7a; border:none; border-radius:9px; cursor:pointer; }
+    button:disabled { opacity:.6; cursor:wait; }
+    button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible { outline:3px solid #71bce9; outline-offset:2px; }
+    .exemplos { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0; }
+    .exemplos button { background:#e9f2f8; color:#174c71; border:1px solid #bed4e3; font-size:12px; }
+    .saida { border:1px solid var(--borda); border-radius:9px; padding:16px; background:#f8fbfe; min-height:70px; white-space:pre-wrap; overflow-wrap:anywhere; }
+    .erro { color:#972c33; background:#fff1f2; border-color:#ebbdc1; }
+    #situacao { margin:12px 0; font-size:13px; font-weight:700; }
+    [hidden] { display:none!important; }
+    @media (max-width:620px) { .filtros>label { width:100%; } header { padding:24px 18px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <a class="retorno" href="dashboard-cpc.html">← Voltar ao Painel CPC</a>
+    <h1>Inteligência Operacional — CPC</h1>
+    <p>Assistente de análise estatística. Acesso exclusivo aos administradores do SIE-CPC e aos comandantes vinculados à unidade CPC.</p>
+  </header>
+  <main id="conteudo" hidden>
+    <section class="card" aria-label="Orientações de segurança">
+      <h2>Consulta institucional</h2>
+      <p class="aviso">Utilize somente perguntas sobre indicadores agregados. Não informe nomes de vítimas, infratores, policiais, CPF, endereços, números de BO ou outros dados pessoais. A IA não altera o banco nem consulta relatos individuais.</p>
+      <p class="nota">Os dados são contabilizados a partir dos registros ativos do SIE-CPC. Rascunhos e registros finalizados serão diferenciados; os resultados devem ser conferidos com os painéis oficiais.</p>
+    </section>
+    <section class="card">
+      <h2>Faça uma pergunta estatística</h2>
+      <form id="formConsulta">
+        <div class="filtros">
+          <label>Data inicial <input id="dataInicio" type="date" required></label>
+          <label>Data final <input id="dataFim" type="date" required></label>
+        </div>
+        <label for="pergunta">Pergunta (máximo de 500 caracteres)</label>
+        <textarea id="pergunta" maxlength="500" required placeholder="Ex.: Quais unidades registraram mais ocorrências no período?"></textarea>
+        <div class="exemplos" aria-label="Perguntas de exemplo">
+          <button type="button" data-exemplo="Quais unidades tiveram mais ocorrências no período?">Comparar unidades</button>
+          <button type="button" data-exemplo="Quais foram as naturezas de ocorrência mais frequentes?">Principais naturezas</button>
+          <button type="button" data-exemplo="Quais bairros concentraram mais registros?">Bairros com mais registros</button>
+          <button type="button" data-exemplo="Resuma os principais indicadores e as limitações desses dados.">Resumo executivo</button>
+        </div>
+        <button type="submit" id="enviar">Consultar IA</button>
+        <div id="situacao" role="status" aria-live="polite">Aguardando consulta.</div>
+      </form>
+    </section>
+    <section class="card">
+      <h2>Resultado</h2>
+      <div id="resultado" class="saida" aria-live="polite">A resposta será exibida aqui após a consulta.</div>
+      <p class="nota">Resposta gerada por IA com base em dados agregados; não substitui o julgamento do comando nem a verificação das fontes.</p>
+    </section>
+  </main>
+  <script>
+  (async function () {
+    const autorizado = await window.SistemaAuth?.ready;
+    if (!autorizado || !autorizado.pode('ia_cpc')) return;
+    const root=document.getElementById('conteudo');
+    root.hidden=false;
+    const form=document.getElementById('formConsulta');
+    const status=document.getElementById('situacao');
+    const resultado=document.getElementById('resultado');
+    const enviar=document.getElementById('enviar');
+    const hoje=new Date();
+    const dataLocal=(d)=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
+    const anterior=new Date(hoje); anterior.setDate(hoje.getDate()-29);
+    document.getElementById('dataInicio').value=dataLocal(anterior);
+    document.getElementById('dataFim').value=dataLocal(hoje);
+    document.querySelectorAll('[data-exemplo]').forEach((b)=>{
+      b.addEventListener('click',()=>{document.getElementById('pergunta').value=b.dataset.exemplo;document.getElementById('pergunta').focus();});
+    });
+    form.addEventListener('submit',async (event)=>{
+      event.preventDefault();
+      if(enviar.disabled)return;
+      const pergunta=document.getElementById('pergunta').value.trim();
+      if (!pergunta) return;
+      enviar.disabled=true;
+      status.textContent='Consultando indicadores e preparando resposta...';
+      resultado.classList.remove('erro');
+      resultado.textContent='Processando consulta.';
+      try {
+        const {data,error}=await autorizado.client.functions.invoke('ia-cpc',{
+          body:{
+            pergunta,
+            data_inicio:document.getElementById('dataInicio').value,
+            data_fim:document.getElementById('dataFim').value
+          }
+        });
+        if(error) {
+          const body=await error.context?.json?.().catch(()=>null);
+          throw new Error(body?.error||'Não foi possível acessar a IA. A integração pode estar aguardando ativação.');
+        }
+        if(!data?.resposta)throw new Error(data?.error||'Resposta não disponível.');
+        resultado.textContent=data.resposta;
+        status.textContent='Consulta concluída: '+String(data.registros||0)+' registros ativos no recorte informado.';
+      } catch(e) {
+        resultado.classList.add('erro');
+        resultado.textContent=e.message||'Erro ao consultar assistente.';
+        status.textContent='Consulta não concluída.';
+      } finally { enviar.disabled=false; }
+    });
+  })();
+  </script>
+</body>
+</html>
