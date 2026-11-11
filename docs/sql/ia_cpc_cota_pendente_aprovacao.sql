@@ -33,7 +33,7 @@ BEGIN
   WHERE p.user_id = p_usuario_id;
 
   IF coalesce(v_ativo, false) = false
-     OR NOT (v_perfil = 'ADMIN' OR (v_perfil = 'COMANDANTE' AND v_sigla = 'CPC' AND v_unidade_ativa)) THEN
+     OR NOT (coalesce(v_perfil,'') = 'ADMIN' OR (coalesce(v_perfil,'') = 'COMANDANTE' AND coalesce(v_sigla,'') = 'CPC' AND coalesce(v_unidade_ativa,false))) THEN
     RETURN jsonb_build_object('permitido', false, 'motivo', 'nao_autorizado');
   END IF;
 
