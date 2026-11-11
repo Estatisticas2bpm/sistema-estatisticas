@@ -6,7 +6,7 @@ const path = require("node:path");
   const functions = await import(pathToFileURL(path.join(
     __dirname, "..", "supabase", "functions", "ia-cpc", "estatisticas.mjs"
   )));
-  const { categoria, ranking, somar, conducoesOperacionaisPorOcorrencia, intervaloAnterior, compararTotal, mudancasSignificativas, classificarNatureza, naturezaAlvoPergunta, serieMensalSegura } = functions;
+  const { categoria, ranking, somar, conducoesOperacionaisPorOcorrencia, intervaloAnterior, compararTotal, mudancasSignificativas, classificarNatureza, naturezaAlvoPergunta, serieMensalSegura, familiaNatureza } = functions;
 
   assert.equal(categoria("  Lesão Corporal  "), "LESÃO CORPORAL");
   assert.equal(categoria("Rua 2 < nome >"), "NÃO CLASSIFICADO", "Texto com tags deve ser recusado");
@@ -57,5 +57,13 @@ const path = require("node:path");
   assert.deepEqual(serieMensalSegura(new Map([["2026-10",9],["2026-09",5]])),[
     {mes:"2026-09",quantidade:5},{mes:"2026-10",quantidade:9}
   ]);
+  assert.equal(familiaNatureza("FURTO"),"FURTO");
+  assert.equal(familiaNatureza("FURTO DE VEÍCULOS"),"FURTO");
+  assert.equal(familiaNatureza("ROUBO DE ARMA DE FOGO"),"ROUBO");
+  assert.equal(familiaNatureza("TENTATIVA DE FURTO"),null);
+  assert.equal(familiaNatureza("VEÍCULO RECUPERADO COM RESTRIÇÃO DE ROUBO"),null);
+  assert.equal(familiaNatureza("FURTO E ROUBO"),null);
+  assert.equal(familiaNatureza("ROUBO OU FURTO"),null);
+  assert.equal(familiaNatureza("MARIA DA PENHA / VIOLÊNCIA DOMÉSTICA"),"MARIA DA PENHA / VIOLÊNCIA DOMÉSTICA");
   console.log("OK — regras estatísticas IA CPC testadas com dados sintéticos.");
 })().catch(err => { console.error(err); process.exitCode = 1; });
