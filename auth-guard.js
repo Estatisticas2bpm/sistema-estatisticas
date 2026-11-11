@@ -74,6 +74,10 @@
   function pode(perfil,permissao){
     if(!permissao)return true;
     // Fluxos da Seção está suspenso para todos, inclusive ADMIN.
+    // IA restrita: ADMIN em qualquer unidade; COMANDANTE só no contexto CPC.
+    // A Edge Function repete a autorização consultando a unidade PRINCIPAL no banco.
+    if(permissao==='ia_cpc')return normalizarPerfil(perfil)==='ADMIN'||
+      (normalizarPerfil(perfil)==='COMANDANTE'&&String(contextoAtual?.sigla||'').toUpperCase()==='CPC');
     if(permissao==='fluxos')return false;
     // Modo TV do CPC temporariamente suspenso até todas as unidades terem
     // no mínimo três meses de registros. Bloqueia todos os perfis, inclusive
