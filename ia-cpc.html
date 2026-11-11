@@ -182,6 +182,14 @@
     form.addEventListener('submit',async event=>{
       event.preventDefault();if(enviar.disabled)return;
       const pergunta=caixa.value.trim();if(!pergunta)return;
+      // Interpretação local de período explícito: "últimos 60 dias".
+      // Nunca aceita intervalos maiores que os limites validados pelo servidor.
+      const periodoTexto=pergunta.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+        .match(/\bultimos?\s+(\d{1,3})\s+dias\b/);
+      const diasSolicitados=periodoTexto?Number(periodoTexto[1]):null;
+      if(diasSolicitados!==null&&diasSolicitados>=1&&diasSolicitados<=366){
+        definirPeriodo(diasSolicitados);
+      }
       const perguntasContexto=[...perguntasAnteriores].slice(-3);
       enviar.disabled=true;
       status.textContent='Apurando indicadores e comparando períodos...';
