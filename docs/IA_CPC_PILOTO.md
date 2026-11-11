@@ -28,17 +28,27 @@ Fases 2 e parte da 3 implementadas em código: comparação de dois períodos co
 
 **Limitações importantes:** resultados que estão em rascunho podem distorcer tendências; a cobertura histórica dos campos não é uniforme. A natureza é consolidada primeiro pelo campo padronizado `ocorrencia` e, na falta de correspondência, pelo campo `crime`: o valor enviado tem de constar do catálogo oficial, ou ser agrupado de forma conservadora em FURTO/ROUBO por prefixo. Tentativas permanecem classificadas separadamente. Naturezas e bairros fora do catálogo são classificados como "NÃO CLASSIFICADO", para evitar enviar textos livres ou identificadores ao provedor. Contagens de campos incompletos não podem ser apresentadas como total criminal definitivo. É necessário auditar a cobertura real antes de confiar nos rankings. O piloto interpreta perguntas sobre "últimos N dias" pelo formulário (limite 366 dias), identifica perguntas focalizadas em FURTO/ROUBO/MARIA DA PENHA e somente divulga contagens dessas naturezas com pelo menos 5 registros. O piloto não faz comparações por nacionalidade, subtipo, análise causal, avaliação especializada de operações, CIPA/CIPTUR/BOPE, ou consulta ao relato integral. Não pressupor dados que não existam.
 
+### Proteção adicional dos dados no piloto
+
+- O servidor converte as perguntas livres em **intenções estatísticas padronizadas**. Não encaminha à API externa o texto literal da pergunta, nome de bairros digitados pelo usuário, histórico bruto ou identificadores de pessoas.
+- Perguntas sobre identificação individual, suspeitos, policiais, vítimas, nacionalidade e documentos são recusadas localmente pela função, e não enviadas ao modelo. Consultas fora do vocabulário estatístico do piloto também são recusadas.
+- A IA recebe dados agregados, mas não tem acesso a cruzamentos individuais por bairro × natureza, nem pode alegar que os calculou.
+- Séries mensais só são fornecidas quando **todos** os meses exibidos apresentam cinco registros ou mais. Caso contrário, a série inteira é omitida para evitar inferência de contagens pequenas.
+- A consolidação "FURTO" e "ROUBO" inclui categorias oficiais da mesma família (por exemplo, roubo de arma de fogo), mas exclui tentativas, localização/recuperação de objetos e categorias ambíguas. Sempre conferir as convenções do dashboard.
+- Se o recorte tiver **zero registros finalizados**, a IA deve identificá-lo como **exclusivamente preliminar**, sem conclusões criminais definitivas nem recomendações operacionais derivadas apenas dos rascunhos.
+- Tais barreiras reduzem, mas não eliminam, riscos de privacidade. Revisão de segurança e autorização institucional continuam obrigatórias.
+
 O histórico de conversa é **temporário na página** (perde-se ao recarregar). O backend não armazena perguntas/respostas. Persistência protegida e relatórios PDF institucionais são etapas futuras, não implementadas.
 
 ## 3. Orçamento financeiro: R$ 100,00 / mês
 
 **Modelo de referência:** gpt-5.6-luna, Standard API. Preços consultados em 11/11/2026 na tabela oficial:
-https://developers.openai.com/pt-BR/api/docs/pricing
+https://developers.openai.com/api/docs/models/gpt-5.6-luna
 
 - Entrada: US$ 0,20 por 1 milhão de tokens.
 - Saída: US$ 1,20 por 1 milhão de tokens.
 - Máximo de saída do piloto: 800 tokens por consulta.
-- Câmbio de reserva e margem de segurança: configurar IA_CPC_BRL_USD_RESERVA com taxa conservadora (valor não presumido) e margem 2x. Não depende de consulta automática a serviços de câmbio.
+- Câmbio de reserva e margem de segurança: configurar IA_CPC_BRL_USD_RESERVA com taxa institucional de reserva entre **8 e 30 BRL/USD**, mais margem 2x; não confundir o piso conservador com a cotação oficial da moeda. Não depende de consulta automática a serviços de câmbio.
 - Reserva máxima estimada ANTES de enviar a requisição; até 80.000 bytes de payload.
 - Controle atômico por advisory transaction lock compartilhado, registro em private.ia_cpc_consumo, total mensal de **10.000 centavos**, alerta a partir de **8.000 centavos**. Limites adicionais: **3/minuto por usuário, 20/dia por usuário, 300/mês global**. Dia e mês no fuso America/Boa_Vista.
 - Após retorno da API, o sistema reconcilia tokens reais, modelo e custo conservador; se não vier telemetria, a reserva integral permanece comprometida. Falhas de serviço também mantêm reserva, evitando cobrança não contabilizada.
@@ -51,7 +61,7 @@ https://developers.openai.com/pt-BR/api/docs/pricing
 - IA_CPC_ENABLED permanece não configurado/false até aprovação.
 - IA_CPC_ALLOWED_ORIGINS: origens exatas HTTPS; nenhuma permitida por padrão.
 - OPENAI_MODEL: deve ser exatamente gpt-5.6-luna na versão piloto; sem fallback inválido.
-- IA_CPC_BRL_USD_RESERVA: câmbio conservador documentado, entre 1 e 30 BRL/USD, aprovado internamente.
+- IA_CPC_BRL_USD_RESERVA: câmbio conservador documentado, entre 8 e 30 BRL/USD, aprovado internamente.
 - store:false na API Responses; isso não dispensa avaliação jurídica/institucional sobre os dados trafegados.
 - Nenhum SQL arbitrário gerado pelo modelo; nenhum documento BO ou relato é enviado; campos categóricos precisam constar de catálogos.
 - O controle de acesso **não depende de CORS**; ele exige token, sessão e lista individual.
@@ -64,7 +74,7 @@ https://developers.openai.com/pt-BR/api/docs/pricing
 - [ ] Designar exatamente as duas contas por UUID, sem divulgar IDs no repositório; avaliar procedimento de substituição.
 - [ ] Verificar que conta não designada (incluindo outros ADMIN/COMANDANTE CPC) é bloqueada no frontend E na Edge.
 - [ ] Testar suspensão, expiração, revogação e alteração de perfil/unidade, MFA quando adotado.
-- [ ] Conferir os indicadores com dashboard e amostra sintética/anonimizada, especialmente campos não classificados, rascunhos e duplicidades.
+- [ ] Conferir os indicadores com dashboard e amostra sintética/anonimizada, especialmente campos não classificados, rascunhos e duplicidades. O banco atualmente apresenta períodos compostos inteiramente por rascunhos; não interpretar isso automaticamente como série criminal consolidada.
 - [ ] Homologar concorrência de reservas, custo acima do orçamento, aviso dos R$80 e divergências de telemetria.
 - [ ] Validar o câmbio conservador e os preços vigentes; obter aprovação de projeto de API e limite de gasto.
 - [ ] Configurar OPENAI_API_KEY, OPENAI_MODEL, IA_CPC_BRL_USD_RESERVA, IA_CPC_ALLOWED_ORIGINS, IA_CPC_ENABLED=false.
