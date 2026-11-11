@@ -6,7 +6,7 @@ const path = require("node:path");
   const functions = await import(pathToFileURL(path.join(
     __dirname, "..", "supabase", "functions", "ia-cpc", "estatisticas.mjs"
   )));
-  const { categoria, ranking, somar, conducoesOperacionaisPorOcorrencia, intervaloAnterior, compararTotal, mudancasSignificativas } = functions;
+  const { categoria, ranking, somar, conducoesOperacionaisPorOcorrencia, intervaloAnterior, compararTotal, mudancasSignificativas, classificarNatureza, naturezaAlvoPergunta } = functions;
 
   assert.equal(categoria("  Lesão Corporal  "), "LESÃO CORPORAL");
   assert.equal(categoria("Rua 2 < nome >"), "NÃO CLASSIFICADO", "Texto com tags deve ser recusado");
@@ -38,5 +38,15 @@ const path = require("node:path");
     new Map([["A",15],["B",1],["C",7],["D",2],["E",10]])),
     [{nome:"A",atual:30,anterior:15,diferenca:15,variacao_percentual:100,base_comparavel:true}],
     "Somente mudanças relevantes entre duas bases de pelo menos cinco");
+  const catalogo=new Set(["FURTO","ROUBO","TENTATIVA DE FURTO","MARIA DA PENHA / VIOLÊNCIA DOMÉSTICA"]);
+  assert.equal(classificarNatureza("FURTO","FURTO QUALIFICADO",catalogo),"FURTO");
+  assert.equal(classificarNatureza("FURTO QUALIFICADO",null,catalogo),"FURTO");
+  assert.equal(classificarNatureza(null,"ROUBO EM RESIDÊNCIA",catalogo),"ROUBO");
+  assert.equal(classificarNatureza("TENTATIVA DE FURTO",null,catalogo),"TENTATIVA DE FURTO");
+  assert.equal(classificarNatureza("VEÍCULO COM RESTRIÇÃO DE FURTO",null,catalogo),"NÃO CLASSIFICADO");
+  assert.equal(classificarNatureza("O SR. FULANO FOI VÍTIMA",null,catalogo),"NÃO CLASSIFICADO");
+  assert.equal(naturezaAlvoPergunta("Quantos furtos ocorreram no período?",catalogo),"FURTO");
+  assert.equal(naturezaAlvoPergunta("Como evoluiu Maria da Penha?",catalogo),"MARIA DA PENHA / VIOLÊNCIA DOMÉSTICA");
+  assert.equal(naturezaAlvoPergunta("Quais furtos e roubos?",catalogo),null);
   console.log("OK — regras estatísticas IA CPC testadas com dados sintéticos.");
 })().catch(err => { console.error(err); process.exitCode = 1; });
