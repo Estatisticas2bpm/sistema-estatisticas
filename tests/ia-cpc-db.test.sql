@@ -151,4 +151,39 @@ SELECT public.ci_assert(
  '00000000-0000-4000-8000-000000000001','gpt-5.6-luna',1)->>'motivo')
  = 'limite_consultas','bloquear quarta chamada no minuto');
 
+-- Vinte consultas no dia: nenhuma chamada adicional deve passar.
+TRUNCATE private.ia_cpc_consumo;
+INSERT INTO private.ia_cpc_consumo
+  (usuario_id,modelo,mes_referencia,reserva_centavos,estado,criado_em)
+SELECT '00000000-0000-4000-8000-000000000001','gpt-5.6-luna',
+ date_trunc('month',now() AT TIME ZONE 'America/Boa_Vista')::date,
+ 1,'reservado',
+ (date_trunc('day',now() AT TIME ZONE 'America/Boa_Vista') AT TIME ZONE 'America/Boa_Vista')
+  + interval '10 seconds'
+FROM generate_series(1,20);
+SELECT public.ci_assert(
+ (public.ia_cpc_reservar_orcamento(
+  '00000000-0000-4000-8000-000000000001','gpt-5.6-luna',1)->>'motivo')
+ = 'limite_consultas','bloquear consulta adicional após vinte no dia');
+
+-- Trezentas consultas globais no mês, divididas entre duas contas.
+TRUNCATE private.ia_cpc_consumo;
+INSERT INTO private.ia_cpc_consumo
+ (usuario_id,modelo,mes_referencia,reserva_centavos,estado,criado_em)
+SELECT CASE WHEN n%2=0
+ THEN '00000000-0000-4000-8000-000000000001'::uuid
+ ELSE '00000000-0000-4000-8000-000000000002'::uuid END,
+ 'gpt-5.6-luna',
+ date_trunc('month',now() AT TIME ZONE 'America/Boa_Vista')::date,
+ 1,'reservado',
+ date_trunc('month',now() AT TIME ZONE 'America/Boa_Vista') AT TIME ZONE 'America/Boa_Vista'
+FROM generate_series(1,300) n;
+SELECT public.ci_assert(
+ (public.ia_cpc_reservar_orcamento(
+  '00000000-0000-4000-8000-000000000001','gpt-5.6-luna',1)->>'motivo')
+ = 'limite_consultas','bloquear consulta após trezentas globais no mês');
+SELECT public.ci_assert(
+ (SELECT count(*) FROM private.ia_cpc_consumo)=300,
+ 'limite global não criou reserva excedente');
+
 SELECT 'SUCESSO — testes financeiros e controle de acesso sintéticos concluídos' AS homologacao;
