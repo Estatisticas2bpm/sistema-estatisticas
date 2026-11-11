@@ -5,7 +5,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.95.0";
 import {
   categoria, ranking, somar, conducoesOperacionaisPorOcorrencia,
   intervaloAnterior, compararTotal, mudancasSignificativas,
-  classificarNatureza, naturezaAlvoPergunta, serieMensalSegura
+  classificarNatureza, naturezaAlvoPergunta, serieMensalSegura, familiaNatureza
 } from "./estatisticas.mjs";
 import {
   MODELO_HOMOLOGAVEL, MAX_TOKENS_SAIDA, MAX_BYTES_ENTRADA,
@@ -161,11 +161,12 @@ Deno.serve(async (req: Request) => {
       total:number;finalizados:number;rascunhos:number;conduzidos:number;
       prisoes:number;conducoes:number;armas:number;veiculos:number;
       porUnidade:Map<string,number>;porNatureza:Map<string,number>;
+      porFamilia:Map<string,number>;
       porBairro:Map<string,number>;porMes:Map<string,number>;porHora:Map<string,number>;
     };
     const vazio=():Apuracao=>({total:0,finalizados:0,rascunhos:0,conduzidos:0,
       prisoes:0,conducoes:0,armas:0,veiculos:0,
-      porUnidade:new Map(),porNatureza:new Map(),porBairro:new Map(),
+      porUnidade:new Map(),porNatureza:new Map(),porFamilia:new Map(),porBairro:new Map(),
       porMes:new Map(),porHora:new Map()});
     let processados=0;
     async function apurar(de:string,ate:string):Promise<Apuracao>{
@@ -189,7 +190,10 @@ Deno.serve(async (req: Request) => {
           resultado.armas+=Number(o.quantidade_armas)||0;
           resultado.veiculos+=Number(o.veiculos_recuperados)||0;
           somar(resultado.porUnidade,nomesUnidade.get(o.unidade_id)||"NÃO CLASSIFICADA");
-          somar(resultado.porNatureza,classificarTipo(o.ocorrencia,o.crime));
+          const natureza=classificarTipo(o.ocorrencia,o.crime);
+          somar(resultado.porNatureza,natureza);
+          const familia=familiaNatureza(natureza);
+          if(familia)somar(resultado.porFamilia,familia);
           somar(resultado.porBairro,classificarBairro(o.bairro));
           somar(resultado.porMes,String(o.data_ocorrencia).slice(0,7));
           if(o.hora_inicial && /^\d\d:/.test(o.hora_inicial))
@@ -215,6 +219,7 @@ Deno.serve(async (req: Request) => {
       numero_conduzidos:a.conduzidos,conducoes_operacionais:a.conducoes,
       numero_prisoes:a.prisoes,quantidade_armas:a.armas,veiculos_recuperados:a.veiculos,
       unidades:ranking(a.porUnidade,30),naturezas:ranking(a.porNatureza,15),
+      familias_natureza:ranking(a.porFamilia,10),
       bairros:ranking(a.porBairro,15),horarios:ranking(a.porHora,24),
       evolucao_mensal:serieMensalSegura(a.porMes)
     });
@@ -242,8 +247,8 @@ Deno.serve(async (req: Request) => {
     const estatisticas={
       qualidade,
       foco_da_pergunta:naturezaAlvo?{
-        natureza:naturezaAlvo,ocorrencias_periodo_atual:contagemFoco(atual.porNatureza),
-        ocorrencias_periodo_anterior:contagemFoco(previo.porNatureza),
+        natureza:naturezaAlvo,ocorrencias_periodo_atual:contagemFoco(atual.porFamilia),
+        ocorrencias_periodo_anterior:contagemFoco(previo.porFamilia),
         cuidado:"Contagens inferiores a 5 não são divulgadas. Filtro por subtipo exige módulo específico."
       }:null,
       fonte:"public.ocorrencias: registros ativos; sem BO individual, sem histórico integral",
@@ -253,6 +258,7 @@ Deno.serve(async (req: Request) => {
         total:compararTotal(atual.total,previo.total),
         finalizados:compararTotal(atual.finalizados,previo.finalizados),
         naturezas:mudancasSignificativas(atual.porNatureza,previo.porNatureza),
+        familias_natureza:mudancasSignificativas(atual.porFamilia,previo.porFamilia),
         bairros:mudancasSignificativas(atual.porBairro,previo.porBairro),
         unidades:mudancasSignificativas(atual.porUnidade,previo.porUnidade)
       },
@@ -261,6 +267,7 @@ Deno.serve(async (req: Request) => {
         "Alertas de categoria requerem pelo menos 5 registros em AMBOS os períodos, variação de 25% e diferença mínima de 5 ocorrências.",
         "Dados em rascunho separados dos finalizados. Verificar percentual de rascunhos antes de considerar a tendência consolidada.",
         "Somente naturezas e bairros reconhecidos nos catálogos oficiais; os demais contam como não classificados.",
+        "Famílias FURTO e ROUBO incluem subtipos da mesma natureza, mas NÃO tentativas, localização/recuperação ou categorias ambíguas.",
         "Conduções usam max(conduzidos, prisões) em cada BO; não somar essas métricas.",
         "Sem ajuste para sazonalidade, população, exposição ou diferenças de cobertura no cadastro.",
         "Análises por nacionalidade, subtipo e unidades especializadas requerem ferramentas adicionais ainda não homologadas."
