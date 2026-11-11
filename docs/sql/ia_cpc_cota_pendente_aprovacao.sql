@@ -59,6 +59,24 @@ $fn$;
 REVOKE ALL ON FUNCTION public.ia_cpc_permitido() FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.ia_cpc_permitido() TO authenticated, service_role;
 
+-- Confirmação independente de acesso ao backend (sem consultas operacionais).
+CREATE OR REPLACE FUNCTION public.ia_cpc_acesso_usuario(p_usuario_id uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = ''
+AS $fn$
+ SELECT p_usuario_id IS NOT NULL AND EXISTS (
+   SELECT 1 FROM private.ia_cpc_usuarios a
+   JOIN public.perfis_usuarios p ON p.user_id = a.user_id AND p.ativo
+   JOIN public.unidades u ON u.id = p.unidade_id AND u.ativo
+   WHERE a.user_id = p_usuario_id AND a.ativo
+     AND ((a.categoria = 'ADMIN' AND p.perfil = 'ADMIN')
+      OR (a.categoria = 'COMANDANTE_CPC' AND p.perfil = 'COMANDANTE'
+       AND upper(u.sigla) = 'CPC'))
+ );
+$fn$;
+REVOKE ALL ON FUNCTION public.ia_cpc_acesso_usuario(uuid)
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.ia_cpc_acesso_usuario(uuid) TO service_role;
+
 -- Reserva financeira atômica. Todos os valores monetários são CENTAVOS de real.
 -- Calendário mensal e diário em America/Boa_Vista.
 CREATE OR REPLACE FUNCTION public.ia_cpc_reservar_orcamento(
