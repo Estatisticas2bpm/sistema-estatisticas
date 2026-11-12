@@ -11,7 +11,7 @@
 
   if(!cfg||!cfg.enabled){
     document.addEventListener('DOMContentLoaded',esconderAdministracaoDesativada,{once:true});
-    window.SistemaAuth={enabled:false,ready:Promise.resolve({enabled:false}),pode:()=>true,temModulo:()=>false,modulos:[],planilha:null,perfil:null,user:null,sair:async()=>{location.href='index.html';}};
+    window.SistemaAuth={enabled:false,ready:Promise.resolve({enabled:false}),pode:(p)=>p!=='ia_cpc',temModulo:()=>false,modulos:[],planilha:null,perfil:null,user:null,sair:async()=>{location.href='index.html';}};
     return;
   }
 
