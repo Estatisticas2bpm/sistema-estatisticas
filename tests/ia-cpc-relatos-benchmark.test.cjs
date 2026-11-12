@@ -182,6 +182,17 @@ function score(tp,fp,fn) {
     divergencias:divergenciasEstresse};
   console.log("DESAFIOS ADVERSARIAIS SINTÉTICOS (ainda não homologados)");
   console.log(JSON.stringify(estresse,null,2));
+  // Evitar regressões das falhas críticas encontradas na execução inicial:
+  // 4 falsos positivos, 6 erros de contexto, inclusive uma atribuição indevida
+  // de constatação; depois da correção os 26 casos sintéticos foram reavaliados.
+  assert.equal(grave,0,
+    "Uma negação, hipótese ou relato de terceiro jamais pode virar constatação");
+  assert(score(dtp,dfp,dfn).precisao>=0.95,
+    "Precisão do conjunto de estresse abaixo de 95%");
+  assert(score(dtp,dfp,dfn).revocacao>=0.95,
+    "Cobertura do conjunto de estresse abaixo de 95%");
+  assert(dctx>0&&dctxOk/dctx>=0.90,
+    "Classificação contextual do conjunto de estresse abaixo de 90%");
 
   console.log("BENCHMARK SINTÉTICO IA CPC (NÃO é validação com BOs reais)");
   console.log(JSON.stringify({
