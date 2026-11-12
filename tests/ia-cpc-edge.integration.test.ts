@@ -210,6 +210,24 @@ Deno.test("Dados sintéticos: orçamento bloqueado impede OpenAI e mantém prote
  assertEquals(r.dados.cota.restante_centavos,0);
 });
 
+Deno.test("Relatos bloqueados por padrão e perguntas pessoais recusadas antes de acessar dados",async()=>{
+ const usuario={userId:ID_ADMIN,registro:true};
+ const relato=await requisitar(usuario,{corpo:{
+   pergunta:"Quais padrões os relatos históricos mencionam?",
+   data_inicio:"2026-10-01",data_fim:"2026-10-07",historico:[]
+ }});
+ assertEquals(relato.status,503);
+ assert(!relato.chamadas.some(x=>x.includes("/rest/v1/ocorrencias")));
+ assert(!relato.chamadas.some(x=>x.includes("api.openai.com")));
+ const pessoal=await requisitar(usuario,{corpo:{
+   pergunta:"Qual o nome do suspeito no relatório de furto?",
+   data_inicio:"2026-10-01",data_fim:"2026-10-07",historico:[]
+ }});
+ assert([400,422].includes(pessoal.status));
+ assert(!pessoal.chamadas.some(x=>x.includes("/rest/v1/ocorrencias")));
+ assert(!pessoal.chamadas.some(x=>x.includes("api.openai.com")));
+});
+
 Deno.test("Fluxo autorizado: sessão, perfil, agregados, reserva e chamada SIMULADA nesta ordem",async()=>{
  const r=await requisitar({userId:ID_COMANDANTE,registro:true,permitirChamadaSimulada:true});
  assertEquals(r.status,200);
