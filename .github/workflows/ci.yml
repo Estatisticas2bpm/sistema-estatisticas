@@ -20,6 +20,16 @@ jobs:
         with:
           node-version: 22
 
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Verificar Edge Function de IA
+        run: deno check supabase/functions/ia-cpc/index.ts
+
+      - name: Homologar Edge Function com Auth, RPC e OpenAI simulados (sem rede externa)
+        run: deno test --allow-env tests/ia-cpc-edge.integration.test.ts
+
       - name: Executar testes de contrato
         shell: bash
         run: |
@@ -45,3 +55,215 @@ jobs:
           set -euo pipefail
           mapfile -t paginas < <(find . -maxdepth 1 -type f -name '*.html' -print | sort)
           node tests/check-html-scripts.js "${paginas[@]}"
+
+  validar-sql-ia:
+    name: PostgreSQL isolado — autorização e orçamento da IA
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: sie_cpc_sintetico
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d sie_cpc_sintetico"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: sie_cpc_sintetico
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validar SQL de homologação em dados fictícios
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v psql || (sudo apt-get update -qq && sudo apt-get install -y postgresql-client)
+          psql -v ON_ERROR_STOP=1 -f tests/ia-cpc-db-fixture.sql
+          psql -v ON_ERROR_STOP=1 -f docs/sql/ia_cpc_cota_pendente_aprovacao.sql
+          psql -v ON_ERROR_STOP=1 -f tests/ia-cpc-db.test.sql
+
+      - name: Duas reservas simultâneas não superam R$ 100
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Recria apenas o saldo de um banco de TESTES descartável.
+          psql -v ON_ERROR_STOP=1 -c "TRUNCATE private.ia_cpc_consumo"
+          psql -v ON_ERROR_STOP=1 -c "INSERT INTO private.ia_cpc_consumo (usuario_id,modelo,mes_referencia,reserva_centavos) VALUES ('00000000-0000-4000-8000-000000000001','gpt-5.6-luna',date_trunc('month',now() AT TIME ZONE 'America/Boa_Vista')::date,9975)"
+          SQL_CONCORRENTE="SELECT public.ia_cpc_reservar_orcamento('00000000-0000-4000-8000-000000000001','gpt-5.6-luna',25)->>'permitido'"
+          psql -v ON_ERROR_STOP=1 -Atqc "$SQL_CONCORRENTE" > "$RUNNER_TEMP/ia-cpc-simultanea-1.log" &
+          pid1=$!
+          psql -v ON_ERROR_STOP=1 -Atqc "$SQL_CONCORRENTE" > "$RUNNER_TEMP/ia-cpc-simultanea-2.log" &
+          pid2=$!
+          wait "$pid1"
+          wait "$pid2"
+          cat "$RUNNER_TEMP"/ia-cpc-simultanea-*.log
+          verdadeiros=$(awk '$0=="true"{n++} END{print n+0}' "$RUNNER_TEMP"/ia-cpc-simultanea-*.log)
+          falsos=$(awk '$0=="false"{n++} END{print n+0}' "$RUNNER_TEMP"/ia-cpc-simultanea-*.log)
+          test "$verdadeiros" -eq 1
+          test "$falsos" -eq 1
+          soma=$(psql -Atqc "SELECT sum(coalesce(custo_final_centavos,reserva_centavos)) FROM private.ia_cpc_consumo")
+          test "$soma" -eq 10000
+          echo "OK — sob concorrência, exatamente uma reserva foi aprovada e o teto foi respeitado."
+
+  homologar-supabase-local-ia:
+    name: Supabase local — Auth, PostgREST e Edge (somente dados fictícios)
+    if: github.event_name == 'pull_request' && github.event.pull_request.number == 152
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # CLI v3 mudou comandos em novembro de 2026. v2.stable evita
+      # variações de comportamento nesta homologação; NUNCA usar --remote.
+      - uses: supabase/setup-cli@v3
+        with:
+          version: v2.stable
+
+      - name: Iniciar Supabase local sem acessar projeto hospedado
+        shell: bash
+        run: |
+          set -euo pipefail
+          unset SUPABASE_ACCESS_TOKEN SUPABASE_DB_PASSWORD SUPABASE_PROJECT_ID
+          supabase --version
+          # O repositório contém migrações históricas que supõem um banco
+          # operacional já existente. Não executá-las em uma instalação limpa.
+          # A homologação usa workspace independente e SOMENTE o código IA.
+          export PASTA_LOCAL="$RUNNER_TEMP/ia-cpc-supabase-descartavel"
+          mkdir -p "$PASTA_LOCAL"
+          cd "$PASTA_LOCAL"
+          supabase init --yes
+          mkdir -p supabase/functions
+          cp -R "$GITHUB_WORKSPACE/supabase/functions/ia-cpc" supabase/functions/ia-cpc
+          # Conserva Postgres, GoTrue, PostgREST, Kong e Edge Functions.
+          supabase start -x studio,postgres-meta,mailpit,imgproxy,storage-api,realtime,logflare,vector,supavisor
+          # As chaves abaixo são geradas APENAS pela instância local.
+          supabase status -o env > "$RUNNER_TEMP/supabase-local.env"
+
+      - name: Aplicar somente esquema e migração em banco local descartável
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v psql || (sudo apt-get update -qq && sudo apt-get install -y postgresql-client)
+          export PGHOST=127.0.0.1 PGPORT=54322 PGUSER=postgres PGPASSWORD=postgres PGDATABASE=postgres
+          psql -v ON_ERROR_STOP=1 -f "$GITHUB_WORKSPACE/tests/ia-cpc-supabase-local-fixture.sql"
+          psql -v ON_ERROR_STOP=1 -f "$GITHUB_WORKSPACE/docs/sql/ia_cpc_cota_pendente_aprovacao.sql"
+          psql -v ON_ERROR_STOP=1 -c "NOTIFY pgrst, 'reload schema';"
+
+      - name: Iniciar Edge Function local com integração paga fictícia
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/ia-cpc-local.env" <<'EOF'
+          IA_CPC_ENABLED=true
+          IA_CPC_RELATOS_ENABLED=false
+          IA_CPC_ALLOWED_ORIGINS=http://localhost:9999
+          OPENAI_API_KEY=CHAVE_FICTICIA_SEM_ACESSO_A_OPENAI
+          OPENAI_MODEL=gpt-5.6-luna
+          IA_CPC_BRL_USD_RESERVA=8
+          EOF
+          cd "$RUNNER_TEMP/ia-cpc-supabase-descartavel"
+          supabase functions serve ia-cpc --env-file "$RUNNER_TEMP/ia-cpc-local.env" \
+            > "$RUNNER_TEMP/ia-cpc-local.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/ia-cpc-local.pid"
+          # Verifica a resposta de autenticação gerada pela própria Edge.
+          # Uma resposta 405 a GET pode vir do gateway e não prova execução
+          # do handler; o POST com chave anon deve retornar "Sessão inválida".
+          set -a
+          source "$RUNNER_TEMP/supabase-local.env"
+          set +a
+          resposta=000
+          valido=false
+          for tentativa in $(seq 1 50); do
+            curl --connect-timeout 2 --max-time 5 -sS \
+              -D "$RUNNER_TEMP/edge-cabecalho.txt" \
+              -o "$RUNNER_TEMP/edge-resposta.txt" \
+              -w "%{http_code}" \
+              -H "apikey: $ANON_KEY" \
+              -H "Authorization: Bearer $ANON_KEY" \
+              -H "Origin: http://localhost:9999" \
+              -H "Content-Type: application/json" \
+              -X POST --data '{}' \
+              http://127.0.0.1:54321/functions/v1/ia-cpc \
+              > "$RUNNER_TEMP/edge-status.txt" || true
+            resposta=$(cat "$RUNNER_TEMP/edge-status.txt")
+            if [[ "$resposta" == 401 ]] && grep -q 'Sessão inválida' "$RUNNER_TEMP/edge-resposta.txt"; then
+              valido=true
+              break
+            fi
+            sleep 2
+          done
+          if [[ "$valido" != true ]]; then
+            echo "Edge Function local sem resposta de autenticação (HTTP $resposta)."
+            echo "Corpo HTTP (sem contas nem credenciais):"
+            head -c 300 "$RUNNER_TEMP/edge-resposta.txt" || true
+            echo
+            echo "Diagnóstico da inicialização — sem dados de usuários:"
+            sed -E 's/[A-Za-z0-9_.-]{55,}/[DADO_OCULTO]/g' "$RUNNER_TEMP/ia-cpc-local.log" | tail -50
+            exit 1
+          fi
+
+      - name: Preparar Chromium e SDK local para E2E de navegador
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ia-cpc-browser-ci"
+          npm install --prefix "$RUNNER_TEMP/ia-cpc-browser-ci" \
+            --no-save --no-package-lock --silent \
+            @supabase/supabase-js@2.95.0 playwright-core@1.56.1 esbuild@0.25.12
+          cat > "$RUNNER_TEMP/ia-cpc-browser-ci/sdk-entry.js" <<'EOF'
+          import { createClient } from '@supabase/supabase-js';
+          window.supabase = { createClient };
+          EOF
+          "$RUNNER_TEMP/ia-cpc-browser-ci/node_modules/.bin/esbuild" \
+            "$RUNNER_TEMP/ia-cpc-browser-ci/sdk-entry.js" \
+            --bundle --format=iife --platform=browser \
+            --outfile="$RUNNER_TEMP/ia-cpc-browser-ci/supabase-browser.js"
+          if command -v google-chrome >/dev/null 2>&1; then
+            echo "CHROME_PATH=$(command -v google-chrome)" >> "$GITHUB_ENV"
+          elif command -v chromium >/dev/null 2>&1; then
+            echo "CHROME_PATH=$(command -v chromium)" >> "$GITHUB_ENV"
+          else
+            echo "Chromium não disponível no runner." >&2
+            exit 1
+          fi
+          echo "BROWSER_SDK_BUNDLE=$RUNNER_TEMP/ia-cpc-browser-ci/supabase-browser.js" >> "$GITHUB_ENV"
+          echo "PLAYWRIGHT_CORE_PATH=$RUNNER_TEMP/ia-cpc-browser-ci/node_modules/playwright-core" >> "$GITHUB_ENV"
+          echo "IA_CPC_BROWSER_E2E=true" >> "$GITHUB_ENV"
+
+      - name: Exercitar login, allowlist, RPC, revogação e Edge reais (LOCAL)
+        shell: bash
+        run: |
+          set -euo pipefail
+          set -a
+          source "$RUNNER_TEMP/supabase-local.env"
+          set +a
+          unset SUPABASE_ACCESS_TOKEN SUPABASE_DB_PASSWORD SUPABASE_PROJECT_ID
+          if ! node tests/ia-cpc-supabase-local-e2e.cjs; then
+            echo "Falha de integração local: diagnóstico do executor Edge (sem credenciais):"
+            if [[ -f "$RUNNER_TEMP/ia-cpc-local.log" ]]; then
+              sed -E 's/[A-Za-z0-9_.-]{55,}/[DADO_OCULTO]/g' "$RUNNER_TEMP/ia-cpc-local.log" | tail -65
+            fi
+            exit 1
+          fi
+
+      - name: Encerrar ambiente descartável
+        if: always()
+        shell: bash
+        run: |
+          if [[ -d "$RUNNER_TEMP/ia-cpc-supabase-descartavel/supabase" ]]; then
+            cd "$RUNNER_TEMP/ia-cpc-supabase-descartavel"
+            supabase stop --no-backup || true
+          fi

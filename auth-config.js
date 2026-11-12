@@ -30,6 +30,7 @@ window.SISTEMA_AUTH_CONFIG = Object.freeze({
     "giro-acesso-abordagens.html":"dashboard",
     "giro-ranking-abordagens.html":"dashboard",
     "dashboard-cpc.html":"dashboard",
+    "ia-cpc.html":"ia_cpc",
     "territorio-cpc.html":"dashboard",
     "auditoria.html":"auditoria",
     "analise-temporal.html":"analise",
