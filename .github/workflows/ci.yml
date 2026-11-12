@@ -178,8 +178,9 @@ jobs:
           supabase functions serve ia-cpc --env-file "$RUNNER_TEMP/ia-cpc-local.env" \
             > "$RUNNER_TEMP/ia-cpc-local.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/ia-cpc-local.pid"
-          # O gateway pode responder 401 ANTES de o worker estar pronto.
-          # Validamos a própria Edge via resposta CORS da aplicação.
+          # Verifica a resposta de autenticação gerada pela própria Edge.
+          # Uma resposta 405 a GET pode vir do gateway e não prova execução
+          # do handler; o POST com chave anon deve retornar "Sessão inválida".
           set -a
           source "$RUNNER_TEMP/supabase-local.env"
           set +a
@@ -193,17 +194,22 @@ jobs:
               -H "apikey: $ANON_KEY" \
               -H "Authorization: Bearer $ANON_KEY" \
               -H "Origin: http://localhost:9999" \
+              -H "Content-Type: application/json" \
+              -X POST --data '{}' \
               http://127.0.0.1:54321/functions/v1/ia-cpc \
               > "$RUNNER_TEMP/edge-status.txt" || true
             resposta=$(cat "$RUNNER_TEMP/edge-status.txt")
-            if grep -qi '^access-control-allow-origin: http://localhost:9999' "$RUNNER_TEMP/edge-cabecalho.txt"; then
+            if [[ "$resposta" == 401 ]] && grep -q 'Sessão inválida' "$RUNNER_TEMP/edge-resposta.txt"; then
               valido=true
               break
             fi
             sleep 2
           done
           if [[ "$valido" != true ]]; then
-            echo "Edge Function local sem resposta da aplicação (HTTP $resposta)."
+            echo "Edge Function local sem resposta de autenticação (HTTP $resposta)."
+            echo "Corpo HTTP (sem contas nem credenciais):"
+            head -c 300 "$RUNNER_TEMP/edge-resposta.txt" || true
+            echo
             echo "Diagnóstico da inicialização — sem dados de usuários:"
             sed -E 's/[A-Za-z0-9_.-]{55,}/[DADO_OCULTO]/g' "$RUNNER_TEMP/ia-cpc-local.log" | tail -50
             exit 1
