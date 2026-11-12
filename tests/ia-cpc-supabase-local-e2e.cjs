@@ -4,6 +4,7 @@
 // No credentials, identifiers or police data from the production project.
 const assert=require("node:assert/strict");
 const {spawnSync}=require("node:child_process");
+const path=require("node:path");
 const base=(process.env.API_URL||"").replace(/\/$/,"");
 const anon=process.env.ANON_KEY||"";
 const service=process.env.SERVICE_ROLE_KEY||"";
@@ -88,6 +89,17 @@ async function main(){
   } else assert.equal(v.status,403,"Edge permitiu não designado "+p.nome+": "+JSON.stringify(v.data));
  }
  console.log("Edge local: 2 contas admitidas sem cobrança, outras 3 rejeitadas.");
+ // Exercita a página HTML e o auth-guard ORIGINAL em navegador Chromium real,
+ // antes da revogação das sessões. Executa apenas em runner local.
+ if(process.env.IA_CPC_BROWSER_E2E==="true"){
+   const alvo=path.join(__dirname,"ia-cpc-browser-local.e2e.cjs");
+   const teste=spawnSync(process.execPath,[alvo],{
+     encoding:"utf8",timeout:100000,
+     env:{...process.env,IA_CPC_BROWSER_E2E:"false"}
+   });
+   if(teste.stdout)process.stdout.write(teste.stdout);
+   if(teste.status!==0)throw Error("Falha de navegador local: "+(teste.stderr||"").slice(-1200));
+ }
  const admin=pessoas[0],comandante=pessoas[1];
  query("INSERT INTO public.sessoes_revogadas(session_id,user_id) VALUES "+
   "('"+admin.session+"','"+admin.id+"');");
