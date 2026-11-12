@@ -1,7 +1,9 @@
 // Integração isolada da Edge Function real SIE-CPC.
 // Não utiliza contas, Supabase, OpenAI ou boletins reais.
 // Todas as chamadas HTTP são interceptadas, nenhuma rede é permitida no teste.
-import { assert, assertEquals, assertStringIncludes } from "jsr:@std/assert@1";
+import assert from "node:assert/strict";
+const assertEquals = (a:unknown,b:unknown) => assert.deepEqual(a,b);
+const assertStringIncludes = (s:string,fragment:string)=>assert(s.includes(fragment));
 
 // Captura a função Deno.serve sem abrir portas ou publicar endpoint.
 type Handler = (req: Request) => Response | Promise<Response>;
