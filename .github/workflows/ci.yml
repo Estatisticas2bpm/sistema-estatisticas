@@ -114,3 +114,86 @@ jobs:
           soma=$(psql -Atqc "SELECT sum(coalesce(custo_final_centavos,reserva_centavos)) FROM private.ia_cpc_consumo")
           test "$soma" -eq 10000
           echo "OK — sob concorrência, exatamente uma reserva foi aprovada e o teto foi respeitado."
+
+  homologar-supabase-local-ia:
+    name: Supabase local — Auth, PostgREST e Edge (somente dados fictícios)
+    if: github.event_name == 'pull_request' && github.event.pull_request.number == 152
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # CLI v3 mudou comandos em novembro de 2026. v2.stable evita
+      # variações de comportamento nesta homologação; NUNCA usar --remote.
+      - uses: supabase/setup-cli@v3
+        with:
+          version: v2.stable
+
+      - name: Iniciar Supabase local sem acessar projeto hospedado
+        shell: bash
+        run: |
+          set -euo pipefail
+          unset SUPABASE_ACCESS_TOKEN SUPABASE_DB_PASSWORD SUPABASE_PROJECT_ID
+          supabase --version
+          supabase init --yes
+          # Conserva Postgres, GoTrue, PostgREST, Kong e Edge Functions.
+          supabase start -x studio,postgres-meta,mailpit,imgproxy,storage-api,realtime,logflare,vector,supavisor
+          # As chaves abaixo são geradas APENAS pela instância local.
+          supabase status -o env > "$RUNNER_TEMP/supabase-local.env"
+
+      - name: Aplicar somente esquema e migração em banco local descartável
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v psql || (sudo apt-get update -qq && sudo apt-get install -y postgresql-client)
+          export PGHOST=127.0.0.1 PGPORT=54322 PGUSER=postgres PGPASSWORD=postgres PGDATABASE=postgres
+          psql -v ON_ERROR_STOP=1 -f tests/ia-cpc-supabase-local-fixture.sql
+          psql -v ON_ERROR_STOP=1 -f docs/sql/ia_cpc_cota_pendente_aprovacao.sql
+          psql -v ON_ERROR_STOP=1 -c "NOTIFY pgrst, 'reload schema';"
+
+      - name: Iniciar Edge Function local com integração paga fictícia
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/ia-cpc-local.env" <<'EOF'
+          IA_CPC_ENABLED=true
+          IA_CPC_RELATOS_ENABLED=false
+          IA_CPC_ALLOWED_ORIGINS=http://localhost:9999
+          OPENAI_API_KEY=CHAVE_FICTICIA_SEM_ACESSO_A_OPENAI
+          OPENAI_MODEL=gpt-5.6-luna
+          IA_CPC_BRL_USD_RESERVA=8
+          EOF
+          supabase functions serve ia-cpc --env-file "$RUNNER_TEMP/ia-cpc-local.env" \
+            > "$RUNNER_TEMP/ia-cpc-local.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/ia-cpc-local.pid"
+          resposta=000
+          for tentativa in $(seq 1 50); do
+            resposta=$(curl --connect-timeout 2 --max-time 4 -s -o /dev/null \
+              -w "%{http_code}" http://127.0.0.1:54321/functions/v1/ia-cpc || true)
+            if [[ "$resposta" =~ ^(200|400|401|403|405|503)$ ]]; then break; fi
+            sleep 2
+          done
+          if [[ ! "$resposta" =~ ^(200|400|401|403|405|503)$ ]]; then
+            echo "Edge Function local não iniciou — trechos de diagnóstico sem segredos:"
+            sed -E 's/(Bearer|eyJ)[A-Za-z0-9._-]+/[REDACTED]/g' "$RUNNER_TEMP/ia-cpc-local.log" | tail -40
+            exit 1
+          fi
+
+      - name: Exercitar login, allowlist, RPC, revogação e Edge reais (LOCAL)
+        shell: bash
+        run: |
+          set -euo pipefail
+          set -a
+          source "$RUNNER_TEMP/supabase-local.env"
+          set +a
+          unset SUPABASE_ACCESS_TOKEN SUPABASE_DB_PASSWORD SUPABASE_PROJECT_ID
+          node tests/ia-cpc-supabase-local-e2e.cjs
+
+      - name: Encerrar ambiente descartável
+        if: always()
+        shell: bash
+        run: |
+          supabase stop --no-backup || true
