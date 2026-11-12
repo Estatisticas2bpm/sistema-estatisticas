@@ -18,6 +18,8 @@ assert.match(config, /"ia-cpc\.html"\s*:\s*"ia_cpc"/);
 assert.match(guard,/permissao==='ia_cpc'\)return acessoIaIndividual/);
 assert.match(guard,/client\.rpc\('ia_cpc_permitido'\)/);
 assert.match(guard,/acessoIaIndividual=false/);
+assert.match(guard,/pode:\(p\)=>p!=='ia_cpc'/,
+  'IA sempre bloqueada quando a autenticação geral está desabilitada');
 assert.match(home,/href="ia-cpc\.html" data-permission="ia_cpc" hidden/);
 assert.match(dash,/href="ia-cpc\.html" data-permission="ia_cpc" hidden/);
 assert.match(pagina,/autorizado\.pode\('ia_cpc'\)/);
