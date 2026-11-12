@@ -59,9 +59,26 @@ O banco existente contém os campos `historico_resumido`, `detalhes`, `observaca
 
 **Limitação técnica:** esta primeira implementação reconhece sinais textuais por regras fixas, não compreende semanticamente o relato inteiro. Para perguntas investigativas mais complexas ou sínteses narrativas profundas seria necessário um processamento semântico protegido, com avaliação de segurança e base válida para o tratamento dos dados, de preferência dentro do ambiente controlado. O fato de a aplicação ser privada ou acessada somente por profissionais da segurança pública não elimina a necessidade de proteger dados pessoais e informações restritas.
 
+### Qualificação contextual dos relatos — versão de desenvolvimento de 12/11/2026
+
+O processamento local foi ampliado para examinar **orações próximas** às menções e classificar a redação em seis estados mutuamente exclusivos por BO e marcador:
+- `negada_ou_ausente_no_texto`: negação explícita na expressão;
+- `hipotese_nao_confirmada`: linguagem de possibilidade ou impossibilidade de confirmar;
+- `atribuida_a_relato`: afirmação atribuída a testemunha, comunicante ou outra fonte;
+- `descrita_como_constatada`: descrição de apreensão/localização/verificação, sem afirmar veracidade;
+- `sem_contexto_claro`: menção para a qual não há sinal suficiente;
+- `contextos_divergentes`: menções incompatíveis no mesmo registro.
+
+O objetivo é reduzir interpretações falsas, não substituir análise jurídica ou pericial. A linguagem natural é ambígua, e as regras podem falhar diante de frases longas, citações, abreviações e negações distantes. A classificação **não é IA semântica nem extração integral de eventos**; é uma melhoria determinística e verificável.
+
+O relatório agregado só mostra um estado quando a contagem tem pelo menos cinco BOs **e todos os demais estados daquela mesma categoria também têm cinco ou mais**. Essa regra evita revelar valores baixos por subtração de totais de menções. Não guarda em tabela novas categorias nem modifica históricos. Nenhum texto individual é enviado ao modelo externo.
+
+Os testes sintéticos abrangem negação, fonte relatada, hipótese, registro descrito como constatado, menções contraditórias, ausência de texto, sobreposição de termos e tentativas de injetar comandos em um histórico. Ainda é necessário aferir falsos positivos/negativos com uma amostra anonimizada e supervisionada, sem divulgar nomes ou detalhes identificadores.
+
 ### Homologação específica ainda necessária
 
-- [ ] Testes sintéticos de falsos positivos e negativos com relatos criados para teste, incluindo negações e cenários de trânsito, ambiental, patrulhamento e policial.
+- [x] Testes sintéticos básicos de negação, hipótese, fonte relatada, contexto divergente e dados pessoais.
+- [ ] Testes mais amplos de precisão com relatos fictícios de trânsito, ambiental, patrulhamento e operações policiais.
 - [ ] Verificar performance e timeout com muitos relatos sem transportar texto ao provedor.
 - [ ] Validar controles de acesso, logs, isolamento de unidades e orçamento.
 - [ ] Aprovar expressamente a ampliação de escopo técnico e ativar a flag apenas após validação; nenhum dado real é enviado à OpenAI durante essa etapa.
