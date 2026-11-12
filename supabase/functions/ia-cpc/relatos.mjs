@@ -28,7 +28,7 @@ const PADROES = Object.freeze({
 function textoValido(v) { return typeof v === "string" && v.trim().length > 0; }
 function normalizar(v) {
   return v.normalize("NFD").replace(/[\u0300-\u036f]/g,"")
-    .toUpperCase().replace(/\s+/g," ");
+    .toUpperCase().replace(/[ \t\r\f\v]+/g," ");
 }
 /** Analisa somente contexto lexical próximo, nunca texto integral como prompt. */
 function qualificarMencao(frase, inicio, tamanho) {
