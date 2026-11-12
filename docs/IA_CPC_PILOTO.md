@@ -40,6 +40,8 @@ Fases 2 e parte da 3 implementadas em código: comparação de dois períodos co
 
 O histórico de conversa é **temporário na página** (perde-se ao recarregar). O backend não armazena perguntas/respostas. Persistência protegida e relatórios PDF institucionais são etapas futuras, não implementadas.
 
+**Avaliação sintética de precisão (12/11/2026):** consulte o relatório `docs/IA_CPC_AVALIACAO_RELATOS_2026-11-12.md`. Foram testados 57 relatos básicos e 26 casos difíceis; os erros iniciais do segundo grupo foram corrigidos. Os resultados não representam validação de BOs reais.
+
 ## 2A. Expansão para análise contextual de relatos e observações — proposta NÃO ativada
 
 O banco existente contém os campos `historico_resumido`, `detalhes`, `observacao` e `observacao_final`. A verificação estrutural (sem leitura de relatos individuais) encontrou 4.075 dos 5.312 registros ativos com `historico_resumido` preenchido. O potencial analítico justifica tratar os relatos como fonte auxiliar, não como fonte automaticamente validada.
@@ -78,6 +80,7 @@ Os testes sintéticos abrangem negação, fonte relatada, hipótese, registro de
 ### Homologação específica ainda necessária
 
 - [x] Testes sintéticos básicos de negação, hipótese, fonte relatada, contexto divergente e dados pessoais.
+- [x] Benchmark de 83 relatos fictícios com métricas de menções e contextos; regressões críticas bloqueiam o CI.
 - [ ] Testes mais amplos de precisão com relatos fictícios de trânsito, ambiental, patrulhamento e operações policiais.
 - [ ] Verificar performance e timeout com muitos relatos sem transportar texto ao provedor.
 - [ ] Validar controles de acesso, logs, isolamento de unidades e orçamento.
