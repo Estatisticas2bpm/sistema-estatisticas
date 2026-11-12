@@ -31,9 +31,17 @@ O teste intercepta a função real, inclusive seus módulos auxiliares, e confer
 
 Além disso, foram preservados os testes PostgreSQL isolados para concessões de acesso por duas identidades, exclusividade por categoria, alteração de perfil/unidade, teto de R$100/mês e concorrência de reservas.
 
+## Resultado da integração sintética
+
+A execução no GitHub Actions registrou **7 testes de Edge Function aprovados (0 falhas)**. O conjunto de validação Node passou integralmente, incluindo um teste adicional do JavaScript da página `ia-cpc.html` em DOM simulado.
+
+Arquivo: `tests/ia-cpc-ui.integration.test.cjs`.
+
+Esse teste executa o script verdadeiro da página e verifica: tela oculta quando não há Auth/permissão, ausência de envio de dados por usuários não designados, liberação da interface para usuário autorizado, envio de pergunta à função simulada, renderização de aviso de dados preliminares, atualização do orçamento, gráfico comparativo e tratamento de resposta 403. **Não envolve navegador real nem credenciais verdadeiras.**
+
 ## Ajuste de segurança na interface
 
-Mesmo que a configuração geral de autenticação esteja ausente ou desabilitada, a permissão específica `ia_cpc` permanece negada no `auth-guard.js`. A página também exige `window.SistemaAuth.ready` e `pode('ia_cpc')` antes de mostrar o conteúdo. A Edge Function valida novamente a identidade e nunca confia no navegador como mecanismo único de proteção.
+Mesmo que a configuração geral de autenticação esteja ausente ou desabilitada, a permissão específica `ia_cpc` permanece negada no `auth-guard.js`. A interface permanece oculta e a página também exige `window.SistemaAuth.ready` e `pode('ia_cpc')` antes de mostrar o conteúdo. A Edge Function valida novamente a identidade e nunca confia no navegador como mecanismo único de proteção.
 
 A denominação da interface foi ajustada para **projeto-piloto privado** em vez de sugerir que o site seja institucional.
 
