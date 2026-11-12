@@ -121,7 +121,8 @@ https://developers.openai.com/api/docs/models/gpt-5.6-luna
 - [ ] Revisar SQL em ambiente de homologação e verificar RLS e permissões; **não executado no banco de produção**.
 - [ ] Designar exatamente as duas contas por UUID, sem divulgar IDs no repositório; avaliar procedimento de substituição.
 - [ ] Verificar que conta não designada (incluindo outros ADMIN/COMANDANTE CPC) é bloqueada no frontend E na Edge.
-- [ ] Testar suspensão, expiração, revogação e alteração de perfil/unidade, MFA quando adotado.
+- [x] Testes executáveis com Supabase Auth, RPCs e provedor externo **simulados**: sessões inválidas/revogadas, contas não designadas, CORS, bloqueio financeiro e fluxo autorizado com dados fictícios. Ver `docs/IA_CPC_HOMOLOGACAO_INTEGRACAO_2026-11-12.md`.
+- [ ] Testar suspensão, expiração, revogação e alteração de perfil/unidade com Supabase Auth/Edge **reais**, MFA quando adotado.
 - [ ] Conferir os indicadores com dashboard e amostra sintética/anonimizada, especialmente campos não classificados, rascunhos e duplicidades. O banco atualmente apresenta períodos compostos inteiramente por rascunhos; não interpretar isso automaticamente como série criminal consolidada.
 - [ ] Homologar concorrência de reservas, custo acima do orçamento, aviso dos R$80 e divergências de telemetria.
 - [ ] Validar o câmbio conservador e os preços vigentes; obter aprovação de projeto de API e limite de gasto.
