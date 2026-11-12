@@ -8,14 +8,15 @@ const assertStringIncludes = (s:string,fragment:string)=>assert(s.includes(fragm
 // Captura a função Deno.serve sem abrir portas ou publicar endpoint.
 type Handler = (req: Request) => Response | Promise<Response>;
 const serveOriginal = Deno.serve;
-let handler: Handler | null = null;
+let registrado=false;
+let handler: Handler = ()=>{throw Error('Edge Function não inicializada');};
 Object.defineProperty(Deno,"serve", {
-  value: (h: Handler) => {handler=h;return {finished:Promise.resolve()};},
+  value: (h: Handler) => {registrado=true;handler=h;return {finished:Promise.resolve()};},
   configurable:true,writable:true
 });
 try { await import("../supabase/functions/ia-cpc/index.ts"); }
 finally { Object.defineProperty(Deno,"serve",{value:serveOriginal,configurable:true,writable:true}); }
-if(!handler) throw new Error("A Edge Function não registrou o manipulador HTTP.");
+if(!registrado) throw new Error("A Edge Function não registrou o manipulador HTTP.");
 const atender = handler;
 
 const ORIGEM="https://homologacao.sie-cpc.invalid";
