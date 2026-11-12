@@ -5,7 +5,8 @@ import { createClient } from "npm:@supabase/supabase-js@2.95.0";
 import {
   categoria, ranking, somar, conducoesOperacionaisPorOcorrencia,
   intervaloAnterior, compararTotal, mudancasSignificativas,
-  classificarNatureza, naturezaAlvoPergunta, serieMensalSegura, familiaNatureza, intencaoEstatistica
+  classificarNatureza, naturezaAlvoPergunta, serieMensalSegura, familiaNatureza, intencaoEstatistica,
+  extrairClassificacoesOficiais
 } from "./estatisticas.mjs";
 import {
   criarContadoresRelatos, registrarContadoresRelatos, publicarContadoresRelatos
@@ -168,8 +169,6 @@ Deno.serve(async (req: Request) => {
     const nomesUnidade = new Map((unidades||[]).map(u=>[u.id,categoria(u.sigla)]));
     const nomesBairro = new Set((bairros||[]).map(b=>categoria(b.nome)));
     const nomesTipo = new Set((tipos||[]).map(t=>categoria(t.nome)));
-    const classificarTipo=(ocorrencia:unknown,crime:unknown) =>
-      classificarNatureza(ocorrencia,crime,nomesTipo);
     const classificarBairro=(bairro:unknown) => {
       const c=categoria(bairro);return nomesBairro.has(c)?c:"NÃO CLASSIFICADO";
     };
@@ -178,13 +177,17 @@ Deno.serve(async (req: Request) => {
       total:number;finalizados:number;rascunhos:number;conduzidos:number;
       prisoes:number;conducoes:number;armas:number;veiculos:number;
       porUnidade:Map<string,number>;porNatureza:Map<string,number>;
-      porFamilia:Map<string,number>;
+      porFamilia:Map<string,number>;porCrimes:Map<string,number>;
+      ocorrencias_multiplas_naturezas:number;ocorrencias_varios_itens_crime:number;
+      naturezas_por_bo:number;crimes_estruturados_por_bo:number;
       porBairro:Map<string,number>;porMes:Map<string,number>;porHora:Map<string,number>;
       relatos:ReturnType<typeof criarContadoresRelatos>|null;
     };
     const vazio=():Apuracao=>({total:0,finalizados:0,rascunhos:0,conduzidos:0,
       prisoes:0,conducoes:0,armas:0,veiculos:0,
-      porUnidade:new Map(),porNatureza:new Map(),porFamilia:new Map(),porBairro:new Map(),
+      porUnidade:new Map(),porNatureza:new Map(),porFamilia:new Map(),porCrimes:new Map(),
+      ocorrencias_multiplas_naturezas:0,ocorrencias_varios_itens_crime:0,
+      naturezas_por_bo:0,crimes_estruturados_por_bo:0,porBairro:new Map(),
       porMes:new Map(),porHora:new Map(),
       relatos:lerRelatos?criarContadoresRelatos():null});
     let processados=0;
@@ -195,8 +198,8 @@ Deno.serve(async (req: Request) => {
         // contextual e o módulo está habilitado. O modelo externo nunca os recebe.
         // Seleções literais mantêm os tipos Supabase verificáveis pelo Deno.
         const consulta=lerRelatos
-          ? admin.from("ocorrencias").select("id,data_ocorrencia,hora_inicial,unidade_id,ocorrencia,crime,bairro,status_registro,numero_conduzidos,numero_prisoes,quantidade_armas,veiculos_recuperados,historico_resumido,detalhes,observacao,observacao_final")
-          : admin.from("ocorrencias").select("id,data_ocorrencia,hora_inicial,unidade_id,ocorrencia,crime,bairro,status_registro,numero_conduzidos,numero_prisoes,quantidade_armas,veiculos_recuperados");
+          ? admin.from("ocorrencias").select("id,data_ocorrencia,hora_inicial,unidade_id,ocorrencia,crime,bairro,status_registro,numero_conduzidos,numero_prisoes,quantidade_armas,veiculos_recuperados,naturezas_itens,crimes_itens,historico_resumido,detalhes,observacao,observacao_final")
+          : admin.from("ocorrencias").select("id,data_ocorrencia,hora_inicial,unidade_id,ocorrencia,crime,bairro,status_registro,numero_conduzidos,numero_prisoes,quantidade_armas,veiculos_recuperados,naturezas_itens,crimes_itens");
         const {data:rows,error}=await consulta
           .eq("ativo",true).gte("data_ocorrencia",de).lte("data_ocorrencia",ate)
           .order("data_ocorrencia",{ascending:true}).order("id",{ascending:true})
@@ -215,10 +218,21 @@ Deno.serve(async (req: Request) => {
           resultado.armas+=Number(o.quantidade_armas)||0;
           resultado.veiculos+=Number(o.veiculos_recuperados)||0;
           somar(resultado.porUnidade,nomesUnidade.get(o.unidade_id)||"NÃO CLASSIFICADA");
-          const natureza=classificarTipo(o.ocorrencia,o.crime);
-          somar(resultado.porNatureza,natureza);
-          const familia=familiaNatureza(natureza);
-          if(familia)somar(resultado.porFamilia,familia);
+          const classificacoes=extrairClassificacoesOficiais(o,nomesTipo);
+          // Cada BO entra UMA vez em total_ocorrencias, mas pode estar em
+          // várias categorias oficiais (dimensões não são somadas ao total).
+          for(const natureza of classificacoes.naturezas)
+            somar(resultado.porNatureza,natureza);
+          for(const familia of classificacoes.familias)
+            somar(resultado.porFamilia,familia);
+          for(const crime of classificacoes.crimes)
+            somar(resultado.porCrimes,crime);
+          resultado.naturezas_por_bo+=classificacoes.naturezas.length;
+          resultado.crimes_estruturados_por_bo+=classificacoes.crimes.length;
+          if(classificacoes.multiplas_naturezas)
+            resultado.ocorrencias_multiplas_naturezas++;
+          if(classificacoes.varios_itens_crime)
+            resultado.ocorrencias_varios_itens_crime++;
           somar(resultado.porBairro,classificarBairro(o.bairro));
           somar(resultado.porMes,String(o.data_ocorrencia).slice(0,7));
           if(o.hora_inicial && /^\d\d:/.test(o.hora_inicial))
@@ -248,6 +262,11 @@ Deno.serve(async (req: Request) => {
       numero_prisoes:a.prisoes,quantidade_armas:a.armas,veiculos_recuperados:a.veiculos,
       unidades:ranking(a.porUnidade,30),naturezas:ranking(a.porNatureza,15),
       familias_natureza:ranking(a.porFamilia,10),
+      tipificacoes_criminais:ranking(a.porCrimes,15),
+      total_atribuicoes_natureza:a.naturezas_por_bo,
+      total_atribuicoes_tipo_crime:a.crimes_estruturados_por_bo,
+      boletins_com_multiplas_naturezas:a.ocorrencias_multiplas_naturezas,
+      boletins_com_varios_itens_crime:a.ocorrencias_varios_itens_crime,
       bairros:ranking(a.porBairro,15),horarios:ranking(a.porHora,24),
       evolucao_mensal:serieMensalSegura(a.porMes)
     });
@@ -295,6 +314,7 @@ Deno.serve(async (req: Request) => {
         finalizados:compararTotal(atual.finalizados,previo.finalizados),
         naturezas:mudancasSignificativas(atual.porNatureza,previo.porNatureza),
         familias_natureza:mudancasSignificativas(atual.porFamilia,previo.porFamilia),
+        tipificacoes_criminais:mudancasSignificativas(atual.porCrimes,previo.porCrimes),
         bairros:mudancasSignificativas(atual.porBairro,previo.porBairro),
         unidades:mudancasSignificativas(atual.porUnidade,previo.porUnidade)
       },
@@ -303,6 +323,7 @@ Deno.serve(async (req: Request) => {
         "Alertas de categoria requerem pelo menos 5 registros em AMBOS os períodos, variação de 25% e diferença mínima de 5 ocorrências.",
         "Dados em rascunho separados dos finalizados. Verificar percentual de rascunhos antes de considerar a tendência consolidada.",
         "Somente naturezas e bairros reconhecidos nos catálogos oficiais; os demais contam como não classificados.",
+        "Naturezas_itens é a fonte primária de categorias; crimes_itens é dimensão separada. Um BO pode aparecer em múltiplas categorias, MAS o total de BOs nunca deve ser igualado à soma de naturezas ou tipificações. Não somar dimensões.",
         "Famílias FURTO e ROUBO incluem subtipos da mesma natureza, mas NÃO tentativas, localização/recuperação ou categorias ambíguas.",
         "Conduções usam max(conduzidos, prisões) em cada BO; não somar essas métricas.",
         "Sem ajuste para sazonalidade, população, exposição ou diferenças de cobertura no cadastro.",
