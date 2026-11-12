@@ -27,6 +27,9 @@ jobs:
       - name: Verificar Edge Function de IA
         run: deno check supabase/functions/ia-cpc/index.ts
 
+      - name: Homologar Edge Function com Auth, RPC e OpenAI simulados (sem rede externa)
+        run: deno test --allow-env tests/ia-cpc-edge.integration.test.ts
+
       - name: Executar testes de contrato
         shell: bash
         run: |
