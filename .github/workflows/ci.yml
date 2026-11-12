@@ -215,6 +215,34 @@ jobs:
             exit 1
           fi
 
+      - name: Preparar Chromium e SDK local para E2E de navegador
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ia-cpc-browser-ci"
+          npm install --prefix "$RUNNER_TEMP/ia-cpc-browser-ci" \
+            --no-save --no-package-lock --silent \
+            @supabase/supabase-js@2.95.0 playwright-core@1.56.1 esbuild@0.25.12
+          cat > "$RUNNER_TEMP/ia-cpc-browser-ci/sdk-entry.js" <<'EOF'
+          import { createClient } from '@supabase/supabase-js';
+          window.supabase = { createClient };
+          EOF
+          "$RUNNER_TEMP/ia-cpc-browser-ci/node_modules/.bin/esbuild" \
+            "$RUNNER_TEMP/ia-cpc-browser-ci/sdk-entry.js" \
+            --bundle --format=iife --platform=browser \
+            --outfile="$RUNNER_TEMP/ia-cpc-browser-ci/supabase-browser.js"
+          if command -v google-chrome >/dev/null 2>&1; then
+            echo "CHROME_PATH=$(command -v google-chrome)" >> "$GITHUB_ENV"
+          elif command -v chromium >/dev/null 2>&1; then
+            echo "CHROME_PATH=$(command -v chromium)" >> "$GITHUB_ENV"
+          else
+            echo "Chromium não disponível no runner." >&2
+            exit 1
+          fi
+          echo "BROWSER_SDK_BUNDLE=$RUNNER_TEMP/ia-cpc-browser-ci/supabase-browser.js" >> "$GITHUB_ENV"
+          echo "PLAYWRIGHT_CORE_PATH=$RUNNER_TEMP/ia-cpc-browser-ci/node_modules/playwright-core" >> "$GITHUB_ENV"
+          echo "IA_CPC_BROWSER_E2E=true" >> "$GITHUB_ENV"
+
       - name: Exercitar login, allowlist, RPC, revogação e Edge reais (LOCAL)
         shell: bash
         run: |
