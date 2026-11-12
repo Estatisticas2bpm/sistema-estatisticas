@@ -45,14 +45,14 @@ function qualificarMencao(frase, inicio, tamanho) {
     return STATUS.INCERTA;
 
   // O prefixo de negação deve terminar MUITO perto da palavra-chave.
-  const negacaoAntes=/(?:\bSEM\b|\bAUSENCIA\s+DE\b|\bNENHUM[AOS]?\b|\bNAO\s+(?:FOI|FORAM|HOUVE|HAVIA|TINHA|PORTAVA|POSSUIA|LOCALIZOU|ENCONTROU|APREENDEU|CONSTATOU|UTILIZOU|IDENTIFICOU|SE\s+ENCONTROU|SE\s+VERIFICOU)\b|\bNEGOU\s+(?:PORTAR|POSSUIR|TER|USAR)\b)(?:\s+[A-Z0-9/-]+){0,4}\s*$/u;
+  const negacaoAntes=/(?:\bSEM\b|\bAUSENCIA\s+DE\b|\bNENHUM[AOS]?\b|\bNAO\s+(?:FOI|FORAM|HOUVE|HAVIA|TINHA|PORTAVA|POSSUIA|LOCALIZOU|ENCONTROU|APREENDEU|CONSTATOU|UTILIZOU|IDENTIFICOU|EXISTIR|EXISTIA|INFORMOU|RELATOU|SE\s+ENCONTROU|SE\s+VERIFICOU)\b|\bNEGOU\s+(?:PORTAR|POSSUIR|TER|USAR)\b|\bDESCARTAD[AO]\s+A\s+HIPOTESE\s+DE\b)(?:\s+[A-Z0-9/-]+){0,5}\s*$/u;
   const negacaoDepois=/^\s+(?:NAO\s+(?:FOI|FORAM|ESTAVA|ESTAVAM|ERA|ERAM|HOUVE|EXISTIA|HAVIA)\b(?:\s+[A-Z0-9/-]+){0,4}|INEXISTENTE\b)/u;
   if(negacaoAntes.test(proximidade)||negacaoDepois.test(depois))
     return STATUS.NEGADA;
 
   // Hipótese expressa, sem validação nos dados estruturados.
-  if(/(?:\bTERIA\b|\bTERIAM\b|\bPODERIA\b|\bPODERIAM\b|\bSUPOSTAMENTE\b|\bPOSSIVELMENTE\b|\bPROVAVELMENTE\b|\bSUSPEITA\s+DE\b|\bINDICIOS\s+DE\b)(?:\s+[A-Z0-9/-]+){0,6}\s*$/u.test(proximidade) ||
-     /^\s+(?:POSSIVEL|PROVAVEL|SUSPEIT[AO]|NAO\s+VERIFICAD[AO])\b/u.test(depois))
+  if(/(?:\bTERIA\b|\bTERIAM\b|\bPODERIA\b|\bPODERIAM\b|\bSUPOSTAMENTE\b|\bPOSSIVELMENTE\b|\bPROVAVELMENTE\b|\bSUSPEITA\s+(?:DE|QUE)\b|\bINDICIOS\s+DE\b)(?:\s+[A-Z0-9/-]+){0,6}\s*$/u.test(proximidade) ||
+     /^\s+(?:(?:TERIA|TERIAM|PODERIA|PODERIAM)\b|FOI\s+SUPOSTAMENTE\b|SUPOSTAMENTE\b|POSSIVEL\b|PROVAVEL\b|SUSPEIT[AO]\b|NAO\s+VERIFICAD[AO]\b)/u.test(depois))
     return STATUS.INCERTA;
 
   const relatada=/(?:\bSEGUNDO\b|\bCONFORME\s+(?:RELATO|DECLARACAO)\b|\bDE\s+ACORDO\s+COM\b|\bRELATOU\b|\bINFORMOU\b|\bAFIRMOU\b|\bALEGOU\b|\bDISSE\b|\bDECLAROU\b|\bNARROU\b)/u.test(vizinhanca);
@@ -81,6 +81,15 @@ export function indicadoresLocaisDeRelato(registro) {
     for(const [categoria,padrao] of Object.entries(PADROES)){
       const ocorrencias=oracao.matchAll(new RegExp(padrao.source,"gu"));
       for(const match of ocorrencias){
+        const complemento=oracao.slice(match.index+match[0].length,match.index+match[0].length+45);
+        // Desambiguação lexical explícita: ferramenta, brinquedo e mídia não
+        // equivalem a arma de fogo ou veículo automotor.
+        if(categoria==="mencao_arma_fogo" &&
+          /^\s+DE\s+(?:BRINQUEDO|PINTURA|COLA|AR\s+QUENTE|AGUA)\b/u.test(complemento))
+          continue;
+        if(categoria==="mencao_automovel" &&
+          /^\s+DE\s+(?:COMUNICACAO|IMPRENSA|MIDIA)\b/u.test(complemento))
+          continue;
         const status=qualificarMencao(oracao,match.index,match[0].length);
         if(!encontradas.has(categoria))encontradas.set(categoria,new Set());
         encontradas.get(categoria).add(status);
