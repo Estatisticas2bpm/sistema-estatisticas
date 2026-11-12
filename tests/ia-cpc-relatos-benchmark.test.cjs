@@ -78,6 +78,38 @@ const CASOS=[
   ["privacidade","A guarnição registrou o procedimento, sem imagens anexas.",{}]
 ];
 
+
+// Conjunto de estresse separado: formulações mais difíceis, sem garantir
+// equivalência de desempenho nos BOs reais. Registrar TODAS as divergências.
+const DESAFIOS=[
+  ["roubo","A equipe não encontrou uma arma de fogo.",{fogo:N}],
+  ["roubo","A guarnição não localizou qualquer revólver.",{fogo:N}],
+  ["roubo","A equipe não apreendeu nenhuma pistola.",{fogo:N}],
+  ["violencia_domestica","O comunicante não relatou nenhuma ameaça.",{ameaca:N}],
+  ["violencia_domestica","A equipe verificou não existir arma de fogo.",{fogo:N}],
+  ["roubo","A arma de fogo não foi confirmada pelos envolvidos.",{fogo:U}],
+  ["roubo","A testemunha disse que a moto teria sido utilizada.",{moto:U}],
+  ["roubo","A motocicleta foi supostamente utilizada.",{moto:U}],
+  ["roubo","A testemunha suspeita que o indivíduo usou uma faca.",{branca:U}],
+  ["trânsito","A fiscalização ocorreu sem registro de danos materiais.",{dano:N}],
+  ["trânsito","Não foi possível verificar se havia uma câmera.",{camera:U}],
+  ["trânsito","As câmeras não foram localizadas.",{camera:N}],
+  ["trânsito","A equipe identificou indícios de danos materiais.",{dano:U}],
+  ["ambiental","Uma pistola de pintura foi localizada na oficina.",{}],
+  ["ambiental","A equipe encontrou uma pistola de cola em uma caixa.",{}],
+  ["ambiental","Uma pistola de brinquedo foi encontrada na vistoria.",{}],
+  ["ambiental","Um facão foi utilizado apenas para podar galhos.",{branca:I}],
+  ["patrulhamento","Foi descartada a hipótese de uma faca.",{branca:N}],
+  ["patrulhamento","A pessoa declarou que não havia motocicleta.",{moto:N}],
+  ["cavalaria","A equipe montada participou de atividade educacional.",{}],
+  ["transito","O veículo de comunicação relatou uma campanha educativa.",{}],
+  ["roubo","O envolvido não informou a presença de pistola.",{fogo:N}],
+  ["roubo","A vítima informou que o indivíduo teria mostrado uma pistola.",{fogo:U}],
+  ["roubo","Segundo a testemunha, a equipe apreendeu uma pistola.",{fogo:I}],
+  ["roubo","A equipe apreendeu uma pistola. Segundo outro comunicante, não havia revólver.",{fogo:M}],
+  ["transito","O vídeo foi analisado e não havia câmeras instaladas.",{camera:N}]
+];
+
 function score(tp,fp,fn) {
   return {precisao:tp+fp?tp/(tp+fp):1,
     revocacao:tp+fn?tp/(tp+fn):1,
@@ -121,6 +153,36 @@ function score(tp,fp,fn) {
     casos:st.casos,indicadores:score(st.tp,st.fp,st.fn),
     acuracia_contexto:st.contextos?st.acertos/st.contextos:null
   }]));
+  let dtp=0,dfp=0,dfn=0,dctx=0,dctxOk=0,grave=0;
+  const divergenciasEstresse=[];
+  for(let i=0;i<DESAFIOS.length;i++){
+    const [area,frase,esperado]=DESAFIOS[i];
+    const observado=m.indicadoresLocaisDeRelato({historico_resumido:frase});
+    const map=new Map(observado.contextos.map(x=>[x.categoria,x.status]));
+    const gold=new Map(Object.entries(esperado).map(([id,s])=>[nome[id],s]));
+    for(const [cat,status] of gold){
+      if(!map.has(cat)) {dfn++;divergenciasEstresse.push({id:i+1,area,tipo:"omissao",categoria:cat});continue;}
+      dtp++;dctx++;
+      const atual=map.get(cat);
+      if(status===atual)dctxOk++;
+      else {
+        divergenciasEstresse.push({id:i+1,area,tipo:"contexto",categoria:cat,esperado:status,atual});
+        if((status===N||status===U||status===R)&&atual===C)grave++;
+      }
+    }
+    for(const [cat,status] of map){
+      if(gold.has(cat))continue;
+      dfp++;
+      divergenciasEstresse.push({id:i+1,area,tipo:"falso_positivo",categoria:cat,atual:status});
+    }
+  }
+  const estresse={casos:DESAFIOS.length,marcadores:score(dtp,dfp,dfn),
+    acuracia_contexto:dctx?dctxOk/dctx:null,contextos_avaliados:dctx,
+    atribuicoes_indevidas_como_constatada:grave,
+    divergencias:divergenciasEstresse};
+  console.log("DESAFIOS ADVERSARIAIS SINTÉTICOS (ainda não homologados)");
+  console.log(JSON.stringify(estresse,null,2));
+
   console.log("BENCHMARK SINTÉTICO IA CPC (NÃO é validação com BOs reais)");
   console.log(JSON.stringify({
     casos:CASOS.length,rotulos_positivos:tp+fn,marcadores:total,
