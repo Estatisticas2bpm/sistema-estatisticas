@@ -77,6 +77,36 @@ export function naturezaAlvoPergunta(pergunta, catalogo) {
   return candidatas.length===1?candidatas[0].nome:null;
 }
 
+// Lê os catálogos estruturados gerados pelo formulário, sem consultar
+// relatos de BO ou enviar descrições livres à API externa.
+// Uma ocorrência conta UMA VEZ por natureza ou família, ainda que o mesmo
+// item apareça repetido em naturezas_itens/crimes_itens.
+function nomesOficiaisItens(itens, campo, catalogo) {
+  if (!Array.isArray(itens)) return [];
+  const unicos=new Set();
+  for (const item of itens) {
+    const valor=categoria(item && typeof item==="object" ? item[campo] : null);
+    if (catalogo.has(valor) && valor!=="NÃO CLASSIFICADO") unicos.add(valor);
+  }
+  return [...unicos];
+}
+export function extrairClassificacoesOficiais(registro,catalogo) {
+  const estruturadas=nomesOficiaisItens(registro?.naturezas_itens,"nome",catalogo);
+  const naturezaFallback=classificarNatureza(registro?.ocorrencia,registro?.crime,catalogo);
+  const naturezas=estruturadas.length?estruturadas:[naturezaFallback];
+  // As tipificações criminais são uma DIMENSÃO DIFERENTE das naturezas.
+  // Não somar "crimes_itens" à quantidade de BOs nem à lista de naturezas.
+  const crimes=nomesOficiaisItens(registro?.crimes_itens,"tipo_nome",catalogo);
+  const familias=[...new Set(naturezas.map(familiaNatureza).filter(Boolean))];
+  return {
+    naturezas,crimes,familias,
+    fonte:estruturadas.length?"naturezas_itens":"colunas_legadas",
+    multiplas_naturezas:naturezas.length>1,
+    varios_itens_crime:Array.isArray(registro?.crimes_itens)
+      && registro.crimes_itens.length>1
+  };
+}
+
 // Não libera séries temporais com pequenos grupos. Se um mês tem menos de
 // cinco registros, omite toda a série em vez de permitir inferência por subtração.
 export function serieMensalSegura(porMes) {
