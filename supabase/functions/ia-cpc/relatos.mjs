@@ -73,7 +73,7 @@ function separarOracoes(texto) {
 export function indicadoresLocaisDeRelato(registro) {
   const campos=CAMPOS.filter(c=>textoValido(registro?.[c]));
   if(!campos.length) return {com_relato:false,campos_analisados:0,truncado:false,mencoes:[],contextos:[]};
-  const bruto=campos.map(c=>registro[c]).join(" ");
+  const bruto=campos.map(c=>registro[c]).join("\n");
   const truncado=bruto.length>LIMITE_CARACTERES;
   const texto=normalizar(bruto.slice(0,LIMITE_CARACTERES));
   const encontradas=new Map();
