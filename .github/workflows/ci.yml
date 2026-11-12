@@ -178,16 +178,34 @@ jobs:
           supabase functions serve ia-cpc --env-file "$RUNNER_TEMP/ia-cpc-local.env" \
             > "$RUNNER_TEMP/ia-cpc-local.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/ia-cpc-local.pid"
+          # O gateway pode responder 401 ANTES de o worker estar pronto.
+          # Validamos a própria Edge via resposta CORS da aplicação.
+          set -a
+          source "$RUNNER_TEMP/supabase-local.env"
+          set +a
           resposta=000
+          valido=false
           for tentativa in $(seq 1 50); do
-            resposta=$(curl --connect-timeout 2 --max-time 4 -s -o /dev/null \
-              -w "%{http_code}" http://127.0.0.1:54321/functions/v1/ia-cpc || true)
-            if [[ "$resposta" =~ ^(200|400|401|403|405|503)$ ]]; then break; fi
+            curl --connect-timeout 2 --max-time 5 -sS \
+              -D "$RUNNER_TEMP/edge-cabecalho.txt" \
+              -o "$RUNNER_TEMP/edge-resposta.txt" \
+              -w "%{http_code}" \
+              -H "apikey: $ANON_KEY" \
+              -H "Authorization: Bearer $ANON_KEY" \
+              -H "Origin: http://localhost:9999" \
+              http://127.0.0.1:54321/functions/v1/ia-cpc \
+              > "$RUNNER_TEMP/edge-status.txt" || true
+            resposta=$(cat "$RUNNER_TEMP/edge-status.txt")
+            if grep -qi '^access-control-allow-origin: http://localhost:9999' "$RUNNER_TEMP/edge-cabecalho.txt"; then
+              valido=true
+              break
+            fi
             sleep 2
           done
-          if [[ ! "$resposta" =~ ^(200|400|401|403|405|503)$ ]]; then
-            echo "Edge Function local não iniciou — trechos de diagnóstico sem segredos:"
-            sed -E 's/(Bearer|eyJ)[A-Za-z0-9._-]+/[REDACTED]/g' "$RUNNER_TEMP/ia-cpc-local.log" | tail -40
+          if [[ "$valido" != true ]]; then
+            echo "Edge Function local sem resposta da aplicação (HTTP $resposta)."
+            echo "Diagnóstico da inicialização — sem dados de usuários:"
+            sed -E 's/[A-Za-z0-9_.-]{55,}/[DADO_OCULTO]/g' "$RUNNER_TEMP/ia-cpc-local.log" | tail -50
             exit 1
           fi
 
@@ -199,7 +217,13 @@ jobs:
           source "$RUNNER_TEMP/supabase-local.env"
           set +a
           unset SUPABASE_ACCESS_TOKEN SUPABASE_DB_PASSWORD SUPABASE_PROJECT_ID
-          node tests/ia-cpc-supabase-local-e2e.cjs
+          if ! node tests/ia-cpc-supabase-local-e2e.cjs; then
+            echo "Falha de integração local: diagnóstico do executor Edge (sem credenciais):"
+            if [[ -f "$RUNNER_TEMP/ia-cpc-local.log" ]]; then
+              sed -E 's/[A-Za-z0-9_.-]{55,}/[DADO_OCULTO]/g' "$RUNNER_TEMP/ia-cpc-local.log" | tail -65
+            fi
+            exit 1
+          fi
 
       - name: Encerrar ambiente descartável
         if: always()
