@@ -29,6 +29,25 @@ Uma dificuldade da primeira execução foi o carregamento das migrações histó
 
 **Alcance da homologação:** componentes reais executados localmente, com JWTs/sessões gerados pelo GoTrue local e PostgREST real. Não é um teste de hospedagem, gateway e autenticação no Supabase de produção.
 
+## Homologação em navegador Chromium real — 12/11/2026
+
+A execução **GitHub Actions 43265696881** passou integralmente nos três trabalhos: validação geral (Deno, Node e HTML), PostgreSQL isolado (acesso e teto financeiro) e Supabase local (GoTrue, PostgREST, Edge e **Chromium real**).
+
+A execução no navegador utilizou o HTML `ia-cpc.html`, o **`auth-guard.js` original** e o `auth-config.js` adaptado *somente no servidor HTTP local de testes*. A biblioteca `@supabase/supabase-js@2.95.0` foi empacotada pelo `esbuild` e carregada localmente, sem depender da CDN e sem permitir conexões do navegador a domínios externos. O Chromium foi executado em modo headless no runner do GitHub. Não há nenhuma mudança na configuração real do site.
+
+**Resultados confirmados em log:**
+- navegador sem sessão: redirecionado à página de login;
+- ADMIN individualmente designado: página exibida e consulta sem registros concluída sem cobrança;
+- COMANDANTE CPC individualmente designado: página exibida e consulta sem registros concluída sem cobrança;
+- outro ADMIN: bloqueado pelo `auth-guard.js`;
+- outro COMANDANTE: bloqueado;
+- OPERADOR: bloqueado;
+- pós-testes, o backend real local rejeitou sessão revogada e perfil desativado.
+
+Arquivos principais: `tests/ia-cpc-browser-local.e2e.cjs`, `tests/ia-cpc-supabase-local-e2e.cjs`, `tests/ia-cpc-supabase-local-fixture.sql` e `.github/workflows/ci.yml`.
+
+**Limites:** trata-se de navegador real ligado à stack Supabase **local**. Ainda não houve verificação do domínio público, do gateway hospedado, de contas policiais reais, de upload/consulta de BO real ou de API paga. O teste de consulta em período vazio evita propositalmente toda cobrança. A autorização da IA e dos relatos permanece desativada no Supabase de produção.
+
 ## Escopo realizado
 
 A função de IA existente foi importada e executada diretamente em ambiente Deno isolado, substituindo, **somente dentro do teste**, as chamadas de rede por respostas simuladas. Não houve abertura de endpoint, comunicação com Supabase institucional ou cobrança da OpenAI.
@@ -76,7 +95,7 @@ A denominação da interface foi ajustada para **projeto-piloto privado** em vez
 - Um login verdadeiro de usuários reais via Supabase Auth/GoTrue.
 - Uma chamada à Edge Function **hospedada na infraestrutura remota** do Supabase (o executor e o gateway locais foram exercitados com JWTs reais do GoTrue local).
 - As RPCs criadas no Supabase operacional (a migração da IA continua não aplicada).
-- Fluxo completo no navegador (incluindo redirects, rede, cache, refresh token e MFA).
+- Fluxo em navegador com autenticação na **instância hospedada**, incluindo login/logout, refresh token, MFA e comportamento do domínio real; o navegador ligado ao Supabase local já foi testado.
 - Tratamento de relatos operacionais por IA semântica nem precisão com amostra independente.
 - Custos efetivos cobrados pela API da OpenAI.
 
@@ -84,7 +103,7 @@ A denominação da interface foi ajustada para **projeto-piloto privado** em vez
 
 1. **Concluído em ambiente local descartável:** aplicar a migração SQL proposta e testar Auth, PostgREST e Edge reais com identidades fictícias. **Pendente:** verificar o comportamento em ambiente Supabase hospedado segregado, se necessário, antes de produção.
 2. Designar **exatamente um ADMIN e um COMANDANTE CPC**, sem registrar IDs/segredos no GitHub público.
-3. Verificar login, logout, revogação de sessão, troca de unidade, MFA (quando adotado), autorização na UI e na Edge, inclusive URL direta.
+3. **Concluído localmente:** login em Chromium, acesso por URL direta, revogação e verificação individual na UI e Edge. **Pendente:** validar domínio hospedado, logout, refresh token, mudança de contexto e MFA (quando adotado).
 4. Auditar privacidade e desempenho da análise dos relatos com amostra independente e de acesso controlado; não enviar textos individuais ao provedor externo.
 5. Confirmar limites financeiros, preço e câmbio vigentes, sem prometer garantia exata de faturamento em BRL.
 6. Autorizar habilitação efetiva do piloto. Até lá, manter `IA_CPC_ENABLED=false` e `IA_CPC_RELATOS_ENABLED=false`.
