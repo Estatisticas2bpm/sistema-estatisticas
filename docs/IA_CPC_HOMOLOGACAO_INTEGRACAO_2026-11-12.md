@@ -1,7 +1,33 @@
-# SIE-CPC — Homologação sintética da integração da IA
+# SIE-CPC — Homologação da integração da IA (sintética e Supabase local)
 **Data:** 12/11/2026  
 **Local:** branch de desenvolvimento da proposta #152.  
 **Status:** função de IA não publicada; nenhuma chave real, conta real ou BO real usada.
+
+## Nova homologação ponta a ponta com serviços reais em instância local
+
+Na execução do GitHub Actions **43263740849**, em 12/11/2026, foram aprovados os três trabalhos: validação do código, PostgreSQL isolado e **Supabase local com Auth (GoTrue), PostgREST e Edge Function reais**.
+
+A instalação foi criada no diretório temporário do executor e destruída após os testes. Isso impede a aplicação de migrações históricas do projeto que dependem de tabelas operacionais preexistentes. **Nenhuma branch, tabela, conta ou função foi criada no Supabase de produção.**
+
+Arquivos:
+- `.github/workflows/ci.yml` — trabalho `homologar-supabase-local-ia`, usando Supabase CLI v2.stable fixado para evitar mudanças incompatíveis do CLI v3;
+- `tests/ia-cpc-supabase-local-fixture.sql` — esquema mínimo com RLS, funções de autenticação e sessão e catálogos exclusivamente fictícios;
+- `tests/ia-cpc-supabase-local-e2e.cjs` — cliente de teste que aceita somente `http://127.0.0.1:54321` ou `http://localhost:54321` e recusa credenciais de projeto remoto.
+
+### Resultados observados
+
+1. GoTrue real criou e autenticou **cinco usuários fictícios** por email e senha, com JWT contendo identificador de sessão.
+2. A RPC `ia_cpc_permitido()` no PostgREST real autorizou **exatamente dois** (um ADMIN e um COMANDANTE da unidade CPC), negou os três restantes e não ficou disponível ao papel `anon`.
+3. A RPC financeira `ia_cpc_reservar_orcamento` não pôde ser chamada diretamente pelo usuário autenticado.
+4. A Edge Function real respondeu **200** às duas contas autorizadas em consulta a período sem registros (sem qualquer chamada à OpenAI) e **403** às três contas não designadas.
+5. A inclusão da sessão fictícia na tabela de revogação ocasionou recusa **401** na Edge Function.
+6. A desativação do perfil fictício no banco ocasionou recusa **403** na Edge Function.
+7. Origem HTTP externa não permitida e acesso anônimo foram rejeitados.
+8. Resultado do script: **SUCESSO; cinco identidades, duas permitidas, três negadas, zero chamadas pagas, zero BOs reais e zero alterações em produção**.
+
+Uma dificuldade da primeira execução foi o carregamento das migrações históricas ao iniciar um banco vazio. Foi resolvida criando workspace de teste isolado. Outra dificuldade foi detectar o worker Edge como pronto a partir de uma resposta do gateway; o teste passou a aguardar uma resposta de autenticação produzida pela própria função.
+
+**Alcance da homologação:** componentes reais executados localmente, com JWTs/sessões gerados pelo GoTrue local e PostgREST real. Não é um teste de hospedagem, gateway e autenticação no Supabase de produção.
 
 ## Escopo realizado
 
@@ -48,7 +74,7 @@ A denominação da interface foi ajustada para **projeto-piloto privado** em vez
 ## O que os testes NÃO comprovam
 
 - Um login verdadeiro de usuários reais via Supabase Auth/GoTrue.
-- Uma chamada real à Edge Function hospedada na infraestrutura do Supabase ou execução de `verify_jwt` no gateway.
+- Uma chamada à Edge Function **hospedada na infraestrutura remota** do Supabase (o executor e o gateway locais foram exercitados com JWTs reais do GoTrue local).
 - As RPCs criadas no Supabase operacional (a migração da IA continua não aplicada).
 - Fluxo completo no navegador (incluindo redirects, rede, cache, refresh token e MFA).
 - Tratamento de relatos operacionais por IA semântica nem precisão com amostra independente.
@@ -56,7 +82,7 @@ A denominação da interface foi ajustada para **projeto-piloto privado** em vez
 
 ## Critérios para liberar o piloto posteriormente
 
-1. Em **ambiente segregado**, aplicar a migração SQL proposta e testar a API com o Auth e PostgREST reais, utilizando apenas identidades fictícias ou autorizadas para homologação.
+1. **Concluído em ambiente local descartável:** aplicar a migração SQL proposta e testar Auth, PostgREST e Edge reais com identidades fictícias. **Pendente:** verificar o comportamento em ambiente Supabase hospedado segregado, se necessário, antes de produção.
 2. Designar **exatamente um ADMIN e um COMANDANTE CPC**, sem registrar IDs/segredos no GitHub público.
 3. Verificar login, logout, revogação de sessão, troca de unidade, MFA (quando adotado), autorização na UI e na Edge, inclusive URL direta.
 4. Auditar privacidade e desempenho da análise dos relatos com amostra independente e de acesso controlado; não enviar textos individuais ao provedor externo.
