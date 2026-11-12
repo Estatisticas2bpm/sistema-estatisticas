@@ -138,7 +138,15 @@ jobs:
           set -euo pipefail
           unset SUPABASE_ACCESS_TOKEN SUPABASE_DB_PASSWORD SUPABASE_PROJECT_ID
           supabase --version
+          # O repositório contém migrações históricas que supõem um banco
+          # operacional já existente. Não executá-las em uma instalação limpa.
+          # A homologação usa workspace independente e SOMENTE o código IA.
+          export PASTA_LOCAL="$RUNNER_TEMP/ia-cpc-supabase-descartavel"
+          mkdir -p "$PASTA_LOCAL"
+          cd "$PASTA_LOCAL"
           supabase init --yes
+          mkdir -p supabase/functions
+          cp -R "$GITHUB_WORKSPACE/supabase/functions/ia-cpc" supabase/functions/ia-cpc
           # Conserva Postgres, GoTrue, PostgREST, Kong e Edge Functions.
           supabase start -x studio,postgres-meta,mailpit,imgproxy,storage-api,realtime,logflare,vector,supavisor
           # As chaves abaixo são geradas APENAS pela instância local.
@@ -150,8 +158,8 @@ jobs:
           set -euo pipefail
           command -v psql || (sudo apt-get update -qq && sudo apt-get install -y postgresql-client)
           export PGHOST=127.0.0.1 PGPORT=54322 PGUSER=postgres PGPASSWORD=postgres PGDATABASE=postgres
-          psql -v ON_ERROR_STOP=1 -f tests/ia-cpc-supabase-local-fixture.sql
-          psql -v ON_ERROR_STOP=1 -f docs/sql/ia_cpc_cota_pendente_aprovacao.sql
+          psql -v ON_ERROR_STOP=1 -f "$GITHUB_WORKSPACE/tests/ia-cpc-supabase-local-fixture.sql"
+          psql -v ON_ERROR_STOP=1 -f "$GITHUB_WORKSPACE/docs/sql/ia_cpc_cota_pendente_aprovacao.sql"
           psql -v ON_ERROR_STOP=1 -c "NOTIFY pgrst, 'reload schema';"
 
       - name: Iniciar Edge Function local com integração paga fictícia
@@ -166,6 +174,7 @@ jobs:
           OPENAI_MODEL=gpt-5.6-luna
           IA_CPC_BRL_USD_RESERVA=8
           EOF
+          cd "$RUNNER_TEMP/ia-cpc-supabase-descartavel"
           supabase functions serve ia-cpc --env-file "$RUNNER_TEMP/ia-cpc-local.env" \
             > "$RUNNER_TEMP/ia-cpc-local.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/ia-cpc-local.pid"
@@ -196,4 +205,7 @@ jobs:
         if: always()
         shell: bash
         run: |
-          supabase stop --no-backup || true
+          if [[ -d "$RUNNER_TEMP/ia-cpc-supabase-descartavel/supabase" ]]; then
+            cd "$RUNNER_TEMP/ia-cpc-supabase-descartavel"
+            supabase stop --no-backup || true
+          fi
