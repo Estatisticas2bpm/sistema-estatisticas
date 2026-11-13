@@ -292,7 +292,8 @@
       .remover-item { width:100%; }
     }
   </style>
-<script src="auth-config.js"></script><script src="auth-guard.js"></script><script src="pdf-companhia.js?v=20261030-1"></script><script src="pdf-escola.js?v=20261113-1"></script><script src="pdf-historico.js?v=20261031-1"></script><script src="pdf-envolvimento-institucional.js?v=20261106-2"></script><script src="pdf-origem-acionamento.js?v=20261106-1"></script></head>
+<script src="auth-config.js"></script><script src="auth-guard.js"></script><script src="pdf-companhia.js?v=20261030-1"></script><script src="pdf-escola.js?v=20261113-1"></script>
+<script src="escolas-cadastro.js?v=20261113-1"></script><script src="pdf-historico.js?v=20261031-1"></script><script src="pdf-envolvimento-institucional.js?v=20261106-2"></script><script src="pdf-origem-acionamento.js?v=20261106-1"></script></head>
 
 <body>
   <header>
@@ -487,8 +488,10 @@
 
           <div class="campo duplo">
             <label for="escolaNome">Escola onde ocorreu o fato (quando aplicável)</label>
-            <input id="escolaNome" name="escolaNome" type="text" maxlength="180" autocomplete="off"
-              placeholder="Nome da escola — identificado pelo PDF ou informado manualmente">
+            <div class="campo-com-acao"><input id="escolaNome" name="escolaNome" list="listaEscolas" type="text" maxlength="180" autocomplete="off"
+              placeholder="Selecione uma escola existente ou identifique pelo PDF">
+              <button class="botao-adicionar" id="adicionarEscolaAdmin" type="button" hidden title="Administrador: cadastrar uma escola ou nome alternativo" aria-label="Cadastrar escola">+</button></div>
+            <datalist id="listaEscolas"></datalist>
             <small class="nota" id="statusEscolaPdf" role="status" aria-live="polite">Preencha apenas se o fato ocorreu no estabelecimento de ensino. A identificação não depende do tipo de ocorrência nem de haver aluno envolvido.</small>
           </div>
 
@@ -817,6 +820,13 @@
     const SUPABASE_URL = "https://jppmhhukujigxupgskdk.supabase.co";
     const SUPABASE_KEY = "sb_publishable_ZVnU35i2x9zwppQqYg7UYw_mzaT43aG";
     const banco = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const escolaCadastro = window.EscolasSIE?.iniciar({
+      banco,
+      input:document.getElementById("escolaNome"),
+      status:document.getElementById("statusEscolaPdf"),
+      botao:document.getElementById("adicionarEscolaAdmin"),
+      obterMunicipio:()=>document.getElementById("municipio").value
+    });
     const PDF_CORE = window.PdfImporterCore;
 
     let catalogos = {tipos:[],subtipos:[],bairros:[],locais:[],comandantes:[]};
@@ -2341,7 +2351,10 @@
       campoEscola.value = dados.escolaPdf?.identificado ? dados.escolaPdf.nome : "";
       document.getElementById("statusEscolaPdf").textContent = dados.escolaPdf?.motivo ||
         "Nenhuma escola confirmada no PDF. Informe o nome apenas se o fato ocorreu dentro do estabelecimento de ensino.";
-      if (dados.escolaPdf?.identificado) marcarCampoPdf("escolaNome",false);
+      if (dados.escolaPdf?.identificado) {
+        marcarCampoPdf("escolaNome",false);
+        if (escolaCadastro) await escolaCadastro.sugerirPdf(dados.escolaPdf.nome);
+      }
       else if (dados.escolaPdf?.ambiguo) marcarCampoPdf("escolaNome",true,"✓ Escola citada — confirmar o nome manualmente");
       document.getElementById("statusAtendimento").value = "ATENDIDA";
       document.getElementById("municipio").value = normalizarCatalogo(dados.municipio || "BOA VISTA");
@@ -2969,6 +2982,8 @@
       if (salvamentoEmAndamento) return;
       if (subunidadeOperacional && !subunidadeOperacional.value) return mostrarErroCampo("subunidadeOperacional","Selecione a unidade operacional responsável: Força Tática, Choque, Canil ou GATE.");
       if (!validarFormularioPrincipal()) return;
+      const escolaValidada = escolaCadastro ? await escolaCadastro.validar() : {ok:!document.getElementById("escolaNome").value.trim(),id:null,nome:null};
+      if(!escolaValidada.ok) return mostrarErroCampo("escolaNome",escolaValidada.mensagem||"Selecione uma escola válida.");
       const botaoSalvar = formulario.querySelector('button[type="submit"]');
       const textoOriginalBotao = botaoSalvar.textContent;
       if (document.getElementById("numeroEndereco").value.trim()&&!coordenadasManuaisDigitadas()) {
@@ -3044,7 +3059,8 @@
           endereco: document.getElementById("endereco").value || null,
           numero_endereco: document.getElementById("numeroEndereco").value || null,
           bairro: document.getElementById("bairro").value || null,
-          escola_nome: document.getElementById("escolaNome").value.trim() || null,
+          escola_nome: escolaValidada.nome || null,
+          escola_id: escolaValidada.id || null,
           latitude: document.getElementById("latitude").value || null,
           longitude: document.getElementById("longitude").value || null,
           endereco_formatado: document.getElementById("enderecoFormatado").value || null,
