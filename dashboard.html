@@ -976,7 +976,7 @@ function renderEscolas(registros){
     const nome=String(o.escola_nome||"").replace(/\s+/g," ").trim();
     if(!nome)return;
     escolares.push(o);
-    const k=nome.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase();
+    const k=o.escola_id?String(o.escola_id):"LEGADO:"+nome.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase();
     if(!grupos.has(k))grupos.set(k,{nome,registros:[]});
     grupos.get(k).registros.push(o);
   });
