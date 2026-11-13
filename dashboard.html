@@ -67,7 +67,7 @@ dialog.cpcDocOverlay{border:0;margin:0;max-width:none;max-height:none;width:100%
 .drill-ref-cpc:hover{color:#092d4e}.drill-ref-cpc:focus-visible,.cpcDocFechar:focus-visible,.cpcDocVinculo:focus-visible{outline:3px solid #277ba9;outline-offset:2px}
 body.dashboard-comando .drill-table table{min-width:0}
 @media(max-width:700px){.cpcDocOverlay{padding:0}.cpcDocJanela{height:100dvh;max-height:100dvh;border-radius:0}.cpcDocTopo{padding:15px}.cpcDocCorpo{padding:12px}.cpcDocGrupo dl{grid-template-columns:1fr}}
-</style><script src="auth-config.js"></script><script src="auth-guard.js"></script><script src="bope-painel.js?v=20261020-bope-sub1"></script><script src="cipg-dashboard.js?v=20261009-3"></script><script src="indicadores-origem-envolvimento.js?v=20261106-1"></script></head>
+</style><script src="auth-config.js"></script><script src="auth-guard.js"></script><script src="bope-painel.js?v=20261020-bope-sub1"></script><script src="cipg-dashboard.js?v=20261009-3"></script><script src="indicadores-origem-envolvimento.js?v=20261113-1"></script></head>
 <body><div class="loading" id="loading">Carregando dados estatísticos...</div><header><div class="head"><div><h1>Dashboard Completo</h1><p>Análise estatística operacional da unidade ativa</p></div><div><a href="index.html">← Página inicial</a></div></div></header><main>
 <section class="panel"><div class="presets"><button data-period="hoje">Hoje</button><button data-period="semana">Semana atual</button><button data-period="mes">Mês atual</button><button data-period="trimestre">Trimestre</button><button data-period="semestre">Semestre</button><button data-period="ano">Ano</button></div><div class="filters">
 <label>Data inicial<input id="ini" type="date"></label><label id="cipaMunicipioWrap" hidden>Município<input id="cipaMunicipio" placeholder="Todos"></label><label id="cipaAreaWrap" hidden>Área<select id="cipaArea"><option value="">Todas</option><option>URBANA</option><option>RURAL</option></select></label><label id="cipaOrigemWrap" hidden>Origem<input id="cipaOrigemFiltro" placeholder="Todas"></label>
@@ -375,13 +375,20 @@ body.dashboard-comando .drill-table table{min-width:0}
   <div class="chartbox"><canvas id="chartOrigemAcionamento" role="img" aria-label="Gráfico de ocorrências por origem do acionamento"></canvas></div>
   <p class="sub" id="origemAcionamentoCobertura" role="status">Analisando origens documentadas...</p>
 </section>
+<section class="section" id="secEnvolvimentoFuncional">
+  <h2>Ocorrências envolvendo policiais ou autoridades</h2>
+  <p class="sub">Vítimas ou suspeitos/infratores classificados expressamente no cadastro. Integrantes da guarnição, comunicantes, condutores e testemunhas não são contados apenas por sua profissão.</p>
+  <div class="cards" id="cardsEnvolvimentoFuncional"></div>
+  <div class="chartbox"><canvas id="chartEnvolvimentoFuncional" role="img" aria-label="Ocorrências com policiais ou autoridades como vítimas ou suspeitos"></canvas></div>
+  <p class="sub" id="coberturaEnvolvimentoFuncional"></p>
+</section>
 <section class="section" id="secOcorrenciasEscolas">
   <h2>Ocorrências em escolas</h2>
   <p class="sub">Fatos confirmados no ambiente escolar. Estatísticas filtradas por período e unidade, sem presumir que registros antigos sem classificação ocorreram fora de escolas.</p>
   <div class="cards" id="cardsEscolas"></div>
   <div class="grid2">
     <div><h3>Escolas com mais ocorrências</h3><div class="chartbox"><canvas id="chartEscolas"></canvas></div></div>
-    <div class="tablewrap"><table><thead><tr><th>Escola</th><th>Ocorrências</th><th>Principal natureza</th></tr></thead><tbody id="tabEscolas"></tbody></table></div>
+    <div class="tablewrap"><table><thead><tr><th>Escola</th><th>Ocorrências</th><th>Tipos de ocorrência na escola</th></tr></thead><tbody id="tabEscolas"></tbody></table></div>
   </div>
   <div class="grid2" style="margin-top:18px">
     <div><h3>Tipos de ocorrência por escola</h3><div class="tablewrap"><table><thead><tr><th>Natureza</th><th>BOs</th></tr></thead><tbody id="tabNaturezasEscolas"></tbody></table></div>
@@ -993,8 +1000,8 @@ function renderEscolas(registros){
     '<div class="card steel"><small>Vítimas menores de 18 (pessoas)</small><strong>'+menores(idVit)+'</strong></div>'+
     '<div class="card amber"><small>Suspeitos/infratores menores de 18 (pessoas)</small><strong>'+menores(idInf)+'</strong></div>';
   rows("tabEscolas",ordenados.length?ordenados.map(g=>{
-    const n=rankNaturezas(g.registros,1)[0];
-    return '<tr><td>'+esc(g.nome)+'</td><td>'+drillNumero(g.registros.length,"Ocorrências na escola "+g.nome,g.registros)+'</td><td>'+esc(n?.[0]||"Não informada")+'</td></tr>';
+    const naturezas=rankNaturezas(g.registros,30).map(n=>esc(n[0])+' ('+n[1]+')').join('; ');
+    return '<tr><td>'+esc(g.nome)+'</td><td>'+drillNumero(g.registros.length,"Ocorrências na escola "+g.nome,g.registros)+'</td><td>'+ (naturezas||"Não informada")+'</td></tr>';
   }).join(""):'<tr><td colspan="3">Nenhuma ocorrência escolar identificada neste recorte.</td></tr>');
   const top=ordenados.slice(0,10);
   chart("chartEscolas","bar",top.map(g=>g.nome),top.map(g=>g.registros.length),"Ocorrências por escola",CORES.teal,i=>{
@@ -1007,6 +1014,32 @@ function renderEscolas(registros){
   }).join(""):'<tr><td colspan="2">Sem ocorrências escolares neste recorte.</td></tr>');
   chart("chartIdadeVitimasEscolas","bar",faixas,idVit,"Vítimas (pessoas)",CORES.blue);
   chart("chartIdadeInfratoresEscolas","bar",faixas,idInf,"Suspeitos/infratores (pessoas)",CORES.amber);
+}
+
+function renderEnvolvimentoFuncional(registros){
+  const modulo=window.SIEIndicadoresEnvolvimento;
+  const r=modulo?.resumir(registros);
+  if(!r||!r.autoridades){
+    $("coberturaEnvolvimentoFuncional").textContent="Indicadores indisponíveis; atualize a página.";
+    return;
+  }
+  const grupos=[
+    ["Policial como vítima",r.ocorrenciasVitimasPoliciais,CORES.blue],
+    ["Policial como suspeito/infrator",r.ocorrenciasInfratoresPoliciais,CORES.amber],
+    ["Autoridade como vítima",r.ocorrenciasVitimasAutoridades,CORES.purple],
+    ["Autoridade como suspeito/infrator",r.ocorrenciasInfratoresAutoridades,CORES.red]
+  ];
+  const todos=[...new Map([...r.ocorrenciasPoliciais,...r.ocorrenciasAutoridades].map(o=>[String(o.id),o])).values()];
+  $("cardsEnvolvimentoFuncional").innerHTML=
+    '<div class="card"><small>BOs com policial ou autoridade</small><strong>'+drillNumero(todos.length,"Ocorrências com policial ou autoridade",todos)+'</strong></div>'+
+    '<div class="card steel"><small>Com policiais</small><strong>'+drillNumero(r.policiais.total,"Ocorrências com policiais",r.ocorrenciasPoliciais)+'</strong></div>'+
+    '<div class="card teal"><small>Com autoridades</small><strong>'+drillNumero(r.autoridades.total,"Ocorrências com autoridades",r.ocorrenciasAutoridades)+'</strong></div>';
+  chart("chartEnvolvimentoFuncional","bar",grupos.map(x=>x[0]),grupos.map(x=>x[1].length),
+    "BOs por participação",grupos.map(x=>x[2]),i=>{if(grupos[i])abrirDetalhes(grupos[i][0],grupos[i][1]);});
+  $("coberturaEnvolvimentoFuncional").textContent=
+    r.policiais.classificados+" de "+r.total+" BO(s) possuem ao menos uma classificação funcional informada. "+
+    r.policiais.semClassificacao+" sem classificação; ausência de informação não significa ausência de policiais/autoridades. "+
+    "Os grupos por papel podem se sobrepor, mas o total de BOs é único.";
 }
 
 function renderOrigemPoliciais(registros){
@@ -1030,7 +1063,7 @@ function renderOrigemPoliciais(registros){
     'Sem BOs no recorte selecionado.';
 
 }
-function render(){drillActions.clear();drillSeq=0;let a=filtrar(atual),p=filtrar(anterior),ta=filtrarTcos(tcosAtual),tp=filtrarTcos(tcosAnterior);renderCiptur();renderCipturTor(a);renderGiroAbordagens();renderCavalaria();renderCipg();renderCipa(a,p);renderOrigemPoliciais(a);renderEscolas(a);let at=a.filter(x=>x.status_atendimento!=='DEMANDA REPRIMIDA'),rep=a.filter(x=>x.status_atendimento==='DEMANDA REPRIMIDA');kTotal.textContent=a.length;kAtendidas.textContent=at.length;kReprimidas.textContent=rep.length;kDocumentos.textContent=a.length+ta.length;kConduzidos.textContent=soma(a,'conducoes_operacionais');vTotal.textContent=comparar.value==='nenhum'?'':`${variacao(a.length,p.length)} em relação ao comparado`;vincularCardDrill('kTotal','Todas as ocorrências do período',a);vincularCardDrill('kAtendidas','Ocorrências atendidas',at);vincularCardDrill('kReprimidas','Demandas reprimidas',rep);vincularCardDrill('kDocumentos','Documentos produzidos',documentosPeriodo(a,ta),{preservarDuplicados:true,subtitulo:'BOs, TCOs e demais documentos que compõem este indicador.'});vincularCardDrill('kConduzidos','Ocorrências com conduções',a.filter(x=>num(x.conducoes_operacionais)>0),{subtitulo:'Ocorrências que registraram uma ou mais conduções.'});
+function render(){drillActions.clear();drillSeq=0;let a=filtrar(atual),p=filtrar(anterior),ta=filtrarTcos(tcosAtual),tp=filtrarTcos(tcosAnterior);renderCiptur();renderCipturTor(a);renderGiroAbordagens();renderCavalaria();renderCipg();renderCipa(a,p);renderOrigemPoliciais(a);renderEnvolvimentoFuncional(a);renderEscolas(a);let at=a.filter(x=>x.status_atendimento!=='DEMANDA REPRIMIDA'),rep=a.filter(x=>x.status_atendimento==='DEMANDA REPRIMIDA');kTotal.textContent=a.length;kAtendidas.textContent=at.length;kReprimidas.textContent=rep.length;kDocumentos.textContent=a.length+ta.length;kConduzidos.textContent=soma(a,'conducoes_operacionais');vTotal.textContent=comparar.value==='nenhum'?'':`${variacao(a.length,p.length)} em relação ao comparado`;vincularCardDrill('kTotal','Todas as ocorrências do período',a);vincularCardDrill('kAtendidas','Ocorrências atendidas',at);vincularCardDrill('kReprimidas','Demandas reprimidas',rep);vincularCardDrill('kDocumentos','Documentos produzidos',documentosPeriodo(a,ta),{preservarDuplicados:true,subtitulo:'BOs, TCOs e demais documentos que compõem este indicador.'});vincularCardDrill('kConduzidos','Ocorrências com conduções',a.filter(x=>num(x.conducoes_operacionais)>0),{subtitulo:'Ocorrências que registraram uma ou mais conduções.'});
 let docs=docsComTco(a,ta),docsP=Object.fromEntries(docsComTco(p,tp));let docsLista=documentosPeriodo(a,ta);function listaDoc(tipo){return tipo==='TCO'?ta.map(t=>({...t,_doc:'TCO',id:t.ocorrencia_id||t.id})):a.filter(o=>norm(o.tipo_registro)===tipo).map(o=>({...o,_doc:tipo}))}rows('tabDocs',docs.map(x=>`<tr><td>${esc(x[0])}</td><td>${drillNumero(x[1],'Documentos '+x[0],listaDoc(x[0]),{preservarDuplicados:true})}</td><td>${docsP[x[0]]||0}</td><td class="${classeVariacao('Documentos produzidos',x[1],docsP[x[0]]||0)}">${variacao(x[1],docsP[x[0]]||0)}</td></tr>`).join(''));chart('chartDocs','doughnut',docs.map(x=>x[0]),docs.map(x=>x[1]),'Documentos',docs.map(x=>corDocumento(x[0])),idx=>abrirDetalhes('Documentos '+docs[idx][0],listaDoc(docs[idx][0]),{preservarDuplicados:true}));
 let ocorr=rankNaturezas(a,15);rows('tabOcorrencias',ocorr.map((x,i)=>{let g=a.filter(y=>naturezasOcorrencia(y).includes(x[0])),bs=rank(g,x=>normalizarBairro(x.bairro),3).map(z=>z[0]).join(' / '),idades=listaPessoas(g,'infrator').map(y=>num(y.idade)).filter(Boolean);return `<tr><td class="rank">${i+1}º</td><td>${esc(x[0])}</td><td>${drillNumero(x[1],x[0],g)}</td><td>${esc(bs)}</td><td>${idades.length?Math.min(...idades)+' a '+Math.max(...idades)+' anos':'NI'}</td></tr>`}).join(''));let ocorrTop=ocorr.slice(0,10);chart('chartOcorrencias','bar',ocorrTop.map(x=>x[0]),ocorrTop.map(x=>x[1]),'Ocorrências',CORES.blue,idx=>{let nome=ocorrTop[idx][0];abrirDetalhes(nome,a.filter(y=>naturezasOcorrencia(y).includes(nome)))});
 let bs=rank(a,x=>normalizarBairro(x.bairro),999),bp=Object.fromEntries(rank(p,x=>normalizarBairro(x.bairro)));rows('tabBairros',bs.map((x,i)=>{let g=a.filter(y=>normalizarBairro(y.bairro)===x[0]);return `<tr><td class="rank">${i+1}º</td><td>${esc(x[0])}</td><td>${drillNumero(x[1],'Ocorrências no bairro '+x[0],g)}</td><td>${a.length?(x[1]*100/a.length).toFixed(1):0}%</td><td>${bp[x[0]]||0}</td><td class="${cls(x[1],bp[x[0]]||0)}">${variacao(x[1],bp[x[0]]||0)}</td></tr>`}).join(''));let bairrosTop=bs.slice(0,12);chart('chartBairros','bar',bairrosTop.map(x=>x[0]),bairrosTop.map(x=>x[1]),'Bairros',CORES.teal,idx=>{let nome=bairrosTop[idx][0];abrirDetalhes('Ocorrências no bairro '+nome,a.filter(y=>normalizarBairro(y.bairro)===nome))});
