@@ -43,11 +43,17 @@
   }
   function classificarOcorrencia(ocorrencia){
     const meta=metaOcorrencia(ocorrencia);
-    const vitima=verificarPapel(meta,"vitima");
-    const infrator=verificarPapel(meta,"infrator");
+    // Indicadores funcionais começam nos novos cadastros de 06/11/2026,
+    // independentemente da data do fato. Não reclassificar BOs legados.
+    const criado=String(ocorrencia?.criado_em||"");
+    const elegivelFuncional=criado!=="" && Date.parse(criado)>=Date.parse("2026-11-06T04:00:00.000Z");
+    const vazio={informado:false,policial:false,autoridade:false};
+    const vitima=elegivelFuncional?verificarPapel(meta,"vitima"):vazio;
+    const infrator=elegivelFuncional?verificarPapel(meta,"infrator"):vazio;
     const origem=String(ocorrencia?.origem_acionamento||"").toUpperCase().trim();
     return {
       origem:ORIGENS.some(o=>o.valor===origem&&origem!=="NAO_INFORMADA")?origem:"NAO_INFORMADA",
+      elegivelFuncional,
       vitimaPolicial:vitima.policial,
       infratorPolicial:infrator.policial,
       envolvePolicial:vitima.policial||infrator.policial,
@@ -61,7 +67,7 @@
     const vistos=new Set(),contagem=Object.fromEntries(ORIGENS.map(o=>[o.valor,0]));
     const grupos=Object.fromEntries(ORIGENS.map(o=>[o.valor,[]]));
     const policiais=[],vitimas=[],infratores=[],autoridades=[],autoridadesVitimas=[],autoridadesInfratores=[];
-    let total=0,classificados=0;
+    let total=0,classificados=0,elegiveis=0;
     (Array.isArray(registros)?registros:[]).forEach((registro,indice)=>{
       if(!registro||typeof registro!=="object")return;
       const chave=registro.id?String(registro.id):"sem-id-"+indice;
@@ -70,6 +76,7 @@
       const r=classificarOcorrencia(registro);
       contagem[r.origem]++;
       grupos[r.origem].push(registro);
+      if(r.elegivelFuncional)elegiveis++;
       if(r.classificacaoFuncionalInformada)classificados++;
       if(r.envolvePolicial)policiais.push(registro);
       if(r.vitimaPolicial)vitimas.push(registro);
@@ -81,7 +88,7 @@
     return {
       total,origens:contagem,grupos,
       origemInformada:total-contagem.NAO_INFORMADA,
-      policiais:{total:policiais.length,vitimas:vitimas.length,infratores:infratores.length,classificados,semClassificacao:total-classificados},
+      policiais:{total:policiais.length,vitimas:vitimas.length,infratores:infratores.length,classificados,novosCadastros:elegiveis,semClassificacao:elegiveis-classificados},
       ocorrenciasPoliciais:policiais,ocorrenciasVitimasPoliciais:vitimas,ocorrenciasInfratoresPoliciais:infratores,
       autoridades:{total:autoridades.length,vitimas:autoridadesVitimas.length,infratores:autoridadesInfratores.length},
       ocorrenciasAutoridades:autoridades,ocorrenciasVitimasAutoridades:autoridadesVitimas,ocorrenciasInfratoresAutoridades:autoridadesInfratores
