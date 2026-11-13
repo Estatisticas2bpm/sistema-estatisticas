@@ -19,6 +19,7 @@
     "POLICIAL_RODOVIARIO_FEDERAL","POLICIAL_PENAL",
     "DELEGADO_POLICIA","OUTRO_POLICIAL"
   ]);
+  const AUTORIDADES=new Set(["GUARDA_MUNICIPAL","MILITAR_FORCAS_ARMADAS","MAGISTRADO","MEMBRO_MINISTERIO_PUBLICO","AUTORIDADE_POLITICA_ADMINISTRATIVA","OUTRA_AUTORIDADE"]);
   function metaOcorrencia(ocorrencia){
     const texto=String(ocorrencia?.observacao_final||"");
     const pos=texto.lastIndexOf(MARCADOR);
@@ -37,7 +38,8 @@
       meta[key].forEach(item=>pessoas.push(item?.institucional));
     const informado=pessoas.some(x=>x&&(x.situacao==="SIM"||x.situacao==="NAO"));
     const policial=pessoas.some(x=>x?.situacao==="SIM"&&POLICIAIS.has(String(x.tipo||"").toUpperCase()));
-    return {informado,policial};
+    const autoridade=pessoas.some(x=>x?.situacao==="SIM"&&AUTORIDADES.has(String(x.tipo||"").toUpperCase()));
+    return {informado,policial,autoridade};
   }
   function classificarOcorrencia(ocorrencia){
     const meta=metaOcorrencia(ocorrencia);
@@ -49,13 +51,16 @@
       vitimaPolicial:vitima.policial,
       infratorPolicial:infrator.policial,
       envolvePolicial:vitima.policial||infrator.policial,
+      vitimaAutoridade:vitima.autoridade,
+      infratorAutoridade:infrator.autoridade,
+      envolveAutoridade:vitima.autoridade||infrator.autoridade,
       classificacaoFuncionalInformada:vitima.informado||infrator.informado
     };
   }
   function resumir(registros){
     const vistos=new Set(),contagem=Object.fromEntries(ORIGENS.map(o=>[o.valor,0]));
     const grupos=Object.fromEntries(ORIGENS.map(o=>[o.valor,[]]));
-    const policiais=[],vitimas=[],infratores=[];
+    const policiais=[],vitimas=[],infratores=[],autoridades=[],autoridadesVitimas=[],autoridadesInfratores=[];
     let total=0,classificados=0;
     (Array.isArray(registros)?registros:[]).forEach((registro,indice)=>{
       if(!registro||typeof registro!=="object")return;
@@ -69,12 +74,17 @@
       if(r.envolvePolicial)policiais.push(registro);
       if(r.vitimaPolicial)vitimas.push(registro);
       if(r.infratorPolicial)infratores.push(registro);
+      if(r.envolveAutoridade)autoridades.push(registro);
+      if(r.vitimaAutoridade)autoridadesVitimas.push(registro);
+      if(r.infratorAutoridade)autoridadesInfratores.push(registro);
     });
     return {
       total,origens:contagem,grupos,
       origemInformada:total-contagem.NAO_INFORMADA,
       policiais:{total:policiais.length,vitimas:vitimas.length,infratores:infratores.length,classificados,semClassificacao:total-classificados},
-      ocorrenciasPoliciais:policiais,ocorrenciasVitimasPoliciais:vitimas,ocorrenciasInfratoresPoliciais:infratores
+      ocorrenciasPoliciais:policiais,ocorrenciasVitimasPoliciais:vitimas,ocorrenciasInfratoresPoliciais:infratores,
+      autoridades:{total:autoridades.length,vitimas:autoridadesVitimas.length,infratores:autoridadesInfratores.length},
+      ocorrenciasAutoridades:autoridades,ocorrenciasVitimasAutoridades:autoridadesVitimas,ocorrenciasInfratoresAutoridades:autoridadesInfratores
     };
   }
   global.SIEIndicadoresEnvolvimento=Object.freeze({ORIGENS,POLICIAIS,metaOcorrencia,classificarOcorrencia,resumir});
