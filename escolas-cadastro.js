@@ -107,9 +107,22 @@
       if(!nome)return;
       let mun=municipio();
       let args={p_nome:nome,p_municipio:mun};
-      const {data,error}=await banco.rpc("cadastrar_escola_sie_admin",args);
-      if(error){alert("Não foi possível validar a escola: "+error.message);return;}
-      let retorno=data;
+      let retorno;
+      if(confirm("Esse nome é uma abreviação, erro de digitação ou outro nome de uma escola JÁ CADASTRADA?\n\nOK = vincular como alias.\nCancelar = solicitar cadastro de escola distinta.")){
+        const sugestao=parecidos(nome)[0]?.nome||"";
+        const escolhida=prompt("Digite ou cole o NOME EXATO da escola já cadastrada.\n\nSugestão: ",sugestao);
+        if(escolhida===null)return;
+        const escolaExistente=exato(escolhida);
+        if(!escolaExistente){alert("A escola informada não foi encontrada no catálogo deste município. Escolha uma escola existente.");return;}
+        if(!confirm("Confirma que \""+nome+"\" e \""+escolaExistente.nome+"\" são a MESMA escola?"))return;
+        const r=await banco.rpc("cadastrar_escola_sie_admin",{...args,p_escola_existente_id:escolaExistente.id});
+        if(r.error){alert("Erro ao cadastrar nome alternativo: "+r.error.message);return;}
+        retorno=r.data;
+      }else{
+        const {data,error}=await banco.rpc("cadastrar_escola_sie_admin",args);
+        if(error){alert("Não foi possível validar a escola: "+error.message);return;}
+        retorno=data;
+      }
       if(retorno?.status==="possivel_duplicata"){
         const texto="O nome informado se parece com uma escola existente:\n\n"+retorno.nome+
           "\n\nClique OK se é a MESMA instituição para salvar como nome alternativo.\nClique Cancelar se são escolas DIFERENTES.";
