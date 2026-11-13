@@ -375,6 +375,23 @@ body.dashboard-comando .drill-table table{min-width:0}
   <div class="chartbox"><canvas id="chartOrigemAcionamento" role="img" aria-label="Gráfico de ocorrências por origem do acionamento"></canvas></div>
   <p class="sub" id="origemAcionamentoCobertura" role="status">Analisando origens documentadas...</p>
 </section>
+<section class="section" id="secOcorrenciasEscolas">
+  <h2>Ocorrências em escolas</h2>
+  <p class="sub">Fatos confirmados no ambiente escolar. Estatísticas filtradas por período e unidade, sem presumir que registros antigos sem classificação ocorreram fora de escolas.</p>
+  <div class="cards" id="cardsEscolas"></div>
+  <div class="grid2">
+    <div><h3>Escolas com mais ocorrências</h3><div class="chartbox"><canvas id="chartEscolas"></canvas></div></div>
+    <div class="tablewrap"><table><thead><tr><th>Escola</th><th>Ocorrências</th><th>Principal natureza</th></tr></thead><tbody id="tabEscolas"></tbody></table></div>
+  </div>
+  <div class="grid2" style="margin-top:18px">
+    <div><h3>Tipos de ocorrência por escola</h3><div class="tablewrap"><table><thead><tr><th>Natureza</th><th>BOs</th></tr></thead><tbody id="tabNaturezasEscolas"></tbody></table></div>
+    <div><h3>Faixa etária das vítimas</h3><div class="chartbox"><canvas id="chartIdadeVitimasEscolas"></canvas></div></div>
+  </div>
+  <div class="grid2" style="margin-top:18px">
+    <div><h3>Faixa etária dos suspeitos/infratores</h3><div class="chartbox"><canvas id="chartIdadeInfratoresEscolas"></canvas></div></div>
+    <div><h3>Critérios</h3><p class="sub">As faixas etárias contam pessoas registradas por papel, não necessariamente estudantes. Um BO pode conter mais de uma natureza, mas entra uma só vez no total de ocorrências escolares.</p></div>
+  </div>
+</section>
 <section class="section"><h2>Documentos Produzidos</h2><p class="sub">BO, TCO, ROP e demais documentos do período</p><div class="grid2"><div class="chartbox"><canvas id="chartDocs"></canvas></div><div class="tablewrap"><table><thead><tr><th>Documento</th><th>Atual</th><th>Comparado</th><th>Variação</th></tr></thead><tbody id="tabDocs"></tbody></table></div></div></section>
 <section class="section"><h2>Principais Ocorrências</h2><p class="sub">Incidência por natureza. Um mesmo BO pode aparecer em mais de uma natureza quando o registro possuir múltiplas classificações.</p><div class="grid2"><div class="chartbox"><canvas id="chartOcorrencias"></canvas></div><div class="tablewrap"><table><thead><tr><th>#</th><th>Ocorrência</th><th>Quantidade</th><th>Bairros recorrentes</th><th>Idade</th></tr></thead><tbody id="tabOcorrencias"></tbody></table></div></div></section>
 <section class="section"><h2>Ocorrências por Bairro</h2><p class="sub">Ranking, participação e comparação com o período de referência</p><div class="grid2"><div class="chartbox"><canvas id="chartBairros"></canvas></div><div class="tablewrap"><table><thead><tr><th>#</th><th>Bairro</th><th>Atual</th><th>% do total</th><th>Anterior</th><th>Variação</th></tr></thead><tbody id="tabBairros"></tbody></table></div></div></section>
@@ -943,6 +960,55 @@ function renderCipa(a,p){
     rows(tabela,valores.map(x=>'<tr><td>'+esc(x[0])+'</td><td>'+x[1]+'</td></tr>').join(''));
   }
 }
+function renderEscolas(registros){
+  const vistos=new Set(),grupos=new Map(),escolares=[];
+  (registros||[]).forEach((o,i)=>{
+    const id=o.id?String(o.id):"sem-id-"+i;
+    if(vistos.has(id))return;
+    vistos.add(id);
+    const nome=String(o.escola_nome||"").replace(/\s+/g," ").trim();
+    if(!nome)return;
+    escolares.push(o);
+    const k=nome.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase();
+    if(!grupos.has(k))grupos.set(k,{nome,registros:[]});
+    grupos.get(k).registros.push(o);
+  });
+  const ordenados=[...grupos.values()].sort((a,b)=>b.registros.length-a.registros.length||a.nome.localeCompare(b.nome,"pt-BR"));
+  const faixas=["0–11 anos","12–14 anos","15–17 anos","18–24 anos","25–39 anos","40+ anos","Idade não informada"];
+  function faixa(v){
+    if(v===null||v===undefined||String(v).trim()==="")return 6;
+    const idade=Number(v);
+    if(!Number.isInteger(idade)||idade<0||idade>120)return 6;
+    return idade<=11?0:idade<=14?1:idade<=17?2:idade<=24?3:idade<=39?4:5;
+  }
+  const idades=papel=>{
+    const pessoas=listaPessoas(escolares,papel);
+    return faixas.map((_,i)=>pessoas.filter(p=>faixa(p.idade)===i).length);
+  };
+  const idVit=idades("vitima"),idInf=idades("infrator");
+  const menores=arr=>arr.slice(0,3).reduce((a,b)=>a+b,0);
+  $("cardsEscolas").innerHTML=
+    '<div class="card"><small>BOs em escolas</small><strong>'+escolares.length+'</strong></div>'+
+    '<div class="card teal"><small>Escolas identificadas</small><strong>'+ordenados.length+'</strong></div>'+
+    '<div class="card steel"><small>Vítimas menores de 18 (pessoas)</small><strong>'+menores(idVit)+'</strong></div>'+
+    '<div class="card amber"><small>Suspeitos/infratores menores de 18 (pessoas)</small><strong>'+menores(idInf)+'</strong></div>';
+  rows("tabEscolas",ordenados.length?ordenados.map(g=>{
+    const n=rankNaturezas(g.registros,1)[0];
+    return '<tr><td>'+esc(g.nome)+'</td><td>'+drillNumero(g.registros.length,"Ocorrências na escola "+g.nome,g.registros)+'</td><td>'+esc(n?.[0]||"Não informada")+'</td></tr>';
+  }).join(""):'<tr><td colspan="3">Nenhuma ocorrência escolar identificada neste recorte.</td></tr>');
+  const top=ordenados.slice(0,10);
+  chart("chartEscolas","bar",top.map(g=>g.nome),top.map(g=>g.registros.length),"Ocorrências por escola",CORES.teal,i=>{
+    if(top[i])abrirDetalhes("Ocorrências em "+top[i].nome,top[i].registros);
+  });
+  const naturezas=rankNaturezas(escolares,20);
+  rows("tabNaturezasEscolas",naturezas.length?naturezas.map(n=>{
+    const grupo=escolares.filter(o=>naturezasOcorrencia(o).includes(n[0]));
+    return '<tr><td>'+esc(n[0])+'</td><td>'+drillNumero(n[1],"Ocorrências escolares — "+n[0],grupo)+'</td></tr>';
+  }).join(""):'<tr><td colspan="2">Sem ocorrências escolares neste recorte.</td></tr>');
+  chart("chartIdadeVitimasEscolas","bar",faixas,idVit,"Vítimas (pessoas)",CORES.blue);
+  chart("chartIdadeInfratoresEscolas","bar",faixas,idInf,"Suspeitos/infratores (pessoas)",CORES.amber);
+}
+
 function renderOrigemPoliciais(registros){
   const modulo=window.SIEIndicadoresEnvolvimento;
   const r=modulo?.resumir(registros);
@@ -964,7 +1030,7 @@ function renderOrigemPoliciais(registros){
     'Sem BOs no recorte selecionado.';
 
 }
-function render(){drillActions.clear();drillSeq=0;let a=filtrar(atual),p=filtrar(anterior),ta=filtrarTcos(tcosAtual),tp=filtrarTcos(tcosAnterior);renderCiptur();renderCipturTor(a);renderGiroAbordagens();renderCavalaria();renderCipg();renderCipa(a,p);renderOrigemPoliciais(a);let at=a.filter(x=>x.status_atendimento!=='DEMANDA REPRIMIDA'),rep=a.filter(x=>x.status_atendimento==='DEMANDA REPRIMIDA');kTotal.textContent=a.length;kAtendidas.textContent=at.length;kReprimidas.textContent=rep.length;kDocumentos.textContent=a.length+ta.length;kConduzidos.textContent=soma(a,'conducoes_operacionais');vTotal.textContent=comparar.value==='nenhum'?'':`${variacao(a.length,p.length)} em relação ao comparado`;vincularCardDrill('kTotal','Todas as ocorrências do período',a);vincularCardDrill('kAtendidas','Ocorrências atendidas',at);vincularCardDrill('kReprimidas','Demandas reprimidas',rep);vincularCardDrill('kDocumentos','Documentos produzidos',documentosPeriodo(a,ta),{preservarDuplicados:true,subtitulo:'BOs, TCOs e demais documentos que compõem este indicador.'});vincularCardDrill('kConduzidos','Ocorrências com conduções',a.filter(x=>num(x.conducoes_operacionais)>0),{subtitulo:'Ocorrências que registraram uma ou mais conduções.'});
+function render(){drillActions.clear();drillSeq=0;let a=filtrar(atual),p=filtrar(anterior),ta=filtrarTcos(tcosAtual),tp=filtrarTcos(tcosAnterior);renderCiptur();renderCipturTor(a);renderGiroAbordagens();renderCavalaria();renderCipg();renderCipa(a,p);renderOrigemPoliciais(a);renderEscolas(a);let at=a.filter(x=>x.status_atendimento!=='DEMANDA REPRIMIDA'),rep=a.filter(x=>x.status_atendimento==='DEMANDA REPRIMIDA');kTotal.textContent=a.length;kAtendidas.textContent=at.length;kReprimidas.textContent=rep.length;kDocumentos.textContent=a.length+ta.length;kConduzidos.textContent=soma(a,'conducoes_operacionais');vTotal.textContent=comparar.value==='nenhum'?'':`${variacao(a.length,p.length)} em relação ao comparado`;vincularCardDrill('kTotal','Todas as ocorrências do período',a);vincularCardDrill('kAtendidas','Ocorrências atendidas',at);vincularCardDrill('kReprimidas','Demandas reprimidas',rep);vincularCardDrill('kDocumentos','Documentos produzidos',documentosPeriodo(a,ta),{preservarDuplicados:true,subtitulo:'BOs, TCOs e demais documentos que compõem este indicador.'});vincularCardDrill('kConduzidos','Ocorrências com conduções',a.filter(x=>num(x.conducoes_operacionais)>0),{subtitulo:'Ocorrências que registraram uma ou mais conduções.'});
 let docs=docsComTco(a,ta),docsP=Object.fromEntries(docsComTco(p,tp));let docsLista=documentosPeriodo(a,ta);function listaDoc(tipo){return tipo==='TCO'?ta.map(t=>({...t,_doc:'TCO',id:t.ocorrencia_id||t.id})):a.filter(o=>norm(o.tipo_registro)===tipo).map(o=>({...o,_doc:tipo}))}rows('tabDocs',docs.map(x=>`<tr><td>${esc(x[0])}</td><td>${drillNumero(x[1],'Documentos '+x[0],listaDoc(x[0]),{preservarDuplicados:true})}</td><td>${docsP[x[0]]||0}</td><td class="${classeVariacao('Documentos produzidos',x[1],docsP[x[0]]||0)}">${variacao(x[1],docsP[x[0]]||0)}</td></tr>`).join(''));chart('chartDocs','doughnut',docs.map(x=>x[0]),docs.map(x=>x[1]),'Documentos',docs.map(x=>corDocumento(x[0])),idx=>abrirDetalhes('Documentos '+docs[idx][0],listaDoc(docs[idx][0]),{preservarDuplicados:true}));
 let ocorr=rankNaturezas(a,15);rows('tabOcorrencias',ocorr.map((x,i)=>{let g=a.filter(y=>naturezasOcorrencia(y).includes(x[0])),bs=rank(g,x=>normalizarBairro(x.bairro),3).map(z=>z[0]).join(' / '),idades=listaPessoas(g,'infrator').map(y=>num(y.idade)).filter(Boolean);return `<tr><td class="rank">${i+1}º</td><td>${esc(x[0])}</td><td>${drillNumero(x[1],x[0],g)}</td><td>${esc(bs)}</td><td>${idades.length?Math.min(...idades)+' a '+Math.max(...idades)+' anos':'NI'}</td></tr>`}).join(''));let ocorrTop=ocorr.slice(0,10);chart('chartOcorrencias','bar',ocorrTop.map(x=>x[0]),ocorrTop.map(x=>x[1]),'Ocorrências',CORES.blue,idx=>{let nome=ocorrTop[idx][0];abrirDetalhes(nome,a.filter(y=>naturezasOcorrencia(y).includes(nome)))});
 let bs=rank(a,x=>normalizarBairro(x.bairro),999),bp=Object.fromEntries(rank(p,x=>normalizarBairro(x.bairro)));rows('tabBairros',bs.map((x,i)=>{let g=a.filter(y=>normalizarBairro(y.bairro)===x[0]);return `<tr><td class="rank">${i+1}º</td><td>${esc(x[0])}</td><td>${drillNumero(x[1],'Ocorrências no bairro '+x[0],g)}</td><td>${a.length?(x[1]*100/a.length).toFixed(1):0}%</td><td>${bp[x[0]]||0}</td><td class="${cls(x[1],bp[x[0]]||0)}">${variacao(x[1],bp[x[0]]||0)}</td></tr>`}).join(''));let bairrosTop=bs.slice(0,12);chart('chartBairros','bar',bairrosTop.map(x=>x[0]),bairrosTop.map(x=>x[1]),'Bairros',CORES.teal,idx=>{let nome=bairrosTop[idx][0];abrirDetalhes('Ocorrências no bairro '+nome,a.filter(y=>normalizarBairro(y.bairro)===nome))});
