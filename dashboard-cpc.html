@@ -241,6 +241,16 @@ main{width:min(1440px,96%);margin:-31px auto 45px}.panel{background:#fff;border:
     </div>
   </div>
 </section>
+<section class="panel" id="secCpcEscolas" data-cpc-areas="visao-geral perfis territorial comparativos">
+  <div class="sectionTitle"><div><h2>Ocorrências em escolas</h2><p>Escolas identificadas no local do fato, relacionadas ao tipo e subtipo já cadastrados. Os dados respeitam os filtros de período, unidade e território do CPC.</p></div><span class="tag">AMBIENTE ESCOLAR</span></div>
+  <div class="cpcOrigemInstitucionalCards">
+    <div class="kpi" style="--accent:var(--blue)"><small>Ocorrências em escolas</small><strong id="cpcEscolasTotal">—</strong></div>
+    <div class="kpi" style="--accent:var(--teal)"><small>Escolas identificadas</small><strong id="cpcEscolasInstituicoes">—</strong></div>
+  </div>
+  <div class="cpcOrigemInstitucionalChart" style="height:320px;margin-top:14px"><canvas id="chartCpcEscolas" aria-label="Escolas com mais ocorrências"></canvas></div>
+  <div class="cpcOrigemScroll" style="margin-top:14px"><table class="cpcOrigemTabela"><thead><tr><th>Escola</th><th>BOs</th><th>Tipos e subtipos registrados</th></tr></thead><tbody id="cpcEscolasTabela"><tr><td colspan="3">Consultando ocorrências em escolas...</td></tr></tbody></table></div>
+  <p class="cpcOrigemInstitucionalInfo" id="cpcEscolasNota" role="status">Sem classificação escolar nos registros históricos não significa ausência de ocorrências em escolas. Faixas etárias detalhadas estão no Dashboard Completo.</p>
+</section>
   <section class="panel" id="secIndicadoresCpc" data-cpc-areas="visao-geral">
   <div class="sectionTitle"><div><h2>Indicadores estatísticos por unidade e subunidade</h2><p>BOPE consolidado e suas companhias (Choque, Força Tática, Canil e GATE) são exibidos separadamente. Os recortes das companhias já integram o BOPE e não devem ser somados novamente ao total. Clique em um indicador para conferir os registros de origem.</p></div><span class="tag">SIE-CPC</span></div>
   <div id="cpcIndicadoresEspecificos" class="cpcSpecialGrid"><p class="empty">Consultando indicadores por unidade...</p></div>
@@ -620,6 +630,25 @@ function renderAbordagensGiroCpc(){
   const itens=Object.entries(dias).sort((a,b)=>a[0].localeCompare(b[0]));
   chart('chartCpcGiroAbordagens','line',itens.map(x=>br(x[0])),[{label:'Abordagens',data:itens.map(x=>x[1]),tension:.25,fill:false}],{scales:{y:{beginAtZero:true,ticks:{precision:0}}}});
 }
+function renderEscolasCpc(payload,erro){
+  const valido=!erro&&payload?.autorizado===true&&payload?.escolas;
+  $("cpcEscolasTotal").textContent=valido?n(payload.escolas.total):"—";
+  $("cpcEscolasInstituicoes").textContent=valido?n(payload.escolas.instituicoes):"—";
+  const lista=valido?(Array.isArray(payload.escolas.ranking)?payload.escolas.ranking:[]):[];
+  $("cpcEscolasTabela").innerHTML=valido?(lista.length?lista.map(g=>{
+    const naturezas=(g.naturezas||[]).map(i=>esc(i.tipo||"Não informada")+(i.subtipo?" / "+esc(i.subtipo):"")+" ("+n(i.quantidade)+")").join("; ");
+    return "<tr><td>"+esc(g.nome)+"</td><td>"+n(g.total)+"</td><td>"+(naturezas||"Não informadas")+"</td></tr>";
+  }).join(""):'<tr><td colspan="3">Nenhuma escola classificada neste recorte.</td></tr>'):'<tr><td colspan="3">Indicador não disponível para o filtro atual.</td></tr>';
+  const top=lista.slice(0,10);
+  if(valido)chart("chartCpcEscolas","bar",top.map(x=>x.nome),
+    [{label:"BOs em escolas",data:top.map(x=>n(x.total)),backgroundColor:"#1e7c87",borderRadius:5}],
+    {indexAxis:"y",scales:{x:{beginAtZero:true,ticks:{precision:0}},y:{grid:{display:false}}}});
+  else{charts.chartCpcEscolas?.destroy();delete charts.chartCpcEscolas}
+  $("cpcEscolasNota").textContent=valido
+    ?"São contabilizados somente BOs com nome da escola confirmado no cadastro. Registros históricos sem escola informada não são automaticamente negativos. Para distribuição etária de todas as vítimas e infratores, consulte o Dashboard Completo."
+    :"Não foi possível confirmar estatísticas escolares neste recorte.";
+}
+
 function renderOrigemPoliciaisCpc(payload,erro){
   const categorias=window.SIEIndicadoresEnvolvimento?.ORIGENS||[];
   const valido=!erro&&payload?.autorizado===true&&payload?.origens&&categorias.length;
@@ -721,6 +750,7 @@ let versaoConsultaCpc=0;
 async function carregar(){
   const versao=++versaoConsultaCpc;
   renderOrigemPoliciaisCpc(null,'aguardando dados');
+  renderEscolasCpc(null,'aguardando dados');
   window.CpcAnaliseIntegrada?.resetar();
   const ready=window.SistemaAuth?.ready;
   if(ready)await ready;
@@ -755,6 +785,7 @@ async function carregar(){
     if(!args.p_unidade_id&&$('unidade').value){carregar();return}
     render(r.data);
     renderOrigemPoliciaisCpc(ocpi.data,ocpi.error||(!ocpi.data?.autorizado?'sem autorização':null));
+    renderEscolasCpc(ocpi.data,ocpi.error||(!ocpi.data?.autorizado?'sem autorização':null));
     window.CpcAnaliseIntegrada?.configurar(db,args,hierarquiaUnidades,r.data.resumo?.total_ocorrencias,catalogoTerritorial);
     document.querySelector('main').classList.remove('cpcConsultaSemResultado');
     window.CpcIndicadoresDashboard.carregar(db,args,hierarquiaUnidades).catch(function(e){console.error(e);if(versao===versaoConsultaCpc)$('cpcIndicadoresEspecificos').textContent='Erro ao consultar indicadores especializados.'});
