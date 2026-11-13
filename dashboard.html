@@ -1037,7 +1037,7 @@ function renderEnvolvimentoFuncional(registros){
   chart("chartEnvolvimentoFuncional","bar",grupos.map(x=>x[0]),grupos.map(x=>x[1].length),
     "BOs por participação",grupos.map(x=>x[2]),i=>{if(grupos[i])abrirDetalhes(grupos[i][0],grupos[i][1]);});
   $("coberturaEnvolvimentoFuncional").textContent=
-    r.policiais.classificados+" de "+r.total+" BO(s) possuem ao menos uma classificação funcional informada. "+
+    r.policiais.classificados+" de "+r.policiais.novosCadastros+" BO(s) cadastrados desde 06/11/2026 possuem classificação funcional informada. "+
     r.policiais.semClassificacao+" sem classificação; ausência de informação não significa ausência de policiais/autoridades. "+
     "Os grupos por papel podem se sobrepor, mas o total de BOs é único.";
 }
