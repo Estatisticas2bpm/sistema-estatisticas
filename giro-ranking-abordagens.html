@@ -162,7 +162,7 @@
         '</td><td>'+Number(r.quantidade_pessoas||0)+
         '</td><td>'+esc(local||'Não informado')+
         '</td><td><span class="tag '+(excluida?'excluida':'')+'">'+(excluida?'Excluída':'Válida')+'</span>'+
-        (excluida?'<small>Motivo: '+esc(r.justificativa_exclusao||'')+'</small>':'')+
+        (excluida?'<small>Excluída em: '+esc(r.excluida_em?formatter.format(new Date(r.excluida_em)):'—')+'</small><small>Motivo: '+esc(r.justificativa_exclusao||'')+'</small>':'')+
         '</td><td>'+(excluida?'—':'<button type="button" class="danger small" data-excluir="'+esc(r.id)+'">Excluir</button>')+
         '</td></tr>';
     }).join(''):'<tr><td colspan="8">Nenhuma abordagem encontrada neste período.</td></tr>';
