@@ -1,6 +1,240 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GIRO — Produtividade por militar</title><style>body{font:15px system-ui;margin:0;background:#eef3f8;color:#173047}header{background:#071b33;color:white;padding:22px}main{max-width:960px;margin:20px auto;padding:12px}section{background:white;border-radius:14px;padding:20px}label{display:inline-block;margin:8px}input{display:block;padding:10px}button{padding:12px;border:0;border-radius:8px;background:#0e4f8a;color:white}table{width:100%;border-collapse:collapse}th,td{padding:12px;border-bottom:1px solid #dde6ef;text-align:left}th{background:#eef3f8}a{color:inherit}</style><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="auth-config.js"></script><script src="auth-guard.js"></script></head><body><header><h1>GIRO · Ranking de abordagens por policial</h1><a href="giro-acesso-abordagens.html">← Gestão de policiais</a></header><main><section><p>Produtividade individual vinculada à conta que salvou a abordagem. Os registros históricos da antiga conta compartilhada não são atribuídos a policiais específicos.</p><form id="f"><label>Data inicial<input id="inicio" type="date" required></label><label>Data final<input id="fim" type="date" required></label><button type="submit">Atualizar ranking</button></form><p id="status" role="status"></p><table><thead><tr><th>Posição</th><th>Policial</th><th>Matrícula</th><th>Abordagens</th><th>Pessoas abordadas</th></tr></thead><tbody id="linhas"></tbody></table></section></main><script>
-(async()=>{const $=id=>document.getElementById(id),auth=await window.SistemaAuth.ready,esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','"':'&quot;',"'":'&#39;'}[c]));const d=new Date(),iso=x=>x.toISOString().slice(0,10);$('inicio').value=iso(new Date(d.getFullYear(),d.getMonth(),1));$('fim').value=iso(d);if(!auth?.client){$('status').textContent='Sem acesso autorizado.';return}
-async function atualizar(){const fim=new Date($('fim').value+'T12:00:00');fim.setDate(fim.getDate()+1);const {data,error}=await auth.client.rpc('giro_ranking_militares',{p_inicio:$('inicio').value+'T00:00:00-04:00',p_fim:iso(fim)+'T00:00:00-04:00'});if(error)throw error;const rows=data||[];$('status').textContent=rows.length+' militar(es) com abordagens no período.';$('linhas').innerHTML=rows.map((x,i)=>'<tr><td>'+(i+1)+'</td><td>'+esc(x.nome_guerra)+'<small style="display:block">'+esc(x.nome_completo)+'</small></td><td>'+esc(x.matricula)+'</td><td>'+Number(x.quantidade_abordagens||0)+'</td><td>'+Number(x.pessoas_abordadas||0)+'</td></tr>').join('')}
-$('f').onsubmit=async e=>{e.preventDefault();try{await atualizar()}catch(e){$('status').textContent=e.message}};try{await atualizar()}catch(e){$('status').textContent=e.message}
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>GIRO — Ranking e consulta de abordagens</title>
+  <style>
+    :root{--azul:#0e4f8a;--escuro:#102b43;--cinza:#64748b;--borda:#dce5ee;--fundo:#eef3f8}
+    *{box-sizing:border-box}
+    body{font:15px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin:0;background:var(--fundo);color:var(--escuro)}
+    header{background:linear-gradient(110deg,#061c35,#174e76);color:white;padding:24px clamp(14px,4vw,42px)}
+    header h1{font-size:24px;margin:0 0 8px}
+    header a{color:#e6f1ff;text-decoration:none}
+    main{max-width:1240px;margin:20px auto;padding:0 14px 30px}
+    section{background:white;border-radius:15px;padding:clamp(15px,3vw,26px);margin-bottom:16px;border:1px solid var(--borda)}
+    h2{margin:0 0 9px;font-size:19px}
+    p{line-height:1.55}
+    .sub{color:var(--cinza);font-size:13px;margin:4px 0 16px}
+    .filtros{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px;align-items:end}
+    label{display:block;font-size:13px;font-weight:650}
+    input,select{margin-top:7px;display:block;width:100%;font:inherit;padding:11px;border:1px solid #c6d4e0;border-radius:9px;background:white;color:var(--escuro)}
+    button{font:inherit;background:var(--azul);color:white;border:none;border-radius:9px;padding:11px 15px;cursor:pointer;font-weight:650}
+    button:hover:not(:disabled){filter:brightness(.93)}
+    button:disabled{opacity:.53;cursor:not-allowed}
+    button.secondary{background:#e8f1f7;color:var(--escuro)}
+    button.danger{background:#a21d30}
+    button.small{padding:7px 10px;font-size:12px}
+    button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #72b5ed;outline-offset:2px}
+    .scroll{overflow-x:auto;border:1px solid var(--borda);border-radius:10px}
+    table{width:100%;border-collapse:collapse;font-size:13px;min-width:710px}
+    th,td{padding:11px;text-align:left;border-bottom:1px solid var(--borda);vertical-align:middle}
+    th{background:#f2f6fa;white-space:nowrap;color:#35536b}
+    tr:last-child td{border-bottom:0}
+    small{font-size:12px;color:var(--cinza);display:block}
+    .metrics{display:flex;flex-wrap:wrap;gap:12px;margin:13px 0}
+    .metric{padding:12px 18px;background:#f0f6fa;border-radius:9px;min-width:145px}
+    .metric strong{font-size:25px;display:block;margin-top:4px}
+    .tag{display:inline-block;border-radius:50px;padding:4px 9px;font-size:11px;font-weight:750;background:#dfeee9;color:#176345}
+    .tag.excluida{background:#fde9ec;color:#a21d30}
+    .pagina{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:15px;flex-wrap:wrap}
+    [hidden]{display:none!important}
+    .status{min-height:22px;font-size:13px;margin:12px 0;color:#395b76}
+    .status.erro{color:#9b2432}
+    .status.ok{color:#146241}
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="auth-config.js"></script>
+  <script src="auth-guard.js"></script>
+</head>
+<body>
+<header>
+  <h1>GIRO · Ranking de abordagens por policial</h1>
+  <a href="giro-acesso-abordagens.html">← Gestão de acessos individuais — GIRO</a>
+</header>
+<main>
+  <section>
+    <h2>Filtros de consulta</h2>
+    <p class="sub">Selecione o período e o policial. O ranking considera as abordagens válidas; registros excluídos administrativamente não entram nos totais.</p>
+    <form id="filtros" class="filtros">
+      <label for="inicio">Data inicial<input id="inicio" type="date" required></label>
+      <label for="fim">Data final<input id="fim" type="date" required></label>
+      <label for="usuario">Policial
+        <select id="usuario"><option value="">Todos os policiais</option></select>
+      </label>
+      <label id="filtroSituacao" for="situacao" hidden>Situação do registro
+        <select id="situacao"><option value="ATIVAS">Válidas</option><option value="EXCLUIDAS">Excluídas (auditoria)</option><option value="TODAS">Todas</option></select>
+      </label>
+      <button id="buscar" type="submit">Consultar</button>
+    </form>
+    <p id="status" class="status" role="status" aria-live="polite"></p>
+  </section>
+  <section>
+    <h2>Ranking de abordagens</h2>
+    <div class="scroll"><table>
+      <thead><tr><th>Posição</th><th>Policial</th><th>Matrícula</th><th>Abordagens válidas</th><th>Pessoas abordadas</th></tr></thead>
+      <tbody id="linhas"><tr><td colspan="5">Carregando ranking...</td></tr></tbody>
+    </table></div>
+  </section>
+  <section id="detalhesAdmin" hidden>
+    <h2>Registros individuais de abordagens — Administração</h2>
+    <p class="sub">O administrador pode visualizar todas as abordagens do GIRO e excluir um registro específico, mesmo que tenha sido cadastrado por outro policial. A exclusão exige confirmação e justificativa e fica preservada na auditoria; os totais do ranking são atualizados.</p>
+    <div class="metrics">
+      <div class="metric"><small>Registros encontrados no filtro</small><strong id="totalRegistros">—</strong></div>
+      <div class="metric"><small>Pessoas contabilizadas no filtro</small><strong id="totalPessoas">—</strong></div>
+    </div>
+    <div class="scroll"><table>
+      <thead><tr>
+        <th>Data e hora</th><th>Policial / autoria</th><th>Matrícula</th><th>Tipo</th>
+        <th>Pessoas</th><th>Local</th><th>Situação</th><th>Ação</th>
+      </tr></thead>
+      <tbody id="listaAbordagens"><tr><td colspan="8">Carregando abordagens...</td></tr></tbody>
+    </table></div>
+    <div class="pagina">
+      <button type="button" class="secondary" id="anterior">Anterior</button>
+      <span id="paginaAtual">Página 1</span>
+      <button type="button" class="secondary" id="proxima">Próxima</button>
+    </div>
+    <p class="sub">São exibidos até 50 registros por página. Para consultar outras datas, altere o período acima. O histórico das exclusões é restrito ao administrador.</p>
+  </section>
+</main>
+<script>
+(async()=>{
+  const $=id=>document.getElementById(id);
+  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const auth=await window.SistemaAuth.ready;
+  const admin=String(auth?.perfil?.perfil||'').toUpperCase()==='ADMIN'&&auth?.perfil?.ativo===true;
+  const client=auth?.client;
+  const toLocalISO=d=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
+  const d=new Date();
+  $('inicio').value=toLocalISO(new Date(d.getFullYear(),d.getMonth(),1));
+  $('fim').value=toLocalISO(d);
+  $('detalhesAdmin').hidden=!admin;
+  $('filtroSituacao').hidden=!admin;
+  if(!client){
+    $('status').className='status erro';
+    $('status').textContent='Sem sessão autorizada. Faça login no SIE-CPC.';
+    return;
+  }
+  let pagina=1,total=0,carregando=false;
+  const LIMITE=50;
+  const formatter=new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Boa_Vista',dateStyle:'short',timeStyle:'short'});
+  const tipos={A_PE:'A pé',MOTO:'Motocicleta',VEICULO:'Veículo'};
+  function intervalo(){
+    const inicio=$('inicio').value,fim=$('fim').value;
+    if(!inicio||!fim||fim<inicio)throw Error('Informe um intervalo válido de datas.');
+    const posterior=new Date(fim+'T12:00:00');
+    posterior.setDate(posterior.getDate()+1);
+    return {p_inicio:inicio+'T00:00:00-04:00',p_fim:toLocalISO(posterior)+'T00:00:00-04:00'};
+  }
+  function aviso(texto,erro=false){
+    $('status').textContent=texto;
+    $('status').className='status '+(erro?'erro':'ok');
+  }
+  function renderRanking(rows){
+    const usuario=$('usuario').value;
+    const filtradas=usuario?rows.filter(r=>r.policial_id===usuario):rows;
+    $('linhas').innerHTML=filtradas.length?filtradas.map((x,i)=>
+      '<tr><td>'+(i+1)+'</td><td>'+esc(x.nome_guerra||x.nome_completo)+
+      '<small>'+esc(x.nome_completo)+'</small></td><td>'+esc(x.matricula)+
+      '</td><td>'+Number(x.quantidade_abordagens||0)+'</td><td>'+Number(x.pessoas_abordadas||0)+'</td></tr>'
+    ).join(''):'<tr><td colspan="5">Nenhuma abordagem válida encontrada para o filtro.</td></tr>';
+  }
+  function atualizarUsuarios(usuarios){
+    const select=$('usuario'),anterior=select.value;
+    select.innerHTML='<option value="">Todos os policiais</option>'+usuarios.map(u=>
+      '<option value="'+esc(u.id)+'">'+esc(u.nome_guerra||u.nome_completo)+
+      ' — '+esc(u.matricula)+'</option>').join('');
+    if(usuarios.some(u=>u.id===anterior))select.value=anterior;
+  }
+  function renderAbordagens(dados){
+    total=Number(dados.total||0);
+    const itens=Array.isArray(dados.itens)?dados.itens:[];
+    $('totalRegistros').textContent=total.toLocaleString('pt-BR');
+    $('totalPessoas').textContent=Number(dados.total_pessoas||0).toLocaleString('pt-BR');
+    $('listaAbordagens').innerHTML=itens.length?itens.map(r=>{
+      const hora=r.registrado_em?formatter.format(new Date(r.registrado_em)):'—';
+      const local=[r.endereco,r.bairro,r.municipio].filter(Boolean).join(' · ');
+      const excluida=r.excluida===true;
+      return '<tr><td>'+esc(hora)+'</td><td>'+esc(r.nome_guerra||r.nome_completo)+
+        '<small>'+esc(r.nome_completo)+'</small></td><td>'+esc(r.matricula)+
+        '</td><td>'+esc(tipos[r.tipo_abordagem]||r.tipo_abordagem)+
+        '</td><td>'+Number(r.quantidade_pessoas||0)+
+        '</td><td>'+esc(local||'Não informado')+
+        '</td><td><span class="tag '+(excluida?'excluida':'')+'">'+(excluida?'Excluída':'Válida')+'</span>'+
+        (excluida?'<small>Motivo: '+esc(r.justificativa_exclusao||'')+'</small>':'')+
+        '</td><td>'+(excluida?'—':'<button type="button" class="danger small" data-excluir="'+esc(r.id)+'">Excluir</button>')+
+        '</td></tr>';
+    }).join(''):'<tr><td colspan="8">Nenhuma abordagem encontrada neste período.</td></tr>';
+    $('paginaAtual').textContent='Página '+pagina+' de '+Math.max(1,Math.ceil(total/LIMITE));
+    $('anterior').disabled=carregando||pagina<=1;
+    $('proxima').disabled=carregando||pagina*LIMITE>=total;
+  }
+  async function consultar(){
+    if(carregando)return;
+    carregando=true;
+    $('buscar').disabled=true;
+    $('anterior').disabled=true;
+    $('proxima').disabled=true;
+    try{
+      const datas=intervalo();
+      const ranking=await client.rpc('giro_ranking_militares',datas);
+      if(ranking.error)throw ranking.error;
+      if(admin){
+        const detalhes=await client.rpc('giro_listar_abordagens_admin',{
+          ...datas,p_usuario_id:$('usuario').value||null,p_pagina:pagina,p_tamanho:LIMITE,p_situacao:$('situacao').value
+        });
+        if(detalhes.error)throw detalhes.error;
+        // Lista de autores inclui contas antigas e autores que já não estão ativos.
+        if(!$('usuario').options.length||$('usuario').options.length===1){
+          atualizarUsuarios(detalhes.data?.usuarios||[]);
+          // Carregou o filtro; uma nova pesquisa ainda será necessária caso o usuário o selecione.
+        }
+        renderRanking(ranking.data||[]);
+        renderAbordagens(detalhes.data||{});
+        aviso('Consulta atualizada. Excluir uma abordagem exige confirmação e justificativa.');
+      }else{
+        renderRanking(ranking.data||[]);
+        aviso('Ranking atualizado.');
+      }
+    }catch(e){aviso(e?.message||'Não foi possível consultar as abordagens.',true);}
+    finally{
+      carregando=false;
+      $('buscar').disabled=false;
+      if(admin){
+        $('anterior').disabled=pagina<=1;
+        $('proxima').disabled=pagina*LIMITE>=total;
+      }
+    }
+  }
+  $('filtros').addEventListener('submit',e=>{e.preventDefault();pagina=1;consultar();});
+  $('anterior').onclick=()=>{if(pagina>1){pagina--;consultar();}};
+  $('proxima').onclick=()=>{if(pagina*LIMITE<total){pagina++;consultar();}};
+  $('listaAbordagens').addEventListener('click',async e=>{
+    const btn=e.target.closest('button[data-excluir]');
+    if(!admin||!btn||carregando)return;
+    const id=btn.dataset.excluir;
+    const row=btn.closest('tr');
+    const descricao=row?.querySelector('td')?.textContent||'';
+    if(!confirm('Excluir esta abordagem do GIRO ('+descricao+')?\n\nO registro deixará as estatísticas e permanecerá somente no histórico restrito de auditoria.'))return;
+    const motivo=prompt('Informe a justificativa da exclusão (10 a 500 caracteres):');
+    if(motivo===null)return;
+    if(motivo.trim().length<10||motivo.trim().length>500){
+      aviso('A justificativa deve ter de 10 a 500 caracteres.',true);return;
+    }
+    btn.disabled=true;
+    try{
+      const {data,error}=await client.rpc('giro_excluir_abordagem_admin',{p_abordagem_id:id,p_justificativa:motivo.trim()});
+      if(error)throw error;
+      if(data?.excluida!==true)throw Error('A exclusão não foi confirmada pelo servidor.');
+      pagina=1;
+      await consultar();
+      aviso('Abordagem excluída das estatísticas, com registro preservado na auditoria.');
+    }catch(err){aviso('Exclusão não realizada: '+(err?.message||'erro não identificado'),true);}
+    finally{btn.disabled=false;}
+  });
+  await consultar();
 })();
-</script></body></html>
+</script>
+</body>
+</html>
