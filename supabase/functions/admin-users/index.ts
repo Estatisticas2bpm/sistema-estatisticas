@@ -432,7 +432,7 @@ Deno.serve(async (req: Request) => {
         if(!/^[a-zA-Z0-9.-]{3,30}$/.test(matricula))throw new Error("Informe matrícula válida (3 a 30 caracteres).");
         if(!email.includes("@")||email.length>254)throw new Error("Informe e-mail individual válido.");
         if(email===GIRO_ABORDAGENS_EMAIL)return resposta({error:"O e-mail compartilhado antigo do GIRO não pode ser reutilizado."},400);
-        if(password.length<12)throw new Error("A senha inicial precisa ter pelo menos 12 caracteres.");
+        if(password.length<8)throw new Error("A senha inicial precisa ter pelo menos 8 caracteres.");
         const {data:perfilMesmoEmail,error:perfilMesmoEmailError}=await admin.from("perfis_usuarios")
           .select("user_id").ilike("email",email).limit(1).maybeSingle();
         if(perfilMesmoEmailError)throw perfilMesmoEmailError;
@@ -486,7 +486,7 @@ Deno.serve(async (req: Request) => {
         const perfilSie=await perfilDoUsuario(userId);
         if(perfilSie)return resposta({error:"Esta conta pertence ao SIE-CPC. O policial deve alterar ou recuperar a senha pelo acesso principal, sem redefini-la no GIRO."},409);
         const password=limpar(body.password);
-        if(password.length<12)throw new Error("Senha mínima: 12 caracteres.");
+        if(password.length<8)throw new Error("Senha mínima: 8 caracteres.");
         const {error}=await admin.auth.admin.updateUserById(userId,{password});
         if(error)throw error;
         await log(caller.id,"REDEFINIU_SENHA_GIRO_INDIVIDUAL","giro_acesso_abordagem",userId);
