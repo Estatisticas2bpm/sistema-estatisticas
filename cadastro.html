@@ -73,6 +73,12 @@
       '<div class="campo"><label>Tipo de documento</label><input id="tipoDocumentoExibicao" type="text" value="BO" readonly aria-label="Tipo de documento"><select id="tipoRegistro" name="tipoRegistro" required hidden><option value="BO" selected>BO</option><option value="ROP">ROP</option><option value="TCO">TCO</option><option value="NI">NI</option></select><span class="nota">Nos novos registros, toda ocorrência operacional é registrada por Boletim de Ocorrência (BO).</span></div>'+blocoOrigemBope+blocoOrigemOcorrenciaBope+blocoGrupamento
     );
 
+    if(ehVilaJardimCadastro){
+      html=html.replace(
+        'Marque somente quando o BO tiver sido atendido por um desses grupamentos. As opções são exclusivas.',
+        'Marque VILA JARDIM somente se essa guarnição atendeu a ocorrência — não basta o fato ter ocorrido no bairro Vila Jardim. Escolha apenas uma guarnição.'
+      );
+    }
     if(ehBopeCadastro){
       // O modal deve estar no DOM antes de o script principal iniciar.
       html=html.replace('  <dialog id="modalBairro">',modalOrigemBope+'  <dialog id="modalBairro">');
