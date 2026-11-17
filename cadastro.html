@@ -20,6 +20,7 @@
     const ehCipturCadastro=siglaCadastro==='CIPTUR';
     const ehGiroCadastro=siglaCadastro==='GIRO';
     const ehCipaCadastro=siglaCadastro==='CIPA';
+    const ehCavalariaCadastro=siglaCadastro==='CAVALARIA';
     const ehBatalhaoTerritorialCadastro=['1BPM','2BPM'].includes(siglaCadastro);
     const ehVilaJardimCadastro=siglaCadastro==='1BPM';
     const unidadesBopeSemGrupamento=new Set(['CANIL','FORCA_TATICA','CHOQUE','GATE']);
@@ -161,6 +162,50 @@
         '</body>',
         '<script src="cipa-extrator.js?v=20261008-2"><\/script><script src="cipa-regras-ppe.js?v=20261008-2"><\/script><script src="cipa-cadastro.js?v=20261008-9"><\/script></body>'
       );
+    }
+
+
+    // Cavalaria: cadastro único para ocorrência policial e atividade informativa,
+    // com categorias estruturadas, sem registro de abordagens.
+    if(ehCavalariaCadastro){
+      const cavalariaBloco="      <section id=\"secCavalariaCadastro\">\n        <h2>Organização e registro — Cavalaria</h2>\n        <p class=\"nota\">Atividade operacional é diferente de ocorrência policial. Confira todas as sugestões do PPE antes de salvar.</p>\n        <div class=\"grade\">\n          <div class=\"campo duplo\"><label for=\"cavClasse\">Natureza do registro *</label><select id=\"cavClasse\" required>\n            <option value=\"\">Selecione e confirme</option>\n            <option value=\"ATIVIDADE\">Atividade operacional / informativa</option>\n            <option value=\"OCORRENCIA\">Ocorrência policial</option>\n          </select></div>\n          <div class=\"campo\"><label for=\"cavEsquadrao\">Esquadrão</label>\n            <input id=\"cavEsquadrao\" value=\"1º Esquadrão de Polícia Montada\" readonly></div>\n          <div class=\"campo\"><label for=\"cavPelotao\">Pelotão responsável *</label><select id=\"cavPelotao\" required>\n            <option value=\"\">Selecione</option><option value=\"1_PELOTAO\">1º Pelotão</option><option value=\"2_PELOTAO\">2º Pelotão</option>\n          </select></div>\n          <div class=\"campo duplo\" id=\"cavCategoriaWrap\" hidden><label for=\"cavTipoAtividade\">Tipo padronizado da atividade *</label>\n            <select id=\"cavTipoAtividade\"><option value=\"\">Selecione a atividade</option>\n              <option value=\"VISITA_EDUCATIVA_ESCOLAR\">Visita educativa escolar</option>\n              <option value=\"VISITA_TECNICA_VETERINARIA\">Visita técnica / veterinária</option>\n              <option value=\"POLICIAMENTO_MONTADO\">Policiamento montado</option>\n              <option value=\"POLICIAMENTO_MOTORIZADO\">Policiamento motorizado</option>\n              <option value=\"POLICIAMENTO_COMUNITARIO\">Policiamento comunitário</option>\n              <option value=\"POLICIAMENTO_EVENTOS\">Policiamento em eventos</option>\n              <option value=\"OPERACAO\">Operação</option><option value=\"ACAO_SOCIAL\">Ação social</option>\n              <option value=\"REPRESENTACAO_INSTITUCIONAL\">Representação institucional</option>\n              <option value=\"OUTRA_ATIVIDADE\">Outra atividade documentada</option></select>\n            <span class=\"nota\">Categorias fixas para evitar estatísticas duplicadas por erros de digitação.</span>\n          </div>\n          <div class=\"campo\"><label for=\"cavDataPpe\">Data de elaboração do PPE (quando informada)</label>\n            <input id=\"cavDataPpe\" type=\"date\">\n            <span class=\"nota\">A data do PPE não substitui a data em que o serviço aconteceu.</span>\n          </div>\n          <div class=\"campo duplo\"><label for=\"cavInstituicao\">Instituição ou entidade visitada (opcional)</label>\n            <input id=\"cavInstituicao\" maxlength=\"180\" placeholder=\"Ex.: escola, universidade ou entidade\">\n            <span class=\"nota\">Quando a atividade for dentro de escola, confira o campo de escola existente.</span>\n          </div>\n          <div class=\"campo duplo\"><span id=\"cavPdfStatus\" role=\"status\" class=\"nota\" aria-live=\"polite\">Confira o pelotão, a modalidade, a VTR e o comandante antes de salvar.</span></div>\n        </div>\n      </section>\n";
+      const secaoBase='      <section>\n        <h2>2. Classificação e providências</h2>';
+      if(!html.includes(secaoBase))throw new Error('Seção de classificação não localizada no cadastro.');
+      html=html.replace(secaoBase,cavalariaBloco+secaoBase);
+      html=html.replace('<label for="comandante">Comandante da viatura *</label>',
+        '<label for="comandante">Comandante responsável pelo serviço *</label>');
+      html=html.replace('<label for="data">Data *</label>','<label for="data">Data da atividade / do fato *</label>');
+      html=html.replace(
+        '        const dados = extrairDadosOcorrenciaPdf(texto);',
+        '        const dados = extrairDadosOcorrenciaPdf(texto);\n        dados.cavalaria=window.CavalariaPdf?.analisar(texto)||null;'
+      );
+      html=html.replace(
+        '        const enderecoPreparado = await preencherRascunhoPdf(dados);',
+        '        const enderecoPreparado = await preencherRascunhoPdf(dados);\n        window.CavalariaCadastro?.aplicarPdf(dados);'
+      );
+      html=html.replace('      carregarItensEstruturados(x);',
+        '      carregarItensEstruturados(x);\n      window.CavalariaCadastro?.carregarEdicao(x);');
+      html=html.replace(
+        '      if (!validarFormularioPrincipal()) return;',
+        '      if (!validarFormularioPrincipal()) return;\n      const cavValidacao=window.CavalariaCadastro?.validar();\n      if(cavValidacao&&!cavValidacao.ok)return mostrarErroCampo(cavValidacao.campo,cavValidacao.mensagem);'
+      );
+      html=html.replace(
+        'if (!tipoEscolhido && ocorrenciaAlterada) return mostrarErroCampo("ocorrencia","Selecione um Tipo de Ocorrência válido na lista.");',
+        'if (!tipoEscolhido && ocorrenciaAlterada && !window.CavalariaCadastro?.ehAtividade()) return mostrarErroCampo("ocorrencia","Selecione um Tipo de Ocorrência válido na lista.");'
+      );
+      html=html.replace(
+        '        const registro = {\n',
+        '        const registro = {\n          ...(window.CavalariaCadastro?.camposRegistro()||{}),\n'
+      );
+      html=html.replace(
+        '          crime: document.getElementById("crime").value || null,',
+        '          crime: window.CavalariaCadastro?.ehAtividade()?null:(document.getElementById("crime").value||null),'
+      );
+      html=html.replace(
+        '          crimes_itens: window.obterCrimesSelecionados ? window.obterCrimesSelecionados() : (document.getElementById("crime").value ? [{nome:document.getElementById("crime").value}] : []),',
+        '          crimes_itens: window.CavalariaCadastro?.ehAtividade()?[]:(window.obterCrimesSelecionados ? window.obterCrimesSelecionados() : (document.getElementById("crime").value ? [{nome:document.getElementById("crime").value}] : [])),'
+      );
+      html=html.replace('</head>','<script src="cavalaria-cadastro.js?v=20261117-1"><\/script></head>');
     }
 
     // Os atalhos rápidos de local de entrega agora são carregados do Supabase por unidade.
