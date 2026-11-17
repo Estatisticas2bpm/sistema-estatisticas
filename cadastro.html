@@ -175,6 +175,13 @@
       html=html.replace('<label for="comandante">Comandante da viatura *</label>',
         '<label for="comandante">Comandante responsável pelo serviço *</label>');
       html=html.replace('<label for="data">Data *</label>','<label for="data">Data da atividade / do fato *</label>');
+      html=html.replace('<h1>Cadastrar ocorrência</h1>',
+        '<h1>Cadastrar PPE, atividade ou ocorrência — Cavalaria</h1>');
+      html=html.replace('Preencher cadastro pelo PDF da ocorrência',
+        'Preencher cadastro pelo PDF do BO ou PPE');
+      html=html.replace('Nos novos registros, toda ocorrência operacional é registrada por Boletim de Ocorrência (BO).',
+        'Registro documental unificado: mantenha o número do BO gerado para o PPE. A modalidade da Cavalaria será selecionada separadamente.');
+
       html=html.replace(
         '        const dados = extrairDadosOcorrenciaPdf(texto);',
         '        const dados = extrairDadosOcorrenciaPdf(texto);\n        dados.cavalaria=window.CavalariaPdf?.analisar(texto)||null;'
