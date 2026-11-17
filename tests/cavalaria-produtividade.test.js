@@ -2,33 +2,32 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const root=path.resolve(__dirname,'..');
-
-const page=fs.readFileSync(path.join(root,'cavalaria-produtividade.html'),'utf8');
-const auth=fs.readFileSync(path.join(root,'auth-config.js'),'utf8');
+const antigo=fs.readFileSync(path.join(root,'cavalaria-produtividade.html'),'utf8');
+const cadastro=fs.readFileSync(path.join(root,'cadastro.html'),'utf8');
+const modulo=fs.readFileSync(path.join(root,'cavalaria-cadastro.js'),'utf8');
+const base=fs.readFileSync(path.join(root,'cadastro-base.html'),'utf8');
 const index=fs.readFileSync(path.join(root,'index.html'),'utf8');
-const migration=fs.readFileSync(path.join(root,'supabase/migrations/20261002155420_fase3u_produtividade_cavalaria_base.sql'),'utf8');
-
-assert.match(page,/Produtividade da Cavalaria/i);
-assert.match(page,/POLICIAMENTO_MOTORIZADO/);
-assert.match(page,/POLICIAMENTO_MONTADO/);
-assert.match(page,/POLICIAMENTO_OPERACOES/);
-assert.match(page,/POLICIAMENTO_COMUNITARIO/);
-assert.match(page,/VISITA_TECNICA/);
-assert.match(page,/REPRESENTACAO_INSTITUCIONAL/);
-assert.match(page,/abordagens_pessoas/);
-assert.match(page,/rops_produzidos/);
-assert.match(page,/solipedes/);
-assert.match(page,/viaturas/);
-
-assert.match(auth,/"cavalaria-produtividade\.html":"cadastro"/);
-assert.match(auth,/"cavalaria-produtividade\.html":"PRODUTIVIDADE_CAVALARIA"/);
-assert.match(index,/data-module="PRODUTIVIDADE_CAVALARIA"/);
-
-assert.match(migration,/create table if not exists public\.cavalaria_servicos_produtividade/i);
-assert.match(migration,/enable row level security/i);
-assert.match(migration,/upper\(u\.sigla\) = 'CAVALARIA'/i);
-assert.match(migration,/revoke all on public\.cavalaria_servicos_produtividade from authenticated/i);
-assert.match(migration,/grant select,insert,update,delete on public\.cavalaria_servicos_produtividade to authenticated/i);
-assert.doesNotMatch(migration,/grant .* to anon/i);
-
-console.log('Cavalaria: módulo e cadastro de produtividade preparados com isolamento por unidade.');
+assert.match(antigo,/formulário separado de produtividade foi desativado/);
+assert.match(antigo,/href="cadastro\.html/);
+assert.doesNotMatch(antigo,/\.from\('cavalaria_servicos_produtividade'\)\.insert/);
+assert.match(cadastro,/ehCavalariaCadastro=siglaCadastro==='CAVALARIA'/);
+assert.match(cadastro,/id="cavClasse"/);
+assert.match(cadastro,/id="cavPelotao"/);
+assert.match(cadastro,/id="cavTipoAtividade"/);
+assert.match(cadastro,/cavalaria-cadastro\.js/);
+assert.match(cadastro,/camposRegistro\(\)/);
+assert.doesNotMatch(index,/href="cavalaria-produtividade\.html"/);
+assert.match(modulo,/VISITA_TECNICA_VETERINARIA/);
+assert.match(modulo,/ACAO_SOCIAL/);
+assert.match(modulo,/cavalaria_classe_registro/);
+const fake={};
+new Function('window','document',modulo+';return window.CavalariaPdf;')(
+ fake,{readyState:'loading',addEventListener(){}});
+const parser=fake.CavalariaPdf;
+const visita=parser.analisar('VISITA À ESCOLA MUNICIPAL EXEMPLO\n1º PELOTÃO\nVTR: 1411');
+assert.equal(visita.tipoAtividade,'VISITA_EDUCATIVA_ESCOLAR');
+assert.equal(visita.pelotao,'1_PELOTAO');
+assert.equal(parser.analisar('LESÃO CORPORAL na via pública; estudante relatou escola.').tipoAtividade,'');
+assert.equal(parser.analisar('1º PELOTÃO e 2º PELOTÃO').pelotao,'');
+assert.match(base,/abrirNovoFormularioAposSalvar/);
+console.log('Cavalaria: cadastro único e leitura conservadora do PPE validados.');
