@@ -293,6 +293,56 @@ END $fn$;
 REVOKE ALL ON FUNCTION public.ia_cpc_finalizar_custo(uuid,uuid,integer,integer,integer)
  FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.ia_cpc_finalizar_custo(uuid,uuid,integer,integer,integer) TO service_role;
+-- Conciliação MANUAL de reserva pendente, após evidência externa e revisão.
+-- Não libera automaticamente após timeout; a janela mínima não prova ausência de cobrança.
+CREATE TABLE IF NOT EXISTS private.ia_cpc_conciliacoes (
+ consumo_id uuid PRIMARY KEY REFERENCES private.ia_cpc_consumo(id) ON DELETE RESTRICT,
+ referencia text NOT NULL UNIQUE CHECK(length(referencia) BETWEEN 1 AND 160),
+ reserva_original_centavos integer NOT NULL CHECK(reserva_original_centavos>0),
+ custo_confirmado_centavos integer NOT NULL CHECK(custo_confirmado_centavos>=0),
+ input_tokens integer NOT NULL CHECK(input_tokens>=0),
+ output_tokens integer NOT NULL CHECK(output_tokens>=0),
+ registrado_em timestamptz NOT NULL DEFAULT clock_timestamp(),
+ registrado_por text NOT NULL DEFAULT session_user
+);
+ALTER TABLE private.ia_cpc_conciliacoes ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON private.ia_cpc_conciliacoes FROM PUBLIC,anon,authenticated,service_role;
+
+CREATE OR REPLACE FUNCTION private.ia_cpc_conciliar_reserva(
+ p_reserva_id uuid,p_referencia text,p_custo_confirmado_centavos integer,
+ p_input_tokens integer,p_output_tokens integer
+) RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY INVOKER SET search_path=''
+AS $fn$
+DECLARE v_reg private.ia_cpc_consumo%ROWTYPE; v_resultado jsonb;
+BEGIN
+ PERFORM pg_catalog.pg_advisory_xact_lock(208760,12);
+ IF p_reserva_id IS NULL OR p_referencia IS NULL OR length(btrim(p_referencia)) NOT BETWEEN 1 AND 160
+   OR p_custo_confirmado_centavos IS NULL OR p_custo_confirmado_centavos<0
+   OR p_input_tokens IS NULL OR p_input_tokens<0 OR p_output_tokens IS NULL OR p_output_tokens<0
+   OR (p_custo_confirmado_centavos=0 AND (p_input_tokens<>0 OR p_output_tokens<>0)) THEN
+   RAISE EXCEPTION 'Conciliação inválida';
+ END IF;
+ SELECT * INTO v_reg FROM private.ia_cpc_consumo WHERE id=p_reserva_id FOR UPDATE;
+ IF NOT FOUND OR v_reg.estado<>'reservado' THEN
+   RAISE EXCEPTION 'Reserva não está pendente';
+ END IF;
+ IF v_reg.criado_em>clock_timestamp()-interval '24 hours' THEN
+   RAISE EXCEPTION 'Reserva recente; aguardar e comprovar situação no provedor';
+ END IF;
+ -- Referência única do registro administrativo protegido; nunca anexar recibos ou dados pessoais aqui.
+ INSERT INTO private.ia_cpc_conciliacoes(consumo_id,referencia,reserva_original_centavos,custo_confirmado_centavos,input_tokens,output_tokens)
+ VALUES(p_reserva_id,btrim(p_referencia),v_reg.reserva_centavos,p_custo_confirmado_centavos,p_input_tokens,p_output_tokens);
+ v_resultado:=public.ia_cpc_finalizar_custo(p_reserva_id,v_reg.usuario_id,p_custo_confirmado_centavos,p_input_tokens,p_output_tokens);
+ IF (v_resultado->>'ok') IS DISTINCT FROM 'true' THEN
+   RAISE EXCEPTION 'Conciliação não concluída; revertida integralmente';
+ END IF;
+ RETURN v_resultado;
+END $fn$;
+REVOKE ALL ON FUNCTION private.ia_cpc_conciliar_reserva(uuid,text,integer,integer,integer)
+ FROM PUBLIC,anon,authenticated,service_role;
+-- Excedente confirmado continua bloqueando a carteira, mesmo com auditoria.
+-- Desbloqueio de excedente/estorno exige mecanismo separado e aprovação.
+
 COMMIT;
 
 -- APENAS DBA, em homologação: designar 2 UUIDs autorizados fora do repositório.
