@@ -93,8 +93,10 @@ CREATE TABLE IF NOT EXISTS private.ia_cpc_recargas (
 CREATE TABLE IF NOT EXISTS private.ia_cpc_alocacoes (
   consumo_id uuid NOT NULL REFERENCES private.ia_cpc_consumo(id) ON DELETE RESTRICT,
   recarga_id uuid NOT NULL REFERENCES private.ia_cpc_recargas(id) ON DELETE RESTRICT,
+  ordem integer NOT NULL CHECK (ordem > 0),
   reservado_centavos integer NOT NULL CHECK (reservado_centavos > 0),
   comprometido_centavos integer NOT NULL CHECK (comprometido_centavos BETWEEN 0 AND reservado_centavos),
+  UNIQUE (consumo_id,ordem),
   PRIMARY KEY (consumo_id,recarga_id)
 );
 CREATE INDEX IF NOT EXISTS ia_cpc_alocacoes_recarga_idx ON private.ia_cpc_alocacoes(recarga_id);
@@ -191,7 +193,7 @@ AS $fn$
 DECLARE
  v_agora timestamptz; v_mes date; v_inicio_dia timestamptz; v_inicio_minuto timestamptz;
  v_minuto integer; v_dia integer; v_mes_consultas integer; v_id uuid;
- v_saldo jsonb; v_falta integer; v_parcela integer; v_lote record;
+ v_saldo jsonb; v_falta integer; v_parcela integer; v_lote record; v_ordem integer:=0;
 BEGIN
  IF p_usuario_id IS NULL OR p_modelo IS DISTINCT FROM 'gpt-5.6-luna'
    OR p_reserva_centavos IS NULL OR p_reserva_centavos NOT BETWEEN 1 AND 1000 THEN
@@ -233,8 +235,9 @@ BEGIN
    ORDER BY r.expira_em,r.id
  LOOP
    v_parcela:=least(v_falta,v_lote.livre)::integer;
-   INSERT INTO private.ia_cpc_alocacoes(consumo_id,recarga_id,reservado_centavos,comprometido_centavos)
-   VALUES(v_id,v_lote.id,v_parcela,v_parcela);
+   v_ordem:=v_ordem+1;
+   INSERT INTO private.ia_cpc_alocacoes(consumo_id,recarga_id,ordem,reservado_centavos,comprometido_centavos)
+   VALUES(v_id,v_lote.id,v_ordem,v_parcela,v_parcela);
    v_falta:=v_falta-v_parcela;
    EXIT WHEN v_falta=0;
  END LOOP;
@@ -272,12 +275,11 @@ BEGIN
    RETURN private.ia_cpc_saldo_interno() || jsonb_build_object('ok',true,'motivo','custo_superou_reserva');
  END IF;
  v_falta:=v_reg.reserva_centavos-p_custo_final_centavos;
- -- Restitui a parte não utilizada aos lotes de origem, começando pelo último.
+ -- Restitui pela ordem ORIGINAL da reserva, não pela validade atual dos lotes.
  -- Se o lote venceu, a restituição não recria saldo utilizável.
  FOR v_lote IN
    SELECT a.recarga_id,a.comprometido_centavos FROM private.ia_cpc_alocacoes a
-   JOIN private.ia_cpc_recargas r ON r.id=a.recarga_id
-   WHERE a.consumo_id=p_reserva_id ORDER BY r.expira_em DESC,r.id DESC
+   WHERE a.consumo_id=p_reserva_id ORDER BY a.ordem DESC
  LOOP
    EXIT WHEN v_falta=0;
    v_parcela:=least(v_falta,v_lote.comprometido_centavos);
