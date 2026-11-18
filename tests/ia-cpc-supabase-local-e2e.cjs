@@ -119,7 +119,7 @@ async function main(){
  assert.match(bloqueada.data.error,/aguardam liberação da API paga/);
  const saldoDepois=await api("/functions/v1/ia-cpc",{token:pessoas[0].token,body:{acao:"saldo"},origin:origem});
  assert.equal(saldoDepois.status,200);assert.equal(saldoDepois.data.cota.restante_centavos,10000);
- query("DO $ BEGIN IF EXISTS (SELECT 1 FROM private.ia_cpc_consumo) THEN RAISE EXCEPTION 'Reserva indevida sem API paga'; END IF; END $;");
+ query("DO $verifica$ BEGIN IF EXISTS (SELECT 1 FROM private.ia_cpc_consumo) THEN RAISE EXCEPTION 'Reserva indevida sem API paga'; END IF; END $verifica$;");
  console.log("Trava independente: BO sintético e R$100 fictícios, consulta bloqueada, nenhuma reserva, sem chave externa.");
  const admin=pessoas[0],comandante=pessoas[1];
  query("INSERT INTO public.sessoes_revogadas(session_id,user_id) VALUES "+
