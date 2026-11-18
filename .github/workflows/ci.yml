@@ -2,7 +2,7 @@ name: Validacao SIE-CPC
 
 on:
   push:
-    branches: [main]
+    branches: [main, feature/ia-cpc-admin-comandante-20261111]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -119,7 +119,7 @@ jobs:
 
   homologar-supabase-local-ia:
     name: Supabase local — Auth, PostgREST e Edge (somente dados fictícios)
-    if: github.event_name == 'pull_request' && github.event.pull_request.number == 152
+    if: (github.event_name == 'pull_request' && github.event.pull_request.number == 152) || github.ref == 'refs/heads/feature/ia-cpc-admin-comandante-20261111'
     runs-on: ubuntu-latest
     timeout-minutes: 22
     steps:
