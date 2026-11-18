@@ -132,6 +132,13 @@ Deno.serve(async (req: Request) => {
         return respostaJson(400,{error:"Requisição inválida."},origin);
     } catch { return respostaJson(400,{error:"Requisição inválida."},origin); }
 
+    // Leitura do saldo sem consulta de BOs, sem reserva e sem chamada à OpenAI.
+    if(corpo.acao==="saldo"){
+      const {data:cota,error:erro}=await admin.rpc("ia_cpc_consultar_saldo",{p_usuario_id:auth.user.id});
+      if(erro)return respostaJson(503,{error:"Carteira pré-paga ainda indisponível."},origin);
+      if(cota?.permitido!==true)return respostaJson(403,{error:"Acesso não autorizado."},origin);
+      return respostaJson(200,{cota,sem_cobranca:true},origin);
+    }
     const pergunta = typeof corpo.pergunta==="string" ? corpo.pergunta.trim() : "";
     const inicio = corpo.data_inicio, fim = corpo.data_fim;
     if (!perguntaSegura(pergunta)||!dataValida(inicio)||!dataValida(fim))
@@ -353,8 +360,15 @@ Deno.serve(async (req: Request) => {
     if(cota?.permitido!==true){
       const status=cota?.motivo==="nao_autorizado"?403:429;
       return respostaJson(status,{error:status===403?
-        "Acesso não autorizado.":"Limite financeiro ou de consultas atingido. Nenhuma chamada paga foi realizada.",
-        cota:{restante_centavos:cota?.restante_centavos??null}},origin);
+        "Acesso não autorizado.":cota?.motivo==="limite_orcamento"?
+        "Saldo pré-pago insuficiente. Nenhuma chamada paga foi realizada.":
+        cota?.motivo==="conciliacao_pendente"?"Carteira bloqueada para conciliação financeira. Nenhuma chamada paga foi realizada.":
+        "Limite de consultas ou configuração financeira atingido. Nenhuma chamada paga foi realizada.",
+        cota:{restante_centavos:cota?.restante_centavos??null,
+          creditos_validos_centavos:cota?.creditos_validos_centavos??null,
+          consumo_comprometido_centavos:cota?.consumo_comprometido_centavos??null,
+          saldo_baixo:cota?.saldo_baixo===true,bloqueado_conciliacao:cota?.bloqueado_conciliacao===true,
+          proximo_vencimento:cota?.proximo_vencimento??null}},origin);
     }
 
     const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),25000);
@@ -375,18 +389,20 @@ Deno.serve(async (req: Request) => {
       .flatMap((b:{content?:Array<{type:string;text?:string}>})=>b.content||[])
       .filter((v:{type:string})=>v.type==="output_text")
       .map((v:{text?:string})=>v.text||"").join("\n").trim();
-    if(!texto) return respostaJson(502,{error:"A IA não retornou texto. Reserva mantida por segurança."},origin);
-
     let consumo={
+      creditos_validos_centavos:Number(cota.creditos_validos_centavos),
+      consumo_comprometido_centavos:Number(cota.consumo_comprometido_centavos),
       restante_centavos:Number(cota.restante_centavos),
-      alerta_80:Boolean(cota.alerta_80),restante_dia:Number(cota.restante_dia),
+      saldo_baixo:Boolean(cota.saldo_baixo),bloqueado_conciliacao:Boolean(cota.bloqueado_conciliacao),
+      proximo_vencimento:cota.proximo_vencimento??null,
+      restante_dia:Number(cota.restante_dia),
       restante_mes_global:Number(cota.restante_mes_global),reserva_pendente:true
     };
     // Sem telemetria completa, preserva-se a reserva máxima (falha conservadora).
     const usage=json.usage;
     if(Number.isSafeInteger(usage?.input_tokens)&&Number.isSafeInteger(usage?.output_tokens)){
       const custo=calcularCustoCentavos(usage.input_tokens,usage.output_tokens,cambio);
-      if(custo!==null&&custo<=reservaCentavos){
+      if(custo!==null){
         const {data:fechamento,error:erroFechamento}=await admin.rpc("ia_cpc_finalizar_custo",{
           p_reserva_id:cota.reserva_id,p_usuario_id:auth.user.id,
           p_custo_final_centavos:custo,
@@ -394,11 +410,16 @@ Deno.serve(async (req: Request) => {
         });
         if(!erroFechamento&&fechamento?.ok===true){
           consumo={...consumo,
+            creditos_validos_centavos:Number(fechamento.creditos_validos_centavos),
+            consumo_comprometido_centavos:Number(fechamento.consumo_comprometido_centavos),
             restante_centavos:Number(fechamento.restante_centavos),
-            alerta_80:Boolean(fechamento.alerta_80),reserva_pendente:false};
+            saldo_baixo:Boolean(fechamento.saldo_baixo),
+            bloqueado_conciliacao:Boolean(fechamento.bloqueado_conciliacao),
+            proximo_vencimento:fechamento.proximo_vencimento??null,reserva_pendente:false};
         }else console.error("IA CPC: não foi possível reconciliar a reserva");
       }
     }
+    if(!texto)return respostaJson(502,{error:"A IA não retornou texto. O consumo permanece contabilizado.",cota:consumo},origin);
     return respostaJson(200,{resposta:texto,periodo:{inicio,fim},periodo_anterior:anterior,
       registros:atual.total,comparacao_total:estatisticas.comparacoes.total,
       qualidade:{exclusivamente_preliminar:qualidade.atual.exclusivamente_preliminar,
