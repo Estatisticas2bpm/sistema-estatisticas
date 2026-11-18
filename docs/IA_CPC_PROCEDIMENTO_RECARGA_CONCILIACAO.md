@@ -62,7 +62,7 @@ FROM private.ia_cpc_consumo WHERE estado='reservado';
 ```
 - Valores locais são conservadores, portanto não se espera igualdade direta com o faturamento absoluto em USD. Registrar o cálculo comparável, divergências explicadas e saldo local que pode ser efetivamente honrado. Nunca liberar saldo superior ao crédito disponível líquido confirmado.
 - Sem telemetria completa, manter a reserva integral comprometida. Não liberar apenas porque não apareceu débito imediatamente. Exigir evidência confiável para cada correção futura.
-- Extrapolação registrada (custo final superior à reserva) congela a carteira por regra de banco, mesmo que nova recarga seja registrada. Não modificar ou apagar consumo para desbloqueá-la. A versão atual não possui RPC auditada para ajuste/reabertura; se acontecer, interromper operação paga até implementar, testar e aprovar procedimento corretivo com trilha imutável. Nenhuma recarga deve desbloquear automaticamente essa condição.
+- Extrapolação de custo congela a carteira mesmo após nova recarga, até a conciliação integral auditada de todos os excedentes pelo fluxo 4.2. Não modificar ou apagar consumo para desbloqueá-la. Estornos e diferenças não explicadas continuam exigindo procedimento específico e API paga desligada.
 - Quando não houver divergência, verificar flag de bloqueio, permissões individuais, saldo local, proteção de cobrança e aprovação do responsável antes de reabilitar. Em caso de dúvida, permanecer desligado.
 
 ### 4.1 Conciliação manual de reservas pendentes (nova proposta)
@@ -100,7 +100,7 @@ O gestor de faturamento continua responsável pela organização; trocar a conta
 - [ ] Homologação hospedada segregada autorizada, com dados fictícios, sem OpenAI paga.
 - [ ] Conferir proteção de RPCs/tabelas, zero inicial, persistência entre meses, expiração e referências únicas.
 - [ ] Testar pagamento não confirmado, duplicação, saldo vencido, consumo simultâneo, falha de telemetria e excesso de reserva em ambiente fictício.
-- [ ] Procedimento corretivo auditável para divergência/estorno e recuperação após bloqueio implementado e testado (pendente).
+- [ ] Homologar conciliação auditada de excedentes e definir procedimento específico para estornos e outras divergências externas.
 - [ ] Confirmar faturamento pré-pago, auto-reload desligado, projeto dedicado e limites do provedor; comprar apenas mediante autorização do responsável.
 - [ ] Conciliação e aprovação dos dois responsáveis antes de ativar.
 - [ ] Registro de rollback e teste do site principal sem IA.
