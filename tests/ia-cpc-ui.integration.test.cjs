@@ -36,10 +36,12 @@ async function executar({permitido,config=false,resposta}){
  const client={functions:{
    invoke:async (nome,arg)=>{
      chamadas.push({nome,arg});
+     if(arg.body.acao==="saldo")return {data:{cota:{restante_centavos:0,creditos_validos_centavos:0,
+       consumo_comprometido_centavos:0,saldo_baixo:true}}};
      return resposta || {data:{resposta:"Síntese apenas fictícia.",
        registros:12,qualidade:{exclusivamente_preliminar:true},
        comparacao_total:{atual:12,anterior:10,variacao_percentual:20},
-       cota:{restante_centavos:9800,alerta_80:false,reserva_pendente:false}}};
+       cota:{restante_centavos:9800,creditos_validos_centavos:10000,consumo_comprometido_centavos:200,saldo_baixo:false,reserva_pendente:false}}};
    }
  }};
  const auth=config ? undefined : {
@@ -69,15 +71,17 @@ async function executar({permitido,config=false,resposta}){
 
  const valido=await executar({permitido:true});
  assert.equal(valido.get("conteudo").hidden,false);
+ assert.equal(valido.chamadas[0].arg.body.acao,"saldo");
+ assert.match(valido.get("orcamentoEstado").textContent,/R\$\s*0,00/);
  valido.get("pergunta").value="Resuma os indicadores de furto.";
  await valido.get("formConsulta").requestSubmit();
- assert.equal(valido.chamadas.length,1);
- assert.equal(valido.chamadas[0].nome,"ia-cpc");
- assert.equal(valido.chamadas[0].arg.body.pergunta,"Resuma os indicadores de furto.");
+ assert.equal(valido.chamadas.length,2);
+ assert.equal(valido.chamadas[1].nome,"ia-cpc");
+ assert.equal(valido.chamadas[1].arg.body.pergunta,"Resuma os indicadores de furto.");
  assert.equal(valido.get("enviar").disabled,false);
  assert.match(valido.get("situacao").textContent,/rascunhos/);
  assert.equal(valido.get("comparacaoContainer").hidden,false);
- assert.match(valido.get("orcamentoEstado").textContent,/R\$ 100,00/);
+ assert.match(valido.get("orcamentoEstado").textContent,/R\$\s*100,00/);
  assert.equal(valido.get("historico").children.length,2);
  assert.match(valido.get("historico").children[1].lastChild.textContent,/fictícia/);
 
@@ -86,7 +90,7 @@ async function executar({permitido,config=false,resposta}){
  }});
  falhou.get("pergunta").value="Resumo estatístico";
  await falhou.get("formConsulta").requestSubmit();
- assert.equal(falhou.chamadas.length,1);
+ assert.equal(falhou.chamadas.length,2);
  assert.match(falhou.get("historico").children[1].lastChild.textContent,/Acesso negado/);
  assert.equal(falhou.get("enviar").disabled,false);
  assert.equal(falhou.get("situacao").textContent,"Consulta não concluída.");
