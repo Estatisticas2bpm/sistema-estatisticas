@@ -78,6 +78,15 @@ async function main(){
  console.log("PostgREST real: 2 identidades permitidas; demais e chamada financeira bloqueadas.");
 
  const origem="http://localhost:9999";
+ const saldoInicial=await api("/functions/v1/ia-cpc",{token:pessoas[0].token,body:{acao:"saldo"},origin:origem});
+ assert.equal(saldoInicial.status,200);
+ assert.equal(saldoInicial.data.cota.restante_centavos,0,"Carteira deve iniciar vazia");
+ assert.equal(saldoInicial.data.sem_cobranca,true);
+ const saldoNegado=await api("/functions/v1/ia-cpc",{token:pessoas[2].token,body:{acao:"saldo"},origin:origem});
+ assert.equal(saldoNegado.status,403);
+ const rpcSaldoNegado=await api("/rest/v1/rpc/ia_cpc_consultar_saldo",{token:pessoas[0].token,body:{p_usuario_id:pessoas[0].id}});
+ assert([401,403,404].includes(rpcSaldoNegado.status),"Saldo RPC indevidamente exposto");
+ console.log("Carteira pré-paga: saldo inicial zero e acesso protegido; consulta sem cobrança.");
  const dados={pergunta:"Resuma as ocorrências do período.",
   data_inicio:"2026-01-01",data_fim:"2026-01-07",historico:[]};
  for(let i=0;i<pessoas.length;i++){
