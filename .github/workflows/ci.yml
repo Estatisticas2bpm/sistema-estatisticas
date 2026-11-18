@@ -164,17 +164,15 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f "$GITHUB_WORKSPACE/docs/sql/ia_cpc_cota_pendente_aprovacao.sql"
           psql -v ON_ERROR_STOP=1 -c "NOTIFY pgrst, 'reload schema';"
 
-      - name: Iniciar Edge Function local com integração paga fictícia
+      - name: Iniciar Edge Function local sem chave externa e com cobrança bloqueada
         shell: bash
         run: |
           set -euo pipefail
           cat > "$RUNNER_TEMP/ia-cpc-local.env" <<'EOF'
           IA_CPC_ENABLED=true
+          IA_CPC_API_PAGA_ENABLED=false
           IA_CPC_RELATOS_ENABLED=false
           IA_CPC_ALLOWED_ORIGINS=http://localhost:9999
-          OPENAI_API_KEY=CHAVE_FICTICIA_SEM_ACESSO_A_OPENAI
-          OPENAI_MODEL=gpt-5.6-luna
-          IA_CPC_BRL_USD_RESERVA=8
           EOF
           cd "$RUNNER_TEMP/ia-cpc-supabase-descartavel"
           supabase functions serve ia-cpc --env-file "$RUNNER_TEMP/ia-cpc-local.env" \
