@@ -54,7 +54,7 @@ const cpc=fs.readFileSync(path.join(root,"dashboard-cpc.html"),"utf8");
 assert.match(routed,/institucionaisPrincipais:\{vitima:/,"Roteador de cadastro deve preservar classificação da vítima principal");
 assert.match(routed,/dados\.institucionaisPrincipais\.infrator\.situacao/,"Roteador deve persistir classificação principal");
 assert.match(cadastro,/institucionaisPrincipais:/,"Cadastro direto também persiste a classificação");
-assert.match(dash,/indicadores-origem-envolvimento\.js\?v=20261106-1/);
+assert.match(dash,/indicadores-origem-envolvimento\.js\?v=20261113-1/);
 assert.match(dash,/id="chartOrigemAcionamento"/);
 assert.doesNotMatch(dash,/id="kOcorrenciasPoliciais"/,"Dashboard das unidades não exibe policiais envolvidos");
 assert.doesNotMatch(dash,/id="kVitimasPoliciais"/);
