@@ -286,11 +286,12 @@ Deno.serve(async (req: Request) => {
           (upper(perfilCaller.unidades?.sigla) === "CIPG" && perfilCaller.perfil === "ESTATISTICA"));
       if (!autorizado) return resposta({ error: "Acesso restrito à administração ou estatística da CIPG." }, 403);
       const listar = async () => {
-        const { data, error } = await admin.from("cipg_acessos_caderno").select("user_id,ativo,criado_em,nome_completo,posto_graduacao,nome_guerra").order("criado_em",{ascending:false});
+        const { data, error } = await admin.from("cipg_acessos_caderno").select("user_id,ativo,criado_em,nome_completo,posto_graduacao,nome_guerra,senha_temporaria").order("criado_em",{ascending:false});
         if (error) throw error;
         const itens = await Promise.all((data||[]).map(async (x:any) => {
           const { data: authData } = await admin.auth.admin.getUserById(x.user_id);
-          return { ...x, email: authData?.user?.email || "", nome: x.nome_completo || authData?.user?.user_metadata?.nome || "" };
+          const perfilVinculado = await perfilDoUsuario(x.user_id);
+          return { ...x, conta_sie: !!perfilVinculado, email: authData?.user?.email || "", nome: x.nome_completo || authData?.user?.user_metadata?.nome || "" };
         }));
         return itens;
       };
@@ -333,7 +334,7 @@ Deno.serve(async (req: Request) => {
         });
         if (authError || !created.user) throw authError || new Error("Falha ao criar conta individual.");
         const { error: accessError } = await admin.from("cipg_acessos_caderno").insert({
-          user_id:created.user.id, unidade_id:unidadeCipg, ativo:true,
+          user_id:created.user.id, unidade_id:unidadeCipg, ativo:true, senha_temporaria:true,
           nome_completo:nome,posto_graduacao:postoGraduacao,nome_guerra:nomeGuerra,
         });
         if (accessError) {
@@ -354,11 +355,17 @@ Deno.serve(async (req: Request) => {
         await log(caller.id,novo?"REATIVOU_CADERNO_CIPG":"BLOQUEOU_CADERNO_CIPG","cipg_acesso",id);
       }
       if (action === "cipg_access_reset_password") {
+        if (await perfilDoUsuario(id)) return resposta({error:"Esta conta é vinculada ao SIE-CPC. Redefina a senha pelo fluxo institucional, não pelo Caderno Digital."},409);
         const password = limpar(body.password);
-        if (password.length < 8) throw new Error("A senha deve ter pelo menos 8 caracteres.");
-        const { error } = await admin.auth.admin.updateUserById(id,{password});
+        if (password.length < 8) throw new Error("A senha temporária deve ter pelo menos 8 caracteres.");
+        const {data:authAlvo,error:authAlvoError}=await admin.auth.admin.getUserById(id);
+        if(authAlvoError||!authAlvo?.user)throw authAlvoError||new Error("Conta não encontrada.");
+        // O trigger do Auth marca a troca obrigatória e revoga sessões na mesma transação.
+        const { error } = await admin.auth.admin.updateUserById(id,{
+          password, app_metadata:{...authAlvo.user.app_metadata,cipg_reset_nonce:crypto.randomUUID()}
+        });
         if (error) throw error;
-        await log(caller.id,"ALTEROU_SENHA_CADERNO_CIPG","cipg_acesso",id);
+        await log(caller.id,"REDEFINIU_SENHA_TEMPORARIA_CADERNO_CIPG","cipg_acesso",id);
       }
       return resposta({ok:true,users:await listar()});
     }
