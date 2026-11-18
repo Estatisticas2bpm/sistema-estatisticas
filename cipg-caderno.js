@@ -111,7 +111,7 @@ async function carregarEfetivo(){
 function documentoServico(){
  if(!valor('posto'))throw Error('Selecione um posto de serviço cadastrado.');
  if(!valor('dia'))throw Error('Informe a data do serviço.');
- if(!valor('turnoServico'))throw Error('Selecione o 1º ou 2º turno da CIPG.');
+ if(!['1','2','24H'].includes(valor('turnoServico')))throw Error('Selecione um turno de 12 ou 24 horas da CIPG.');
 
  if(valor('houveEvento')==='SIM'&&!linhasEventos().length)throw Error('Adicione pelo menos um acontecimento ou selecione “Não” em “Houve acontecimento?”.');
  if(valor('kmInicial')!==''&&valor('kmFinal')!==''&&Number(valor('kmFinal'))<Number(valor('kmInicial')))throw Error('Km final deve ser maior ou igual ao inicial.');
