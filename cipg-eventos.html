@@ -22,12 +22,12 @@ button{background:#1f6046;color:white;border:0;border-radius:8px;padding:11px 17
 <section class="panel"><h2>Registrar acontecimento</h2>
 <p class="sub">Registre uma linha por militar envolvido. Se dois militares aparecerem no mesmo relatório, faça dois registros. Estes eventos não entram como BO/ocorrência no consolidado do CPC.</p>
 <form id="form"><div class="grid">
-<div class="item" style="grid-column:1/-1"><label for="servico">Relatório de serviço / Nº SEI *</label><select id="servico" required><option value="">Carregando relatórios...</option></select></div>
+<div class="item" style="grid-column:1/-1"><label for="servico">Relatório de serviço / código *</label><select id="servico" required><option value="">Carregando relatórios...</option></select></div>
 <div class="item"><label for="dataEvento">Data do acontecimento</label><input id="dataEvento" type="date"></div>
 <div class="item"><label for="horaEvento">Hora do acontecimento</label><input id="horaEvento" type="time"></div>
 <div class="item"><label for="turnoEvento">Turno CIPG (automático)</label><input id="turnoEvento" placeholder="Conforme hora" readonly></div>
 <div class="item"><label for="tipoEvento">Tipo de evento *</label><select id="tipoEvento" required>
-<option>ENTRADA DE PM NO HOSPITAL</option><option>ÓBITO DE PM</option><option>ALTERAÇÃO NO POSTO</option><option>FUGA / EVASÃO</option><option>TUMULTO</option><option>APOIO PRESTADO</option><option>OUTROS</option></select></div>
+<option>ENTRADA DE PM NO HOSPITAL</option><option>ALTA / SAÍDA DE PM DO HOSPITAL</option><option>DESACATO</option><option>AMEAÇA</option><option>ÓBITO DE PM</option><option>ALTERAÇÃO NO POSTO</option><option>FUGA / EVASÃO</option><option>TUMULTO</option><option>APOIO PRESTADO</option><option>OUTROS</option></select></div>
 <div class="item"><label for="graduacao">Graduação</label><select id="graduacao">
 <option value="">Não informado</option><option>CEL</option><option>TEN CEL</option><option>MAJ</option><option>CAP</option><option>1º TEN</option><option>2º TEN</option><option>ASP OF</option><option>ST</option><option>1º SGT</option><option>2º SGT</option><option>3º SGT</option><option>CB</option><option>SD</option><option>CIVIL</option><option>OUTRO</option></select></div>
 <div class="item"><label for="unidadeMilitar">Unidade do militar</label><input id="unidadeMilitar" maxlength="120" placeholder="Ex.: 1º BPM"></div>
@@ -41,10 +41,10 @@ button{background:#1f6046;color:white;border:0;border-radius:8px;padding:11px 17
 <div class="item"><label for="desfecho">Desfecho</label><select id="desfecho"><option value="">Não informado</option>
 <option>EM ATENDIMENTO</option><option>EM OBSERVAÇÃO</option><option>INTERNADO</option><option>LIBERADO</option><option>TRANSFERIDO</option><option>ÓBITO</option></select></div>
 </div>
-<p class="nota"><b>Dados sensíveis:</b> não copie nome de guerra do policial, lesão/quadro clínico ou outros dados médicos para este cadastro estatístico. O relatório oficial SEI permanece como fonte original e os indicadores do dashboard serão agregados.</p>
+<div class="grid"><div class="item"><label for="descricaoEvento">Descrição administrativa</label><input id="descricaoEvento" maxlength="500"></div><div class="item"><label for="acionouViatura">Acionou viatura de outra unidade?</label><select id="acionouViatura"><option value="">Não informado</option><option value="SIM">Sim</option><option value="NAO">Não</option></select></div><div class="item"><label for="unidadeAcionada">Unidade acionada (opcional)</label><input id="unidadeAcionada" maxlength="120"></div><div class="item"><label for="numeroPpe">Número PPE (opcional)</label><input id="numeroPpe" maxlength="120"></div></div><p class="nota"><b>Dados sensíveis:</b> não copie nome de guerra do policial, lesão/quadro clínico ou outros dados médicos para este cadastro estatístico. Os indicadores do dashboard serão agregados; informe o PPE apenas como referência quando existir.</p>
 <div class="actions"><button id="salvar" type="submit">Salvar evento</button><button id="limpar" type="button" style="background:#526f80">Limpar</button><span id="status" class="status" role="status">Carregando...</span></div>
 </form></section>
-<section class="panel"><h2>Como funciona o vínculo</h2><p class="sub">Primeiro registre o relatório na tela de produtividade da CIPG. Depois escolha seu número SEI acima. O sistema relacionará cada acontecimento ao relatório correto sem criar ocorrência policial no CPC. Os relatórios marcados S/A não precisam receber eventos.</p></section>
+<section class="panel"><h2>Como funciona o vínculo</h2><p class="sub">Primeiro registre o relatório na tela de produtividade da CIPG. Depois escolha seu código acima. O sistema relacionará cada acontecimento ao relatório correto sem criar ocorrência policial no CPC. Os relatórios marcados S/A não precisam receber eventos.</p></section>
 </main>
 <script>
 (()=>{
@@ -70,16 +70,16 @@ button{background:#1f6046;color:white;border:0;border-radius:8px;padding:11px 17
    const out=[],passo=1000;
    for(let k=0;k<20;k++){
      const r=await sessao.client.from('cipg_servicos_guarda')
-       .select('id,data_servico,instituicao,numero_sei,situacao')
+       .select('id,data_servico,instituicao,posto_codigo,codigo_relatorio,numero_sei,situacao')
        .eq('unidade_id',sessao.contexto.unidade_id)
        .order('data_servico',{ascending:false}).range(k*passo,(k+1)*passo-1);
      if(r.error)throw r.error;
      out.push(...(r.data||[]));if((r.data||[]).length<passo)break;
    }
    $('servico').innerHTML='<option value="">Selecione o relatório</option>'+
-     out.filter(x=>String(x.numero_sei||'').trim()).map(x=>'<option value="'+esc(x.id)+'">'+esc(
-       (x.numero_sei?'SEI '+x.numero_sei+' · ':'')+
-       (x.data_servico||'')+' · '+x.instituicao+' ['+(x.situacao||'S/A')+']')+'</option>').join('');
+     out.map(x=>'<option value="'+esc(x.id)+'">'+esc(
+       (x.codigo_relatorio||x.numero_sei||'Sem código')+' · '+
+       (x.data_servico||'')+' · '+ (x.instituicao||x.posto_codigo||'Posto não informado')+' ['+(x.situacao||'S/A')+']')+'</option>').join('');
  }
  const val=id=>String($(id).value||'').trim()||null;
  $('form').addEventListener('submit',async e=>{
@@ -93,7 +93,7 @@ button{background:#1f6046;color:white;border:0;border-radius:8px;padding:11px 17
        data_evento:val('dataEvento'),hora_evento:val('horaEvento'),graduacao:val('graduacao'),
        unidade_militar:val('unidadeMilitar'),em_servico:val('emServico'),
        causa_motivo:val('causa'),conduzido_por:val('conduzido'),
-       setor_atendimento:val('setor'),desfecho:val('desfecho'),apoio_acompanhamento:val('apoio')
+       setor_atendimento:val('setor'),desfecho:val('desfecho'),apoio_acompanhamento:val('apoio'),descricao_evento:val('descricaoEvento'),acionou_viatura:val('acionouViatura')==='SIM'?true:val('acionouViatura')==='NAO'?false:null,unidade_acionada:val('acionouViatura')==='SIM'?val('unidadeAcionada'):null,numero_ppe:val('numeroPpe')
      };
      const r=await sessao.client.from('cipg_eventos_guarda').insert(dados);
      if(r.error)throw r.error;
