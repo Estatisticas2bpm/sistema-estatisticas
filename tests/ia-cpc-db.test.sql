@@ -152,7 +152,7 @@ END $do$;
 SELECT private.ia_cpc_registrar_recarga('CI-RECARGA-2',10000,now()-interval '1 day',now()+interval '364 days');
 SELECT public.ci_assert((private.ia_cpc_saldo_interno()->>'restante_centavos')::int=19980,'nova recarga acumula saldo anterior');
 -- Testes com lotes fracionados, vencidos e vencimento após reserva.
-TRUNCATE private.ia_cpc_conciliacoes,private.ia_cpc_alocacoes,private.ia_cpc_consumo,private.ia_cpc_recargas;
+TRUNCATE private.ia_cpc_debitos_excedentes,private.ia_cpc_excedentes,private.ia_cpc_conciliacoes,private.ia_cpc_alocacoes,private.ia_cpc_consumo,private.ia_cpc_recargas;
 SELECT private.ia_cpc_registrar_recarga('CI-LOTE-1',10,now()-interval '2 days',now()+interval '1 day');
 SELECT private.ia_cpc_registrar_recarga('CI-LOTE-2',15,now()-interval '1 day',now()+interval '2 days');
 INSERT INTO private.ia_cpc_recargas(referencia,valor_centavos,comprado_em,expira_em)
@@ -170,7 +170,7 @@ BEGIN
  PERFORM public.ci_assert(f->>'ok'='true' AND (f->>'restante_centavos')::int=0,'estorno de lote vencido não recria crédito');
 END $do$;
 -- Extrapolação de custo é registrada e congela toda a carteira.
-TRUNCATE private.ia_cpc_conciliacoes,private.ia_cpc_alocacoes,private.ia_cpc_consumo,private.ia_cpc_recargas;
+TRUNCATE private.ia_cpc_debitos_excedentes,private.ia_cpc_excedentes,private.ia_cpc_conciliacoes,private.ia_cpc_alocacoes,private.ia_cpc_consumo,private.ia_cpc_recargas;
 SELECT private.ia_cpc_registrar_recarga('CI-BLOQUEIO',10000,now()-interval '1 day',now()+interval '100 days');
 DO $do$ DECLARE r jsonb; f jsonb;
 BEGIN
@@ -182,7 +182,7 @@ BEGIN
 END $do$;
 
 -- Janela de três consultas por minuto.
-TRUNCATE private.ia_cpc_conciliacoes,private.ia_cpc_alocacoes,private.ia_cpc_consumo;
+TRUNCATE private.ia_cpc_debitos_excedentes,private.ia_cpc_excedentes,private.ia_cpc_conciliacoes,private.ia_cpc_alocacoes,private.ia_cpc_consumo;
 INSERT INTO private.ia_cpc_consumo
  (usuario_id,modelo,mes_referencia,reserva_centavos,estado)
  SELECT '00000000-0000-4000-8000-000000000001','gpt-5.6-luna',
@@ -194,7 +194,7 @@ SELECT public.ci_assert(
  = 'limite_consultas','bloquear quarta chamada no minuto');
 
 -- Vinte consultas no dia: nenhuma chamada adicional deve passar.
-TRUNCATE private.ia_cpc_conciliacoes,private.ia_cpc_alocacoes,private.ia_cpc_consumo;
+TRUNCATE private.ia_cpc_debitos_excedentes,private.ia_cpc_excedentes,private.ia_cpc_conciliacoes,private.ia_cpc_alocacoes,private.ia_cpc_consumo;
 INSERT INTO private.ia_cpc_consumo
   (usuario_id,modelo,mes_referencia,reserva_centavos,estado,criado_em)
 SELECT '00000000-0000-4000-8000-000000000001','gpt-5.6-luna',
@@ -209,7 +209,7 @@ SELECT public.ci_assert(
  = 'limite_consultas','bloquear consulta adicional após vinte no dia');
 
 -- Trezentas consultas globais no mês, divididas entre duas contas.
-TRUNCATE private.ia_cpc_conciliacoes,private.ia_cpc_alocacoes,private.ia_cpc_consumo;
+TRUNCATE private.ia_cpc_debitos_excedentes,private.ia_cpc_excedentes,private.ia_cpc_conciliacoes,private.ia_cpc_alocacoes,private.ia_cpc_consumo;
 INSERT INTO private.ia_cpc_consumo
  (usuario_id,modelo,mes_referencia,reserva_centavos,estado,criado_em)
 SELECT CASE WHEN n%2=0
@@ -230,7 +230,7 @@ SELECT public.ci_assert(
 
 
 -- Conciliação manual: acesso privado, idade mínima, auditoria e preservação do saldo.
-TRUNCATE private.ia_cpc_conciliacoes,private.ia_cpc_alocacoes,private.ia_cpc_consumo,private.ia_cpc_recargas;
+TRUNCATE private.ia_cpc_debitos_excedentes,private.ia_cpc_excedentes,private.ia_cpc_conciliacoes,private.ia_cpc_alocacoes,private.ia_cpc_consumo,private.ia_cpc_recargas;
 SELECT private.ia_cpc_registrar_recarga('CI-CONCILIACAO',10000,now()-interval '3 days',now()+interval '90 days');
 SELECT public.ci_assert(NOT has_function_privilege('anon','private.ia_cpc_conciliar_reserva(uuid,text,integer,integer,integer)','EXECUTE'),'anon não concilia');
 SELECT public.ci_assert(NOT has_function_privilege('authenticated','private.ia_cpc_conciliar_reserva(uuid,text,integer,integer,integer)','EXECUTE'),'usuário comum não concilia');
@@ -275,5 +275,50 @@ BEGIN
  PERFORM public.ci_assert(f->>'bloqueado_conciliacao'='true' AND f->>'restante_centavos'='0','excedente conciliado conserva bloqueio preventivo');
  PERFORM public.ci_assert((SELECT count(*) FROM private.ia_cpc_conciliacoes)=3,'três conciliações únicas auditadas');
 END $manual$;
+
+
+-- Recuperação de excedentes: débito real em lotes válidos, duas divergências,
+-- insuficiência, referência duplicada, expiração e nenhuma recarga automática.
+TRUNCATE private.ia_cpc_debitos_excedentes,private.ia_cpc_excedentes,private.ia_cpc_conciliacoes,private.ia_cpc_alocacoes,private.ia_cpc_consumo,private.ia_cpc_recargas;
+SELECT private.ia_cpc_registrar_recarga('CI-EXC-LOTE-1',30,now()-interval '2 days',now()+interval '1 day');
+SELECT public.ci_assert(NOT has_function_privilege('anon','private.ia_cpc_conciliar_excedente(uuid,text)','EXECUTE'),'anon não concilia excedente');
+SELECT public.ci_assert(NOT has_function_privilege('authenticated','private.ia_cpc_conciliar_excedente(uuid,text)','EXECUTE'),'usuário não concilia excedente');
+SELECT public.ci_assert(NOT has_function_privilege('service_role','private.ia_cpc_conciliar_excedente(uuid,text)','EXECUTE'),'Edge não concilia excedente');
+SELECT public.ci_assert(NOT has_table_privilege('service_role','private.ia_cpc_debitos_excedentes','INSERT'),'Edge não insere débito administrativo');
+DO $excedente$ DECLARE a jsonb; b jsonb; f jsonb; i1 uuid; i2 uuid; bloqueou boolean;
+BEGIN
+ a:=public.ia_cpc_reservar_orcamento('00000000-0000-4000-8000-000000000001','gpt-5.6-luna',10);
+ b:=public.ia_cpc_reservar_orcamento('00000000-0000-4000-8000-000000000002','gpt-5.6-luna',15);
+ i1:=(a->>'reserva_id')::uuid; i2:=(b->>'reserva_id')::uuid;
+ PERFORM public.ia_cpc_finalizar_custo(i1,'00000000-0000-4000-8000-000000000001',20,200,50);
+ bloqueou:=false;
+ BEGIN PERFORM private.ia_cpc_conciliar_excedente(i1,'CI-EXC-1'); EXCEPTION WHEN raise_exception THEN bloqueou:=true; END;
+ PERFORM public.ci_assert(bloqueou,'reserva em trânsito impede recuperação');
+ PERFORM public.ia_cpc_finalizar_custo(i2,'00000000-0000-4000-8000-000000000002',20,200,50);
+ bloqueou:=false;
+ BEGIN PERFORM private.ia_cpc_conciliar_excedente(i1,'CI-EXC-1'); EXCEPTION WHEN raise_exception THEN bloqueou:=true; END;
+ PERFORM public.ci_assert(bloqueou,'não cria débito parcial se faltar saldo');
+ PERFORM public.ci_assert((SELECT count(*) FROM private.ia_cpc_excedentes)=0,'falha não deixa auditoria incompleta');
+ PERFORM private.ia_cpc_registrar_recarga('CI-EXC-LOTE-2',20,now()-interval '1 day',now()+interval '30 days');
+ PERFORM public.ci_assert((private.ia_cpc_saldo_interno()->>'bloqueado_conciliacao')::boolean,'recarga não desbloqueia');
+ f:=private.ia_cpc_conciliar_excedente(i1,'CI-EXC-1');
+ PERFORM public.ci_assert((f->>'bloqueado_conciliacao')::boolean,'outro excedente mantém bloqueio');
+ PERFORM public.ci_assert((SELECT sum(valor_centavos) FROM private.ia_cpc_debitos_excedentes WHERE consumo_id=i1)=10,'excedente integral debitado em dois lotes');
+ PERFORM public.ci_assert((SELECT count(*) FROM private.ia_cpc_debitos_excedentes WHERE consumo_id=i1)=2,'débito distribuído sem ultrapassar lote');
+ bloqueou:=false;
+ BEGIN PERFORM private.ia_cpc_conciliar_excedente(i2,'CI-EXC-1'); EXCEPTION WHEN unique_violation THEN bloqueou:=true; END;
+ PERFORM public.ci_assert(bloqueou,'referência duplicada bloqueada');
+ f:=private.ia_cpc_conciliar_excedente(i2,'CI-EXC-2');
+ PERFORM public.ci_assert(NOT (f->>'bloqueado_conciliacao')::boolean AND (f->>'restante_centavos')::int=10,'excedentes pagos: retoma saldo líquido de 10');
+ bloqueou:=false;
+ BEGIN PERFORM private.ia_cpc_conciliar_excedente(i1,'CI-EXC-3'); EXCEPTION WHEN raise_exception THEN bloqueou:=true; END;
+ PERFORM public.ci_assert(bloqueou,'proíbe débito duplicado do mesmo consumo');
+ PERFORM public.ci_assert((SELECT sum(custo_final_centavos) FROM private.ia_cpc_consumo)=40,'preserva custos originais');
+ UPDATE private.ia_cpc_recargas SET expira_em=now()-interval '1 hour' WHERE referencia='CI-EXC-LOTE-1';
+ PERFORM public.ci_assert((private.ia_cpc_saldo_interno()->>'restante_centavos')::int=10,'vencimento de lote consumido não recria crédito');
+ PERFORM public.ci_assert(public.ia_cpc_reservar_orcamento('00000000-0000-4000-8000-000000000001','gpt-5.6-luna',11)->>'motivo'='limite_orcamento','excedentes entram no saldo da nova reserva');
+ f:=public.ia_cpc_reservar_orcamento('00000000-0000-4000-8000-000000000001','gpt-5.6-luna',10);
+ PERFORM public.ci_assert(f->>'permitido'='true' AND f->>'restante_centavos'='0','novo consumo só utiliza saldo líquido');
+END $excedente$;
 
 SELECT 'SUCESSO — testes financeiros e controle de acesso sintéticos concluídos' AS homologacao;

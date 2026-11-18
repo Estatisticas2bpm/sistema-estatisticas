@@ -114,6 +114,39 @@ BEGIN
  END IF;
 END $fn$;
 
+-- Débito administrativo de excedentes: preserva o consumo original e reduz
+-- apenas créditos disponíveis, nunca gera crédito nem autoriza nova compra.
+CREATE TABLE IF NOT EXISTS private.ia_cpc_excedentes (
+ consumo_id uuid PRIMARY KEY REFERENCES private.ia_cpc_consumo(id) ON DELETE RESTRICT,
+ referencia text NOT NULL UNIQUE CHECK(length(referencia) BETWEEN 1 AND 160),
+ valor_centavos integer NOT NULL CHECK(valor_centavos>0),
+ registrado_em timestamptz NOT NULL DEFAULT clock_timestamp(),
+ registrado_por text NOT NULL DEFAULT session_user
+);
+CREATE TABLE IF NOT EXISTS private.ia_cpc_debitos_excedentes (
+ consumo_id uuid NOT NULL REFERENCES private.ia_cpc_excedentes(consumo_id) ON DELETE RESTRICT,
+ recarga_id uuid NOT NULL REFERENCES private.ia_cpc_recargas(id) ON DELETE RESTRICT,
+ valor_centavos integer NOT NULL CHECK(valor_centavos>0),
+ PRIMARY KEY(consumo_id,recarga_id)
+);
+CREATE INDEX IF NOT EXISTS ia_cpc_debitos_recarga_idx ON private.ia_cpc_debitos_excedentes(recarga_id);
+ALTER TABLE private.ia_cpc_excedentes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE private.ia_cpc_debitos_excedentes ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON private.ia_cpc_excedentes,private.ia_cpc_debitos_excedentes
+ FROM PUBLIC,anon,authenticated,service_role;
+
+-- Uma única definição contábil compartilhada entre reserva, saldo e conciliação.
+CREATE OR REPLACE FUNCTION private.ia_cpc_lotes_validos(p_agora timestamptz)
+RETURNS TABLE(id uuid,valor_centavos integer,expira_em timestamptz,comprometido bigint)
+LANGUAGE sql STABLE SECURITY INVOKER SET search_path=''
+AS $fn$
+ SELECT r.id,r.valor_centavos,r.expira_em,
+   coalesce((SELECT sum(a.comprometido_centavos) FROM private.ia_cpc_alocacoes a WHERE a.recarga_id=r.id),0)
+   +coalesce((SELECT sum(d.valor_centavos) FROM private.ia_cpc_debitos_excedentes d WHERE d.recarga_id=r.id),0)
+ FROM private.ia_cpc_recargas r WHERE r.expira_em>p_agora
+$fn$;
+REVOKE ALL ON FUNCTION private.ia_cpc_lotes_validos(timestamptz) FROM PUBLIC,anon,authenticated,service_role;
+
 -- Todas as mutações da carteira usam o mesmo lock transacional.
 -- Registro manual APENAS pelo DBA autorizado, após verificar comprovante e
 -- saldo real do projeto OpenAI dedicado. Referência única evita crédito duplicado.
@@ -141,17 +174,13 @@ REVOKE ALL ON FUNCTION private.ia_cpc_registrar_recarga(text,integer,timestamptz
  FROM PUBLIC,anon,authenticated,service_role;
 
 -- Lotes ativos; consumo comprometido inclui reservas sem telemetria.
--- Se uma medição extrapolar a reserva, congelar a carteira inteira; operador
--- autorizado deve conciliar a divergência antes de desenhar procedimento de liberação.
+-- Custos excedentes congelam a carteira até débito integral e auditado.
+-- A verificação inclui a soma efetiva dos débitos, não só a existência de uma referência.
 CREATE OR REPLACE FUNCTION private.ia_cpc_saldo_interno()
 RETURNS jsonb LANGUAGE sql VOLATILE SECURITY INVOKER SET search_path=''
 AS $fn$
  WITH lotes AS (
-   SELECT r.id,r.valor_centavos,r.expira_em,
-     coalesce(sum(a.comprometido_centavos),0)::bigint AS comprometido
-   FROM private.ia_cpc_recargas r LEFT JOIN private.ia_cpc_alocacoes a ON a.recarga_id=r.id
-   WHERE r.expira_em>clock_timestamp()
-   GROUP BY r.id,r.valor_centavos,r.expira_em
+   SELECT * FROM private.ia_cpc_lotes_validos(clock_timestamp())
  ), totais AS (
    SELECT coalesce(sum(valor_centavos),0)::bigint AS creditos,
      coalesce(sum(comprometido),0)::bigint AS comprometido,
@@ -159,8 +188,14 @@ AS $fn$
      min(expira_em) FILTER(WHERE valor_centavos>comprometido) AS proximo_vencimento
    FROM lotes
  ), bloqueio AS (
-   SELECT EXISTS(SELECT 1 FROM private.ia_cpc_consumo
-    WHERE estado='finalizado' AND custo_final_centavos>reserva_centavos) AS bloqueado
+   SELECT EXISTS(SELECT 1 FROM private.ia_cpc_consumo c
+    WHERE c.estado='finalizado' AND c.custo_final_centavos>c.reserva_centavos
+    AND NOT EXISTS (
+      SELECT 1 FROM private.ia_cpc_excedentes e
+      WHERE e.consumo_id=c.id AND e.valor_centavos=c.custo_final_centavos-c.reserva_centavos
+        AND e.valor_centavos=(SELECT coalesce(sum(d.valor_centavos),0)
+          FROM private.ia_cpc_debitos_excedentes d WHERE d.consumo_id=c.id)
+    )) AS bloqueado
  )
  SELECT jsonb_build_object(
   'creditos_validos_centavos',creditos,
@@ -227,12 +262,10 @@ BEGIN
  -- Usa primeiro o lote que vence antes. Pode combinar vários lotes.
  v_falta:=p_reserva_centavos;
  FOR v_lote IN
-   SELECT r.id,r.expira_em,r.valor_centavos-coalesce(sum(a.comprometido_centavos),0) AS livre
-   FROM private.ia_cpc_recargas r LEFT JOIN private.ia_cpc_alocacoes a ON a.recarga_id=r.id
-   WHERE r.expira_em>v_agora
-   GROUP BY r.id,r.expira_em,r.valor_centavos
-   HAVING r.valor_centavos>coalesce(sum(a.comprometido_centavos),0)
-   ORDER BY r.expira_em,r.id
+   SELECT l.id,l.expira_em,l.valor_centavos-l.comprometido AS livre
+   FROM private.ia_cpc_lotes_validos(v_agora) l
+   WHERE l.valor_centavos>l.comprometido
+   ORDER BY l.expira_em,l.id
  LOOP
    v_parcela:=least(v_falta,v_lote.livre)::integer;
    v_ordem:=v_ordem+1;
@@ -340,8 +373,58 @@ BEGIN
 END $fn$;
 REVOKE ALL ON FUNCTION private.ia_cpc_conciliar_reserva(uuid,text,integer,integer,integer)
  FROM PUBLIC,anon,authenticated,service_role;
--- Excedente confirmado continua bloqueando a carteira, mesmo com auditoria.
--- Desbloqueio de excedente/estorno exige mecanismo separado e aprovação.
+-- Excedente confirmado continua bloqueando até débito integral auditado.
+CREATE OR REPLACE FUNCTION private.ia_cpc_conciliar_excedente(
+ p_consumo_id uuid,p_referencia text
+) RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY INVOKER SET search_path=''
+AS $fn$
+DECLARE v_reg private.ia_cpc_consumo%ROWTYPE; v_agora timestamptz;
+ v_falta integer; v_parcela integer; v_lote record; v_livre bigint;
+BEGIN
+ PERFORM pg_catalog.pg_advisory_xact_lock(208760,12);
+ IF p_consumo_id IS NULL OR p_referencia IS NULL OR length(btrim(p_referencia)) NOT BETWEEN 1 AND 160 THEN
+   RAISE EXCEPTION 'Referência de conciliação inválida';
+ END IF;
+ SELECT * INTO v_reg FROM private.ia_cpc_consumo WHERE id=p_consumo_id FOR UPDATE;
+ IF NOT FOUND OR v_reg.estado<>'finalizado' OR v_reg.custo_final_centavos<=v_reg.reserva_centavos THEN
+   RAISE EXCEPTION 'Consumo sem excedente confirmado';
+ END IF;
+ IF EXISTS(SELECT 1 FROM private.ia_cpc_excedentes e WHERE e.consumo_id=p_consumo_id) THEN
+   RAISE EXCEPTION 'Excedente já conciliado';
+ END IF;
+ IF EXISTS(SELECT 1 FROM private.ia_cpc_consumo WHERE estado='reservado') THEN
+   RAISE EXCEPTION 'Concluir reservas pendentes antes da conciliação de excedente';
+ END IF;
+ -- Evidência e revisão externa são obrigatórias no procedimento institucional;
+ -- a função não confirma faturas nem muda flags. Nenhuma liberação automática.
+ v_agora:=clock_timestamp();
+ v_falta:=v_reg.custo_final_centavos-v_reg.reserva_centavos;
+ SELECT coalesce(sum(greatest(0,l.valor_centavos-l.comprometido)),0) INTO v_livre
+ FROM private.ia_cpc_lotes_validos(v_agora) l;
+ IF v_livre<v_falta THEN
+   RAISE EXCEPTION 'Crédito válido insuficiente para quitar excedente';
+ END IF;
+ INSERT INTO private.ia_cpc_excedentes(consumo_id,referencia,valor_centavos)
+ VALUES(p_consumo_id,btrim(p_referencia),v_falta);
+ FOR v_lote IN
+   SELECT l.id,l.valor_centavos-l.comprometido AS livre
+   FROM private.ia_cpc_lotes_validos(v_agora) l
+   WHERE l.valor_centavos>l.comprometido ORDER BY l.expira_em,l.id
+ LOOP
+   v_parcela:=least(v_falta,v_lote.livre)::integer;
+   INSERT INTO private.ia_cpc_debitos_excedentes(consumo_id,recarga_id,valor_centavos)
+   VALUES(p_consumo_id,v_lote.id,v_parcela);
+   v_falta:=v_falta-v_parcela;
+   EXIT WHEN v_falta=0;
+ END LOOP;
+ IF v_falta<>0 THEN RAISE EXCEPTION 'Débito incompleto; transação revertida'; END IF;
+ RETURN private.ia_cpc_saldo_interno() || jsonb_build_object('ok',true);
+END $fn$;
+REVOKE ALL ON FUNCTION private.ia_cpc_conciliar_excedente(uuid,text)
+ FROM PUBLIC,anon,authenticated,service_role;
+-- Estorno de compra e divergências externas não seguem este fluxo: manter
+-- API paga desligada até procedimento específico e revisão dos créditos.
+
 
 COMMIT;
 

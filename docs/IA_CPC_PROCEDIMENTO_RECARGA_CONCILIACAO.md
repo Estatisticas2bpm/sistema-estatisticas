@@ -85,9 +85,12 @@ SELECT private.ia_cpc_saldo_interno();
 COMMIT;
 ```
 
-- Se o custo confirmado superar a reserva, a carteira permanece bloqueada. A função não reabre carteiras bloqueadas por excedentes e não contempla ajustes de estorno de compras. Esses mecanismos exigem projeto, testes e aprovação específicos. Não alterar registros diretamente para contornar a trava.
+- Se o custo confirmado superar a reserva, a carteira permanece bloqueada até o débito integral pela função privada de conciliação de excedente descrita abaixo. Estorno de compras continua exigindo procedimento específico. Não contornar a trava com UPDATE direto.
 - A tabela `private.ia_cpc_conciliacoes` é protegida contra acesso dos papéis de API. O DBA tem autoridade de administração do banco, por isso a revisão independente e retenção de registros externos continuam indispensáveis. A trilha não é imutável contra o proprietário do banco.
 - Estado: proposta em branch, sujeita a validação automatizada; nenhum lançamento financeiro real efetuado.
+
+### 4.2 Recuperação de carteira bloqueada por excedente (proposta)
+Desligar a API paga, concluir reservas pendentes, confirmar a fatura e registrar revisão administrativa independente. O DBA autorizado utiliza `private.ia_cpc_conciliar_excedente(consumo_id,referencia)` somente com evidência comprovada. A função calcula o excedente a partir do histórico, exige saldo válido suficiente, debita integralmente os lotes (primeiro os que vencem antes), preserva os custos originais e mantém bloqueio se outra divergência não tiver sido conciliada. Referência ou lançamento duplicado são rejeitados. Se faltar saldo, nenhuma alteração é efetuada; não se cria crédito nem se compra automaticamente. A função não confirma evidências externas, não modifica flags e não autoriza ativação. A revisão externa deve certificar que o saldo local restante é conservador face ao saldo real; estornos e divergências de faturamento fora deste caso exigem tratamento separado. A proposta fica sujeita a homologação.
 
 ## 5. Mudança de comando e continuidade
 O gestor de faturamento continua responsável pela organização; trocar a conta individual do comandante pela via administrativa somente mediante designação formal. Revogar o acesso do anterior e verificar permissão de exatamente um comandante CPC e um administrador designados. Não compartilhar credenciais nem migrar saldos por uma troca de comando. Se o novo comandante não solicitar crédito, não recarregar. Sem saldo, as consultas pagas são bloqueadas; o sistema estatístico convencional permanece disponível.
