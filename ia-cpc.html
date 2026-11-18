@@ -180,9 +180,6 @@
         atualizarOrcamento(data.cota);
       }catch(_){get('orcamentoEstado').textContent='Saldo local indisponível. As consultas pagas continuam sujeitas à validação do servidor.';}
     }
-    // Não iniciar leitura concorrente com a primeira consulta paga.
-    await carregarSaldo();
-
     document.querySelectorAll('[data-exemplo]').forEach(b=>b.addEventListener('click',()=>{
       caixa.value=b.dataset.exemplo;caixa.focus();
     }));
@@ -195,6 +192,9 @@
         ' dias: compare com período anterior igual, destaque variações verificáveis, ressalvas, qualidade dos dados e três questões para aprofundamento.';
       form.requestSubmit();
     }));
+    // Registrar os controles antes de buscar o saldo; durante a leitura inicial
+    // o envio fica desabilitado para evitar resposta de saldo fora de ordem.
+    enviar.disabled=true;
     form.addEventListener('submit',async event=>{
       event.preventDefault();if(enviar.disabled)return;
       const pergunta=caixa.value.trim();if(!pergunta)return;
@@ -237,6 +237,8 @@
         status.textContent='Consulta não concluída.';
       }finally{enviar.disabled=false;}
     });
+    await carregarSaldo();
+    enviar.disabled=false;
   })();
   </script>
 </body>
