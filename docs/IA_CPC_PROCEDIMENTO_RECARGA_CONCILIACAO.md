@@ -65,6 +65,30 @@ FROM private.ia_cpc_consumo WHERE estado='reservado';
 - Extrapolação registrada (custo final superior à reserva) congela a carteira por regra de banco, mesmo que nova recarga seja registrada. Não modificar ou apagar consumo para desbloqueá-la. A versão atual não possui RPC auditada para ajuste/reabertura; se acontecer, interromper operação paga até implementar, testar e aprovar procedimento corretivo com trilha imutável. Nenhuma recarga deve desbloquear automaticamente essa condição.
 - Quando não houver divergência, verificar flag de bloqueio, permissões individuais, saldo local, proteção de cobrança e aprovação do responsável antes de reabilitar. Em caso de dúvida, permanecer desligado.
 
+### 4.1 Conciliação manual de reservas pendentes (nova proposta)
+Quando a API não devolver confirmação de consumo ou a finalização automática falhar, a reserva deve continuar comprometida. A função privada `private.ia_cpc_conciliar_reserva` permite que o DBA registre o custo confirmado por documentação externa, somente após revisão administrativa. A janela mínima de 24 horas é uma precaução técnica, **não constitui prova de ausência de cobrança**: manter a reserva se o fornecedor ainda não oferecer informação conclusiva.
+- Desabilitar novas consultas pagas, aguardar requisições em andamento e conferir a organização e o projeto corretos, o modelo, a telemetria e os valores efetivamente faturados. A função não consulta o fornecedor nem verifica documentos por si só.
+- Registrar a evidência, cálculo conservador, revisão e autorização em controle administrativo protegido, com referência única. Não incluir dados pessoais, chaves ou comprovantes no banco de auditoria ou GitHub.
+- Utilizar custo em centavos na mesma base conservadora da reserva original, com os tokens confirmados. Custo zero somente quando o fornecedor comprovar que não houve consumo nem cobrança. Não presumir custo zero em função de erro HTTP ou timeout.
+- A função é restrita ao DBA proprietário, não é acessível a usuários finais nem à Edge via service_role. Ela mantém o valor da reserva original e registra referência, custo confirmado, tokens, data e identidade do banco. Finalização e auditoria são atômicas. Não apaga registros e não pode finalizar duas vezes.
+- Exemplo parametrizado para ambiente segregado, **não executar na produção sem autorização**:
+
+```sql
+BEGIN;
+SELECT private.ia_cpc_conciliar_reserva(
+ :reserva_id::uuid, :referencia_evidencia::text,
+ :custo_confirmado_centavos::integer,
+ :tokens_entrada_confirmados::integer,
+ :tokens_saida_confirmados::integer
+);
+SELECT private.ia_cpc_saldo_interno();
+COMMIT;
+```
+
+- Se o custo confirmado superar a reserva, a carteira permanece bloqueada. A função não reabre carteiras bloqueadas por excedentes e não contempla ajustes de estorno de compras. Esses mecanismos exigem projeto, testes e aprovação específicos. Não alterar registros diretamente para contornar a trava.
+- A tabela `private.ia_cpc_conciliacoes` é protegida contra acesso dos papéis de API. O DBA tem autoridade de administração do banco, por isso a revisão independente e retenção de registros externos continuam indispensáveis. A trilha não é imutável contra o proprietário do banco.
+- Estado: proposta em branch, sujeita a validação automatizada; nenhum lançamento financeiro real efetuado.
+
 ## 5. Mudança de comando e continuidade
 O gestor de faturamento continua responsável pela organização; trocar a conta individual do comandante pela via administrativa somente mediante designação formal. Revogar o acesso do anterior e verificar permissão de exatamente um comandante CPC e um administrador designados. Não compartilhar credenciais nem migrar saldos por uma troca de comando. Se o novo comandante não solicitar crédito, não recarregar. Sem saldo, as consultas pagas são bloqueadas; o sistema estatístico convencional permanece disponível.
 
