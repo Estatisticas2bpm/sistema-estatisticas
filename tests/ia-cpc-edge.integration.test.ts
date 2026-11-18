@@ -37,6 +37,7 @@ function token(userId:string, sessionId?:string):string {
 }
 function ambienteAtivo() {
  Deno.env.set("IA_CPC_ENABLED","true");
+ Deno.env.set("IA_CPC_API_PAGA_ENABLED","true");
  Deno.env.set("IA_CPC_RELATOS_ENABLED","false");
  Deno.env.set("IA_CPC_ALLOWED_ORIGINS",ORIGEM);
  Deno.env.set("SUPABASE_URL","https://supabase-sintetico.invalid");
@@ -50,6 +51,7 @@ type Situacao={
  erroSessao?:boolean; erroPermissao?:boolean;
  falhaCatalogo?:boolean; recusarOrcamento?:boolean;
  registro?:boolean; permitirChamadaSimulada?:boolean;
+ semApiPaga?:boolean; semCredencial?:boolean;
 }
 function mockSupabase(s:Situacao) {
  const chamadas:string[]=[];
@@ -121,6 +123,10 @@ async function requisitar(cenario:Situacao,opt?:{
   origem?:string; metodo?:string; auth?:string; corpo?:unknown
 }) {
  ambienteAtivo();
+ if(cenario.semApiPaga) Deno.env.delete("IA_CPC_API_PAGA_ENABLED");
+ if(cenario.semCredencial){
+   Deno.env.delete("OPENAI_API_KEY");Deno.env.delete("OPENAI_MODEL");Deno.env.delete("IA_CPC_BRL_USD_RESERVA");
+ }
  const mock=mockSupabase(cenario);
  const fetchOriginal=globalThis.fetch;
  globalThis.fetch=mock.fetchFake as typeof fetch;
@@ -263,4 +269,23 @@ Deno.test("Saldo pré-pago sem cobrança, sem BO e protegido pela autorização"
  const negado=await requisitar({userId:ID_OUTRO_ADMIN},{corpo:{acao:"saldo"}});
  assertEquals(negado.status,403);
  assert(!negado.chamadas.some(t=>t.includes("ia_cpc_consultar_saldo")));
+});
+
+Deno.test("Trava de cobrança independente: sem chave, saldo e período vazio funcionam; dados não acionam reserva/provedor",async()=>{
+ const base={userId:ID_ADMIN,semApiPaga:true,semCredencial:true};
+ const saldo=await requisitar(base,{corpo:{acao:"saldo"}});
+ assertEquals(saldo.status,200);assertEquals(saldo.dados.sem_cobranca,true);
+ const vazio=await requisitar(base);
+ assertEquals(vazio.status,200);assertEquals(vazio.dados.sem_cobranca,true);
+ // Mesmo com uma chave configurada e mock preparado para autorizar a reserva, a trava impede tudo.
+ for(const c of [{...base,registro:true},{...base,registro:true,semCredencial:false,permitirChamadaSimulada:true}]){
+   const x=await requisitar(c);
+   assertEquals(x.status,503);assertEquals(x.dados.sem_cobranca,true);
+   assert(x.chamadas.some(t=>t.includes("/rest/v1/ocorrencias")));
+   assert(!x.chamadas.some(t=>t.includes("ia_cpc_reservar_orcamento")||t.includes("ia_cpc_finalizar_custo")||t.includes("api.openai.com")));
+ }
+ const semChave=await requisitar({userId:ID_ADMIN,semCredencial:true,registro:true});
+ assertEquals(semChave.status,503);assertEquals(semChave.chamadas.length,0);
+ const relato=await requisitar(base,{corpo:{pergunta:"Quais padrões os relatos históricos mencionam?",data_inicio:"2026-10-01",data_fim:"2026-10-07"}});
+ assertEquals(relato.status,503);assert(!relato.chamadas.some(t=>t.includes("/rest/v1/ocorrencias")));
 });
