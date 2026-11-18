@@ -1,5 +1,5 @@
 -- PROPOSTA APENAS. NÃO APLICAR EM PRODUÇÃO SEM HOMOLOGAÇÃO INSTITUCIONAL.
--- Assistente de inteligência CPC: 2 usuários designados, orçamento até R$ 100/mês.
+-- Assistente de inteligência CPC: 2 usuários designados, carteira pré-paga manual, sem renovação de saldo.
 -- Esta mudança NÃO altera perfis_usuarios, ocorrencias, RLS existentes ou dashboards.
 -- NENHUM usuário autorizado é inserido automaticamente.
 BEGIN;
@@ -77,122 +77,227 @@ REVOKE ALL ON FUNCTION public.ia_cpc_acesso_usuario(uuid)
   FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.ia_cpc_acesso_usuario(uuid) TO service_role;
 
--- Reserva financeira atômica. Todos os valores monetários são CENTAVOS de real.
--- Calendário mensal e diário em America/Boa_Vista.
+-- Carteira local de controle, NÃO é o saldo em dólares do provedor.
+-- Cada lote representa crédito líquido efetivamente confirmado pelo gestor.
+-- A proposta é para instalação inicial; não converter dados de consumo antigos
+-- sem conciliação independente. Não há recarga inicial, agendada ou automática.
+CREATE TABLE IF NOT EXISTS private.ia_cpc_recargas (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  referencia text NOT NULL UNIQUE CHECK (length(referencia) BETWEEN 1 AND 160),
+  valor_centavos integer NOT NULL CHECK (valor_centavos BETWEEN 1 AND 1000000),
+  comprado_em timestamptz NOT NULL,
+  expira_em timestamptz NOT NULL CHECK (expira_em > comprado_em AND expira_em <= comprado_em + interval '1 year'),
+  registrado_em timestamptz NOT NULL DEFAULT now(),
+  registrado_por text NOT NULL DEFAULT session_user
+);
+CREATE TABLE IF NOT EXISTS private.ia_cpc_alocacoes (
+  consumo_id uuid NOT NULL REFERENCES private.ia_cpc_consumo(id) ON DELETE RESTRICT,
+  recarga_id uuid NOT NULL REFERENCES private.ia_cpc_recargas(id) ON DELETE RESTRICT,
+  reservado_centavos integer NOT NULL CHECK (reservado_centavos > 0),
+  comprometido_centavos integer NOT NULL CHECK (comprometido_centavos BETWEEN 0 AND reservado_centavos),
+  PRIMARY KEY (consumo_id,recarga_id)
+);
+CREATE INDEX IF NOT EXISTS ia_cpc_alocacoes_recarga_idx ON private.ia_cpc_alocacoes(recarga_id);
+ALTER TABLE private.ia_cpc_recargas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE private.ia_cpc_alocacoes ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON private.ia_cpc_recargas,private.ia_cpc_alocacoes,private.ia_cpc_consumo
+  FROM PUBLIC,anon,authenticated,service_role;
+
+-- Veda ativação sobre histórico antigo não alocado (proposta anterior não implantada).
+DO $fn$
+BEGIN
+ IF EXISTS (SELECT 1 FROM private.ia_cpc_consumo c
+   WHERE NOT EXISTS (SELECT 1 FROM private.ia_cpc_alocacoes a WHERE a.consumo_id=c.id)) THEN
+   RAISE EXCEPTION 'Histórico financeiro não alocado; conciliar antes de instalar carteira';
+ END IF;
+END $fn$;
+
+-- Todas as mutações da carteira usam o mesmo lock transacional.
+-- Registro manual APENAS pelo DBA autorizado, após verificar comprovante e
+-- saldo real do projeto OpenAI dedicado. Referência única evita crédito duplicado.
+-- Não chamar esta função a partir do navegador; nenhum pagamento é iniciado.
+CREATE OR REPLACE FUNCTION private.ia_cpc_registrar_recarga(
+ p_referencia text,p_valor_centavos integer,p_comprado_em timestamptz,p_expira_em timestamptz
+) RETURNS uuid LANGUAGE plpgsql VOLATILE SECURITY INVOKER SET search_path=''
+AS $fn$
+DECLARE v_id uuid;
+BEGIN
+ PERFORM pg_catalog.pg_advisory_xact_lock(208760,12);
+ IF p_referencia IS NULL OR length(btrim(p_referencia)) NOT BETWEEN 1 AND 160
+    OR p_valor_centavos IS NULL OR p_valor_centavos NOT BETWEEN 1 AND 1000000
+    OR p_comprado_em IS NULL OR p_comprado_em>clock_timestamp()
+    OR p_expira_em IS NULL OR p_expira_em<=clock_timestamp()
+    OR p_expira_em>p_comprado_em+interval '1 year' THEN
+   RAISE EXCEPTION 'Recarga inválida ou vencida';
+ END IF;
+ INSERT INTO private.ia_cpc_recargas(referencia,valor_centavos,comprado_em,expira_em)
+ VALUES(btrim(p_referencia),p_valor_centavos,p_comprado_em,p_expira_em)
+ RETURNING id INTO v_id;
+ RETURN v_id;
+END $fn$;
+REVOKE ALL ON FUNCTION private.ia_cpc_registrar_recarga(text,integer,timestamptz,timestamptz)
+ FROM PUBLIC,anon,authenticated,service_role;
+
+-- Lotes ativos; consumo comprometido inclui reservas sem telemetria.
+-- Se uma medição extrapolar a reserva, congelar a carteira inteira; operador
+-- autorizado deve conciliar a divergência antes de desenhar procedimento de liberação.
+CREATE OR REPLACE FUNCTION private.ia_cpc_saldo_interno()
+RETURNS jsonb LANGUAGE sql VOLATILE SECURITY INVOKER SET search_path=''
+AS $fn$
+ WITH lotes AS (
+   SELECT r.id,r.valor_centavos,r.expira_em,
+     coalesce(sum(a.comprometido_centavos),0)::bigint AS comprometido
+   FROM private.ia_cpc_recargas r LEFT JOIN private.ia_cpc_alocacoes a ON a.recarga_id=r.id
+   WHERE r.expira_em>clock_timestamp()
+   GROUP BY r.id,r.valor_centavos,r.expira_em
+ ), totais AS (
+   SELECT coalesce(sum(valor_centavos),0)::bigint AS creditos,
+     coalesce(sum(comprometido),0)::bigint AS comprometido,
+     coalesce(sum(greatest(0,valor_centavos-comprometido)),0)::bigint AS disponivel,
+     min(expira_em) FILTER(WHERE valor_centavos>comprometido) AS proximo_vencimento
+   FROM lotes
+ ), bloqueio AS (
+   SELECT EXISTS(SELECT 1 FROM private.ia_cpc_consumo
+    WHERE estado='finalizado' AND custo_final_centavos>reserva_centavos) AS bloqueado
+ )
+ SELECT jsonb_build_object(
+  'creditos_validos_centavos',creditos,
+  'consumo_comprometido_centavos',comprometido,
+  'restante_centavos',CASE WHEN bloqueado THEN 0 ELSE disponivel END,
+  'saldo_baixo',disponivel<=2000 OR bloqueado,
+  'bloqueado_conciliacao',bloqueado,
+  'proximo_vencimento',proximo_vencimento
+ ) FROM totais CROSS JOIN bloqueio;
+$fn$;
+REVOKE ALL ON FUNCTION private.ia_cpc_saldo_interno() FROM PUBLIC,anon,authenticated,service_role;
+
+CREATE OR REPLACE FUNCTION public.ia_cpc_consultar_saldo(p_usuario_id uuid)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=''
+AS $fn$
+BEGIN
+ IF NOT public.ia_cpc_acesso_usuario(p_usuario_id) THEN
+  RETURN jsonb_build_object('permitido',false,'motivo','nao_autorizado');
+ END IF;
+ PERFORM pg_catalog.pg_advisory_xact_lock(208760,12);
+ RETURN private.ia_cpc_saldo_interno() || jsonb_build_object('permitido',true);
+END $fn$;
+REVOKE ALL ON FUNCTION public.ia_cpc_consultar_saldo(uuid) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.ia_cpc_consultar_saldo(uuid) TO service_role;
+
 CREATE OR REPLACE FUNCTION public.ia_cpc_reservar_orcamento(
-  p_usuario_id uuid, p_modelo text, p_reserva_centavos integer
-)
-RETURNS jsonb
-LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = ''
+ p_usuario_id uuid,p_modelo text,p_reserva_centavos integer
+) RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=''
 AS $fn$
 DECLARE
-  v_valido boolean := false;
-  v_agora timestamptz := clock_timestamp();
-  v_mes date := date_trunc('month', clock_timestamp() AT TIME ZONE 'America/Boa_Vista')::date;
-  v_inicio_dia timestamptz := date_trunc('day', clock_timestamp() AT TIME ZONE 'America/Boa_Vista') AT TIME ZONE 'America/Boa_Vista';
-  v_inicio_minuto timestamptz := date_trunc('minute', clock_timestamp() AT TIME ZONE 'America/Boa_Vista') AT TIME ZONE 'America/Boa_Vista';
-  v_minuto integer := 0; v_dia integer := 0; v_mes_consultas integer := 0;
-  v_utilizado integer := 0; v_id uuid;
+ v_agora timestamptz; v_mes date; v_inicio_dia timestamptz; v_inicio_minuto timestamptz;
+ v_minuto integer; v_dia integer; v_mes_consultas integer; v_id uuid;
+ v_saldo jsonb; v_falta integer; v_parcela integer; v_lote record;
 BEGIN
-  IF p_usuario_id IS NULL OR p_modelo IS DISTINCT FROM 'gpt-5.6-luna'
-    OR p_reserva_centavos IS NULL OR p_reserva_centavos < 1 OR p_reserva_centavos > 1000 THEN
-     RETURN jsonb_build_object('permitido',false,'motivo','configuracao_invalida');
-  END IF;
-
-  SELECT EXISTS (
-   SELECT 1 FROM private.ia_cpc_usuarios a
-   JOIN public.perfis_usuarios p ON p.user_id=a.user_id AND p.ativo=true
-   JOIN public.unidades u ON u.id=p.unidade_id AND u.ativo=true
-   WHERE a.user_id=p_usuario_id AND a.ativo=true
-    AND ((a.categoria='ADMIN' AND p.perfil='ADMIN')
-    OR (a.categoria='COMANDANTE_CPC' AND p.perfil='COMANDANTE'
-        AND upper(u.sigla)='CPC'))
-  ) INTO v_valido;
-  IF NOT v_valido THEN
-    RETURN jsonb_build_object('permitido',false,'motivo','nao_autorizado');
-  END IF;
-
-  -- Lock serializa chamadas simultâneas de todos os usuários, inclusive dias diferentes.
-  PERFORM pg_catalog.pg_advisory_xact_lock(208760, 12);
-  SELECT
-    count(*) FILTER (WHERE usuario_id=p_usuario_id AND criado_em>=v_inicio_minuto)::int,
-    count(*) FILTER (WHERE usuario_id=p_usuario_id AND criado_em>=v_inicio_dia)::int,
-    count(*)::int,
-    coalesce(sum(CASE WHEN estado='finalizado' THEN custo_final_centavos ELSE reserva_centavos END),0)::int
-  INTO v_minuto,v_dia,v_mes_consultas,v_utilizado
-  FROM private.ia_cpc_consumo
-  WHERE mes_referencia=v_mes;
-
-  IF v_minuto>=3 OR v_dia>=20 OR v_mes_consultas>=300 THEN
-    RETURN jsonb_build_object('permitido',false,'motivo','limite_consultas');
-  END IF;
-  IF v_utilizado+p_reserva_centavos>10000 THEN
-    RETURN jsonb_build_object('permitido',false,'motivo','limite_orcamento',
-        'restante_centavos',greatest(0,10000-v_utilizado));
-  END IF;
-
-  INSERT INTO private.ia_cpc_consumo
-      (usuario_id,modelo,mes_referencia,reserva_centavos,estado,criado_em)
-  VALUES (p_usuario_id,p_modelo,v_mes,p_reserva_centavos,'reservado',v_agora)
-  RETURNING id INTO v_id;
-  RETURN jsonb_build_object('permitido',true,'reserva_id',v_id,
-    'restante_dia',19-v_dia,'restante_mes_global',299-v_mes_consultas,
-    'consumo_comprometido_centavos',v_utilizado+p_reserva_centavos,
-    'restante_centavos',10000-v_utilizado-p_reserva_centavos,
-    'alerta_80',v_utilizado+p_reserva_centavos>=8000);
-END;
-$fn$;
-REVOKE ALL ON FUNCTION public.ia_cpc_reservar_orcamento(uuid,text,integer)
-  FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.ia_cpc_reservar_orcamento(uuid,text,integer)
-  TO service_role;
+ IF p_usuario_id IS NULL OR p_modelo IS DISTINCT FROM 'gpt-5.6-luna'
+   OR p_reserva_centavos IS NULL OR p_reserva_centavos NOT BETWEEN 1 AND 1000 THEN
+   RETURN jsonb_build_object('permitido',false,'motivo','configuracao_invalida');
+ END IF;
+ PERFORM pg_catalog.pg_advisory_xact_lock(208760,12);
+ IF NOT public.ia_cpc_acesso_usuario(p_usuario_id) THEN
+   RETURN jsonb_build_object('permitido',false,'motivo','nao_autorizado');
+ END IF;
+ v_agora:=clock_timestamp();
+ v_mes:=date_trunc('month',v_agora AT TIME ZONE 'America/Boa_Vista')::date;
+ v_inicio_dia:=date_trunc('day',v_agora AT TIME ZONE 'America/Boa_Vista') AT TIME ZONE 'America/Boa_Vista';
+ v_inicio_minuto:=date_trunc('minute',v_agora AT TIME ZONE 'America/Boa_Vista') AT TIME ZONE 'America/Boa_Vista';
+ SELECT count(*) FILTER(WHERE usuario_id=p_usuario_id AND criado_em>=v_inicio_minuto)::int,
+   count(*) FILTER(WHERE usuario_id=p_usuario_id AND criado_em>=v_inicio_dia)::int,
+   count(*)::int
+ INTO v_minuto,v_dia,v_mes_consultas FROM private.ia_cpc_consumo WHERE mes_referencia=v_mes;
+ v_saldo:=private.ia_cpc_saldo_interno();
+ IF (v_saldo->>'bloqueado_conciliacao')::boolean THEN
+   RETURN v_saldo || jsonb_build_object('permitido',false,'motivo','conciliacao_pendente');
+ END IF;
+ IF v_minuto>=3 OR v_dia>=20 OR v_mes_consultas>=300 THEN
+   RETURN v_saldo || jsonb_build_object('permitido',false,'motivo','limite_consultas');
+ END IF;
+ IF (v_saldo->>'restante_centavos')::bigint<p_reserva_centavos THEN
+   RETURN v_saldo || jsonb_build_object('permitido',false,'motivo','limite_orcamento');
+ END IF;
+ INSERT INTO private.ia_cpc_consumo(usuario_id,modelo,mes_referencia,reserva_centavos,estado,criado_em)
+ VALUES(p_usuario_id,p_modelo,v_mes,p_reserva_centavos,'reservado',v_agora)
+ RETURNING id INTO v_id;
+ -- Usa primeiro o lote que vence antes. Pode combinar vários lotes.
+ v_falta:=p_reserva_centavos;
+ FOR v_lote IN
+   SELECT r.id,r.expira_em,r.valor_centavos-coalesce(sum(a.comprometido_centavos),0) AS livre
+   FROM private.ia_cpc_recargas r LEFT JOIN private.ia_cpc_alocacoes a ON a.recarga_id=r.id
+   WHERE r.expira_em>v_agora
+   GROUP BY r.id,r.expira_em,r.valor_centavos
+   HAVING r.valor_centavos>coalesce(sum(a.comprometido_centavos),0)
+   ORDER BY r.expira_em,r.id
+ LOOP
+   v_parcela:=least(v_falta,v_lote.livre)::integer;
+   INSERT INTO private.ia_cpc_alocacoes(consumo_id,recarga_id,reservado_centavos,comprometido_centavos)
+   VALUES(v_id,v_lote.id,v_parcela,v_parcela);
+   v_falta:=v_falta-v_parcela;
+   EXIT WHEN v_falta=0;
+ END LOOP;
+ IF v_falta<>0 THEN RAISE EXCEPTION 'Reserva não integral; transação revertida'; END IF;
+ RETURN private.ia_cpc_saldo_interno() || jsonb_build_object('permitido',true,
+   'reserva_id',v_id,'restante_dia',19-v_dia,'restante_mes_global',299-v_mes_consultas);
+END $fn$;
+REVOKE ALL ON FUNCTION public.ia_cpc_reservar_orcamento(uuid,text,integer) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.ia_cpc_reservar_orcamento(uuid,text,integer) TO service_role;
 
 CREATE OR REPLACE FUNCTION public.ia_cpc_finalizar_custo(
-   p_reserva_id uuid, p_usuario_id uuid, p_custo_final_centavos integer,
-   p_input_tokens integer, p_output_tokens integer
-)
-RETURNS jsonb
-LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = ''
+ p_reserva_id uuid,p_usuario_id uuid,p_custo_final_centavos integer,
+ p_input_tokens integer,p_output_tokens integer
+) RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=''
 AS $fn$
-DECLARE
- v_reg private.ia_cpc_consumo%ROWTYPE;
- v_total integer;
+DECLARE v_reg private.ia_cpc_consumo%ROWTYPE; v_falta integer; v_parcela integer; v_lote record;
 BEGIN
  IF p_reserva_id IS NULL OR p_usuario_id IS NULL OR p_custo_final_centavos IS NULL
-    OR p_custo_final_centavos < 0 OR p_input_tokens IS NULL OR p_input_tokens < 0
-    OR p_output_tokens IS NULL OR p_output_tokens < 0 THEN
+   OR p_custo_final_centavos<0 OR p_input_tokens IS NULL OR p_input_tokens<0
+   OR p_output_tokens IS NULL OR p_output_tokens<0 THEN
    RETURN jsonb_build_object('ok',false,'motivo','parametros_invalidos');
  END IF;
+ PERFORM pg_catalog.pg_advisory_xact_lock(208760,12);
  SELECT * INTO v_reg FROM private.ia_cpc_consumo
  WHERE id=p_reserva_id AND usuario_id=p_usuario_id FOR UPDATE;
- IF NOT FOUND OR v_reg.estado <> 'reservado' THEN
+ IF NOT FOUND OR v_reg.estado<>'reservado' THEN
    RETURN jsonb_build_object('ok',false,'motivo','reserva_invalida');
  END IF;
- -- Nunca contabilizar menos que custo efetivo esperado nem esconder extrapolação.
- IF p_custo_final_centavos > v_reg.reserva_centavos THEN
-   RETURN jsonb_build_object('ok',false,'motivo','custo_superou_reserva');
- END IF;
- UPDATE private.ia_cpc_consumo SET estado='finalizado',
-   custo_final_centavos=p_custo_final_centavos,
-   input_tokens=p_input_tokens,output_tokens=p_output_tokens,
-   finalizado_em=clock_timestamp()
+ -- Registra inclusive extrapolação efetiva e congela futuras chamadas.
+ -- Nenhum excedente é falsamente tratado como saldo disponível.
+ UPDATE private.ia_cpc_consumo SET estado='finalizado',custo_final_centavos=p_custo_final_centavos,
+   input_tokens=p_input_tokens,output_tokens=p_output_tokens,finalizado_em=clock_timestamp()
  WHERE id=p_reserva_id;
- SELECT coalesce(sum(CASE WHEN estado='finalizado'
-   THEN custo_final_centavos ELSE reserva_centavos END),0)::int INTO v_total
- FROM private.ia_cpc_consumo WHERE mes_referencia=v_reg.mes_referencia;
- RETURN jsonb_build_object('ok',true,'consumo_comprometido_centavos',v_total,
-    'restante_centavos',greatest(0,10000-v_total),'alerta_80',v_total>=8000);
-END;
-$fn$;
+ IF p_custo_final_centavos>v_reg.reserva_centavos THEN
+   RETURN private.ia_cpc_saldo_interno() || jsonb_build_object('ok',true,'motivo','custo_superou_reserva');
+ END IF;
+ v_falta:=v_reg.reserva_centavos-p_custo_final_centavos;
+ -- Restitui a parte não utilizada aos lotes de origem, começando pelo último.
+ -- Se o lote venceu, a restituição não recria saldo utilizável.
+ FOR v_lote IN
+   SELECT a.recarga_id,a.comprometido_centavos FROM private.ia_cpc_alocacoes a
+   JOIN private.ia_cpc_recargas r ON r.id=a.recarga_id
+   WHERE a.consumo_id=p_reserva_id ORDER BY r.expira_em DESC,r.id DESC
+ LOOP
+   EXIT WHEN v_falta=0;
+   v_parcela:=least(v_falta,v_lote.comprometido_centavos);
+   UPDATE private.ia_cpc_alocacoes SET comprometido_centavos=comprometido_centavos-v_parcela
+   WHERE consumo_id=p_reserva_id AND recarga_id=v_lote.recarga_id;
+   v_falta:=v_falta-v_parcela;
+ END LOOP;
+ IF v_falta<>0 THEN RAISE EXCEPTION 'Alocação inconsistente; transação revertida'; END IF;
+ RETURN private.ia_cpc_saldo_interno() || jsonb_build_object('ok',true);
+END $fn$;
 REVOKE ALL ON FUNCTION public.ia_cpc_finalizar_custo(uuid,uuid,integer,integer,integer)
-  FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.ia_cpc_finalizar_custo(uuid,uuid,integer,integer,integer)
-  TO service_role;
+ FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.ia_cpc_finalizar_custo(uuid,uuid,integer,integer,integer) TO service_role;
 COMMIT;
 
--- INSTRUÇÃO AO DBA EM HOMOLOGAÇÃO:
--- 1. Aplicar em banco NÃO produtivo e validar GRANT/RLS. NÃO cadastrar os IDs em repositório.
--- 2. Escolher exatamente um ADMIN e um COMANDANTE da unidade principal CPC.
--- 3. Inserir os 2 UUIDs escolhidos em private.ia_cpc_usuarios, com categoria e ativo=true.
--- 4. Testar o limite de R$ 100, alerta de R$ 80, concorrência e reversão.
--- 5. Não ativar IA_CPC_ENABLED sem aprovação institucional e credenciais configuradas.
+-- APENAS DBA, em homologação: designar 2 UUIDs autorizados fora do repositório.
+-- Não criar saldo fictício em produção. Registrar cada recarga líquida comprovada
+-- por referência única, valor conservador em centavos, data da compra e validade
+-- efetiva do crédito (no máximo um ano). Manter recarga automática DESLIGADA.
+-- O saldo local é estimado, exige conciliação com o faturamento do provedor.
+-- Limites de frequência: 3/minuto e 20/dia por usuário; 300/mês global.
+-- NÃO aplicar ou ativar sem aprovação. Divergência de custo congela a carteira;
+-- recuperação administrativa exige procedimento de conciliação aprovado.
