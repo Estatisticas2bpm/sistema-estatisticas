@@ -94,10 +94,16 @@ Deno.serve(async (req: Request) => {
 
   const url = Deno.env.get("SUPABASE_URL");
   const chaveServico = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  // Segunda trava independente: desabilitada por padrão, inclusive com chave e saldo.
+  const apiPagaHabilitada = Deno.env.get("IA_CPC_API_PAGA_ENABLED")==="true";
   const chaveOpenai = Deno.env.get("OPENAI_API_KEY");
   const modelo = Deno.env.get("OPENAI_MODEL");
   const cambio = cambioReservaValido(Deno.env.get("IA_CPC_BRL_USD_RESERVA"));
-  if (!url || !chaveServico || !chaveOpenai || modelo!==MODELO_HOMOLOGAVEL || cambio===null) {
+  if (!url || !chaveServico) {
+    return respostaJson(503,{error:"Integração ainda não homologada."},origin);
+  }
+  // Sem API paga, autenticação, saldo e consultas vazias são homologáveis sem credencial OpenAI.
+  if(apiPagaHabilitada && (!chaveOpenai || modelo!==MODELO_HOMOLOGAVEL || cambio===null)){
     return respostaJson(503,{error:"Modelo, integração ou câmbio de reserva ainda não homologados."},origin);
   }
   const authHeader = req.headers.get("Authorization") || "";
@@ -155,7 +161,7 @@ Deno.serve(async (req: Request) => {
     if(!objetivo) return respostaJson(422,{
       error:"Pergunta fora do escopo estatístico do piloto. Não informe dados individuais ou nacionalidade."},origin);
     const lerRelatos = objetivo.temas.includes("narrativas");
-    if(lerRelatos && Deno.env.get("IA_CPC_RELATOS_ENABLED")!=="true") {
+    if(lerRelatos && (!apiPagaHabilitada || Deno.env.get("IA_CPC_RELATOS_ENABLED")!=="true")) {
       return respostaJson(503,{error:"Análise contextual de relatos ainda não homologada. Use indicadores estruturados."},origin);
     }
     // Textos originais NUNCA são transmitidos; apenas intenções genéricas.
@@ -262,6 +268,11 @@ Deno.serve(async (req: Request) => {
     }
     if(atual.total===0&&previo.total===0)
       return respostaJson(200,{resposta:"Não há registros ativos nos períodos comparados. Verifique as datas.",registros:0,periodo:{inicio,fim},periodo_anterior:anterior,sem_cobranca:true},origin);
+
+    // Para períodos com registros, a trava é verificada ANTES de montar o payload,
+    // reservar centavos ou realizar qualquer conexão com a OpenAI.
+    if(!apiPagaHabilitada)
+      return respostaJson(503,{error:"Consultas com registros aguardam liberação da API paga. Nenhum crédito foi consumido.",sem_cobranca:true},origin);
 
     const sumarizar=(a:Apuracao)=>({
       total_ocorrencias:a.total,registros_finalizados:a.finalizados,registros_rascunho:a.rascunhos,
