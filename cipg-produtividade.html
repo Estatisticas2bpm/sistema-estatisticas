@@ -44,7 +44,7 @@ button:disabled{opacity:.55}.btn-subtle{background:#e5eeeb;border:1px solid #abc
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="auth-config.js"></script><script src="auth-guard.js"></script><script src="cipg-caderno.js?v=20261009-6"></script>
+<script src="auth-config.js"></script><script src="auth-guard.js"></script><script src="cipg-caderno.js?v=20261118-3"></script>
 </head><body>
 <header><div class="head"><div><h1>Caderno digital de serviço — CIPG</h1>
 <p>Companhia Independente de Policiamento de Guarda · Polícia Militar de Roraima · SIE-CPC</p></div>
@@ -55,22 +55,22 @@ button:disabled{opacity:.55}.btn-subtle{background:#e5eeeb;border:1px solid #abc
 <form id="form" autocomplete="off">
 <div class="fieldgrid">
 <label class="field"><span>Data do serviço *</span><input id="dia" type="date" required></label>
-<label class="field"><span>Nº SEI do relatório *</span><input id="documento" type="text" maxlength="120" required placeholder="Ex.: 23858411" inputmode="numeric"></label>
-<label class="field"><span>Posto de serviço</span><select id="posto"><option>Carregando postos...</option></select></label>
-<label class="field"><span>Instituição atendida *</span><input id="instituicao" maxlength="160" required placeholder="Selecione o posto ou digite"></label>
+<label class="field"><span>Código do relatório</span><input id="documento" readonly placeholder="Gerado automaticamente ao salvar"></label>
+<label class="field"><span>Posto de serviço *</span><select id="posto" required><option>Carregando postos...</option></select></label>
+<label class="field"><span>Instituição atendida (opcional)</span><input id="instituicao" maxlength="160" placeholder="Se necessário"></label>
 <label class="field"><span>Turno CIPG *</span><select id="turnoServico" required><option value="">Selecione</option>
 <option value="1">1º turno — 08h às 20h</option><option value="2">2º turno — 20h às 08h</option></select></label>
-<label class="field"><span>Regime (conforme relatório)</span><input id="regime" maxlength="70" placeholder="Opcional"></label>
-<label class="field"><span>Categoria do local</span><select id="tipoLocal">
+<label class="field"><span>Regime de serviço (opcional)</span><input id="regime" maxlength="70" placeholder="Opcional"></label>
+<label class="field"><span>Categoria do posto (automática)</span><select id="tipoLocal" disabled>
 <option value="EDIFICIO_PUBLICO">Edifício público</option><option value="ESTABELECIMENTO_PENAL">Segurança externa de estabelecimento penal</option><option value="OUTRO">Outro</option></select></label>
 <label class="field"><span>Atividade predominante</span><select id="modalidade">
 <option value="GUARDA_FIXA">Guarda fixa</option><option value="RONDA">Ronda</option>
 <option value="REFORCO">Reforço</option><option value="APOIO_OPERACIONAL">Apoio operacional</option><option value="OUTRA">Outra</option></select></label>
 </div>
 <details><summary>Passagem do serviço e efetivo</summary><div class="fieldgrid">
-<label class="field"><span>Comandante</span><input id="comandante" maxlength="120" placeholder="Conforme livro de serviço"></label>
-<label class="field"><span>Recebeu de</span><input id="recebeuDe" maxlength="120"></label>
-<label class="field"><span>Passou para</span><input id="passouPara" maxlength="120"></label>
+<label class="field"><span>Comandante do serviço</span><select id="comandante"><option value="">Não informado</option></select></label>
+<label class="field"><span>Recebeu o serviço de</span><select id="recebeuDe"><option value="">Não informado</option></select></label>
+<label class="field"><span>Passou o serviço para</span><select id="passouPara"><option value="">Não informado</option></select></label>
 <label class="field"><span>Efetivo ordinário</span><input id="efetivoOrdinario" data-label="Efetivo ordinário" type="number" min="0" max="10000" value="0" inputmode="numeric"></label>
 <label class="field"><span>Efetivo SVI</span><input id="efetivoSvi" data-label="Efetivo SVI" type="number" min="0" max="10000" value="0" inputmode="numeric"></label>
 <label class="field"><span>Efetivo total (automático)</span><input id="efetivoTotal" readonly value="0"></label>
@@ -79,16 +79,16 @@ button:disabled{opacity:.55}.btn-subtle{background:#e5eeeb;border:1px solid #abc
 <label class="field"><span>Viatura</span><input id="viatura" maxlength="60"></label>
 <label class="field"><span>Km inicial</span><input id="kmInicial" data-label="Km inicial" type="number" min="0" step="0.01" inputmode="decimal"></label>
 <label class="field"><span>Km final</span><input id="kmFinal" data-label="Km final" type="number" min="0" step="0.01" inputmode="decimal"></label>
-<label class="field"><span>Km rodados</span><input id="kmRodados" data-label="Km rodados" type="number" min="0" step="0.01" inputmode="decimal"></label>
-<p id="kmAjuda" class="helper wide">A distância pode ser calculada dos hodômetros, quando informados.</p>
+<label class="field"><span>Km rodados (automático)</span><input readonly id="kmRodados" data-label="Km rodados" type="number" min="0" step="0.01" inputmode="decimal"></label>
+<p id="kmAjuda" class="helper wide">Informe os dois hodômetros para calcular a distância.</p>
 <label class="field"><span>Litros abastecidos</span><input id="litros" data-label="Litros abastecidos" type="number" min="0" step="0.01" inputmode="decimal"></label>
-<label class="field"><span>Rondas realizadas</span><input id="rondas" data-label="Rondas" type="number" min="0" max="10000" value="0" inputmode="numeric"></label>
+
 <label class="field"><span>Saídas autorizadas</span><input id="saidas" data-label="Saídas autorizadas" type="number" min="0" max="10000" inputmode="numeric"></label>
 </div></details>
 <details><summary>Alterações de pessoal, instalações e material</summary><div class="fieldgrid">
-<label class="field"><span>Alteração de pessoal?</span><select id="alteracaoPessoal"><option value="NAO">Não</option><option value="SIM">Sim</option></select></label>
-<label class="field"><span>Alteração de instalações?</span><select id="alteracaoInstalacoes"><option value="NAO">Não</option><option value="SIM">Sim</option></select></label>
-<label class="field"><span>Alteração de material?</span><select id="alteracaoMaterial"><option value="NAO">Não</option><option value="SIM">Sim</option></select></label>
+<label class="field"><span>Alteração de pessoal?</span><select id="alteracaoPessoal"><option value="NAO">Não</option><option value="SIM">Sim</option></select></label><label class="field wide" id="alteracaoPessoalWrap" hidden><span>Descreva a alteração de pessoal</span><textarea id="alteracaoPessoalDescricao" maxlength="500" placeholder="Resumo administrativo"></textarea></label>
+<label class="field"><span>Alteração de instalações?</span><select id="alteracaoInstalacoes"><option value="NAO">Não</option><option value="SIM">Sim</option></select></label><label class="field wide" id="alteracaoInstalacoesWrap" hidden><span>Descreva a alteração de instalações</span><textarea id="alteracaoInstalacoesDescricao" maxlength="500" placeholder="Resumo administrativo"></textarea></label>
+<label class="field"><span>Alteração de material?</span><select id="alteracaoMaterial"><option value="NAO">Não</option><option value="SIM">Sim</option></select></label><label class="field wide" id="alteracaoMaterialWrap" hidden><span>Descreva a alteração de material</span><textarea id="alteracaoMaterialDescricao" maxlength="500" placeholder="Resumo administrativo"></textarea></label>
 <label class="field wide"><span>Outros / solicitações</span><textarea id="outrosSolicitacoes" maxlength="400" placeholder="Somente informações administrativas, sem dados clínicos ou detalhes de segurança"></textarea></label>
 </div></details>
 <section class="panel" style="padding:16px;margin:18px 0 0;box-shadow:none;background:#f8fbf9">
@@ -101,7 +101,7 @@ button:disabled{opacity:.55}.btn-subtle{background:#e5eeeb;border:1px solid #abc
 <label class="field"><span>Eventos registrados neste relatório</span><input id="totalEventos" readonly value="0"></label>
 </div>
 <div id="eventosWrap" hidden>
-<p class="floatingNote">Preencha uma ficha para cada militar envolvido no acontecimento, como no levantamento SIEPOM. Dois militares = duas fichas. Não registre nome de guerra nem lesão ou diagnóstico.</p>
+<p class="floatingNote">Para entradas e saídas hospitalares, preencha uma ficha por militar, sem identificá-lo. Não registre nomes, lesões ou diagnósticos. Para outros acontecimentos, registre uma ficha por fato.</p>
 <div id="listaEventos" class="events"></div>
 <button id="adicionarEvento" type="button" class="btn-subtle">+ Adicionar outro militar / acontecimento</button>
 <span id="contagemEventos" hidden>0</span>
@@ -115,9 +115,9 @@ button:disabled{opacity:.55}.btn-subtle{background:#e5eeeb;border:1px solid #abc
 </form>
 </section>
 <section class="panel"><h2>Últimos relatórios registrados</h2>
-<p class="sub">Os lançamentos aparecem aqui para conferência. Se um acontecimento precisar ser acrescentado posteriormente a um relatório SEI existente, utilize o cadastro complementar abaixo.</p>
+<p class="sub">Os lançamentos aparecem aqui para conferência. Se um acontecimento precisar ser acrescentado posteriormente a um relatório existente, utilize o cadastro complementar abaixo.</p>
 <div id="recentes" class="recent-list">Carregando relatórios...</div>
-<p><a href="cipg-eventos.html" class="btnLink" style="display:inline-block">+ Acrescentar acontecimento a um SEI já salvo</a></p>
+<p><a href="cipg-eventos.html" class="btnLink" style="display:inline-block">+ Acrescentar acontecimento a um relatório já salvo</a></p>
 </section>
 </main><script>document.addEventListener('DOMContentLoaded',()=>window.CipgCaderno.iniciar());</script>
 </body></html>
