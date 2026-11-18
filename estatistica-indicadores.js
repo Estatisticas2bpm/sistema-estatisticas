@@ -45,7 +45,7 @@
     };
   }
   function cards(sigla,ocorrencias,tcos,especial){
-    const o=ocorrencias||[],t=tcos||[];
+    const todos=ocorrencias||[],o=todos.filter(x=>x.cavalaria_classe_registro!=='ATIVIDADE'),t=tcos||[];
     const nome=String(sigla||'').trim().toUpperCase().replace(/º\s*/g,'');
     const base=[
       {rotulo:'Ocorrências',valor:o.length,fonte:'Registros policiais · data da ocorrência'},
@@ -74,12 +74,15 @@
       ];
     }
     if(nome==='CAVALARIA'){
-      const k=disponivel?cavalaria(d):null;
+      // A fonte primária agora é o cadastro único BO/PPE; o serviço antigo não é agregado.
+      const atividades=todos.filter(x=>x.cavalaria_classe_registro==='ATIVIDADE');
+      const policiais=todos.filter(x=>x.cavalaria_classe_registro==='OCORRENCIA');
+      const qtd=tipo=>atividades.filter(x=>x.cavalaria_tipo_atividade===tipo).length;
       return [
-        {rotulo:'Serviços realizados',valor:v(k?.servicos),fonte:'Cavalaria · data do serviço'},
-        {rotulo:'Pessoas abordadas',valor:v(k?.pessoasAbordadas),fonte:'Cavalaria · produtividade dos serviços'},
-        {rotulo:'Policiamento montado',valor:v(k?.policiamentoMontado),fonte:'Cavalaria · modalidade do serviço'},
-        {rotulo:'Eventos / operações',valor:v(k?.eventosOperacoes),fonte:'Cavalaria · contexto ou modalidade'}
+        {rotulo:'Atividades documentadas',valor:atividades.length,fonte:'Cavalaria · PPEs e atividades informativas'},
+        {rotulo:'BOs policiais classificados',valor:policiais.length,fonte:'Cavalaria · ocorrência policial, sem presunção sobre registros legados'},
+        {rotulo:'Policiamento montado',valor:qtd('POLICIAMENTO_MONTADO'),fonte:'Cavalaria · categoria padronizada'},
+        {rotulo:'Visitas educativas escolares',valor:qtd('VISITA_EDUCATIVA_ESCOLAR'),fonte:'Cavalaria · categoria padronizada'}
       ];
     }
     if(nome==='CIPTUR'){

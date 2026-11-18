@@ -37,13 +37,13 @@ function turnoEvento(hora){
  if(h>23||m>59)return '';
  return h*60+m>=480&&h*60+m<1200?'1':'2';
 }
-function tipoTurno(v){return v==='1'?'1º turno (08h–20h)':v==='2'?'2º turno (20h–08h)':'Não informado'}
+function tipoTurno(v){return v==='1'?'1º turno (08h–20h)':v==='2'?'2º turno (20h–08h)':v==='24H'?'Turno de 24 horas':'Não informado'}
 const COM_EVENTO=['cipgFiltroEvento','cipgFiltroDesfecho','cipgFiltroEmServico',
  'cipgFiltroCausa','cipgFiltroTurno','cipgFiltroGraduacao','cipgFiltroUnidade',
  'cipgFiltroConducao','cipgFiltroSetor'];
 const filtros=['cipgFiltroInstituicao','cipgFiltroTipo','cipgFiltroRegime','cipgFiltroSituacao',
  'cipgFiltroModalidade','cipgFiltroTurnoServico','cipgFiltroSei','cipgFiltroViatura',
- 'cipgFiltroAlteracao',...COM_EVENTO];
+ 'cipgFiltroAlteracao','cipgFiltroPolicial',...COM_EVENTO];
 const conteudo=(s,agulha)=>chave(s).includes(chave(agulha));
 function selecionar(servicos,eventos,seletores={}){
  const v=id=>str(seletores[id]);
@@ -54,7 +54,8 @@ function selecionar(servicos,eventos,seletores={}){
   (!v('cipgFiltroRegime')||conteudo(s.regime,v('cipgFiltroRegime')))&&
   (!v('cipgFiltroSituacao')||s.situacao===v('cipgFiltroSituacao'))&&
   (!v('cipgFiltroTurnoServico')||s.turno_cipg===v('cipgFiltroTurnoServico'))&&
-  (!v('cipgFiltroSei')||conteudo(s.numero_sei,v('cipgFiltroSei')))&&
+  (!v('cipgFiltroSei')||conteudo(s.codigo_relatorio,v('cipgFiltroSei'))||conteudo(s.numero_sei,v('cipgFiltroSei')))&&
+  (!v('cipgFiltroPolicial')||s.criado_por===v('cipgFiltroPolicial'))&&
   (!v('cipgFiltroViatura')||conteudo(s.viatura,v('cipgFiltroViatura')))&&
   (!v('cipgFiltroAlteracao')||
     (v('cipgFiltroAlteracao')==='PESSOAL'&&s.alteracao_pessoal===true)||
@@ -192,6 +193,8 @@ function render(dadosA,dadosB,ctx){
  for(const field of info)set(ids[field],
   (field==='efetivoMedio'&&m.efetivoMedio===null)?'—':n(field));
  set('cipgIntercorrencias',numBR(soma(a.servicos,'intercorrencias')));
+ set('cipgAltasHospitalares',numBR(a.eventos.filter(e=>e.tipo_evento==='ALTA / SAÍDA DE PM DO HOSPITAL').length));
+ set('cipgAcionamentos',numBR(a.eventos.filter(e=>e.acionou_viatura===true).length));
  set('cipgPctSa',m.pctSa===null?'—':numBR(m.pctSa)+'%');
  set('cipgConsumo',m.mediaConsumo===null?'—':numBR(m.mediaConsumo)+' L/100 km');
  set('cipgRelatoriosComAlteracaoSemEvento',numBR(m.relatoriosComAcontecimentoSemEvento));
@@ -210,9 +213,9 @@ function render(dadosA,dadosB,ctx){
   ['chartCipgUnidades',categoriasSens({data:a.eventos,key:'unidade_militar'}),'bar','Eventos'],
   ['chartCipgConducoes',categoriasSens({data:a.eventos,key:'conduzido_por'}),'doughnut','Eventos'],
   ['chartCipgSetores',categoriasSens({data:a.eventos,key:'setor_atendimento'}),'bar','Eventos'],
-  ['chartCipgTiposEventos',rank(a.eventos,'tipo_evento',12),'doughnut','Eventos'],
-  ['chartCipgPostos',rank(a.servicos,s=>s.posto_codigo||s.instituicao,12),'doughnut','Relatórios'],
-  ['chartCipgTurnosServico',rank(a.servicos,s=>tipoTurno(s.turno_cipg),3),'doughnut','Relatórios'],
+  ['chartCipgTiposEventos',rank(a.eventos,'tipo_evento',5),'doughnut','Eventos'],
+  ['chartCipgPostos',rank(a.servicos,s=>s.posto_codigo||s.instituicao,5),'doughnut','Relatórios'],
+  ['chartCipgTurnosServico',rank(a.servicos,s=>tipoTurno(s.turno_cipg),4),'doughnut','Relatórios'],
   ['chartCipgModalidade',rank(a.servicos,'modalidade',10),'bar','Relatórios'],
   ['chartCipgRegimes',rank(a.servicos,'regime',10),'bar','Relatórios'],
   ['chartCipgTipoLocal',rank(a.servicos,'tipo_local',3),'doughnut','Relatórios'],
@@ -231,16 +234,16 @@ function render(dadosA,dadosB,ctx){
  rows('tabCipgInstituicoes',posto.map(x=>'<tr><td>'+esc(x.posto)+'</td><td>'+numBR(x.servicos)+
   '</td><td>'+numBR(x.sa)+'</td><td>'+numBR(x.ord+x.svi)+'</td></tr>').join(''));
  rows('tabCipgPostosDetalhado',posto.map(x=>'<tr>'+[
-  x.posto,x.servicos,x.sa,x.eventos,(x.hospital>0&&x.hospital<3?'≤ 2':x.hospital),x.ord,x.svi,x.rondas,x.intercorrencias,
+  x.posto,x.servicos,x.sa,x.eventos,(x.hospital>0&&x.hospital<3?'≤ 2':x.hospital),x.ord,x.svi,x.intercorrencias,
   numBR(x.km),numBR(x.litros)
  ].map(v=>'<td>'+esc(String(v))+'</td>').join('')+'</tr>').join(''));
  rows('tabCipgMensal',serie.map(x=>'<tr>'+[
-  x.mes,x.servicos,x.eventos,x.ord,x.svi,x.rondas,numBR(x.km),numBR(x.litros)
+  x.mes,x.servicos,x.eventos,x.ord,x.svi,numBR(x.km),numBR(x.litros)
  ].map(v=>'<td>'+esc(String(v))+'</td>').join('')+'</tr>').join(''));
  const comp=[
  ['Relatórios de serviço','servicos'],['Sem alteração (S/A)','sa'],['Com alteração','ca'],
  ['Postos/instituições distintas','instituicoes'],['Empregos ordinários','efetivoOrdinario'],
- ['Empregos SVI','efetivoSvi'],['Rondas realizadas','rondas'],['Saídas autorizadas','saidas'],
+ ['Empregos SVI','efetivoSvi'],['Saídas autorizadas','saidas'],
  ['Quilômetros rodados','quilometros'],['Litros abastecidos','abastecimento'],
  ['Acontecimentos','eventos'],['Entradas no hospital','hospital'],['Em serviço (atendimentos)','emServico'],
  ['Internados (entradas hospitalares)','internados'],['Liberados (entradas hospitalares)','liberados'],
@@ -250,7 +253,7 @@ function render(dadosA,dadosB,ctx){
   numBR(m[k])+'</td><td>'+ (ctx.comparar==='nenhum'?'—':numBR(p[k]))+
   '</td><td>'+(ctx.comparar==='nenhum'?'—':esc(ctx.variacao(m[k],p[k])))+'</td></tr>').join(''));
  const qualidade=[
-  ['Relatórios sem número SEI',m.faltaSei],
+  ['Relatórios sem código',a.servicos.filter(s=>!str(s.codigo_relatorio)).length],
   ['Relatórios sem posto catalogado',m.faltaPosto],
   ['Relatórios sem turno informado',m.faltaTurno],
   ['Relatórios sem km informado',m.servicos-m.kmComRegistro],
@@ -264,12 +267,12 @@ function render(dadosA,dadosB,ctx){
  const porId=new Map(a.eventos.map(e=>[e.servico_id,0]));
  for(const e of a.eventos)porId.set(e.servico_id,1+(porId.get(e.servico_id)||0));
  const lista=a.servicos.slice().sort((x,y)=>str(y.data_servico).localeCompare(str(x.data_servico))||
-  str(y.numero_sei).localeCompare(str(x.numero_sei))).slice(0,80);
+  str(y.codigo_relatorio||y.numero_sei).localeCompare(str(x.codigo_relatorio||x.numero_sei))).slice(0,80);
  rows('tabCipgDocumentos',lista.map(x=>'<tr>'+[
-  x.data_servico?x.data_servico.split('-').reverse().join('/'):'—',txt(x.numero_sei),
+  x.data_servico?x.data_servico.split('-').reverse().join('/'):'—',txt(x.codigo_relatorio||x.numero_sei),
   txt(x.posto_codigo||x.instituicao),tipoTurno(x.turno_cipg),
   x.situacao==='SEM ALTERACAO'?'S/A':'Com alteração',numBR(nums(x.efetivo_ordinario)+nums(x.efetivo_svi)),
-  numBR(x.rondas_realizadas),numBR(porId.get(x.id)||0)
+  numBR(porId.get(x.id)||0)
  ].map(v=>'<td>'+esc(v)+'</td>').join('')+'</tr>').join(''));
  const docs=$('cipgDocumentosNota');
  if(docs)docs.textContent='Últimos '+lista.length+' de '+a.servicos.length+

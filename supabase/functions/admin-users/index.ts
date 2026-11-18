@@ -286,11 +286,12 @@ Deno.serve(async (req: Request) => {
           (upper(perfilCaller.unidades?.sigla) === "CIPG" && perfilCaller.perfil === "ESTATISTICA"));
       if (!autorizado) return resposta({ error: "Acesso restrito à administração ou estatística da CIPG." }, 403);
       const listar = async () => {
-        const { data, error } = await admin.from("cipg_acessos_caderno").select("user_id,ativo,criado_em,nome_completo,posto_graduacao,nome_guerra").order("criado_em",{ascending:false});
+        const { data, error } = await admin.from("cipg_acessos_caderno").select("user_id,ativo,criado_em,nome_completo,posto_graduacao,nome_guerra,senha_temporaria").order("criado_em",{ascending:false});
         if (error) throw error;
         const itens = await Promise.all((data||[]).map(async (x:any) => {
           const { data: authData } = await admin.auth.admin.getUserById(x.user_id);
-          return { ...x, email: authData?.user?.email || "", nome: x.nome_completo || authData?.user?.user_metadata?.nome || "" };
+          const perfilVinculado = await perfilDoUsuario(x.user_id);
+          return { ...x, conta_sie: !!perfilVinculado, email: authData?.user?.email || "", nome: x.nome_completo || authData?.user?.user_metadata?.nome || "" };
         }));
         return itens;
       };
@@ -324,7 +325,7 @@ Deno.serve(async (req: Request) => {
         const email = limpar(body.email).toLowerCase(), password = limpar(body.password), nome = limpar(body.nome), postoGraduacao=limpar(body.posto_graduacao), nomeGuerra=limpar(body.nome_guerra);
         if (!email.includes("@") || email.length > 254) throw new Error("Informe e-mail válido.");
         if (email === limpar(caller.email).toLowerCase()) return resposta({error:"Este e-mail já pertence à sua conta do SIE-CPC. Use o botão Habilitar meu acesso ao Caderno Digital, sem criar outra senha."},409);
-        if (password.length < 12) throw new Error("A senha deve ter pelo menos 12 caracteres.");
+        if (password.length < 8) throw new Error("A senha deve ter pelo menos 8 caracteres.");
         if (nome.length < 3 || nome.length > 120) throw new Error("Informe o nome completo do policial.");
         if (postoGraduacao.length < 2 || postoGraduacao.length > 60) throw new Error("Informe o posto ou graduação.");
         if (nomeGuerra.length < 2 || nomeGuerra.length > 100) throw new Error("Informe o nome de guerra.");
@@ -333,7 +334,7 @@ Deno.serve(async (req: Request) => {
         });
         if (authError || !created.user) throw authError || new Error("Falha ao criar conta individual.");
         const { error: accessError } = await admin.from("cipg_acessos_caderno").insert({
-          user_id:created.user.id, unidade_id:unidadeCipg, ativo:true,
+          user_id:created.user.id, unidade_id:unidadeCipg, ativo:true, senha_temporaria:true,
           nome_completo:nome,posto_graduacao:postoGraduacao,nome_guerra:nomeGuerra,
         });
         if (accessError) {
@@ -354,11 +355,17 @@ Deno.serve(async (req: Request) => {
         await log(caller.id,novo?"REATIVOU_CADERNO_CIPG":"BLOQUEOU_CADERNO_CIPG","cipg_acesso",id);
       }
       if (action === "cipg_access_reset_password") {
+        if (await perfilDoUsuario(id)) return resposta({error:"Esta conta é vinculada ao SIE-CPC. Redefina a senha pelo fluxo institucional, não pelo Caderno Digital."},409);
         const password = limpar(body.password);
-        if (password.length < 12) throw new Error("A senha deve ter pelo menos 12 caracteres.");
-        const { error } = await admin.auth.admin.updateUserById(id,{password});
+        if (password.length < 8) throw new Error("A senha temporária deve ter pelo menos 8 caracteres.");
+        const {data:authAlvo,error:authAlvoError}=await admin.auth.admin.getUserById(id);
+        if(authAlvoError||!authAlvo?.user)throw authAlvoError||new Error("Conta não encontrada.");
+        // O trigger do Auth marca a troca obrigatória e revoga sessões na mesma transação.
+        const { error } = await admin.auth.admin.updateUserById(id,{
+          password, app_metadata:{...authAlvo.user.app_metadata,cipg_reset_nonce:crypto.randomUUID()}
+        });
         if (error) throw error;
-        await log(caller.id,"ALTEROU_SENHA_CADERNO_CIPG","cipg_acesso",id);
+        await log(caller.id,"REDEFINIU_SENHA_TEMPORARIA_CADERNO_CIPG","cipg_acesso",id);
       }
       return resposta({ok:true,users:await listar()});
     }
@@ -432,7 +439,7 @@ Deno.serve(async (req: Request) => {
         if(!/^[a-zA-Z0-9.-]{3,30}$/.test(matricula))throw new Error("Informe matrícula válida (3 a 30 caracteres).");
         if(!email.includes("@")||email.length>254)throw new Error("Informe e-mail individual válido.");
         if(email===GIRO_ABORDAGENS_EMAIL)return resposta({error:"O e-mail compartilhado antigo do GIRO não pode ser reutilizado."},400);
-        if(password.length<12)throw new Error("A senha inicial precisa ter pelo menos 12 caracteres.");
+        if(password.length<8)throw new Error("A senha inicial precisa ter pelo menos 8 caracteres.");
         const {data:perfilMesmoEmail,error:perfilMesmoEmailError}=await admin.from("perfis_usuarios")
           .select("user_id").ilike("email",email).limit(1).maybeSingle();
         if(perfilMesmoEmailError)throw perfilMesmoEmailError;
@@ -486,7 +493,7 @@ Deno.serve(async (req: Request) => {
         const perfilSie=await perfilDoUsuario(userId);
         if(perfilSie)return resposta({error:"Esta conta pertence ao SIE-CPC. O policial deve alterar ou recuperar a senha pelo acesso principal, sem redefini-la no GIRO."},409);
         const password=limpar(body.password);
-        if(password.length<12)throw new Error("Senha mínima: 12 caracteres.");
+        if(password.length<8)throw new Error("Senha mínima: 8 caracteres.");
         const {error}=await admin.auth.admin.updateUserById(userId,{password});
         if(error)throw error;
         await log(caller.id,"REDEFINIU_SENHA_GIRO_INDIVIDUAL","giro_acesso_abordagem",userId);

@@ -74,10 +74,9 @@
 
   function pode(perfil,permissao){
     if(!permissao)return true;
-    // Fluxos da Seção está suspenso para todos, inclusive ADMIN.
-    // Lista individual (exatamente 1 ADMIN e 1 COMANDANTE CPC) consultada ao banco.
-    // Em erro ou ausência de migração, a interface permanece bloqueada.
+    // Lista individual, verificada novamente pelo backend.
     if(permissao==='ia_cpc')return acessoIaIndividual;
+    // Fluxos da Seção está suspenso para todos, inclusive ADMIN.
     if(permissao==='fluxos')return false;
     // Modo TV do CPC temporariamente suspenso até todas as unidades terem
     // no mínimo três meses de registros. Bloqueia todos os perfis, inclusive
@@ -409,6 +408,7 @@
           acessoIaIndividual=!r.error&&r.data===true;
         }catch(_){acessoIaIndividual=false;}
       }
+
 
       if(!paginaEspecializadaPermitida(perfil)){
         location.replace(cfg.homePage+'?erro=unidade-nao-autorizada');

@@ -67,7 +67,7 @@ dialog.cpcDocOverlay{border:0;margin:0;max-width:none;max-height:none;width:100%
 .drill-ref-cpc:hover{color:#092d4e}.drill-ref-cpc:focus-visible,.cpcDocFechar:focus-visible,.cpcDocVinculo:focus-visible{outline:3px solid #277ba9;outline-offset:2px}
 body.dashboard-comando .drill-table table{min-width:0}
 @media(max-width:700px){.cpcDocOverlay{padding:0}.cpcDocJanela{height:100dvh;max-height:100dvh;border-radius:0}.cpcDocTopo{padding:15px}.cpcDocCorpo{padding:12px}.cpcDocGrupo dl{grid-template-columns:1fr}}
-</style><script src="auth-config.js"></script><script src="auth-guard.js"></script><script src="bope-painel.js?v=20261020-bope-sub1"></script><script src="cipg-dashboard.js?v=20261009-3"></script><script src="indicadores-origem-envolvimento.js?v=20261106-1"></script></head>
+</style><script src="auth-config.js"></script><script src="auth-guard.js"></script><script src="bope-painel.js?v=20261020-bope-sub1"></script><script src="cipg-dashboard.js?v=20261118-4"></script><script src="indicadores-origem-envolvimento.js?v=20261113-1"></script><script src="cavalaria-dashboard.js?v=20261117-1"></script></head>
 <body><div class="loading" id="loading">Carregando dados estatísticos...</div><header><div class="head"><div><h1>Dashboard Completo</h1><p>Análise estatística operacional da unidade ativa</p></div><div><a href="index.html">← Página inicial</a></div></div></header><main>
 <section class="panel"><div class="presets"><button data-period="hoje">Hoje</button><button data-period="semana">Semana atual</button><button data-period="mes">Mês atual</button><button data-period="trimestre">Trimestre</button><button data-period="semestre">Semestre</button><button data-period="ano">Ano</button></div><div class="filters">
 <label>Data inicial<input id="ini" type="date"></label><label id="cipaMunicipioWrap" hidden>Município<input id="cipaMunicipio" placeholder="Todos"></label><label id="cipaAreaWrap" hidden>Área<select id="cipaArea"><option value="">Todas</option><option>URBANA</option><option>RURAL</option></select></label><label id="cipaOrigemWrap" hidden>Origem<input id="cipaOrigemFiltro" placeholder="Todas"></label>
@@ -83,12 +83,20 @@ body.dashboard-comando .drill-table table{min-width:0}
 <a href="#secCipgProdutividade">Serviços de guarda</a>
 <a href="cipg-eventos.html">Registrar evento do livro</a>
 <a href="cipg-produtividade.html">Registrar serviço</a></nav>
-<nav id="navCavalaria" class="module-nav" hidden aria-label="Módulos do painel Cavalaria"><a href="#secVisaoGeral">Visão geral</a><a href="#secCavalariaProdutividade">Produtividade operacional</a><a href="#secProdutividade">Resultados de ocorrências</a><a href="#secComandantes">Comandantes</a><a href="cavalaria-produtividade.html">Registrar produtividade</a></nav>
-<section class="cards" id="secVisaoGeral"><div class="card"><small>Total de ocorrências</small><strong id="kTotal">0</strong><em id="vTotal"></em></div><div class="card teal"><small>Ocorrências atendidas</small><strong id="kAtendidas">0</strong></div><div class="card red"><small>Demandas reprimidas</small><strong id="kReprimidas">0</strong></div><div class="card steel"><small>Documentos produzidos</small><strong id="kDocumentos">0</strong></div><div class="card steel"><small>Conduções</small><strong id="kConduzidos">0</strong><em>inclui compatibilidade com registros legados</em></div></section><section class="section" id="secCipgProdutividade" hidden>
+<nav id="navCavalaria" class="module-nav" hidden aria-label="Módulos do painel Cavalaria"><a href="#secVisaoGeral">Visão geral</a><a href="#secCavalariaProdutividade">Produtividade operacional</a><a href="#secProdutividade">Resultados de ocorrências</a><a href="#secComandantes">Comandantes</a><a href="cadastro.html?v=20261117-cavalaria1">Cadastrar PPE / BO</a></nav>
+<section class="cards" id="secVisaoGeral"><div class="card"><small>Total de ocorrências</small><strong id="kTotal">0</strong><em id="vTotal"></em></div><div class="card teal"><small>Ocorrências atendidas</small><strong id="kAtendidas">0</strong></div><div class="card red"><small>Demandas reprimidas</small><strong id="kReprimidas">0</strong></div><div class="card steel"><small>Documentos produzidos</small><strong id="kDocumentos">0</strong></div><div class="card steel"><small>Conduções</small><strong id="kConduzidos">0</strong><em>inclui compatibilidade com registros legados</em></div></section><section class="section" id="secVilaJardim" hidden><h2>Produtividade — Guarnição VILA JARDIM (1º BPM)</h2>
+<p class="sub">BOs classificados pelo operador como VILA JARDIM. Respeita período e os demais filtros. Dados históricos não classificados não são presumidos como da guarnição.</p>
+<div class="cards"><div class="card teal"><small>Ocorrências</small><strong id="vjOcorrencias">0</strong></div>
+<div class="card steel"><small>Conduções</small><strong id="vjConducoes">0</strong></div>
+<div class="card green"><small>Orientações</small><strong id="vjOrientacoes">0</strong></div>
+<div class="card amber"><small>Veículos recuperados</small><strong id="vjVeiculos">0</strong></div></div>
+<div class="grid2"><div><h3>Naturezas atendidas</h3><div class="chartbox"><canvas id="chartVilaJardim"></canvas></div></div>
+<div class="tablewrap"><table><thead><tr><th>Natureza</th><th>BOs</th></tr></thead><tbody id="tabVilaJardim"></tbody></table></div></div></section>
+<section class="section" id="secCipgProdutividade" hidden>
  <span class="module-tag">Produtividade · Livro de serviço CIPG</span>
  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
  <div><h2>Livro de serviço e acontecimentos da CIPG</h2>
- <p class="sub">Relatórios S/A e com alteração; acompanhamento de policiais atendidos no hospital. Um evento por militar envolvido, vinculado ao SEI. Os eventos do livro não são BOs.</p></div>
+ <p class="sub">Relatórios S/A e com alteração; acompanhamento de policiais atendidos no hospital. Um evento por militar envolvido, vinculado ao código do relatório. Os eventos do livro não são BOs.</p></div>
  <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn" href="cipg-produtividade.html" style="text-decoration:none">Registrar relatório</a><a class="btn" href="cipg-eventos.html" style="text-decoration:none">Registrar evento</a></div></div>
  <div class="cards">
  <div class="card"><small>Relatórios de serviço</small><strong id="cipgServicos">0</strong><em id="cipgServicosVar"></em></div>
@@ -107,7 +115,8 @@ body.dashboard-comando .drill-table table{min-width:0}
  <div class="card green"><small>Efetivo SVI empregado</small><strong id="cipgEfetivoSvi">0</strong></div>
  <div class="card teal"><small>Km rodados</small><strong id="cipgKm">0</strong></div>
  <div class="card amber"><small>Litros abastecidos</small><strong id="cipgLitros">0</strong></div>
- <div class="card steel"><small>Rondas informadas</small><strong id="cipgRondas">0</strong></div>
+ <div class="card steel"><small>Altas / saídas hospitalares</small><strong id="cipgAltasHospitalares">0</strong></div>
+ <div class="card teal"><small>Acionamentos de outra unidade</small><strong id="cipgAcionamentos">0</strong></div>
  <div class="card"><small>Intercorrências informadas no relatório</small><strong id="cipgIntercorrencias">0</strong></div>
  </div>
  <div class="grid3" style="margin-top:12px">
@@ -115,12 +124,13 @@ body.dashboard-comando .drill-table table{min-width:0}
  <label>Situação do relatório<select id="cipgFiltroSituacao"><option value="">Todas</option><option value="SEM ALTERACAO">Sem alteração (S/A)</option><option value="COM ALTERACAO">Com alteração</option></select></label>
  <label>Categoria do posto<select id="cipgFiltroTipo"><option value="">Todas</option><option value="EDIFICIO_PUBLICO">Edifícios públicos</option><option value="ESTABELECIMENTO_PENAL">Estabelecimentos penais</option><option value="OUTRO">Outros</option></select></label>
  <label>Regime de serviço<input id="cipgFiltroRegime" placeholder="Regime registrado"></label>
- <label>Turno do serviço<select id="cipgFiltroTurnoServico"><option value="">Ambos os turnos</option><option value="1">1º turno · 08h–20h</option><option value="2">2º turno · 20h–08h</option></select></label>
- <label>Número SEI<input id="cipgFiltroSei" placeholder="Pesquisar relatório SEI"></label>
+ <label>Turno do serviço<select id="cipgFiltroTurnoServico"><option value="">Todos os turnos</option><option value="1">1º turno · 08h–20h</option><option value="2">2º turno · 20h–08h</option><option value="24H">Turno de 24 horas</option></select></label>
+ <label>Código do relatório<input id="cipgFiltroSei" placeholder="Código CIPG ou SEI antigo"></label>
+ <label id="cipgPolicialWrap" hidden>Policial que registrou<select id="cipgFiltroPolicial"><option value="">Todos</option></select></label>
  <label>Viatura<input id="cipgFiltroViatura" placeholder="Identificação, se registrada"></label>
  <label>Tipo de alteração<select id="cipgFiltroAlteracao"><option value="">Todas</option><option value="PESSOAL">Pessoal</option><option value="INSTALACOES">Instalações</option><option value="MATERIAL">Material</option><option value="SEM">Sem alteração nessas categorias</option></select></label>
  <label>Atividade<select id="cipgFiltroModalidade"><option value="">Todas</option><option value="GUARDA_FIXA">Guarda fixa</option><option value="RONDA">Ronda</option><option value="REFORCO">Reforço</option><option value="APOIO_OPERACIONAL">Apoio operacional</option><option value="OUTRA">Outra</option></select></label>
- <label>Tipo de evento<select id="cipgFiltroEvento"><option value="">Todos</option><option>ENTRADA DE PM NO HOSPITAL</option><option>ÓBITO DE PM</option><option>ALTERAÇÃO NO POSTO</option><option>FUGA / EVASÃO</option><option>TUMULTO</option><option>APOIO PRESTADO</option><option>OUTROS</option></select></label>
+ <label>Tipo de evento<select id="cipgFiltroEvento"><option value="">Todos</option><option>ENTRADA DE PM NO HOSPITAL</option><option>ALTA / SAÍDA DE PM DO HOSPITAL</option><option>DESACATO</option><option>AMEAÇA</option><option>ÓBITO DE PM</option><option>ALTERAÇÃO NO POSTO</option><option>FUGA / EVASÃO</option><option>TUMULTO</option><option>APOIO PRESTADO</option><option>OUTROS</option></select></label>
  <label>Desfecho<select id="cipgFiltroDesfecho"><option value="">Todos</option><option>EM ATENDIMENTO</option><option>EM OBSERVAÇÃO</option><option>INTERNADO</option><option>LIBERADO</option><option>TRANSFERIDO</option><option>ÓBITO</option></select></label>
  <label>Em serviço?<select id="cipgFiltroEmServico"><option value="">Todos</option><option>SIM</option><option>NÃO</option><option>NÃO INFORMADO</option></select></label>
  <label>Causa / motivo<input id="cipgFiltroCausa" placeholder="Ex.: acidente de trânsito"></label>
@@ -175,16 +185,16 @@ body.dashboard-comando .drill-table table{min-width:0}
  <div><h3>Indicadores de qualidade</h3><p class="sub">A ausência de informação é mostrada como ausência, sem presumir valor zero em medidas opcionais.</p></div>
  </div>
  <div class="grid2" style="margin-top:14px">
- <div><h3>Resumo por mês</h3><div class="tablewrap"><table><thead><tr><th>Mês</th><th>Serviços</th><th>Eventos</th><th>Ord.</th><th>SVI</th><th>Rondas</th><th>Km</th><th>Litros</th></tr></thead><tbody id="tabCipgMensal"></tbody></table></div></div>
+ <div><h3>Resumo por mês</h3><div class="tablewrap"><table><thead><tr><th>Mês</th><th>Serviços</th><th>Eventos</th><th>Ord.</th><th>SVI</th><th>Km</th><th>Litros</th></tr></thead><tbody id="tabCipgMensal"></tbody></table></div></div>
  <div><h3>Qualidade dos lançamentos</h3><div class="tablewrap"><table><thead><tr><th>Verificação</th><th>Registros</th></tr></thead><tbody id="tabCipgQualidade"></tbody></table></div></div>
  </div>
  <h3 class="cipg-subheading">Produtividade consolidada por posto</h3>
- <div class="tablewrap"><table><thead><tr><th>Posto</th><th>Serviços</th><th>S/A</th><th>Eventos</th><th>Hosp.</th><th>Ord.</th><th>SVI</th><th>Rondas</th><th>Interc.</th><th>Km</th><th>Litros</th></tr></thead>
+ <div class="tablewrap"><table><thead><tr><th>Posto</th><th>Serviços</th><th>S/A</th><th>Eventos</th><th>Hosp.</th><th>Ord.</th><th>SVI</th><th>Interc.</th><th>Km</th><th>Litros</th></tr></thead>
  <tbody id="tabCipgPostosDetalhado"></tbody></table></div>
  <h3 class="cipg-subheading">Comparativo da produtividade</h3>
  <div class="tablewrap"><table><thead><tr><th>Indicador</th><th>Período atual</th><th>Período comparado</th><th>Variação</th></tr></thead><tbody id="tabCipgComparativo"></tbody></table></div>
  <h3 class="cipg-subheading">Referência dos relatórios de serviço</h3>
- <div class="tablewrap"><table><thead><tr><th>Data</th><th>Nº SEI</th><th>Posto</th><th>Turno</th><th>Situação</th><th>Efetivo</th><th>Rondas</th><th>Eventos</th></tr></thead><tbody id="tabCipgDocumentos"></tbody></table></div>
+ <div class="tablewrap"><table><thead><tr><th>Data</th><th>Código do relatório</th><th>Posto</th><th>Turno</th><th>Situação</th><th>Efetivo</th><th>Eventos</th></tr></thead><tbody id="tabCipgDocumentos"></tbody></table></div>
  <p id="cipgDocumentosNota" class="sub"></p>
  <div class="grid2" style="margin-top:18px">
  <div><h3>Eventos por causa / motivo</h3><div class="chartbox"><canvas id="chartCipgCausas"></canvas></div></div>
@@ -206,43 +216,43 @@ body.dashboard-comando .drill-table table{min-width:0}
  <div><h3>Relatórios por dia</h3><div class="chartbox"><canvas id="chartCipgEvolucao"></canvas></div></div>
  <div><h3>Produtividade por posto</h3><div class="tablewrap"><table><thead><tr><th>Posto</th><th>Relatórios</th><th>S/A</th><th>Efetivo</th></tr></thead><tbody id="tabCipgInstituicoes"></tbody></table></div></div>
  </div>
- <p class="sub"><b>Notas estatísticas:</b> 1 relatório = 1 serviço; um relatório pode conter vários acontecimentos. Turno do serviço e turno do fato são campos distintos. Quando se filtra um tipo de acontecimento, o número de serviços corresponde apenas aos relatórios que contêm esse evento. A relação de SEIs mostra até 80 documentos, sem nomes dos militares.</p>
+ <p class="sub"><b>Notas estatísticas:</b> 1 relatório = 1 serviço; um relatório pode conter vários acontecimentos. Turno do serviço e turno do fato são campos distintos. Quando se filtra um tipo de acontecimento, o número de serviços corresponde apenas aos relatórios que contêm esse evento. A relação de relatórios mostra até 80 documentos, sem nomes dos militares.</p>
  <p class="sub" style="margin-top:14px"><b>Apuração:</b> um relatório S/A conta como serviço, não como ocorrência. Entradas no hospital são registros por militar, não pessoas distintas em todo o período. Efetivo ordinário + SVI representa empregos por serviço, não policiais únicos. Dados pessoais e descrições clínicas não são exibidos.</p>
  </section>
 <section class="section" id="secCavalariaProdutividade" hidden>
-  <span class="module-tag">Produtividade operacional · Cavalaria</span>
-  <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap">
-    <div><h2>Serviços e produtividade da Cavalaria</h2><p class="sub">Indicadores extraídos dos registros de policiamento, eventos, operações, ações comunitárias e abordagens. BOs permanecem contabilizados separadamente.</p></div>
-    <a class="btn" href="cavalaria-produtividade.html" style="text-decoration:none">Registrar produtividade</a>
-  </div>
-  <div class="cards">
-    <div class="card"><small>Serviços registrados</small><strong id="cavServicos">0</strong><em id="cavServicosVariacao"></em></div>
-    <div class="card teal"><small>Pessoas abordadas</small><strong id="cavPessoas">0</strong><em>total informado nos serviços</em></div>
-    <div class="card green"><small>Policiamento montado</small><strong id="cavMontado">0</strong></div>
-    <div class="card steel"><small>Policiamento motorizado</small><strong id="cavMotorizado">0</strong></div>
-    <div class="card amber"><small>Policiamento em operações</small><strong id="cavOperacoes">0</strong></div>
-    <div class="card teal"><small>Policiamento comunitário</small><strong id="cavComunitario">0</strong></div>
-    <div class="card steel"><small>Eventos</small><strong id="cavEventos">0</strong></div>
-    <div class="card green"><small>ROPs produzidos</small><strong id="cavRops">0</strong></div>
-  </div>
-  <div class="cards">
-    <div class="card amber"><small>Motos abordadas</small><strong id="cavMotos">0</strong></div>
-    <div class="card steel"><small>Carros abordados</small><strong id="cavCarros">0</strong></div>
-    <div class="card teal"><small>Veículos removidos</small><strong id="cavRemovidos">0</strong></div>
-    <div class="card green"><small>Foragidos presos</small><strong id="cavForagidos">0</strong></div>
-    <div class="card red"><small>Armas apreendidas</small><strong id="cavArmas">0</strong></div>
-  </div>
-  <div class="grid2">
-    <div><h3 style="margin:0 0 8px;color:var(--navy)">Modalidades de policiamento</h3><div class="chartbox"><canvas id="chartCavModalidades"></canvas></div></div>
-    <div><h3 style="margin:0 0 8px;color:var(--navy)">Contexto das atividades</h3><div class="chartbox"><canvas id="chartCavContextos"></canvas></div></div>
-  </div>
-  <div style="margin-top:18px"><h3 style="margin:0 0 8px;color:var(--navy)">Evolução dos serviços no período</h3><div class="chartbox"><canvas id="chartCavEvolucao"></canvas></div></div>
-  <div class="grid3" style="margin-top:18px">
-    <div><h3 style="margin:0 0 8px;color:var(--navy)">Locais / instituições mais atendidos</h3><div class="tablewrap"><table><thead><tr><th>#</th><th>Local</th><th>Serviços</th></tr></thead><tbody id="tabCavLocais"></tbody></table></div></div>
-    <div><h3 style="margin:0 0 8px;color:var(--navy)">Solípedes mais empregados</h3><div class="tablewrap"><table><thead><tr><th>#</th><th>Solípede</th><th>Empregos</th></tr></thead><tbody id="tabCavSolipedes"></tbody></table></div></div>
-    <div><h3 style="margin:0 0 8px;color:var(--navy)">Viaturas mais empregadas</h3><div class="tablewrap"><table><thead><tr><th>#</th><th>Viatura</th><th>Empregos</th></tr></thead><tbody id="tabCavViaturas"></tbody></table></div></div>
-  </div>
-  <p class="sub" style="margin-top:12px">A produtividade considera o período selecionado no topo. Os demais filtros territoriais permanecem aplicados às ocorrências policiais, não aos registros de serviço.</p>
+ <span class="module-tag">Atividades e policiamento · Cavalaria</span>
+ <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap">
+   <div><h2>Produtividade operacional da Cavalaria</h2><p class="sub">Atividades documentadas e BOs policiais separados. Indicadores por pelotão e modalidade, sem sistema de abordagens.</p></div>
+   <a class="btn" href="cadastro.html?v=20261117-cavalaria1" style="text-decoration:none">Cadastrar PPE / BO</a>
+ </div>
+ <div class="cards">
+  <div class="card teal"><small>Atividades documentadas</small><strong id="cavServicos">0</strong><em id="cavServicosVariacao"></em></div>
+  <div class="card steel"><small>Ocorrências policiais classificadas</small><strong id="cavOcorrenciasPoliciais">0</strong></div>
+  <div class="card amber"><small>Históricos sem modalidade confirmada</small><strong id="cavLegados">0</strong></div>
+  <div class="card green"><small>Policiamento montado</small><strong id="cavMontado">0</strong></div>
+  <div class="card steel"><small>Policiamento motorizado</small><strong id="cavMotorizado">0</strong></div>
+  <div class="card teal"><small>Policiamento comunitário</small><strong id="cavComunitario">0</strong></div>
+  <div class="card amber"><small>Eventos e operações</small><strong id="cavEventos">0</strong></div>
+  <div class="card green"><small>Visitas educativas escolares</small><strong id="cavVisitasEscolas">0</strong></div>
+  <div class="card teal"><small>Visitas técnicas / veterinária</small><strong id="cavVisitasTecnicas">0</strong></div>
+  <div class="card steel"><small>Ações sociais</small><strong id="cavAcoesSociais">0</strong></div>
+  <div class="card"><small>1º Pelotão — registros classificados</small><strong id="cavPelotao1">0</strong></div>
+  <div class="card"><small>2º Pelotão — registros classificados</small><strong id="cavPelotao2">0</strong></div>
+ </div>
+ <div class="grid2">
+  <div><h3>Tipos de atividade</h3><div class="chartbox"><canvas id="chartCavModalidades"></canvas></div></div>
+  <div><h3>Produtividade por pelotão</h3><div class="chartbox"><canvas id="chartCavContextos"></canvas></div></div>
+ </div>
+ <div style="margin-top:18px"><h3>Evolução das atividades</h3><div class="chartbox"><canvas id="chartCavEvolucao"></canvas></div></div>
+ <div class="grid2" style="margin-top:18px">
+  <div><h3>Instituições e locais atendidos</h3><div class="tablewrap"><table><thead><tr><th>Instituição / local</th><th>Atividades</th></tr></thead><tbody id="tabCavLocais"></tbody></table></div></div>
+  <div><h3>Comandantes responsáveis</h3><div class="tablewrap"><table><thead><tr><th>Comandante</th><th>Registros</th></tr></thead><tbody id="tabCavComandantes"></tbody></table></div></div>
+ </div>
+ <div class="grid2" style="margin-top:18px">
+  <div><h3>Viaturas</h3><div class="tablewrap"><table><thead><tr><th>VTR</th><th>Registros</th></tr></thead><tbody id="tabCavViaturas"></tbody></table></div></div>
+  <div><h3>Naturezas policiais</h3><div class="tablewrap"><table><thead><tr><th>Natureza</th><th>BOs</th></tr></thead><tbody id="tabCavOcorrencias"></tbody></table></div></div>
+ </div>
+ <p class="sub" id="cavNota" style="margin-top:14px">Não reclassifique registros históricos sem confirmar o documento.</p>
 </section>
 <section class="section" id="secGiroAbordagens" hidden>
   <span class="module-tag">Produtividade preventiva · GIRO</span>
@@ -375,6 +385,30 @@ body.dashboard-comando .drill-table table{min-width:0}
   <div class="chartbox"><canvas id="chartOrigemAcionamento" role="img" aria-label="Gráfico de ocorrências por origem do acionamento"></canvas></div>
   <p class="sub" id="origemAcionamentoCobertura" role="status">Analisando origens documentadas...</p>
 </section>
+<section class="section" id="secEnvolvimentoFuncional">
+  <h2>Ocorrências envolvendo policiais ou autoridades</h2>
+  <p class="sub">Vítimas ou suspeitos/infratores classificados expressamente no cadastro. Integrantes da guarnição, comunicantes, condutores e testemunhas não são contados apenas por sua profissão.</p>
+  <div class="cards" id="cardsEnvolvimentoFuncional"></div>
+  <div class="chartbox"><canvas id="chartEnvolvimentoFuncional" role="img" aria-label="Ocorrências com policiais ou autoridades como vítimas ou suspeitos"></canvas></div>
+  <p class="sub" id="coberturaEnvolvimentoFuncional"></p>
+</section>
+<section class="section" id="secOcorrenciasEscolas">
+  <h2>Ocorrências em escolas</h2>
+  <p class="sub">Fatos confirmados no ambiente escolar. Estatísticas filtradas por período e unidade, sem presumir que registros antigos sem classificação ocorreram fora de escolas.</p>
+  <div class="cards" id="cardsEscolas"></div>
+  <div class="grid2">
+    <div><h3>Escolas com mais ocorrências</h3><div class="chartbox"><canvas id="chartEscolas"></canvas></div></div>
+    <div class="tablewrap"><table><thead><tr><th>Escola</th><th>Ocorrências</th><th>Tipos de ocorrência na escola</th></tr></thead><tbody id="tabEscolas"></tbody></table></div>
+  </div>
+  <div class="grid2" style="margin-top:18px">
+    <div><h3>Tipos de ocorrência por escola</h3><div class="tablewrap"><table><thead><tr><th>Natureza</th><th>BOs</th></tr></thead><tbody id="tabNaturezasEscolas"></tbody></table></div>
+    <div><h3>Faixa etária das vítimas</h3><div class="chartbox"><canvas id="chartIdadeVitimasEscolas"></canvas></div></div>
+  </div>
+  <div class="grid2" style="margin-top:18px">
+    <div><h3>Faixa etária dos suspeitos/infratores</h3><div class="chartbox"><canvas id="chartIdadeInfratoresEscolas"></canvas></div></div>
+    <div><h3>Critérios</h3><p class="sub">As faixas etárias contam pessoas registradas por papel, não necessariamente estudantes. Um BO pode conter mais de uma natureza, mas entra uma só vez no total de ocorrências escolares.</p></div>
+  </div>
+</section>
 <section class="section"><h2>Documentos Produzidos</h2><p class="sub">BO, TCO, ROP e demais documentos do período</p><div class="grid2"><div class="chartbox"><canvas id="chartDocs"></canvas></div><div class="tablewrap"><table><thead><tr><th>Documento</th><th>Atual</th><th>Comparado</th><th>Variação</th></tr></thead><tbody id="tabDocs"></tbody></table></div></div></section>
 <section class="section"><h2>Principais Ocorrências</h2><p class="sub">Incidência por natureza. Um mesmo BO pode aparecer em mais de uma natureza quando o registro possuir múltiplas classificações.</p><div class="grid2"><div class="chartbox"><canvas id="chartOcorrencias"></canvas></div><div class="tablewrap"><table><thead><tr><th>#</th><th>Ocorrência</th><th>Quantidade</th><th>Bairros recorrentes</th><th>Idade</th></tr></thead><tbody id="tabOcorrencias"></tbody></table></div></div></section>
 <section class="section"><h2>Ocorrências por Bairro</h2><p class="sub">Ranking, participação e comparação com o período de referência</p><div class="grid2"><div class="chartbox"><canvas id="chartBairros"></canvas></div><div class="tablewrap"><table><thead><tr><th>#</th><th>Bairro</th><th>Atual</th><th>% do total</th><th>Anterior</th><th>Variação</th></tr></thead><tbody id="tabBairros"></tbody></table></div></div></section>
@@ -423,7 +457,9 @@ function configurarModuloSegundoBpm(){
 function configurarModuloPrimeiroBpm(){
   const ativo=ehPrimeiroBpm();
   document.body.classList.toggle('modo-1bpm',ativo);
+  if($('secVilaJardim'))$('secVilaJardim').hidden=!ativo;
   if(!ativo)return;
+  if($('documento')&&!Array.from($('documento').options).some(o=>o.value==='VILA_JARDIM')){const opt=document.createElement('option');opt.value='VILA_JARDIM';opt.textContent='VILA JARDIM';$('documento').appendChild(opt);}
   const h=document.querySelector('header h1'),p=document.querySelector('header .head p');
   if(h)h.textContent='Dashboard Operacional — 1º BPM';
   if(p)p.textContent='Análise estatística operacional do 1º Batalhão de Polícia Militar';
@@ -494,11 +530,13 @@ function configurarModuloCavalaria(){
     if($('secGiroAbordagens'))$('secGiroAbordagens').hidden=true;
     const h=document.querySelector('header h1'),p=document.querySelector('header .head p');
     if(h)h.textContent='Dashboard Completo — Cavalaria';
-    if(p)p.textContent='Serviços, policiamento montado, eventos, operações, abordagens e resultados operacionais da Cavalaria';
+    if(p)p.textContent='PPEs, atividades educativas, policiamento montado, operações e BOs policiais — indicadores por pelotão';
     if($('documento')){
-      $('documento').innerHTML='<option value="">Todos</option><option>BO</option><option>TCO</option><option>ROP</option>';
-      const lbl=$('documento').closest('label');if(lbl)lbl.childNodes[0].textContent='Documento';
+      $('documento').innerHTML='<option value="">Todos</option><option>BO</option><option>TCO</option><option>ROP</option><option value="ATIVIDADE_CAVALARIA">Atividade operacional</option>';
+      const lbl=$('documento').closest('label');if(lbl)lbl.childNodes[0].textContent='Documento / modalidade';
     }
+    const campoCia=$('companhia')?.closest('label');if(campoCia)campoCia.hidden=true;
+    if($('companhia'))$('companhia').value='';
   }
 }
 function podeCorrigirLocaisGiro(){
@@ -539,6 +577,7 @@ function grupamentoOperacional(x){
   try{return String(JSON.parse(texto.slice(pos+marcador.length))?.grupamento_atendimento||'').trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase()}catch(_){return ''}
 }
 function ehTor(x){return grupamentoOperacional(x)==='TOR'}
+function ehVilaJardim(x){return ehPrimeiroBpm()&&grupamentoOperacional(x)==='VILA JARDIM'}
 function ehAme(x){if(x&&x.ame===true)return true;const k=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();const rel=v=>{let t=k(v);return t.includes('MARIA DA PENHA')||t.includes('VIOLENCIA DOMESTICA')};if(rel(x?.ocorrencia)||rel(x?.crime))return true;let ns=Array.isArray(x?.naturezas_itens)?x.naturezas_itens:[];if(ns.some(n=>Number(n?.tipo_id)===1||rel(n?.nome||n?.tipo)||(Array.isArray(n?.subtipos)&&n.subtipos.some(z=>rel(z?.nome)))))return true;let cs=Array.isArray(x?.crimes_itens)?x.crimes_itens:[];return cs.some(c=>Number(c?.tipo_id)===1||rel(c?.tipo_nome)||rel(c?.nome))}function nomeNatureza(v){let original=String(v||'').trim(),k=chaveOcorrencia(original);if(k.includes('MARIA DA PENHA')||k.includes('VIOLENCIA DOMESTICA'))return 'MARIA DA PENHA / VIOLÊNCIA DOMÉSTICA';return original}function naturezasOcorrencia(x){let lista=[];if(x?.ocorrencia)lista.push(x.ocorrencia);if(Array.isArray(x?.naturezas_itens))x.naturezas_itens.forEach(n=>lista.push(typeof n==='string'?n:(n?.nome||n?.tipo||'')));let unicas=[];lista.map(nomeNatureza).filter(v=>v&&!ehNaoInformado(v)).forEach(v=>{if(!unicas.includes(v))unicas.push(v)});return unicas}function rankNaturezas(registros,limit=999){let m={};registros.forEach(o=>naturezasOcorrencia(o).forEach(n=>m[n]=(m[n]||0)+1));return Object.entries(m).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])).slice(0,limit)}function cipaOcorrenciaPassaFiltros(o,base){
   if(!ehCipa())return true;
   const ant=base===anterior;
@@ -570,10 +609,10 @@ function ehAme(x){if(x&&x.ame===true)return true;const k=v=>String(v||'').normal
   if(proc('cipaTco')==='NAO'&&tco)return false;
   return true;
 }
-function filtrar(base){let subBope=$('subunidadeBope')?.value||'';let campos=[['ocorrencia',x=>naturezasOcorrencia(x).join(' | ')],['subtipo',x=>(Array.isArray(x.crimes_itens)&&x.crimes_itens.length?x.crimes_itens.map(c=>typeof c==='string'?c:(c.nome||'')).join(' | '):x.crime)],['bairro',x=>x.bairro],['logradouro',x=>x.endereco],['comandante',x=>x.comandante],['vtr',x=>x.vtr]];return base.filter(x=>{if(subBope&&x.subunidade_operacional_sigla!==subBope)return false;if(ehCipa()&&!cipaOcorrenciaPassaFiltros(x,base))return false;if(ehCipa()){if($('cipaMunicipio')?.value&&!norm(x.municipio).toLowerCase().includes($('cipaMunicipio').value.toLowerCase()))return false;if($('cipaArea')?.value&&x.cipa_area_tipo!==$('cipaArea').value)return false;if($('cipaOrigemFiltro')?.value&&!norm(x.cipa_origem_atuacao).toLowerCase().includes($('cipaOrigemFiltro').value.toLowerCase()))return false;}if(aisc.value&&x.aisc!==aisc.value)return false;if(sisc.value&&x.sisc!==sisc.value)return false;if(setor.value&&x.setor!==setor.value)return false;if(companhia.value&&x.companhia!==companhia.value)return false;if(status.value&&x.status_atendimento!==status.value)return false;if(turno.value&&x.turno!==turno.value)return false;if(documento.value==='TOR'&&!ehTor(x))return false;if(documento.value==='AME'&&!ehAme(x))return false;if(documento.value==='TS'&&!x.tatico_setorial)return false;if(ehCipa()&&documento.value==='TCO'){
+function filtrar(base){let subBope=$('subunidadeBope')?.value||'';let campos=[['ocorrencia',x=>naturezasOcorrencia(x).join(' | ')],['subtipo',x=>(Array.isArray(x.crimes_itens)&&x.crimes_itens.length?x.crimes_itens.map(c=>typeof c==='string'?c:(c.nome||'')).join(' | '):x.crime)],['bairro',x=>x.bairro],['logradouro',x=>x.endereco],['comandante',x=>x.comandante],['vtr',x=>x.vtr]];return base.filter(x=>{if(subBope&&x.subunidade_operacional_sigla!==subBope)return false;if(ehCipa()&&!cipaOcorrenciaPassaFiltros(x,base))return false;if(ehCipa()){if($('cipaMunicipio')?.value&&!norm(x.municipio).toLowerCase().includes($('cipaMunicipio').value.toLowerCase()))return false;if($('cipaArea')?.value&&x.cipa_area_tipo!==$('cipaArea').value)return false;if($('cipaOrigemFiltro')?.value&&!norm(x.cipa_origem_atuacao).toLowerCase().includes($('cipaOrigemFiltro').value.toLowerCase()))return false;}if(aisc.value&&x.aisc!==aisc.value)return false;if(sisc.value&&x.sisc!==sisc.value)return false;if(setor.value&&x.setor!==setor.value)return false;if(companhia.value&&x.companhia!==companhia.value)return false;if(status.value&&x.status_atendimento!==status.value)return false;if(turno.value&&x.turno!==turno.value)return false;if(documento.value==='TOR'&&!ehTor(x))return false;if(documento.value==='AME'&&!ehAme(x))return false;if(documento.value==='TS'&&!x.tatico_setorial)return false;if(documento.value==='VILA_JARDIM'&&!ehVilaJardim(x))return false;if(ehCavalaria()&&documento.value==='ATIVIDADE_CAVALARIA'&&x.cavalaria_classe_registro!=='ATIVIDADE')return false;if(ehCavalaria()&&documento.value==='BO'&&x.cavalaria_classe_registro==='ATIVIDADE')return false;if(ehCipa()&&documento.value==='TCO'){
   const tcosPeriodo=base===anterior?tcosAnterior:tcosAtual;
   if(!tcosPeriodo.some(t=>String(t.ocorrencia_id||'')===String(x.id)))return false;
-}else if(documento.value&&!['AME','TS','TOR'].includes(documento.value)&&x.tipo_registro!==documento.value)return false;return campos.every(([id,get])=>!$(id).value||norm(get(x)).toLowerCase().includes($(id).value.toLowerCase()))})}
+}else if(documento.value&&!['AME','TS','TOR','VILA_JARDIM','ATIVIDADE_CAVALARIA'].includes(documento.value)&&x.tipo_registro!==documento.value)return false;return campos.every(([id,get])=>!$(id).value||norm(get(x)).toLowerCase().includes($(id).value.toLowerCase()))})}
 function filtrarTcos(base){let subBope=$('subunidadeBope')?.value||'';
   const escopoCipa=ehCipa()?new Set(filtrar(base===tcosAnterior?anterior:atual).map(o=>String(o.id))):null;let campos=[['ocorrencia',x=>x.ocorrencia],['subtipo',x=>x.crime],['bairro',x=>x.bairro],['comandante',x=>x.comandante],['vtr',x=>x.vtr]];return base.filter(x=>{if(escopoCipa&&!escopoCipa.has(String(x.ocorrencia_id||'')))return false;if(subBope&&x.subunidade_operacional_sigla!==subBope)return false;if(documento.value==='TOR')return false;if(documento.value&&documento.value!=='TCO')return false;if(aisc.value&&x.aisc!==aisc.value)return false;if(sisc.value&&x.sisc!==sisc.value)return false;if(setor.value&&x.setor!==setor.value)return false;if(companhia.value&&x.companhia!==companhia.value)return false;if(status.value&&x.status_atendimento!==status.value)return false;if(turno.value&&x.turno!==turno.value)return false;return campos.every(([id,get])=>!$(id).value||norm(get(x)).toLowerCase().includes($(id).value.toLowerCase()))})}
 function docsComTco(registros,tcos){let m=Object.fromEntries(rank(registros,'tipo_registro'));m.TCO=(m.TCO||0)+tcos.length;return Object.entries(m).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]))}
@@ -758,7 +797,7 @@ async function consultarEventosCipg(servicos){
   const lote=ids.slice(i,i+100);
   for(let offset=0;;offset+=passo){
    const r=await db.from('cipg_eventos_guarda')
-    .select('id,servico_id,data_evento,hora_evento,tipo_evento,graduacao,unidade_militar,em_servico,causa_motivo,conduzido_por,setor_atendimento,desfecho')
+    .select('id,servico_id,data_evento,hora_evento,tipo_evento,graduacao,unidade_militar,em_servico,causa_motivo,conduzido_por,setor_atendimento,desfecho,acionou_viatura')
     .in('servico_id',lote).order('id',{ascending:true}).range(offset,offset+passo-1);
    if(r.error)return {data:[],error:r.error};
    const linhas=r.data||[];dados.push(...linhas);
@@ -789,42 +828,13 @@ function renderCipg(){
  );
 }
 function renderCavalaria(){
-  if(!ehCavalaria())return;
-  const a=servicosCavalariaAtual||[],p=servicosCavalariaAnterior||[];
-  const tipos={POLICIAMENTO_MOTORIZADO:'Motorizado',POLICIAMENTO_MONTADO:'Montado',POLICIAMENTO_OPERACOES:'Operações',POLICIAMENTO_COMUNITARIO:'Comunitário'};
-  const contextos={ROTINA:'Rotina',EVENTO:'Evento / grande evento',VISITA_TECNICA:'Visita técnica / escola',ACAO_SOCIAL:'Ação social',REPRESENTACAO_INSTITUCIONAL:'Representação institucional',OUTRO:'Outro'};
-  const contarTipo=t=>a.filter(x=>x.tipo_policiamento===t).length;
-  const contarCtx=t=>a.filter(x=>x.contexto_atividade===t).length;
-  $('cavServicos').textContent=a.length;
-  $('cavServicosVariacao').textContent=comparar.value==='nenhum'?'':variacao(a.length,p.length)+' em relação ao comparado';
-  $('cavPessoas').textContent=soma(a,'abordagens_pessoas');
-  $('cavMontado').textContent=contarTipo('POLICIAMENTO_MONTADO');
-  $('cavMotorizado').textContent=contarTipo('POLICIAMENTO_MOTORIZADO');
-  $('cavOperacoes').textContent=contarTipo('POLICIAMENTO_OPERACOES');
-  $('cavComunitario').textContent=contarTipo('POLICIAMENTO_COMUNITARIO');
-  $('cavEventos').textContent=contarCtx('EVENTO');
-  $('cavRops').textContent=soma(a,'rops_produzidos');
-  $('cavMotos').textContent=soma(a,'abordagens_motos');
-  $('cavCarros').textContent=soma(a,'abordagens_carros');
-  $('cavRemovidos').textContent=soma(a,'veiculos_removidos');
-  $('cavForagidos').textContent=soma(a,'foragidos_presos');
-  $('cavArmas').textContent=soma(a,'armas_apreendidas');
-
-  const tipoItens=Object.entries(tipos);
-  chart('chartCavModalidades','doughnut',tipoItens.map(x=>x[1]),tipoItens.map(x=>contarTipo(x[0])),'Serviços',[CORES.steel,CORES.green,CORES.amber,CORES.teal]);
-  const ctxItens=Object.entries(contextos);
-  chart('chartCavContextos','doughnut',ctxItens.map(x=>x[1]),ctxItens.map(x=>contarCtx(x[0])),'Atividades',[CORES.blue,CORES.amber,CORES.teal,CORES.green,CORES.purple,CORES.gray]);
-
-  const dias={};a.forEach(x=>{const k=String(x.data_servico||'').slice(0,10);if(k)dias[k]=(dias[k]||0)+1});
-  const ord=Object.entries(dias).sort((x,y)=>x[0].localeCompare(y[0]));
-  chart('chartCavEvolucao','line',ord.map(x=>{const z=x[0].split('-');return z[2]+'/'+z[1]}),ord.map(x=>x[1]),'Serviços',CORES.green);
-
-  const locais=rank(a,x=>x.localidade,10);
-  rows('tabCavLocais',locais.map((x,i)=>'<tr><td class="rank">'+(i+1)+'º</td><td>'+esc(x[0])+'</td><td>'+x[1]+'</td></tr>').join(''));
-  const sols=rankListaCavalaria(a,'solipedes');
-  rows('tabCavSolipedes',sols.map((x,i)=>'<tr><td class="rank">'+(i+1)+'º</td><td>'+esc(x[0])+'</td><td>'+x[1]+'</td></tr>').join(''));
-  const vtrs=rankListaCavalaria(a,'viaturas');
-  rows('tabCavViaturas',vtrs.map((x,i)=>'<tr><td class="rank">'+(i+1)+'º</td><td>'+esc(x[0])+'</td><td>'+x[1]+'</td></tr>').join(''));
+ if(!ehCavalaria())return;
+ if(!window.CavalariaDashboard){console.error('Módulo estatístico da Cavalaria indisponível');return;}
+ window.CavalariaDashboard.render({
+  registros:filtrar(atual),anteriores:filtrar(anterior),
+  get:$,chart,rows,esc,drillNumero,abrirDetalhes,rankNaturezas,naturezasOcorrencia,
+  rank,soma,variacao,comparar:comparar.value,cores:CORES
+ });
 }
 function renderCiptur(){
   if(!ehCiptur())return;
@@ -943,6 +953,81 @@ function renderCipa(a,p){
     rows(tabela,valores.map(x=>'<tr><td>'+esc(x[0])+'</td><td>'+x[1]+'</td></tr>').join(''));
   }
 }
+function renderEscolas(registros){
+  const vistos=new Set(),grupos=new Map(),escolares=[];
+  (registros||[]).forEach((o,i)=>{
+    const id=o.id?String(o.id):"sem-id-"+i;
+    if(vistos.has(id))return;
+    vistos.add(id);
+    const nome=String(o.escola_nome||"").replace(/\s+/g," ").trim();
+    if(!nome)return;
+    escolares.push(o);
+    const k=o.escola_id?String(o.escola_id):"LEGADO:"+nome.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase();
+    if(!grupos.has(k))grupos.set(k,{nome,registros:[]});
+    grupos.get(k).registros.push(o);
+  });
+  const ordenados=[...grupos.values()].sort((a,b)=>b.registros.length-a.registros.length||a.nome.localeCompare(b.nome,"pt-BR"));
+  const faixas=["0–11 anos","12–14 anos","15–17 anos","18–24 anos","25–39 anos","40+ anos","Idade não informada"];
+  function faixa(v){
+    if(v===null||v===undefined||String(v).trim()==="")return 6;
+    const idade=Number(v);
+    if(!Number.isInteger(idade)||idade<0||idade>120)return 6;
+    return idade<=11?0:idade<=14?1:idade<=17?2:idade<=24?3:idade<=39?4:5;
+  }
+  const idades=papel=>{
+    const pessoas=listaPessoas(escolares,papel);
+    return faixas.map((_,i)=>pessoas.filter(p=>faixa(p.idade)===i).length);
+  };
+  const idVit=idades("vitima"),idInf=idades("infrator");
+  const menores=arr=>arr.slice(0,3).reduce((a,b)=>a+b,0);
+  $("cardsEscolas").innerHTML=
+    '<div class="card"><small>BOs em escolas</small><strong>'+escolares.length+'</strong></div>'+
+    '<div class="card teal"><small>Escolas identificadas</small><strong>'+ordenados.length+'</strong></div>'+
+    '<div class="card steel"><small>Vítimas menores de 18 (pessoas)</small><strong>'+menores(idVit)+'</strong></div>'+
+    '<div class="card amber"><small>Suspeitos/infratores menores de 18 (pessoas)</small><strong>'+menores(idInf)+'</strong></div>';
+  rows("tabEscolas",ordenados.length?ordenados.map(g=>{
+    const naturezas=rankNaturezas(g.registros,30).map(n=>esc(n[0])+' ('+n[1]+')').join('; ');
+    return '<tr><td>'+esc(g.nome)+'</td><td>'+drillNumero(g.registros.length,"Ocorrências na escola "+g.nome,g.registros)+'</td><td>'+ (naturezas||"Não informada")+'</td></tr>';
+  }).join(""):'<tr><td colspan="3">Nenhuma ocorrência escolar identificada neste recorte.</td></tr>');
+  const top=ordenados.slice(0,10);
+  chart("chartEscolas","bar",top.map(g=>g.nome),top.map(g=>g.registros.length),"Ocorrências por escola",CORES.teal,i=>{
+    if(top[i])abrirDetalhes("Ocorrências em "+top[i].nome,top[i].registros);
+  });
+  const naturezas=rankNaturezas(escolares,20);
+  rows("tabNaturezasEscolas",naturezas.length?naturezas.map(n=>{
+    const grupo=escolares.filter(o=>naturezasOcorrencia(o).includes(n[0]));
+    return '<tr><td>'+esc(n[0])+'</td><td>'+drillNumero(n[1],"Ocorrências escolares — "+n[0],grupo)+'</td></tr>';
+  }).join(""):'<tr><td colspan="2">Sem ocorrências escolares neste recorte.</td></tr>');
+  chart("chartIdadeVitimasEscolas","bar",faixas,idVit,"Vítimas (pessoas)",CORES.blue);
+  chart("chartIdadeInfratoresEscolas","bar",faixas,idInf,"Suspeitos/infratores (pessoas)",CORES.amber);
+}
+
+function renderEnvolvimentoFuncional(registros){
+  const modulo=window.SIEIndicadoresEnvolvimento;
+  const r=modulo?.resumir(registros);
+  if(!r||!r.autoridades){
+    $("coberturaEnvolvimentoFuncional").textContent="Indicadores indisponíveis; atualize a página.";
+    return;
+  }
+  const grupos=[
+    ["Policial como vítima",r.ocorrenciasVitimasPoliciais,CORES.blue],
+    ["Policial como suspeito/infrator",r.ocorrenciasInfratoresPoliciais,CORES.amber],
+    ["Autoridade como vítima",r.ocorrenciasVitimasAutoridades,CORES.purple],
+    ["Autoridade como suspeito/infrator",r.ocorrenciasInfratoresAutoridades,CORES.red]
+  ];
+  const todos=[...new Map([...r.ocorrenciasPoliciais,...r.ocorrenciasAutoridades].map(o=>[String(o.id),o])).values()];
+  $("cardsEnvolvimentoFuncional").innerHTML=
+    '<div class="card"><small>BOs com policial ou autoridade</small><strong>'+drillNumero(todos.length,"Ocorrências com policial ou autoridade",todos)+'</strong></div>'+
+    '<div class="card steel"><small>Com policiais</small><strong>'+drillNumero(r.policiais.total,"Ocorrências com policiais",r.ocorrenciasPoliciais)+'</strong></div>'+
+    '<div class="card teal"><small>Com autoridades</small><strong>'+drillNumero(r.autoridades.total,"Ocorrências com autoridades",r.ocorrenciasAutoridades)+'</strong></div>';
+  chart("chartEnvolvimentoFuncional","bar",grupos.map(x=>x[0]),grupos.map(x=>x[1].length),
+    "BOs por participação",grupos.map(x=>x[2]),i=>{if(grupos[i])abrirDetalhes(grupos[i][0],grupos[i][1]);});
+  $("coberturaEnvolvimentoFuncional").textContent=
+    r.policiais.classificados+" de "+r.policiais.novosCadastros+" BO(s) cadastrados desde 06/11/2026 possuem classificação funcional informada. "+
+    r.policiais.semClassificacao+" sem classificação; ausência de informação não significa ausência de policiais/autoridades. "+
+    "Os grupos por papel podem se sobrepor, mas o total de BOs é único.";
+}
+
 function renderOrigemPoliciais(registros){
   const modulo=window.SIEIndicadoresEnvolvimento;
   const r=modulo?.resumir(registros);
@@ -964,7 +1049,24 @@ function renderOrigemPoliciais(registros){
     'Sem BOs no recorte selecionado.';
 
 }
-function render(){drillActions.clear();drillSeq=0;let a=filtrar(atual),p=filtrar(anterior),ta=filtrarTcos(tcosAtual),tp=filtrarTcos(tcosAnterior);renderCiptur();renderCipturTor(a);renderGiroAbordagens();renderCavalaria();renderCipg();renderCipa(a,p);renderOrigemPoliciais(a);let at=a.filter(x=>x.status_atendimento!=='DEMANDA REPRIMIDA'),rep=a.filter(x=>x.status_atendimento==='DEMANDA REPRIMIDA');kTotal.textContent=a.length;kAtendidas.textContent=at.length;kReprimidas.textContent=rep.length;kDocumentos.textContent=a.length+ta.length;kConduzidos.textContent=soma(a,'conducoes_operacionais');vTotal.textContent=comparar.value==='nenhum'?'':`${variacao(a.length,p.length)} em relação ao comparado`;vincularCardDrill('kTotal','Todas as ocorrências do período',a);vincularCardDrill('kAtendidas','Ocorrências atendidas',at);vincularCardDrill('kReprimidas','Demandas reprimidas',rep);vincularCardDrill('kDocumentos','Documentos produzidos',documentosPeriodo(a,ta),{preservarDuplicados:true,subtitulo:'BOs, TCOs e demais documentos que compõem este indicador.'});vincularCardDrill('kConduzidos','Ocorrências com conduções',a.filter(x=>num(x.conducoes_operacionais)>0),{subtitulo:'Ocorrências que registraram uma ou mais conduções.'});
+function renderVilaJardim(base){
+ if(!ehPrimeiroBpm())return;
+ const a=(base||[]).filter(ehVilaJardim);
+ $('vjOcorrencias').innerHTML=drillNumero(a.length,'BOs atendidos pela guarnição VILA JARDIM',a);
+ $('vjConducoes').textContent=soma(a,'conducoes_operacionais');
+ $('vjOrientacoes').textContent=soma(a,'orientacoes');
+ $('vjVeiculos').textContent=soma(a,'veiculos_recuperados');
+ const top=rankNaturezas(a,12);
+ rows('tabVilaJardim',top.length?top.map(([nome,qtd])=>{
+   const g=a.filter(x=>naturezasOcorrencia(x).includes(nome));
+   return '<tr><td>'+esc(nome)+'</td><td>'+drillNumero(qtd,'VILA JARDIM — '+nome,g)+'</td></tr>';
+ }).join(''):'<tr><td colspan="2">Sem BOs classificados como VILA JARDIM neste período.</td></tr>');
+ chart('chartVilaJardim','bar',top.map(x=>x[0]),top.map(x=>x[1]),'Ocorrências',CORES.teal,i=>{
+   const nome=top[i]?.[0];
+   if(nome)abrirDetalhes('VILA JARDIM — '+nome,a.filter(x=>naturezasOcorrencia(x).includes(nome)));
+ });
+}
+function render(){drillActions.clear();drillSeq=0;let a=filtrar(atual).filter(x=>!ehCavalaria()||x.cavalaria_classe_registro==='OCORRENCIA'),p=filtrar(anterior).filter(x=>!ehCavalaria()||x.cavalaria_classe_registro==='OCORRENCIA'),ta=filtrarTcos(tcosAtual),tp=filtrarTcos(tcosAnterior);renderCiptur();renderCipturTor(a);renderGiroAbordagens();renderCavalaria();renderCipg();renderCipa(a,p);renderOrigemPoliciais(a);renderEnvolvimentoFuncional(a);renderEscolas(a);renderVilaJardim(a);let at=a.filter(x=>x.status_atendimento!=='DEMANDA REPRIMIDA'),rep=a.filter(x=>x.status_atendimento==='DEMANDA REPRIMIDA');kTotal.textContent=a.length;kAtendidas.textContent=at.length;kReprimidas.textContent=rep.length;kDocumentos.textContent=a.length+ta.length;kConduzidos.textContent=soma(a,'conducoes_operacionais');vTotal.textContent=comparar.value==='nenhum'?'':`${variacao(a.length,p.length)} em relação ao comparado`;vincularCardDrill('kTotal','Todas as ocorrências do período',a);vincularCardDrill('kAtendidas','Ocorrências atendidas',at);vincularCardDrill('kReprimidas','Demandas reprimidas',rep);vincularCardDrill('kDocumentos','Documentos produzidos',documentosPeriodo(a,ta),{preservarDuplicados:true,subtitulo:'BOs, TCOs e demais documentos que compõem este indicador.'});vincularCardDrill('kConduzidos','Ocorrências com conduções',a.filter(x=>num(x.conducoes_operacionais)>0),{subtitulo:'Ocorrências que registraram uma ou mais conduções.'});
 let docs=docsComTco(a,ta),docsP=Object.fromEntries(docsComTco(p,tp));let docsLista=documentosPeriodo(a,ta);function listaDoc(tipo){return tipo==='TCO'?ta.map(t=>({...t,_doc:'TCO',id:t.ocorrencia_id||t.id})):a.filter(o=>norm(o.tipo_registro)===tipo).map(o=>({...o,_doc:tipo}))}rows('tabDocs',docs.map(x=>`<tr><td>${esc(x[0])}</td><td>${drillNumero(x[1],'Documentos '+x[0],listaDoc(x[0]),{preservarDuplicados:true})}</td><td>${docsP[x[0]]||0}</td><td class="${classeVariacao('Documentos produzidos',x[1],docsP[x[0]]||0)}">${variacao(x[1],docsP[x[0]]||0)}</td></tr>`).join(''));chart('chartDocs','doughnut',docs.map(x=>x[0]),docs.map(x=>x[1]),'Documentos',docs.map(x=>corDocumento(x[0])),idx=>abrirDetalhes('Documentos '+docs[idx][0],listaDoc(docs[idx][0]),{preservarDuplicados:true}));
 let ocorr=rankNaturezas(a,15);rows('tabOcorrencias',ocorr.map((x,i)=>{let g=a.filter(y=>naturezasOcorrencia(y).includes(x[0])),bs=rank(g,x=>normalizarBairro(x.bairro),3).map(z=>z[0]).join(' / '),idades=listaPessoas(g,'infrator').map(y=>num(y.idade)).filter(Boolean);return `<tr><td class="rank">${i+1}º</td><td>${esc(x[0])}</td><td>${drillNumero(x[1],x[0],g)}</td><td>${esc(bs)}</td><td>${idades.length?Math.min(...idades)+' a '+Math.max(...idades)+' anos':'NI'}</td></tr>`}).join(''));let ocorrTop=ocorr.slice(0,10);chart('chartOcorrencias','bar',ocorrTop.map(x=>x[0]),ocorrTop.map(x=>x[1]),'Ocorrências',CORES.blue,idx=>{let nome=ocorrTop[idx][0];abrirDetalhes(nome,a.filter(y=>naturezasOcorrencia(y).includes(nome)))});
 let bs=rank(a,x=>normalizarBairro(x.bairro),999),bp=Object.fromEntries(rank(p,x=>normalizarBairro(x.bairro)));rows('tabBairros',bs.map((x,i)=>{let g=a.filter(y=>normalizarBairro(y.bairro)===x[0]);return `<tr><td class="rank">${i+1}º</td><td>${esc(x[0])}</td><td>${drillNumero(x[1],'Ocorrências no bairro '+x[0],g)}</td><td>${a.length?(x[1]*100/a.length).toFixed(1):0}%</td><td>${bp[x[0]]||0}</td><td class="${cls(x[1],bp[x[0]]||0)}">${variacao(x[1],bp[x[0]]||0)}</td></tr>`}).join(''));let bairrosTop=bs.slice(0,12);chart('chartBairros','bar',bairrosTop.map(x=>x[0]),bairrosTop.map(x=>x[1]),'Bairros',CORES.teal,idx=>{let nome=bairrosTop[idx][0];abrirDetalhes('Ocorrências no bairro '+nome,a.filter(y=>normalizarBairro(y.bairro)===nome))});
@@ -980,6 +1082,7 @@ const gaComp=filtrarAbordagensGiro(abordagensGiroAtual),gpComp=filtrarAbordagens
 let comparativos=[indicador('Total de ocorrências',a.length,p.length),indicador('TCOs produzidos',ta.length,tp.length),indicador('Documentos produzidos',a.length+ta.length,p.length+tp.length),...pro.map(x=>indicador(x[0],soma(a,x[1]),soma(p,x[1]))),indicador('Armas de fogo',totaisCategoriasArmas(a).fogo,totaisCategoriasArmas(p).fogo),indicador('Simulacros',totaisCategoriasArmas(a).simulacro,totaisCategoriasArmas(p).simulacro),indicador('Armas/simulacros sem classificação (legado)',totaisCategoriasArmas(a).legado,totaisCategoriasArmas(p).legado),indicador('Ocorrências com entorpecentes',a.filter(temEntorpecente).length,p.filter(temEntorpecente).length)];
 if(ehGiro())comparativos.push(indicador('Abordagens',gaComp.length,gpComp.length),indicador('Pessoas abordadas',gaComp.reduce((s,x)=>s+num(x.quantidade_pessoas),0),gpComp.reduce((s,x)=>s+num(x.quantidade_pessoas),0)),indicador('Abordagens a pé',gaComp.filter(x=>x.tipo_abordagem==='A_PE').length,gpComp.filter(x=>x.tipo_abordagem==='A_PE').length),indicador('Motocicletas abordadas',gaComp.filter(x=>x.tipo_abordagem==='MOTO').length,gpComp.filter(x=>x.tipo_abordagem==='MOTO').length),indicador('Veículos abordados',gaComp.filter(x=>x.tipo_abordagem==='VEICULO').length,gpComp.filter(x=>x.tipo_abordagem==='VEICULO').length));
 else comparativos.push(indicador('Classificação AME',a.filter(ehAme).length,p.filter(ehAme).length));
+ if(ehPrimeiroBpm())comparativos.push(indicador('Guarnição VILA JARDIM',a.filter(ehVilaJardim).length,p.filter(ehVilaJardim).length));
 rows('tabComparativo',comparativos.join(''));loading.style.display='none'}
 function dadosPessoaInformados(n,s,i){return [n,s,i].some(v=>!ehNaoInformado(v))}
 function listaPessoas(a,prefix){
@@ -1073,10 +1176,22 @@ async function carregar(){loading.style.display='grid';loading.textContent='Carr
     }
   }
   if(ehCipg()){
-    const campos='id,data_servico,instituicao,posto_codigo,tipo_local,modalidade,situacao,regime,numero_sei,turno_cipg,efetivo_ordinario,efetivo_svi,km_inicial,km_final,km_rodados,litros_abastecidos,rondas_realizadas,intercorrencias,viatura,saidas_autorizadas,alteracao_pessoal,alteracao_instalacoes,alteracao_material,recebeu_de,passou_para,outros_solicitacoes';
+    const campos='id,criado_por,codigo_relatorio,data_servico,instituicao,posto_codigo,tipo_local,modalidade,situacao,regime,numero_sei,turno_cipg,efetivo_ordinario,efetivo_svi,km_inicial,km_final,km_rodados,litros_abastecidos,rondas_realizadas,intercorrencias,viatura,saidas_autorizadas,alteracao_pessoal,alteracao_instalacoes,alteracao_material,recebeu_de,passou_para,outros_solicitacoes';
     const a=await consultarCipaPaginado('cipg_servicos_guarda',campos,'data_servico',ini.value,fim.value);
     if(a.error){loading.textContent='Erro ao carregar produtividade da CIPG: '+a.error.message;return}
     servicosCipgAtual=a.data||[];
+    const authCipg=await window.SistemaAuth.ready;
+    const perfilCipg=String(authCipg?.perfil?.perfil||'').toUpperCase();
+    if(['ADMIN','ESTATISTICA'].includes(perfilCipg)&&$('cipgFiltroPolicial')){
+      const sel=$('cipgFiltroPolicial'),anterior=sel.value;
+      const autores=await db.rpc('cipg_autoria_servicos',{p_inicio:ini.value,p_fim:fim.value,p_policial:null});
+      if(!autores.error){
+        const nomes=new Map();for(const x of autores.data||[])nomes.set(x.policial_id,[x.posto_graduacao,x.nome_guerra||x.nome_completo||'Sem identificação'].filter(Boolean).join(' '));
+        sel.replaceChildren(new Option('Todos',''));for(const [id,nome] of [...nomes].sort((a,b)=>a[1].localeCompare(b[1],'pt-BR')))sel.add(new Option(nome,id));
+        if(nomes.has(anterior))sel.value=anterior;
+        $('cipgPolicialWrap').hidden=false;
+      }else{sel.value='';$('cipgPolicialWrap').hidden=true;console.warn('Filtro de autoria CIPG indisponível',autores.error.message);}
+    }
     const evt=await consultarEventosCipg(servicosCipgAtual);
     if(evt.error){loading.textContent='Erro ao carregar acontecimentos CIPG: '+evt.error.message;return}
     eventosCipgAtual=evt.data||[];
@@ -1098,14 +1213,8 @@ async function carregar(){loading.style.display='grid';loading.textContent='Carr
     abordagensGiroAtual=gr[0].data||[];
     abordagensGiroAnterior=temComparacao?(gr[1].data||[]):[];
   }
-  if(ehCavalaria()){
-    let cCalls=[db.from('cavalaria_servicos_produtividade').select('id,data_servico,hora_inicio,hora_fim,tipo_policiamento,contexto_atividade,localidade,bairro,endereco,numero_documento,comandante,guarnicao,solipedes,viaturas,abordagens_pessoas,abordagens_motos,abordagens_carros,rops_produzidos,veiculos_removidos,foragidos_presos,armas_apreendidas').gte('data_servico',ini.value).lte('data_servico',fim.value)];
-    if(temComparacao)cCalls.push(db.from('cavalaria_servicos_produtividade').select('id,data_servico,hora_inicio,hora_fim,tipo_policiamento,contexto_atividade,localidade,bairro,endereco,numero_documento,comandante,guarnicao,solipedes,viaturas,abordagens_pessoas,abordagens_motos,abordagens_carros,rops_produzidos,veiculos_removidos,foragidos_presos,armas_apreendidas').gte('data_servico',pc[0]).lte('data_servico',pc[1]));
-    const cr=await Promise.all(cCalls);
-    if(cr[0].error){loading.textContent='Erro ao carregar produtividade da Cavalaria: '+cr[0].error.message;return}
-    servicosCavalariaAtual=cr[0].data||[];
-    servicosCavalariaAnterior=temComparacao?(cr[1].data||[]):[];
-  }
+  // O cadastro unificado da Cavalaria já está no payload de ocorrências.
+  // A tabela legada permanece preservada no banco, sem consultas paralelas.
   if(ehCiptur()){
     let aiCalls=[db.from('ciptur_autos_infracao').select('id,data_infracao,codigo_infracao,descricao_snapshot,gravidade_snapshot,pontos_snapshot,valor_snapshot,valor_texto_snapshot,houve_remocao,tipo_veiculo_removido').gte('data_infracao',ini.value).lte('data_infracao',fim.value)];
     if(temComparacao)aiCalls.push(db.from('ciptur_autos_infracao').select('id,data_infracao,codigo_infracao,descricao_snapshot,gravidade_snapshot,pontos_snapshot,valor_snapshot,valor_texto_snapshot,houve_remocao,tipo_veiculo_removido').gte('data_infracao',pc[0]).lte('data_infracao',pc[1]));
