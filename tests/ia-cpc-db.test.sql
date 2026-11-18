@@ -109,38 +109,80 @@ SELECT public.ci_assert(
 UPDATE public.perfis_usuarios SET unidade_id='00000000-0000-4000-8000-000000000101'
  WHERE user_id='00000000-0000-4000-8000-000000000002';
 
--- Teto mensal, reserva atômica e reconciliação
-TRUNCATE private.ia_cpc_consumo;
-INSERT INTO private.ia_cpc_consumo
- (usuario_id,modelo,mes_referencia,reserva_centavos,estado)
- VALUES ('00000000-0000-4000-8000-000000000001','gpt-5.6-luna',
- date_trunc('month',now() AT TIME ZONE 'America/Boa_Vista')::date,9975,'reservado');
-
+-- Carteira vazia: não existe crédito automático, nem saldo de R$100 implícito.
 SELECT public.ci_assert(
- (public.ia_cpc_reservar_orcamento(
- '00000000-0000-4000-8000-000000000001','gpt-5.6-luna',26)->>'motivo')
- = 'limite_orcamento','recusa chamada que ultrapassa R$100');
-DO $do$ DECLARE res jsonb; id_reserva uuid; fechamento jsonb;
+ (public.ia_cpc_reservar_orcamento('00000000-0000-4000-8000-000000000001','gpt-5.6-luna',1)->>'motivo')='limite_orcamento',
+ 'saldo zero deve bloquear reserva');
+SELECT public.ci_assert(
+ NOT has_function_privilege('authenticated','private.ia_cpc_registrar_recarga(text,integer,timestamptz,timestamptz)','EXECUTE')
+ AND NOT has_function_privilege('service_role','private.ia_cpc_registrar_recarga(text,integer,timestamptz,timestamptz)','EXECUTE')
+ AND NOT has_table_privilege('authenticated','private.ia_cpc_recargas','INSERT')
+ AND NOT has_table_privilege('service_role','private.ia_cpc_recargas','INSERT'),
+ 'apenas DBA pode registrar recarga verificada');
+SELECT public.ci_assert(
+ NOT has_function_privilege('authenticated','public.ia_cpc_consultar_saldo(uuid)','EXECUTE')
+ AND has_function_privilege('service_role','public.ia_cpc_consultar_saldo(uuid)','EXECUTE'),
+ 'saldo é consultado apenas pelo backend autorizado');
+SELECT public.ci_assert(
+ (public.ia_cpc_consultar_saldo('00000000-0000-4000-8000-000000000003')->>'motivo')='nao_autorizado',
+ 'conta não designada não pode consultar saldo');
+SELECT private.ia_cpc_registrar_recarga('CI-RECARGA-1',10000,now()-interval '1 day',now()+interval '364 days');
+SELECT public.ci_assert((private.ia_cpc_saldo_interno()->>'restante_centavos')::int=10000,'recarga comprovada de R$100');
+DO $do$ DECLARE bloqueado boolean:=false;
 BEGIN
- res:=public.ia_cpc_reservar_orcamento(
- '00000000-0000-4000-8000-000000000001','gpt-5.6-luna',25);
- PERFORM public.ci_assert(res->>'permitido'='true','aceitar reserva até R$100');
- PERFORM public.ci_assert(res->>'alerta_80'='true','alerta ao atingir R$80');
- PERFORM public.ci_assert((res->>'restante_centavos')::int=0,'sem saldo após teto');
- id_reserva:=(res->>'reserva_id')::uuid;
- fechamento:=public.ia_cpc_finalizar_custo(
- id_reserva,'00000000-0000-4000-8000-000000000001',20,200,600);
- PERFORM public.ci_assert(fechamento->>'ok'='true','reconciliar custo registrado');
- PERFORM public.ci_assert(
- public.ia_cpc_finalizar_custo(id_reserva,'00000000-0000-4000-8000-000000000001',20,200,600)
- ->>'motivo'='reserva_invalida','impedir dupla finalização');
+ BEGIN
+  PERFORM private.ia_cpc_registrar_recarga('CI-RECARGA-1',10000,now()-interval '1 day',now()+interval '364 days');
+ EXCEPTION WHEN unique_violation THEN bloqueado:=true;
+ END;
+ PERFORM public.ci_assert(bloqueado,'referência repetida não dobra crédito');
 END $do$;
-SELECT public.ci_assert((SELECT sum(
- CASE WHEN estado='finalizado' THEN custo_final_centavos ELSE reserva_centavos END)
- FROM private.ia_cpc_consumo)<=10000,'nunca superar orçamento comprometido');
+DO $do$ DECLARE r jsonb; fechamento jsonb; id_reserva uuid;
+BEGIN
+ r:=public.ia_cpc_reservar_orcamento('00000000-0000-4000-8000-000000000001','gpt-5.6-luna',100);
+ PERFORM public.ci_assert((r->>'restante_centavos')::int=9900,'reserva desconta saldo');
+ id_reserva:=(r->>'reserva_id')::uuid;
+ fechamento:=public.ia_cpc_finalizar_custo(id_reserva,'00000000-0000-4000-8000-000000000001',20,200,600);
+ PERFORM public.ci_assert(fechamento->>'ok'='true' AND (fechamento->>'restante_centavos')::int=9980,'libera diferença não consumida');
+ PERFORM public.ci_assert(public.ia_cpc_finalizar_custo(id_reserva,'00000000-0000-4000-8000-000000000001',20,200,600)->>'motivo'='reserva_invalida','rejeita dupla finalização');
+ -- Simula débito registrado no mês passado sem alterar relógio do servidor.
+ UPDATE private.ia_cpc_consumo SET mes_referencia=(date_trunc('month',now() AT TIME ZONE 'America/Boa_Vista')-interval '1 month')::date,
+   criado_em=now()-interval '1 month' WHERE id=id_reserva;
+ PERFORM public.ci_assert((private.ia_cpc_saldo_interno()->>'restante_centavos')::int=9980,'virada de mês não renova ou zera saldo');
+END $do$;
+SELECT private.ia_cpc_registrar_recarga('CI-RECARGA-2',10000,now()-interval '1 day',now()+interval '364 days');
+SELECT public.ci_assert((private.ia_cpc_saldo_interno()->>'restante_centavos')::int=19980,'nova recarga acumula saldo anterior');
+-- Testes com lotes fracionados, vencidos e vencimento após reserva.
+TRUNCATE private.ia_cpc_alocacoes,private.ia_cpc_consumo,private.ia_cpc_recargas;
+SELECT private.ia_cpc_registrar_recarga('CI-LOTE-1',10,now()-interval '2 days',now()+interval '1 day');
+SELECT private.ia_cpc_registrar_recarga('CI-LOTE-2',15,now()-interval '1 day',now()+interval '2 days');
+INSERT INTO private.ia_cpc_recargas(referencia,valor_centavos,comprado_em,expira_em)
+ VALUES('CI-VENCIDO',10000,now()-interval '2 days',now()-interval '1 day');
+SELECT public.ci_assert((private.ia_cpc_saldo_interno()->>'restante_centavos')::int=25,'excluir lote vencido');
+SELECT public.ci_assert((public.ia_cpc_reservar_orcamento('00000000-0000-4000-8000-000000000001','gpt-5.6-luna',26)->>'motivo')='limite_orcamento','saldo insuficiente recusa');
+DO $do$ DECLARE r jsonb; id_reserva uuid; f jsonb;
+BEGIN
+ r:=public.ia_cpc_reservar_orcamento('00000000-0000-4000-8000-000000000001','gpt-5.6-luna',25);
+ id_reserva:=(r->>'reserva_id')::uuid;
+ PERFORM public.ci_assert(r->>'permitido'='true' AND (r->>'restante_centavos')::int=0 AND r->>'saldo_baixo'='true','combinou lotes e acionou alerta');
+ PERFORM public.ci_assert((SELECT count(*) FROM private.ia_cpc_alocacoes WHERE consumo_id=id_reserva)=2,'reserva dividida em dois lotes');
+ UPDATE private.ia_cpc_recargas SET expira_em=now()-interval '1 hour' WHERE referencia='CI-LOTE-2';
+ f:=public.ia_cpc_finalizar_custo(id_reserva,'00000000-0000-4000-8000-000000000001',10,200,600);
+ PERFORM public.ci_assert(f->>'ok'='true' AND (f->>'restante_centavos')::int=0,'estorno de lote vencido não recria crédito');
+END $do$;
+-- Extrapolação de custo é registrada e congela toda a carteira.
+TRUNCATE private.ia_cpc_alocacoes,private.ia_cpc_consumo,private.ia_cpc_recargas;
+SELECT private.ia_cpc_registrar_recarga('CI-BLOQUEIO',10000,now()-interval '1 day',now()+interval '100 days');
+DO $do$ DECLARE r jsonb; f jsonb;
+BEGIN
+ r:=public.ia_cpc_reservar_orcamento('00000000-0000-4000-8000-000000000001','gpt-5.6-luna',5);
+ f:=public.ia_cpc_finalizar_custo((r->>'reserva_id')::uuid,'00000000-0000-4000-8000-000000000001',6,200,600);
+ PERFORM public.ci_assert(f->>'bloqueado_conciliacao'='true' AND f->>'restante_centavos'='0','extrapolação trava carteira');
+ PERFORM public.ci_assert((SELECT custo_final_centavos FROM private.ia_cpc_consumo WHERE id=(r->>'reserva_id')::uuid)=6,'custo excedido preservado no histórico');
+ PERFORM public.ci_assert((public.ia_cpc_reservar_orcamento('00000000-0000-4000-8000-000000000001','gpt-5.6-luna',1)->>'motivo')='conciliacao_pendente','não libera chamada até conciliar');
+END $do$;
 
 -- Janela de três consultas por minuto.
-TRUNCATE private.ia_cpc_consumo;
+TRUNCATE private.ia_cpc_alocacoes,private.ia_cpc_consumo;
 INSERT INTO private.ia_cpc_consumo
  (usuario_id,modelo,mes_referencia,reserva_centavos,estado)
  SELECT '00000000-0000-4000-8000-000000000001','gpt-5.6-luna',
@@ -152,7 +194,7 @@ SELECT public.ci_assert(
  = 'limite_consultas','bloquear quarta chamada no minuto');
 
 -- Vinte consultas no dia: nenhuma chamada adicional deve passar.
-TRUNCATE private.ia_cpc_consumo;
+TRUNCATE private.ia_cpc_alocacoes,private.ia_cpc_consumo;
 INSERT INTO private.ia_cpc_consumo
   (usuario_id,modelo,mes_referencia,reserva_centavos,estado,criado_em)
 SELECT '00000000-0000-4000-8000-000000000001','gpt-5.6-luna',
@@ -167,7 +209,7 @@ SELECT public.ci_assert(
  = 'limite_consultas','bloquear consulta adicional após vinte no dia');
 
 -- Trezentas consultas globais no mês, divididas entre duas contas.
-TRUNCATE private.ia_cpc_consumo;
+TRUNCATE private.ia_cpc_alocacoes,private.ia_cpc_consumo;
 INSERT INTO private.ia_cpc_consumo
  (usuario_id,modelo,mes_referencia,reserva_centavos,estado,criado_em)
 SELECT CASE WHEN n%2=0
