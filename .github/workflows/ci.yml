@@ -97,7 +97,7 @@ jobs:
         run: |
           set -euo pipefail
           # Recria apenas o saldo de um banco de TESTES descartável.
-          psql -v ON_ERROR_STOP=1 -c "TRUNCATE private.ia_cpc_alocacoes,private.ia_cpc_consumo,private.ia_cpc_recargas"
+          psql -v ON_ERROR_STOP=1 -c "TRUNCATE private.ia_cpc_conciliacoes,private.ia_cpc_alocacoes,private.ia_cpc_consumo,private.ia_cpc_recargas"
           psql -v ON_ERROR_STOP=1 -c "SELECT private.ia_cpc_registrar_recarga('CI-CONCORRENCIA',25,now()-interval '1 day',now()+interval '1 day')"
           SQL_CONCORRENTE="SELECT public.ia_cpc_reservar_orcamento('00000000-0000-4000-8000-000000000001','gpt-5.6-luna',25)->>'permitido'"
           psql -v ON_ERROR_STOP=1 -Atqc "$SQL_CONCORRENTE" > "$RUNNER_TEMP/ia-cpc-simultanea-1.log" &
