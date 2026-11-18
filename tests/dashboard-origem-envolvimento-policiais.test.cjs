@@ -8,7 +8,7 @@ const mod=context.SIEIndicadoresEnvolvimento;
 assert.ok(mod,"Módulo compartilhado carregado");
 const marcador="[[PESSOAS_ENVOLVIDAS]]";
 const bo=(id,origem,dados={})=>({
-  id,origem_acionamento:origem,
+  id,origem_acionamento:origem,criado_em:"2026-11-06T04:00:00.000Z",
   observacao_final:Object.keys(dados).length?"Relato documental\n"+marcador+JSON.stringify(dados):"Relato com referência à equipe policial e ao CICC."
 });
 const institucional=(situacao,tipo)=>({situacao,tipo});
@@ -40,6 +40,12 @@ assert.equal(mod.classificarOcorrencia(bo("n","DESCONHECIDA")).origem,"NAO_INFOR
 assert.equal(mod.classificarOcorrencia(bo("q",null,{institucionaisPrincipais:{vitima:institucional("SIM","MILITAR_FORCAS_ARMADAS")}})).envolvePolicial,false,"Militar das forças armadas não é automaticamente policial");
 assert.equal(mod.classificarOcorrencia(bo("x",null,{institucionaisPrincipais:{infrator:institucional("SIM","OUTRA_AUTORIDADE")}})).envolvePolicial,false,"Outra autoridade não é policial");
 assert.equal(mod.resumir([]).total,0);
+const antigo={...bo("legado","CICC",{institucionaisPrincipais:{vitima:institucional("SIM","POLICIAL_MILITAR")}}),criado_em:"2026-11-06T03:59:59.999Z"};
+const legado=mod.resumir([antigo]);
+assert.equal(legado.origens.CICC,1,"Origem histórica continua contabilizada");
+assert.equal(legado.policiais.novosCadastros,0,"Registro anterior ao marco não é elegível");
+assert.equal(legado.policiais.total,0,"Não reclassificar envolvimento histórico");
+assert.equal(mod.classificarOcorrencia({...antigo,criado_em:null}).envolvePolicial,false,"Sem data de cadastro não presumir elegibilidade");
 
 const routed=fs.readFileSync(path.join(root,"cadastro.html"),"utf8");
 const cadastro=fs.readFileSync(path.join(root,"cadastro-base.html"),"utf8");
