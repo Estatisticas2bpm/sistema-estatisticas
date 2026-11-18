@@ -79,14 +79,18 @@ function mockSupabase(s:Situacao) {
      if(s.erroPermissao)return RESPOSTA({code:"PGRST202",message:"simulado"},404);
      return RESPOSTA(AUTORIZADOS.has(s.userId));
    }
+   if(rota==="/rest/v1/rpc/ia_cpc_consultar_saldo"){
+     return RESPOSTA({permitido:true,creditos_validos_centavos:0,consumo_comprometido_centavos:0,
+       restante_centavos:0,saldo_baixo:true,bloqueado_conciliacao:false});
+   }
    if(rota==="/rest/v1/rpc/ia_cpc_reservar_orcamento"){
      if(s.recusarOrcamento)return RESPOSTA({permitido:false,motivo:"limite_orcamento",
        restante_centavos:0});
      return RESPOSTA({permitido:true,reserva_id:"00000000-0000-4000-8000-000000000999",
-       restante_dia:19,restante_mes_global:299,restante_centavos:9875,alerta_80:false});
+       restante_dia:19,restante_mes_global:299,restante_centavos:9875,saldo_baixo:false,creditos_validos_centavos:10000,consumo_comprometido_centavos:125});
    }
    if(rota==="/rest/v1/rpc/ia_cpc_finalizar_custo"){
-     return RESPOSTA({ok:true,restante_centavos:9900,alerta_80:false});
+     return RESPOSTA({ok:true,restante_centavos:9900,saldo_baixo:false,creditos_validos_centavos:10000,consumo_comprometido_centavos:125});
    }
    if(rota==="/rest/v1/unidades")
      return RESPOSTA(s.falhaCatalogo?{message:"Erro em catálogo"}:
@@ -249,4 +253,14 @@ Deno.test("Fluxo autorizado: sessão, perfil, agregados, reserva e chamada SIMUL
    "Identificadores fictícios de BOs também não saem do sistema");
  assert(!entrada.includes("historico_resumido"));
  assertStringIncludes(entrada,"exclusivamente_preliminar");
+});
+
+Deno.test("Saldo pré-pago sem cobrança, sem BO e protegido pela autorização",async()=>{
+ const x=await requisitar({userId:ID_ADMIN},{corpo:{acao:"saldo"}});
+ assertEquals(x.status,200);assertEquals(x.dados.cota.restante_centavos,0);
+ assertEquals(x.dados.sem_cobranca,true);
+ assert(!x.chamadas.some(t=>t.includes("api.openai.com")||t.includes("/rest/v1/ocorrencias")||t.includes("ia_cpc_reservar_orcamento")));
+ const negado=await requisitar({userId:ID_OUTRO_ADMIN},{corpo:{acao:"saldo"}});
+ assertEquals(negado.status,403);
+ assert(!negado.chamadas.some(t=>t.includes("ia_cpc_consultar_saldo")));
 });
