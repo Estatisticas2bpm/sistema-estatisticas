@@ -152,7 +152,7 @@ END $do$;
 SELECT private.ia_cpc_registrar_recarga('CI-RECARGA-2',10000,now()-interval '1 day',now()+interval '364 days');
 SELECT public.ci_assert((private.ia_cpc_saldo_interno()->>'restante_centavos')::int=19980,'nova recarga acumula saldo anterior');
 -- Testes com lotes fracionados, vencidos e vencimento após reserva.
-TRUNCATE private.ia_cpc_alocacoes,private.ia_cpc_consumo,private.ia_cpc_recargas;
+TRUNCATE private.ia_cpc_conciliacoes,private.ia_cpc_alocacoes,private.ia_cpc_consumo,private.ia_cpc_recargas;
 SELECT private.ia_cpc_registrar_recarga('CI-LOTE-1',10,now()-interval '2 days',now()+interval '1 day');
 SELECT private.ia_cpc_registrar_recarga('CI-LOTE-2',15,now()-interval '1 day',now()+interval '2 days');
 INSERT INTO private.ia_cpc_recargas(referencia,valor_centavos,comprado_em,expira_em)
@@ -170,7 +170,7 @@ BEGIN
  PERFORM public.ci_assert(f->>'ok'='true' AND (f->>'restante_centavos')::int=0,'estorno de lote vencido não recria crédito');
 END $do$;
 -- Extrapolação de custo é registrada e congela toda a carteira.
-TRUNCATE private.ia_cpc_alocacoes,private.ia_cpc_consumo,private.ia_cpc_recargas;
+TRUNCATE private.ia_cpc_conciliacoes,private.ia_cpc_alocacoes,private.ia_cpc_consumo,private.ia_cpc_recargas;
 SELECT private.ia_cpc_registrar_recarga('CI-BLOQUEIO',10000,now()-interval '1 day',now()+interval '100 days');
 DO $do$ DECLARE r jsonb; f jsonb;
 BEGIN
@@ -182,7 +182,7 @@ BEGIN
 END $do$;
 
 -- Janela de três consultas por minuto.
-TRUNCATE private.ia_cpc_alocacoes,private.ia_cpc_consumo;
+TRUNCATE private.ia_cpc_conciliacoes,private.ia_cpc_alocacoes,private.ia_cpc_consumo;
 INSERT INTO private.ia_cpc_consumo
  (usuario_id,modelo,mes_referencia,reserva_centavos,estado)
  SELECT '00000000-0000-4000-8000-000000000001','gpt-5.6-luna',
@@ -194,7 +194,7 @@ SELECT public.ci_assert(
  = 'limite_consultas','bloquear quarta chamada no minuto');
 
 -- Vinte consultas no dia: nenhuma chamada adicional deve passar.
-TRUNCATE private.ia_cpc_alocacoes,private.ia_cpc_consumo;
+TRUNCATE private.ia_cpc_conciliacoes,private.ia_cpc_alocacoes,private.ia_cpc_consumo;
 INSERT INTO private.ia_cpc_consumo
   (usuario_id,modelo,mes_referencia,reserva_centavos,estado,criado_em)
 SELECT '00000000-0000-4000-8000-000000000001','gpt-5.6-luna',
@@ -209,7 +209,7 @@ SELECT public.ci_assert(
  = 'limite_consultas','bloquear consulta adicional após vinte no dia');
 
 -- Trezentas consultas globais no mês, divididas entre duas contas.
-TRUNCATE private.ia_cpc_alocacoes,private.ia_cpc_consumo;
+TRUNCATE private.ia_cpc_conciliacoes,private.ia_cpc_alocacoes,private.ia_cpc_consumo;
 INSERT INTO private.ia_cpc_consumo
  (usuario_id,modelo,mes_referencia,reserva_centavos,estado,criado_em)
 SELECT CASE WHEN n%2=0
@@ -227,5 +227,53 @@ SELECT public.ci_assert(
 SELECT public.ci_assert(
  (SELECT count(*) FROM private.ia_cpc_consumo)=300,
  'limite global não criou reserva excedente');
+
+
+-- Conciliação manual: acesso privado, idade mínima, auditoria e preservação do saldo.
+TRUNCATE private.ia_cpc_conciliacoes,private.ia_cpc_alocacoes,private.ia_cpc_consumo,private.ia_cpc_recargas;
+SELECT private.ia_cpc_registrar_recarga('CI-CONCILIACAO',10000,now()-interval '3 days',now()+interval '90 days');
+SELECT public.ci_assert(NOT has_function_privilege('anon','private.ia_cpc_conciliar_reserva(uuid,text,integer,integer,integer)','EXECUTE'),'anon não concilia');
+SELECT public.ci_assert(NOT has_function_privilege('authenticated','private.ia_cpc_conciliar_reserva(uuid,text,integer,integer,integer)','EXECUTE'),'usuário comum não concilia');
+SELECT public.ci_assert(NOT has_function_privilege('service_role','private.ia_cpc_conciliar_reserva(uuid,text,integer,integer,integer)','EXECUTE'),'Edge não tem autoridade para conciliação administrativa');
+SELECT public.ci_assert(NOT has_table_privilege('service_role','private.ia_cpc_conciliacoes','UPDATE'),'Edge não altera histórico administrativo');
+DO $manual$ DECLARE r jsonb; f jsonb; id1 uuid; id2 uuid; id3 uuid; bloqueou boolean;
+BEGIN
+ r:=public.ia_cpc_reservar_orcamento('00000000-0000-4000-8000-000000000001','gpt-5.6-luna',100);
+ id1:=(r->>'reserva_id')::uuid;
+ PERFORM public.ci_assert(id1 IS NOT NULL,'reserva sintética criada');
+ bloqueou:=false;
+ BEGIN PERFORM private.ia_cpc_conciliar_reserva(id1,'CI-EVIDENCIA-001',0,0,0);
+ EXCEPTION WHEN raise_exception THEN bloqueou:=true; END;
+ PERFORM public.ci_assert(bloqueou,'reserva recente não pode ser conciliada manualmente');
+ PERFORM public.ci_assert((private.ia_cpc_saldo_interno()->>'restante_centavos')::int=9900,'tentativa recusada não libera saldo');
+ UPDATE private.ia_cpc_consumo SET criado_em=now()-interval '25 hours' WHERE id=id1;
+ f:=private.ia_cpc_conciliar_reserva(id1,'CI-EVIDENCIA-001',25,100,50);
+ PERFORM public.ci_assert(f->>'ok'='true' AND (f->>'restante_centavos')::int=9975,'libera apenas diferença da reserva');
+ PERFORM public.ci_assert(EXISTS(SELECT 1 FROM private.ia_cpc_conciliacoes WHERE consumo_id=id1 AND reserva_original_centavos=100 AND custo_confirmado_centavos=25),'auditoria registra antes e depois');
+ bloqueou:=false;
+ BEGIN PERFORM private.ia_cpc_conciliar_reserva(id1,'CI-EVIDENCIA-002',0,0,0);
+ EXCEPTION WHEN raise_exception THEN bloqueou:=true; END;
+ PERFORM public.ci_assert(bloqueou,'reserva finalizada não pode ser conciliada novamente');
+ r:=public.ia_cpc_reservar_orcamento('00000000-0000-4000-8000-000000000001','gpt-5.6-luna',100);
+ id2:=(r->>'reserva_id')::uuid;
+ UPDATE private.ia_cpc_consumo SET criado_em=now()-interval '25 hours' WHERE id=id2;
+ bloqueou:=false;
+ BEGIN PERFORM private.ia_cpc_conciliar_reserva(id2,'CI-EVIDENCIA-001',0,0,0);
+ EXCEPTION WHEN unique_violation THEN bloqueou:=true; END;
+ PERFORM public.ci_assert(bloqueou,'rejeita reutilização de referência administrativa');
+ PERFORM public.ci_assert((SELECT estado FROM private.ia_cpc_consumo WHERE id=id2)='reservado','duplicidade não finaliza reserva');
+ bloqueou:=false;
+ BEGIN PERFORM private.ia_cpc_conciliar_reserva(id2,'CI-EVIDENCIA-002',0,1,0);
+ EXCEPTION WHEN raise_exception THEN bloqueou:=true; END;
+ PERFORM public.ci_assert(bloqueou,'custo zero com tokens não é aceito');
+ f:=private.ia_cpc_conciliar_reserva(id2,'CI-EVIDENCIA-002',0,0,0);
+ PERFORM public.ci_assert((f->>'restante_centavos')::int=9975,'ausência de cobrança comprovada libera reserva integral');
+ r:=public.ia_cpc_reservar_orcamento('00000000-0000-4000-8000-000000000001','gpt-5.6-luna',5);
+ id3:=(r->>'reserva_id')::uuid;
+ UPDATE private.ia_cpc_consumo SET criado_em=now()-interval '25 hours' WHERE id=id3;
+ f:=private.ia_cpc_conciliar_reserva(id3,'CI-EVIDENCIA-003',6,100,100);
+ PERFORM public.ci_assert(f->>'bloqueado_conciliacao'='true' AND f->>'restante_centavos'='0','excedente conciliado conserva bloqueio preventivo');
+ PERFORM public.ci_assert((SELECT count(*) FROM private.ia_cpc_conciliacoes)=3,'três conciliações únicas auditadas');
+END $manual$;
 
 SELECT 'SUCESSO — testes financeiros e controle de acesso sintéticos concluídos' AS homologacao;
