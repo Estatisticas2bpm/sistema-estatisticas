@@ -37,7 +37,7 @@ function turnoEvento(hora){
  if(h>23||m>59)return '';
  return h*60+m>=480&&h*60+m<1200?'1':'2';
 }
-function tipoTurno(v){return v==='1'?'1º turno (08h–20h)':v==='2'?'2º turno (20h–08h)':'Não informado'}
+function tipoTurno(v){return v==='1'?'1º turno (08h–20h)':v==='2'?'2º turno (20h–08h)':v==='24H'?'Turno de 24 horas':'Não informado'}
 const COM_EVENTO=['cipgFiltroEvento','cipgFiltroDesfecho','cipgFiltroEmServico',
  'cipgFiltroCausa','cipgFiltroTurno','cipgFiltroGraduacao','cipgFiltroUnidade',
  'cipgFiltroConducao','cipgFiltroSetor'];
@@ -215,7 +215,7 @@ function render(dadosA,dadosB,ctx){
   ['chartCipgSetores',categoriasSens({data:a.eventos,key:'setor_atendimento'}),'bar','Eventos'],
   ['chartCipgTiposEventos',rank(a.eventos,'tipo_evento',5),'doughnut','Eventos'],
   ['chartCipgPostos',rank(a.servicos,s=>s.posto_codigo||s.instituicao,5),'doughnut','Relatórios'],
-  ['chartCipgTurnosServico',rank(a.servicos,s=>tipoTurno(s.turno_cipg),3),'doughnut','Relatórios'],
+  ['chartCipgTurnosServico',rank(a.servicos,s=>tipoTurno(s.turno_cipg),4),'doughnut','Relatórios'],
   ['chartCipgModalidade',rank(a.servicos,'modalidade',10),'bar','Relatórios'],
   ['chartCipgRegimes',rank(a.servicos,'regime',10),'bar','Relatórios'],
   ['chartCipgTipoLocal',rank(a.servicos,'tipo_local',3),'doughnut','Relatórios'],
