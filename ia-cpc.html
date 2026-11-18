@@ -62,10 +62,10 @@
       <p class="aviso">Utilize somente perguntas sobre indicadores agregados. Não informe nomes de vítimas, infratores, policiais, CPF, endereços, números de BO ou outros dados pessoais. A IA não altera boletins. Quando habilitada, a análise de relatos ocorre somente no servidor; nenhum texto completo ou identificação pessoal é enviado ao modelo externo.</p>
       <p class="nota">Os dados são contabilizados a partir dos registros ativos do SIE-CPC. Rascunhos e registros finalizados serão diferenciados; os resultados devem ser conferidos com os painéis oficiais.</p>
       <p class="nota"><strong>Relatos:</strong> funcionalidade complementar em homologação. Identifica menções textuais agregadas, não identifica pessoas, não cita trechos de BO e não comprova autoria nem modus operandi.</p>
-      <p class="nota"><strong>Proteção financeira:</strong> orçamento global de R$ 100/mês, com alerta aos R$ 80; 3 consultas/minuto, 20/dia por usuário e até 300/mês. Cada chamada paga requer reserva prévia no servidor.</p>
+      <p class="nota"><strong>Proteção financeira:</strong> créditos pré-pagos, sem mensalidade nem recarga automática. Alerta quando o saldo local estimado for de R$ 20 ou menos; 3 consultas/minuto, 20/dia por usuário e até 300/mês. Cada chamada paga requer reserva prévia no servidor.</p>
       <p class="nota">O histórico é temporário, apenas nesta página, e não é salvo no navegador nem no servidor. Relatórios oficiais precisam de validação humana.</p>
-      <h2>Orçamento compartilhado</h2>
-      <div id="orcamentoEstado" role="status">Consumo disponível após homologação e primeira consulta.</div>
+      <h2>Carteira pré-paga compartilhada</h2>
+      <div id="orcamentoEstado" role="status">Consultando saldo local estimado...</div>
       <div class="barra-bg"><div id="orcamentoBarra" class="barra"></div></div>
       <p id="orcamentoNota" class="info-limite">Nenhuma cobrança é realizada enquanto o módulo estiver inativo.</p>
     </section>
@@ -160,14 +160,28 @@
     }
     function atualizarOrcamento(cota){
       if(!cota||!Number.isFinite(cota.restante_centavos))return;
-      const gasto=Math.max(0,10000-cota.restante_centavos);
-      get('orcamentoBarra').style.width=Math.min(100,gasto/100)+'%';
+      const total=Number.isFinite(cota.creditos_validos_centavos)?cota.creditos_validos_centavos:null;
+      const gasto=Number.isFinite(cota.consumo_comprometido_centavos)?cota.consumo_comprometido_centavos:null;
+      get('orcamentoBarra').style.width=(total>0&&gasto!==null?Math.min(100,100*gasto/total):0)+'%';
       const moeda=n=>(n/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-      get('orcamentoEstado').textContent='Comprometido no mês: '+moeda(gasto)+' de R$ 100,00. Saldo estimado: '+moeda(cota.restante_centavos)+'.';
-      get('orcamentoNota').textContent=(cota.alerta_80?'Atenção: orçamento atingiu 80%. ':'')+
+      get('orcamentoEstado').textContent='Saldo local estimado: '+moeda(cota.restante_centavos)+
+        (total!==null?' · Créditos válidos registrados: '+moeda(total):'')+
+        (gasto!==null?' · Comprometido: '+moeda(gasto):'')+'.';
+      get('orcamentoNota').textContent=(cota.bloqueado_conciliacao?'Carteira bloqueada para conciliação financeira. ':
+        cota.saldo_baixo?'Atenção: saldo baixo. Solicite recarga manual ao responsável. ':'')+
+        (cota.proximo_vencimento?'Próximo vencimento: '+new Date(cota.proximo_vencimento).toLocaleDateString('pt-BR')+'. ':'')+
         (cota.reserva_pendente?'Reserva máxima mantida por falta de medição final. ':'')+
-        'Estimativas conservadoras; conferir faturamento real e câmbio aprovado.';
+        'Controle local conservador, não é o saldo real em dólares da OpenAI. Sem renovação mensal ou recarga automática.';
     }
+    async function carregarSaldo(){
+      try{
+        const {data,error}=await autorizado.client.functions.invoke('ia-cpc',{body:{acao:'saldo'}});
+        if(error||!data?.cota||!Number.isFinite(data.cota.restante_centavos))throw Error('saldo');
+        atualizarOrcamento(data.cota);
+      }catch(_){get('orcamentoEstado').textContent='Saldo local indisponível. As consultas pagas continuam sujeitas à validação do servidor.';}
+    }
+    // Não iniciar leitura concorrente com a primeira consulta paga.
+    await carregarSaldo();
 
     document.querySelectorAll('[data-exemplo]').forEach(b=>b.addEventListener('click',()=>{
       caixa.value=b.dataset.exemplo;caixa.focus();
@@ -205,6 +219,7 @@
         }});
         if(error){
           const body=await error.context?.json?.().catch(()=>null);
+          atualizarOrcamento(body?.cota);
           throw new Error(body?.error||'Consulta indisponível; a integração pode aguardar homologação.');
         }
         if(!data?.resposta)throw new Error(data?.error||'Resposta não disponível.');
