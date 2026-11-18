@@ -72,6 +72,9 @@ async function caso(tipo,permissaoEsperada){
      await page.locator("#conteudo").waitFor({state:"visible",timeout:14000});
      assert.equal(await page.evaluate(()=>window.SistemaAuth?.pode?.("ia_cpc")),true);
      assert.equal(await page.locator("#sistemaUsuarioSessao").count(),1);
+     await page.waitForFunction(()=>document.getElementById("orcamentoEstado")?.textContent?.includes("Saldo local estimado:"),null,{timeout:14000});
+     assert.match(await page.locator("#orcamentoEstado").innerText(),/R\$\s*0,00/);
+     assert.match(await page.locator("#orcamentoNota").innerText(),/saldo baixo/i);
      await page.locator("#dataInicio").fill("2026-01-01");
      await page.locator("#dataFim").fill("2026-01-07");
      await page.locator("#pergunta").fill("Resuma as ocorrências do período.");
