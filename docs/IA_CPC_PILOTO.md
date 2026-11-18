@@ -88,7 +88,7 @@ Os testes sintéticos abrangem negação, fonte relatada, hipótese, registro de
 - [ ] Rever as categorias de marcadores com a equipe responsável pela estatística; nenhum resultado individualizado deve ser usado como prova.
 
 
-## 3. Orçamento financeiro: R$ 100,00 / mês
+## 3. Carteira pré-paga recarregável (sem cobrança automática)
 
 **Modelo de referência:** gpt-5.6-luna, Standard API. Preços consultados em 11/11/2026 na tabela oficial:
 https://developers.openai.com/api/docs/models/gpt-5.6-luna
@@ -98,7 +98,7 @@ https://developers.openai.com/api/docs/models/gpt-5.6-luna
 - Máximo de saída do piloto: 800 tokens por consulta.
 - Câmbio de reserva e margem de segurança: configurar IA_CPC_BRL_USD_RESERVA com taxa institucional de reserva entre **8 e 30 BRL/USD**, mais margem 2x; não confundir o piso conservador com a cotação oficial da moeda. Não depende de consulta automática a serviços de câmbio.
 - Reserva máxima estimada ANTES de enviar a requisição; até 80.000 bytes de payload.
-- Controle atômico por advisory transaction lock compartilhado, registro em private.ia_cpc_consumo, total mensal de **10.000 centavos**, alerta a partir de **8.000 centavos**. Limites adicionais: **3/minuto por usuário, 20/dia por usuário, 300/mês global**. Dia e mês no fuso America/Boa_Vista.
+- Controle atômico por advisory transaction lock compartilhado, registro em private.ia_cpc_consumo, saldo limitado aos créditos válidos comprovados e registrados pelo DBA, alerta a partir de **R$ 20 disponíveis ou menos**. Nenhum saldo inicial é criado; não existe renovação mensal. Cada recarga tem referência única e vencimento, e os créditos são comprometidos nos lotes que vencem primeiro. Limites adicionais: **3/minuto por usuário, 20/dia por usuário, 300/mês global**. Dia e mês no fuso America/Boa_Vista.
 - Após retorno da API, o sistema reconcilia tokens reais, modelo e custo conservador; se não vier telemetria, a reserva integral permanece comprometida. Falhas de serviço também mantêm reserva, evitando cobrança não contabilizada.
 
 **Importante:** o teto é do **custo estimado/reservado pelo sistema**, não garantia legal de faturamento exato em reais. Taxas de câmbio, tarifas, impostos, mudanças de preço e custos externos podem divergir. Exigir projeto de API institucional dedicado, orçamento/limites junto ao fornecedor, monitoramento da fatura e validação das premissas de câmbio antes da ativação. Jamais tratar os alertas do provedor como único bloqueio.
@@ -124,7 +124,7 @@ https://developers.openai.com/api/docs/models/gpt-5.6-luna
 - [x] Testes executáveis com Supabase Auth, RPCs e provedor externo **simulados**: sessões inválidas/revogadas, contas não designadas, CORS, bloqueio financeiro e fluxo autorizado com dados fictícios. Ver `docs/IA_CPC_HOMOLOGACAO_INTEGRACAO_2026-11-12.md`.
 - [ ] Testar suspensão, expiração, revogação e alteração de perfil/unidade com Supabase Auth/Edge **reais**, MFA quando adotado.
 - [ ] Conferir os indicadores com dashboard e amostra sintética/anonimizada, especialmente campos não classificados, rascunhos e duplicidades. O banco atualmente apresenta períodos compostos inteiramente por rascunhos; não interpretar isso automaticamente como série criminal consolidada.
-- [ ] Homologar concorrência de reservas, custo acima do orçamento, aviso dos R$80 e divergências de telemetria.
+- [ ] Homologar concorrência de reservas, custo acima do orçamento, aviso de saldo de R$20 ou menos e divergências de telemetria.
 - [ ] Validar o câmbio conservador e os preços vigentes; obter aprovação de projeto de API e limite de gasto.
 - [ ] Configurar OPENAI_API_KEY, OPENAI_MODEL, IA_CPC_BRL_USD_RESERVA, IA_CPC_ALLOWED_ORIGINS, IA_CPC_ENABLED=false.
 - [ ] Implantar Edge Function com verify_jwt=true e avaliar logs para não registrar dados pessoais.
@@ -144,7 +144,7 @@ Além dos testes de contrato e das regras estatísticas, o CI executa a proposta
 - RLS e impossibilidade de usuário comum executar RPCs financeiras;
 - desativação de usuário e troca de unidade principal;
 - bloqueio de modelo não homologado;
-- teto mensal estimado de R$ 100, alerta de R$ 80, reconciliação e rejeição de dupla finalização;
+- saldo inicial zero, recargas manuais acumuladas, validade individual, alerta de saldo baixo, conciliação e rejeição de dupla finalização;
 - limites de 3 reservas/minuto, 20/dia e 300/mês;
 - duas reservas concorrentes, comprovando que somente uma consome o último saldo disponível.
 
@@ -157,3 +157,6 @@ Além dos testes de contrato e das regras estatísticas, o CI executa a proposta
 - Fase 5: auditoria de qualidade, divergências e possíveis duplicidades para revisão humana; avaliação não causal das operações.
 
 **Nenhuma alteração de funcionalidades existentes nem de dados históricos está autorizada por este documento.**
+
+### Mudança de política financeira — 18/11/2026
+O valor de R$100 é referência para uma compra manual de créditos em USD, não mensalidade. O saldo no SIE-CPC é um limite estimado conservador, em centavos de real, e não o saldo real da OpenAI. Responsável pelo projeto deve verificar compra, crédito líquido, validade e fatura no provedor, desativar auto-recharge e registrar cada recarga via DBA (função privada `private.ia_cpc_registrar_recarga`), sem guardar documentos financeiros ou dados pessoais no repositório. A carteira começa zerada. Consulta de saldo não consome tokens, e reservas de custo permanecem comprometidas até reconciliação. Medição acima da reserva trava a carteira até avaliação manual; procedimento auditado de recuperação e conciliação regular ainda requer homologação. Limites de 3/min, 20/dia e 300/mês são de frequência, não recargas. Nenhuma compra ou mudança em produção foi realizada.
