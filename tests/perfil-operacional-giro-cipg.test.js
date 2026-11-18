@@ -3,7 +3,7 @@ test('GIRO e CIPG exibem link Meu perfil somente nos módulos individuais',()=>{
 const g=read('giro-abordagem.html'),c=read('cipg-caderno-acesso.html'),a=read('cipg-acesso.js');
 assert.match(g,/id="perfilGiro"/);assert.match(g,/meu-perfil-operacional\.html\?unidade=GIRO/);
 assert.match(c,/id="perfilCipg"/);assert.match(c,/meu-perfil-operacional\.html\?unidade=CIPG/);
-assert.match(a,/\$\('perfilCipg'\)\.hidden=!autorizado/);
+assert.match(a,/\$\('perfilCipg'\)\.hidden=modo!=='caderno'/);
 });
 test('Página de perfil reutiliza storage keys segregadas e restringe dados editáveis',()=>{
 const p=read('meu-perfil-operacional.html');
