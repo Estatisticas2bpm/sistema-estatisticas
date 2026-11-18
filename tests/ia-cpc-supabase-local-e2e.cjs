@@ -109,6 +109,18 @@ async function main(){
    if(teste.stdout)process.stdout.write(teste.stdout);
    if(teste.status!==0)throw Error("Falha de navegador local: "+(teste.stderr||"").slice(-1200));
  }
+ // Somente fixture local: mesmo com registros e saldo fictício, a trava
+ // de cobrança impede reserva e chamada externa. Não usa chave da OpenAI.
+ query("INSERT INTO public.ocorrencias(data_ocorrencia,unidade_id,ocorrencia,crime,bairro) VALUES ('2026-01-03','00000000-0000-4000-8000-000000000101','FURTO','FURTO','CENTRO'); "+
+  "SELECT private.ia_cpc_registrar_recarga('CI-FICTICIO-SEM-API',10000,now()-interval '1 day',now()+interval '30 days');");
+ const bloqueada=await api("/functions/v1/ia-cpc",{token:pessoas[0].token,body:dados,origin:origem});
+ assert.equal(bloqueada.status,503,"Consulta com dados e crédito fictício deve ser bloqueada");
+ assert.equal(bloqueada.data.sem_cobranca,true);
+ assert.match(bloqueada.data.error,/aguardam liberação da API paga/);
+ const saldoDepois=await api("/functions/v1/ia-cpc",{token:pessoas[0].token,body:{acao:"saldo"},origin:origem});
+ assert.equal(saldoDepois.status,200);assert.equal(saldoDepois.data.cota.restante_centavos,10000);
+ query("DO $ BEGIN IF EXISTS (SELECT 1 FROM private.ia_cpc_consumo) THEN RAISE EXCEPTION 'Reserva indevida sem API paga'; END IF; END $;");
+ console.log("Trava independente: BO sintético e R$100 fictícios, consulta bloqueada, nenhuma reserva, sem chave externa.");
  const admin=pessoas[0],comandante=pessoas[1];
  query("INSERT INTO public.sessoes_revogadas(session_id,user_id) VALUES "+
   "('"+admin.session+"','"+admin.id+"');");
