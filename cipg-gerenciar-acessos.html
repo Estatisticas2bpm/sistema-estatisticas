@@ -10,7 +10,8 @@
 <p id="mensagemProprio" class="notice" role="status" aria-live="polite">Verificando sua autorização...</p>
 </section>
 <section class="card"><h2>Link do policial</h2><p><a id="link" href="cipg-caderno-acesso.html">Abrir Caderno Digital da CIPG</a></p><button id="copiar" type="button" class="secondary">Copiar link de acesso</button></section>
-<section class="card"><h2>Auditoria dos lançamentos</h2><p>Consulte quem registrou cada serviço por data, turno, SEI e identificação funcional.</p><p><a href="cipg-auditoria-caderno.html">Abrir auditoria por policial e turno →</a></p></section><section class="card"><h2>Cadastrar outro policial</h2><p class="muted">Use este cadastro apenas para policiais que <b>ainda não têm conta no SIE-CPC</b>. Para habilitar sua própria conta administrativa, use o botão acima. Cada policial novo recebe seu próprio e-mail e uma senha temporária. No primeiro acesso deverá escolher a senha pessoal, sem acesso ao painel estatístico.</p><p id="erroCadastro" class="notice" role="status" aria-live="polite">Preencha os dados para criar uma conta individual.</p>
+<section class="card" id="gestaoPostosCipg" hidden><h2>Gerenciar postos de serviço</h2><p class="muted">Cadastre novos postos ou edite os existentes. Para retirar um posto da lista, desative-o; os relatórios anteriores continuam preservados.</p>
+<form id="formPostoCipg"><label>Código do posto<input id="postoCodigoCipg" required maxlength="16" pattern="[A-Z0-9_-]{2,16}" placeholder="Ex.: PSE-01" style="text-transform:uppercase"></label><label>Nome do posto<input id="postoNomeCipg" required minlength="3" maxlength="180"></label><label>Categoria<select id="postoTipoCipg" style="display:block;width:100%;padding:12px;margin-top:6px"><option value="EDIFICIO_PUBLICO">Edifício público</option><option value="ESTABELECIMENTO_PENAL">Estabelecimento penal</option><option value="OUTRO">Outro</option></select></label><button type="submit">Salvar posto</button><button id="cancelarPostoCipg" type="button" class="secondary">Limpar</button></form><p id="statusPostoCipg" role="status"></p><div id="listaPostosCipg"></div></section><section class="card"><h2>Auditoria dos lançamentos</h2><p>Consulte quem registrou cada serviço por data, turno, código do relatório e identificação funcional.</p><p><a href="cipg-auditoria-caderno.html">Abrir auditoria por policial e turno →</a></p></section><section class="card"><h2>Cadastrar outro policial</h2><p class="muted">Use este cadastro apenas para policiais que <b>ainda não têm conta no SIE-CPC</b>. Para habilitar sua própria conta administrativa, use o botão acima. Cada policial novo recebe seu próprio e-mail e uma senha temporária. No primeiro acesso deverá escolher a senha pessoal, sem acesso ao painel estatístico.</p><p id="erroCadastro" class="notice" role="status" aria-live="polite">Preencha os dados para criar uma conta individual.</p>
 <form id="novo"><label>Nome completo<input name="nome" required minlength="3" maxlength="120"></label><label>Posto ou graduação<select name="posto_graduacao" required style="display:block;width:100%;padding:12px;margin-top:6px;border:1px solid #afc3cf;border-radius:8px"><option value="">Selecione</option><option>Soldado PM</option><option>Cabo PM</option><option>3º Sargento PM</option><option>2º Sargento PM</option><option>1º Sargento PM</option><option>Subtenente PM</option><option>2º Tenente PM</option><option>1º Tenente PM</option><option>Capitão PM</option><option>Major PM</option><option>Tenente-Coronel PM</option><option>Coronel PM</option></select></label><label>Nome de guerra<input name="nome_guerra" required minlength="2" maxlength="100"></label><label>E-mail individual<input type="email" name="email" required autocomplete="off"></label><label>Senha temporária (mínimo 8 caracteres)<input type="password" name="password" minlength="8" required autocomplete="new-password"></label><button type="submit">Criar acesso individual</button></form></section>
 <section class="card"><h2>Policiais autorizados</h2><p class="muted">É possível bloquear/reativar e trocar a senha de uma conta sem afetar outros policiais.</p><div id="usuarios">Verificando acesso...</div></section><p id="status" role="status"></p></main>
 <script>
@@ -21,6 +22,32 @@ $('copiar').onclick=()=>navigator.clipboard.writeText($('link').href).then(()=>s
 let sessao=await window.SistemaAuth.ready;
 if(!sessao?.client){status('Acesso administrativo indisponível.');return}
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const perfilPostos=String(sessao?.perfil?.perfil||'').toUpperCase();
+const unidadePostos=String(sessao?.contexto?.sigla||sessao?.perfil?.unidades?.sigla||'').toUpperCase();
+if(perfilPostos==='ADMIN'||(perfilPostos==='ESTATISTICA'&&unidadePostos==='CIPG')){
+ $('gestaoPostosCipg').hidden=false;
+ let editando=null;
+ const avisoPosto=m=>$('statusPostoCipg').textContent=m;
+ const limparPosto=()=>{editando=null;$('formPostoCipg').reset();$('postoCodigoCipg').readOnly=false;};
+ async function carregarPostosGestao(){
+  const r=await sessao.client.from('cipg_postos').select('codigo,nome,tipo_local,ativo').order('codigo');
+  if(r.error)throw r.error;
+  const host=$('listaPostosCipg');host.replaceChildren();
+  for(const p of r.data||[]){
+   const item=document.createElement('article'),texto=document.createElement('div');
+   texto.textContent=p.codigo+' — '+p.nome+' · '+(p.ativo?'Ativo':'Desativado');item.append(texto);
+   const editar=document.createElement('button');editar.type='button';editar.className='secondary';editar.textContent='Editar';
+   editar.onclick=()=>{editando=p;$('postoCodigoCipg').value=p.codigo;$('postoNomeCipg').value=p.nome;$('postoTipoCipg').value=p.tipo_local;$('postoCodigoCipg').readOnly=true;};
+   const toggle=document.createElement('button');toggle.type='button';toggle.className=p.ativo?'danger':'secondary';toggle.textContent=p.ativo?'Desativar':'Reativar';
+   toggle.onclick=async()=>{if(!confirm((p.ativo?'Desativar':'Reativar')+' '+p.nome+'?'))return;toggle.disabled=true;try{const x=await sessao.client.rpc('cipg_gerenciar_posto',{p_codigo:p.codigo,p_nome:p.nome,p_tipo:p.tipo_local,p_ativo:!p.ativo});if(x.error)throw x.error;limparPosto();await carregarPostosGestao();avisoPosto('Posto atualizado.');}catch(e){avisoPosto(e.message||String(e));}finally{toggle.disabled=false;}};
+   item.append(editar,toggle);host.append(item);
+  }
+ }
+ $('postoCodigoCipg').addEventListener('input',e=>{e.target.value=e.target.value.toUpperCase()});
+ $('cancelarPostoCipg').onclick=limparPosto;
+ $('formPostoCipg').onsubmit=async e=>{e.preventDefault();const b=e.submitter;b.disabled=true;try{const codigo=$('postoCodigoCipg').value.trim().toUpperCase();if(!editando){const q=await sessao.client.from('cipg_postos').select('codigo').eq('codigo',codigo).maybeSingle();if(q.error)throw q.error;if(q.data)throw Error('Código já cadastrado. Use Editar.');}const r=await sessao.client.rpc('cipg_gerenciar_posto',{p_codigo:codigo,p_nome:$('postoNomeCipg').value,p_tipo:$('postoTipoCipg').value,p_ativo:editando?.ativo??true});if(r.error)throw r.error;limparPosto();await carregarPostosGestao();avisoPosto('Posto salvo.');}catch(e){avisoPosto(e.message||String(e));}finally{b.disabled=false;}};
+ carregarPostosGestao().catch(e=>avisoPosto(e.message||String(e)));
+}
 async function invoke(body){
  const {data,error}=await sessao.client.functions.invoke('admin-users',{body});
  if(error){
