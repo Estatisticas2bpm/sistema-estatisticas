@@ -813,5 +813,6 @@ $('limpar').onclick=()=>{$('unidade').value='';$('aisc').value='';$('sisc').valu
 const qp=new URLSearchParams(location.search),h=new Date();popularAnoMes();$('ini').value=qp.get('ini')||iso(new Date(h.getFullYear(),h.getMonth(),1));$('fim').value=qp.get('fim')||iso(h);sincronizarAnoMes();selecionarAbaCpc(location.hash.slice(1)||'visao-geral',false);
 (async()=>{const ready=window.SistemaAuth?.ready;if(ready)await ready;const [tr,ur]=await Promise.all([db.rpc('obter_catalogo_territorial_cpc'),db.from('unidades').select('id,sigla,nome,tipo,parent_id,aceita_registro_operacional,agrega_descendentes').eq('ativo',true).order('sigla')]);if(!tr.error){catalogoTerritorial=tr.data||{};popularTerritorio()}else console.error('Falha ao carregar catálogo territorial:',tr.error);if(!ur.error){hierarquiaUnidades=ur.data||[];popularUnidades()}else console.error('Falha ao carregar hierarquia de unidades:',ur.error);carregar()})();
 </script>
+<a href="ia-cpc.html" data-permission="ia_cpc" hidden style="position:fixed;right:16px;bottom:68px;z-index:1200;background:#0b416b;color:#fff;padding:12px 16px;border-radius:12px;text-decoration:none;font:800 13px Inter,Segoe UI,Arial,sans-serif;box-shadow:0 5px 18px #071b3360" aria-label="Abrir Inteligência Operacional do CPC">✦ Assistente IA · CPC</a>
 </body>
 </html>
