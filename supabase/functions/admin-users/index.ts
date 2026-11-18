@@ -324,7 +324,7 @@ Deno.serve(async (req: Request) => {
         const email = limpar(body.email).toLowerCase(), password = limpar(body.password), nome = limpar(body.nome), postoGraduacao=limpar(body.posto_graduacao), nomeGuerra=limpar(body.nome_guerra);
         if (!email.includes("@") || email.length > 254) throw new Error("Informe e-mail válido.");
         if (email === limpar(caller.email).toLowerCase()) return resposta({error:"Este e-mail já pertence à sua conta do SIE-CPC. Use o botão Habilitar meu acesso ao Caderno Digital, sem criar outra senha."},409);
-        if (password.length < 12) throw new Error("A senha deve ter pelo menos 12 caracteres.");
+        if (password.length < 8) throw new Error("A senha deve ter pelo menos 8 caracteres.");
         if (nome.length < 3 || nome.length > 120) throw new Error("Informe o nome completo do policial.");
         if (postoGraduacao.length < 2 || postoGraduacao.length > 60) throw new Error("Informe o posto ou graduação.");
         if (nomeGuerra.length < 2 || nomeGuerra.length > 100) throw new Error("Informe o nome de guerra.");
@@ -355,7 +355,7 @@ Deno.serve(async (req: Request) => {
       }
       if (action === "cipg_access_reset_password") {
         const password = limpar(body.password);
-        if (password.length < 12) throw new Error("A senha deve ter pelo menos 12 caracteres.");
+        if (password.length < 8) throw new Error("A senha deve ter pelo menos 8 caracteres.");
         const { error } = await admin.auth.admin.updateUserById(id,{password});
         if (error) throw error;
         await log(caller.id,"ALTEROU_SENHA_CADERNO_CIPG","cipg_acesso",id);
