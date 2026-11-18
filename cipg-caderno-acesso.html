@@ -44,7 +44,7 @@ button:disabled{opacity:.55}.btn-subtle{background:#e5eeeb;border:1px solid #abc
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="auth-config.js"></script><script src="cipg-acesso.js?v=20261015-1"></script><script src="cipg-caderno.js?v=20261015-1"></script>
+<script src="auth-config.js"></script><script src="cipg-acesso.js?v=20261118-2"></script><script src="cipg-caderno.js?v=20261015-1"></script>
 </head><body>
 <header><div class="head"><div><h1>Caderno digital de serviço — CIPG</h1>
 <p>Companhia Independente de Policiamento de Guarda · Polícia Militar de Roraima · SIE-CPC</p></div>
@@ -54,6 +54,14 @@ button:disabled{opacity:.55}.btn-subtle{background:#e5eeeb;border:1px solid #abc
 <h2>Acesso individual do policial</h2><p class="sub">Entre com seu e-mail e senha autorizados para o Caderno Digital da CIPG. O link pode ser compartilhado, mas cada policial precisa estar habilitado para registrar o Livro da Permanência.</p><p class="sub"><strong>Ainda não tem acesso?</strong> Solicite o cadastro ao setor de estatística da CIPG. Se você já é ADMIN ou ESTATÍSTICA da CIPG no SIE-CPC, abra <a href="cipg-gerenciar-acessos.html">Gerenciar acessos individuais</a> e escolha <strong>Habilitar meu acesso ao Caderno Digital</strong>. Depois, entre aqui com as mesmas credenciais do SIE-CPC.</p>
 <form id="formLoginCipg"><div class="fieldgrid" style="grid-template-columns:1fr"><label class="field"><span>E-mail *</span><input id="emailCipg" type="email" autocomplete="username" required></label><label class="field"><span>Senha *</span><input id="senhaCipg" type="password" autocomplete="current-password" required></label></div><p><button id="entrarCipg" type="submit" style="background:#176044;color:#fff;border:0;border-radius:9px;padding:13px 24px;font-weight:700">Entrar no caderno</button></p><p id="erroLoginCipg" role="alert" class="helper"></p></form>
 </section>
+<section id="trocaSenhaCipg" class="panel" style="max-width:500px;margin:35px auto" hidden>
+<h2>Crie sua nova senha</h2><p class="sub">A senha recebida do administrador é temporária. Defina uma nova senha pessoal, com no mínimo 8 caracteres, para acessar o Caderno Digital.</p>
+<form id="formTrocaSenhaCipg">
+<div class="fieldgrid" style="grid-template-columns:1fr">
+<label class="field"><span>Nova senha *</span><input id="novaSenhaCipg" type="password" minlength="8" autocomplete="new-password" required></label>
+<label class="field"><span>Confirmar nova senha *</span><input id="confirmarSenhaCipg" type="password" minlength="8" autocomplete="new-password" required></label>
+</div><div class="actions"><button id="salvarSenhaCipg" type="submit">Alterar senha</button><button id="cancelarSenhaCipg" class="btn-secondary" type="button">Sair</button><p id="statusSenhaCipg" class="status" role="alert"></p></div>
+</form></section>
 <div id="conteudoCipg" hidden>
 <section class="panel"><h2>Registrar serviço de guarda</h2>
 <p class="sub">Este é o cadastro próprio da CIPG. Substitui o lançamento manual no caderno: não é BO, não tem tático, não exige upload de documentos ou leitura de PDF. Use diretamente pelo celular.</p>
