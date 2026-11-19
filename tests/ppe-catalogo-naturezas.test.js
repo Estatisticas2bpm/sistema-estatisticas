@@ -12,8 +12,13 @@ const layout=[[ [{x:20,texto:'Natureza'},{x:420,texto:'Meio(s) Empregado(s)'}],[
 assert.equal(extrairLayout(layout)[0].descricao_original,'PERSEGUIÇÃO (STALKING) (ART. 147-A DO CPB)');
 assert.equal(extrair('Natureza Meio(s) Empregado(s)\n33: LESÃO CORPORAL (ART. 129, § 9° DO CPB) (VIOLÊNCIA DOMÉSTICA CONTRA A MULHER)\nENVOLVIDO(S)')[0].fundamentacao_legal,'ART. 129, § 9° DO CPB');
 const p=read('cadastro-base.html'),ui=read('ppe-cadastro-selecao.js'),adm=read('ppe-catalogo-admin.js');
-assert.match(p,/ppe_catalogar_extracao/);assert.match(p,/extrairLayout\(ppeLayoutAtual\)/);assert.match(p,/ppe_naturezas_originais:ppeCapturaAtual\.itens/);assert.match(p,/\.\.\.ppeSelecaoSalvar\.campos/);
+assert.match(p,/ppe_catalogar_extracao/);assert.match(p,/extrairLayout\(ppeLayoutAtual\)/);assert.match(p,/ppe_naturezas_originais:ppeCapturaAtual\.itens/);assert.match(p,/tipoPeloCodigoPpe\(dados\.ppeExtraidas\[0\]\)/);assert.match(p,/await carregarCatalogos\(\)/);assert.doesNotMatch(p,/<script src="ppe-cadastro-selecao\.js/);assert.doesNotMatch(p,/PpeSelecao\?\./);
 assert.match(ui,/ppe_naturezas_selecionadas/);assert.match(ui,/ppe_solicitar_inclusao/);assert.match(adm,/ppe_admin_associar_historico/);
 assert.doesNotThrow(()=>new Function(ui));assert.doesNotThrow(()=>new Function(adm));
 const sql=read('supabase/migrations/20261119143000_ppe_catalogo_documental_fase1.sql');assert.match(sql,/codigo_ppe text not null unique/);assert.match(sql,/count\(distinct ocorrencia_id\)/);assert.match(sql,/enable row level security/);
 console.log('PASS: PPe — extração de naturezas, colunas, múltiplos códigos, preservação de evidência e contratos de seleção/admin.');
+const ponte=read('supabase/migrations/20261119150000_ppe_integrar_catalogo_tipo_ocorrencia.sql');
+assert.match(ponte,/natureza_id uuid primary key/);
+assert.match(ponte,/tipo_id bigint not null unique/);
+assert.match(ponte,/n\.status_validacao<>'DIVERGENTE'/);
+assert.match(ponte,/trg_ppe_integrar_tipo/);
