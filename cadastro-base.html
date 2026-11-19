@@ -2476,7 +2476,7 @@
         const ppeExtraidas=window.PpeNaturezas?.extrair(texto)||[];
         let ppeErroCatalogo=null;
         if(dados.numeroBo&&ppeExtraidas.length){
-          try{const sessaoPpe=await window.SistemaAuth.ready;const respostaPpe=await sessaoPpe.client.rpc("ppe_catalogar_extracao",{p_itens:ppeExtraidas});if(respostaPpe.error)throw respostaPpe.error;}catch(e){ppeErroCatalogo=e;console.warn("Catálogo PPe: falha na alimentação durante a leitura.",e.message);}
+          try{const sessaoPpe=window.SistemaAuth?.ready?await window.SistemaAuth.ready:window.SistemaAuth;const respostaPpe=await sessaoPpe.client.rpc("ppe_catalogar_extracao",{p_itens:ppeExtraidas});if(respostaPpe.error)throw respostaPpe.error;}catch(e){ppeErroCatalogo=e;console.warn("Catálogo PPe: falha na alimentação durante a leitura.",e.message);}
         }
         if (!catalogos.tipos.length) await carregarCatalogos();
         if (PDF_CORE) {
