@@ -46,7 +46,7 @@ function renderSinonimos(){
 }
 function abrirEditor(n){
  editando=n||null;$('formEditor').reset();editorAviso('');
- $('tituloEditor').textContent=n?'Revisar natureza '+n.codigo_ppe:'Incluir código PPe validado';
+ $('tituloEditor').textContent=n?'Revisar natureza '+n.codigo_ppe:'Incluir código validado';
  $('codigo').readOnly=!!n;$('original').readOnly=!!n;$('padronizada').readOnly=!n;
  $('codigo').value=n?.codigo_ppe||'';$('original').value=n?.descricao_original||'';$('padronizada').value=n?.descricao_padronizada||'';$('legal').value=n?.fundamentacao_legal||'';$('categoria').value=n?.categoria||'';$('ativo').value=String(n?.ativo??true);$('ativo').disabled=!n;
  $('sinonimosEditor').hidden=!n;renderSinonimos();$('editor').showModal();
