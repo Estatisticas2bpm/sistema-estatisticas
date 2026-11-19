@@ -117,7 +117,7 @@
     function adicionarSelecaoAtual({silencioso=false}={}){
       const tipo = tipoSelecionado();
       if(!tipo){
-        if(!silencioso) alert('Selecione um Tipo de Ocorrência válido antes de adicionar ao BO.');
+        if(!silencioso) alert('Selecione uma Natureza válida antes de adicionar ao BO.');
         return false;
       }
 
@@ -128,13 +128,15 @@
         return false;
       }
 
+      const m=campoMeios?meios(campoMeios.value):[];
+      if(m.length>20||m.some(x=>x.length>160)){if(!silencioso)alert('Informe até 20 meios, separados por ponto e vírgula (até 160 caracteres cada).');return false;}
       let natureza = localizarNatureza(tipo);
       if(!natureza){
         natureza = {tipo_id:Number(tipo.id), nome:tipo.nome, codigo:codigoTipo(tipo), subtipos:[], meios_empregados:[]};
         naturezasSelecionadas.push(natureza);
       }
 
-      if(campoMeios){const m=meios(campoMeios.value);if(m.length>20||m.some(x=>x.length>160)){if(!silencioso)alert('Informe até 20 meios, separados por ponto e vírgula (até 160 caracteres cada).');return false;}natureza.meios_empregados=m;}
+      if(campoMeios)natureza.meios_empregados=m;
       if(subtipo && !natureza.subtipos.some(s => Number(s.id) === Number(subtipo.id) || normalizar(s.nome) === normalizar(subtipo.nome))){
         natureza.subtipos.push({
           id:Number(subtipo.id),
@@ -222,7 +224,7 @@
     };
 
     function carregarDadosSalvos(x){
-      if(!x) return;registroCarregado=x;
+      if(!x||(registroCarregado?.id&&registroCarregado.id===x.id)) return;registroCarregado=x;
       const grupos = [];
       const porChave = new Map();
       const garantir = (tipoId,nome) => {
@@ -295,7 +297,7 @@
       carregandoEdicao = true;
       try{
         const resposta = await banco.rpc('obter_ocorrencia_publica',{p_id:id});
-        if(!resposta.error && resposta.data) carregarDadosSalvos(resposta.data);
+        if(!resposta.error && resposta.data && !registroCarregado) carregarDadosSalvos(resposta.data);
       }catch(e){ console.warn('Não foi possível carregar múltiplas naturezas:',e); }
     }
 
@@ -380,7 +382,7 @@
       sincronizarCamposLegados();
     },true);
 
-    renderizar();
+    renderizar();atualizarMeios();
 
     // Aguarda os catálogos do formulário principal estarem disponíveis antes de
     // reconstruir as naturezas de um registro em edição.
