@@ -43,7 +43,7 @@
       return String(valor || '').trim().replace(/\s+/g, ' ').toUpperCase();
     }
     function obterTipo() {
-      return catalogos.tipos.find(item => normalizar(item.nome) === normalizar(campoTipo.value));
+      return typeof resolverTipoNatureza==='function'?resolverTipoNatureza(campoTipo.value):catalogos.tipos.find(item => normalizar(item.nome) === normalizar(campoTipo.value));
     }
     function itemAtual() {
       return itens.find(item => String(item.id) === lista.value) || null;
@@ -62,7 +62,7 @@
       status.textContent = '';
       campoFundamento.hidden = tipo !== 'SUBTIPO';
       entradaNome.maxLength = tipo === 'TIPO' ? 120 : 160;
-      const selecionado = tipo === 'TIPO' ? normalizar(campoTipo.value) : normalizar(campoSubtipo.value);
+      const selecionado = tipo === 'TIPO' ? normalizar((typeof resolverTipoNatureza==='function'?resolverTipoNatureza(campoTipo.value)?.nome:null)||campoTipo.value) : normalizar(campoSubtipo.value);
       if (tipo === 'TIPO') {
         titulo.textContent = 'Editar ou excluir tipo de ocorrência';
         itens = [...catalogos.tipos].sort((a,b) => a.nome.localeCompare(b.nome,'pt-BR'));
