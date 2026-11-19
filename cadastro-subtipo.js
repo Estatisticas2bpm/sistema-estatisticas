@@ -14,7 +14,13 @@
     };
 
     let naturezasSelecionadas = [];
-    let carregandoEdicao = false;
+    let carregandoEdicao = false, registroCarregado=null, importado=false, ultimoTipo=null;
+    const campoMeios=document.getElementById('meiosEmpregados');
+    const grupoMeios=campoMeios?.closest('.campo');
+    const meios=valor=>[...new Set(String(valor||'').split(';').map(x=>x.trim()).filter(Boolean))];
+    const codigoTipo=t=>t?.codigo_ppe?String(t.codigo_ppe):null;
+    const rotulo=t=>typeof rotuloNatureza==='function'?rotuloNatureza(t):t.nome;
+    const atualizarMeios=()=>{const t=tipoSelecionado(),id=t?.id??null;if(id!==ultimoTipo){ultimoTipo=id; if(campoMeios)campoMeios.value=(t?localizarNatureza(t)?.meios_empregados||[]:[]).join('; ');} if(grupoMeios)grupoMeios.hidden=window.CavalariaCadastro?.ehAtividade()===true;};
 
     const estilo = document.createElement('style');
     estilo.textContent = `
@@ -59,7 +65,7 @@
     const paiCrime = campoCrime.closest('.campo') || campoCrime.parentElement;
     const areaAcoes = document.createElement('div');
     areaAcoes.className = 'naturezas-acoes';
-    areaAcoes.innerHTML = '<button type="button" id="adicionarNaturezaAoBo" class="btn-adicionar-natureza">＋ Adicionar natureza/subtipo ao BO</button><span class="naturezas-ajuda">O mesmo BO pode conter vários tipos de ocorrência e vários subtipos.</span>';
+    areaAcoes.innerHTML = '<button type="button" id="adicionarNaturezaAoBo" class="btn-adicionar-natureza">＋ Adicionar natureza ao BO</button><span class="naturezas-ajuda">O mesmo BO pode conter várias naturezas, cada uma com seus meios empregados.</span>';
     paiCrime.insertAdjacentElement('afterend', areaAcoes);
 
     const listaNaturezas = document.createElement('div');
@@ -94,8 +100,7 @@
 
     function tipoSelecionado(){
       if(typeof catalogos === 'undefined' || !Array.isArray(catalogos.tipos)) return null;
-      const valor = normalizar(campoOcorrencia.value);
-      return catalogos.tipos.find(t => normalizar(t.nome) === valor) || null;
+      return typeof resolverTipoNatureza==='function'?resolverTipoNatureza(campoOcorrencia.value):(catalogos.tipos.find(t=>normalizar(t.nome)===normalizar(campoOcorrencia.value))||null);
     }
 
     function subtipoSelecionado(tipo){
@@ -116,7 +121,7 @@
         return false;
       }
 
-      const digitado = normalizar(campoCrime.value);
+      const digitado = codigoTipo(tipo)?'':normalizar(campoCrime.value);
       const subtipo = digitado ? subtipoSelecionado(tipo) : null;
       if(digitado && !subtipo){
         if(!silencioso) alert('Selecione um Subtipo válido relacionado ao Tipo de Ocorrência escolhido.');
@@ -125,10 +130,11 @@
 
       let natureza = localizarNatureza(tipo);
       if(!natureza){
-        natureza = {tipo_id:Number(tipo.id), nome:tipo.nome, subtipos:[]};
+        natureza = {tipo_id:Number(tipo.id), nome:tipo.nome, codigo:codigoTipo(tipo), subtipos:[], meios_empregados:[]};
         naturezasSelecionadas.push(natureza);
       }
 
+      if(campoMeios){const m=meios(campoMeios.value);if(m.length>20||m.some(x=>x.length>160)){if(!silencioso)alert('Informe até 20 meios, separados por ponto e vírgula (até 160 caracteres cada).');return false;}natureza.meios_empregados=m;}
       if(subtipo && !natureza.subtipos.some(s => Number(s.id) === Number(subtipo.id) || normalizar(s.nome) === normalizar(subtipo.nome))){
         natureza.subtipos.push({
           id:Number(subtipo.id),
@@ -147,7 +153,8 @@
     }
 
     function removerNatureza(indice){
-      naturezasSelecionadas.splice(indice,1);
+      const removida=naturezasSelecionadas[indice],atual=tipoSelecionado();naturezasSelecionadas.splice(indice,1);
+      if(removida&&Number(atual?.id)===Number(removida.tipo_id)){const primeira=naturezasSelecionadas[0];const t=primeira&&catalogos.tipos.find(t=>Number(t.id)===Number(primeira.tipo_id));campoOcorrencia.value=primeira?(t?rotulo(t):primeira.nome):'';campoCrime.value='';ultimoTipo=null;atualizarMeios();try{atualizarSubtipos();}catch(_){}}
       renderizar();
     }
 
@@ -170,8 +177,9 @@
       listaNaturezas.innerHTML = naturezasSelecionadas.map((n,ni)=>{
         const chips = n.subtipos.length
           ? '<div class="subtipos-chips">'+n.subtipos.map((s,si)=>'<span class="subtipo-chip">'+escaparHtml(s.nome)+'<button type="button" data-remover-subtipo="'+ni+'|'+si+'" title="Remover subtipo">×</button></span>').join('')+'</div>'
-          : '<div class="natureza-sem-subtipo">Sem subtipo informado para esta natureza.</div>';
-        return '<div class="natureza-card"><div class="natureza-topo"><span class="natureza-titulo">'+(ni+1)+'ª natureza — '+escaparHtml(n.nome)+'</span><button type="button" class="natureza-remover" data-remover-natureza="'+ni+'" title="Remover natureza">×</button></div>'+chips+'</div>';
+          : '';
+        const meiosHtml='<div class="natureza-sem-subtipo">Meio(s) empregado(s): '+escaparHtml((n.meios_empregados||[]).join('; ')||'Não informado')+'</div>';
+        return '<div class="natureza-card"><div class="natureza-topo"><span class="natureza-titulo">'+(ni+1)+'ª natureza — '+escaparHtml((n.codigo?n.codigo+': ':'')+n.nome)+'</span><button type="button" class="natureza-remover" data-remover-natureza="'+ni+'" title="Remover natureza">×</button></div>'+meiosHtml+chips+'</div>';
       }).join('');
     }
 
@@ -181,6 +189,7 @@
       campoOcorrencia.value = primeira.nome;
       try { atualizarSubtipos(); } catch (_) {}
       campoCrime.value = primeira.subtipos[0]?.nome || '';
+      if(campoMeios)campoMeios.value=(primeira.meios_empregados||[]).join('; ');
       const fundamento = document.getElementById('fundamentoLegal');
       if(fundamento) fundamento.textContent = primeira.subtipos[0]?.fundamento_legal || '';
     }
@@ -208,19 +217,21 @@
       return naturezasSelecionadas.map(n=>({
         tipo_id:n.tipo_id || null,
         nome:n.nome,
-        subtipos:n.subtipos.map(s=>({...s}))
+        subtipos:n.subtipos.map(s=>({...s})), codigo:n.codigo||null, meios_empregados:[...(n.meios_empregados||[])]
       }));
     };
 
     function carregarDadosSalvos(x){
-      if(!x) return;
+      if(!x) return;registroCarregado=x;
       const grupos = [];
       const porChave = new Map();
       const garantir = (tipoId,nome) => {
         const chave = tipoId ? 'id:'+tipoId : 'nome:'+normalizar(nome);
         if(porChave.has(chave)) return porChave.get(chave);
         const tipoCatalogo = Array.isArray(catalogos?.tipos) ? catalogos.tipos.find(t => (tipoId && Number(t.id)===Number(tipoId)) || normalizar(t.nome)===normalizar(nome)) : null;
-        const grupo = {tipo_id:Number(tipoCatalogo?.id || tipoId || 0) || null,nome:tipoCatalogo?.nome || nome,subtipos:[]};
+        const id=Number(tipoCatalogo?.id || tipoId || 0)||null;
+        const salvo=Array.isArray(x.naturezas_meios)?x.naturezas_meios.find(m=>Number(m.tipo_id)===id):null;
+        const grupo = {tipo_id:id,nome:tipoCatalogo?.nome || nome,codigo:salvo?.codigo||codigoTipo(tipoCatalogo),subtipos:[],meios_empregados:Array.isArray(salvo?.meios_empregados)?[...salvo.meios_empregados]:[]};
         porChave.set(chave,grupo);grupos.push(grupo);return grupo;
       };
 
@@ -249,10 +260,35 @@
 
       if(grupos.length){
         naturezasSelecionadas = grupos;
-        renderizar();
+        ultimoTipo=null;atualizarMeios();renderizar();
       }
     }
 
+    window.obterNaturezasMeios=function(){
+      if(window.CavalariaCadastro?.ehAtividade()===true)return null;
+      if(registroCarregado&&!registroCarregado.naturezas_meios&&!importado&&!naturezasSelecionadas.some(n=>n.meios_empregados?.length))return null;
+      return naturezasSelecionadas.filter(n=>n.tipo_id).map(n=>({tipo_id:n.tipo_id,codigo:n.codigo||null,meios_empregados:n.meios_empregados||[]}));
+    };
+    window.NaturezasCadastro={
+      limparPdf(){if(registroCarregado)return;naturezasSelecionadas=[];ultimoTipo=null;importado=false;if(campoMeios)campoMeios.value='';renderizar();},
+      carregarEdicao:carregarDadosSalvos,
+      importar(itens){
+        if(registroCarregado||window.CavalariaCadastro?.ehAtividade()===true)return [];
+        importado=true;naturezasSelecionadas=[];const pendentes=[];
+        for(const item of itens||[]){
+          const tipo=typeof tipoPeloCodigoPpe==='function'?tipoPeloCodigoPpe(item):null;
+          if(!tipo){pendentes.push(item.codigo_ppe);continue;}
+          let n=localizarNatureza(tipo);
+          if(!n){n={tipo_id:Number(tipo.id),nome:tipo.nome,codigo:codigoTipo(tipo),subtipos:[],meios_empregados:[]};naturezasSelecionadas.push(n);}
+          n.meios_empregados=[...new Set([...n.meios_empregados,...(item.meios_empregados||[])])];
+        }
+        if(naturezasSelecionadas.length){const n=naturezasSelecionadas[0],t=catalogos.tipos.find(t=>Number(t.id)===Number(n.tipo_id));campoOcorrencia.value=rotulo(t);campoCrime.value='';ultimoTipo=null;atualizarMeios();try{atualizarSubtipos();}catch(_){}}
+        renderizar();return pendentes;
+      }
+    };
+    campoOcorrencia.addEventListener('input',atualizarMeios);
+    campoOcorrencia.addEventListener('change',atualizarMeios);
+    document.getElementById('cavClasse')?.addEventListener('change',atualizarMeios);
     async function carregarEdicao(){
       const id = new URLSearchParams(location.search).get('id');
       if(!id || carregandoEdicao) return;
@@ -337,8 +373,10 @@
 
     // Antes do código principal salvar, incorpora o que estiver nos campos e
     // mantém os campos legados com a primeira natureza/subtipo para compatibilidade.
-    formulario.addEventListener('submit',function(){
-      adicionarSelecaoAtual({silencioso:true});
+    formulario.addEventListener('submit',function(evento){
+      if(window.CavalariaCadastro?.ehAtividade()===true)return;
+      if(tipoSelecionado()&&!adicionarSelecaoAtual({silencioso:true})){evento.preventDefault();evento.stopImmediatePropagation();alert('Confira a natureza e os meios empregados antes de salvar.');return;}
+      if(campoOcorrencia.value&&!tipoSelecionado()&&naturezasSelecionadas.length&&normalizar(campoOcorrencia.value)!==normalizar(registroCarregado?.ocorrencia)){evento.preventDefault();evento.stopImmediatePropagation();alert('Selecione uma natureza válida na lista.');return;}
       sincronizarCamposLegados();
     },true);
 
