@@ -814,12 +814,14 @@
   </dialog>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="pdf-importer-core.js?v=20261031-operacional1"></script>
+  <script src="ppe-naturezas.js?v=20261119-1"></script>
   <script src="verificacao-quantidades-operacionais.js?v=20261018-auditoria1"></script>
   <script src="bope-subunidades.js?v=20261015-1"></script>
   <script>
     const SUPABASE_URL = "https://jppmhhukujigxupgskdk.supabase.co";
     const SUPABASE_KEY = "sb_publishable_ZVnU35i2x9zwppQqYg7UYw_mzaT43aG";
     const banco = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    let ppeCapturaAtual=null; // Evidência documental, não substitui a natureza estatística nesta fase.
     const escolaCadastro = window.EscolasSIE?.iniciar({
       banco,
       input:document.getElementById("escolaNome"),
@@ -2434,6 +2436,7 @@
     arquivoOcorrenciaPdf.addEventListener("change", async () => {
       const arquivo = arquivoOcorrenciaPdf.files && arquivoOcorrenciaPdf.files[0];
       if (!arquivo) return;
+      ppeCapturaAtual=null;
       document.getElementById("nomePdfSelecionado").textContent = arquivo.name;
       statusImportacaoPdf.hidden = false;
       statusImportacaoPdf.className = "status-importacao";
@@ -2470,6 +2473,11 @@
         const dados = extrairDadosOcorrenciaPdf(texto);
         await sugerirOrigemBopePdf(texto);
         if (!dados.numeroBo && !dados.data && !dados.historico) throw new Error("O documento não corresponde ao modelo de ocorrência reconhecido pelo sistema.");
+        const ppeExtraidas=window.PpeNaturezas?.extrair(texto)||[];
+        let ppeErroCatalogo=null;
+        if(dados.numeroBo&&ppeExtraidas.length){
+          try{const sessaoPpe=await window.SistemaAuth.ready;const respostaPpe=await sessaoPpe.client.rpc("ppe_catalogar_extracao",{p_itens:ppeExtraidas});if(respostaPpe.error)throw respostaPpe.error;}catch(e){ppeErroCatalogo=e;console.warn("Catálogo PPe: falha na alimentação durante a leitura.",e.message);}
+        }
         if (!catalogos.tipos.length) await carregarCatalogos();
         if (PDF_CORE) {
           dados.comandante = PDF_CORE.associarComandante(texto,catalogos.comandantes);
@@ -2481,10 +2489,12 @@
         delete dados.historicoFonte;
         const enderecoPreparado = await preencherRascunhoPdf(dados);
         importacaoPdfPendente = true;
+        if(dados.numeroBo&&ppeExtraidas.length){ppeCapturaAtual={itens:ppeExtraidas,numero:document.getElementById("numeroBo").value.trim(),data:document.getElementById("data").value};}
         const totalPessoas = dados.pessoas.vitimas.length + dados.pessoas.infratores.length + dados.pessoas.envolvidos.length;
         const totalItens = dados.itensOperacionais.armas.length + dados.itensOperacionais.municoes.length + dados.itensOperacionais.entorpecentes.length + dados.itensOperacionais.recuperados.length + dados.itensOperacionais.subtraidos.length + dados.itensOperacionais.armasBrancas.length;
         const pendencias = [
           !document.getElementById("ocorrencia").value && "tipo de ocorrência",
+          ppeErroCatalogo && "catálogo PPe indisponível — a evidência será enviada ao salvar",
           !document.getElementById("comandante").value && (dados.comandante.ambiguo ? "comandante ambíguo" : "comandante"),
           dados.vtrAnalise?.ambiguo && "VTR conflitante/ambígua",
           dados.historicoAnalise?.necessitaConferencia && (dados.historicoAnalise.motivo || "limites do histórico"),
@@ -3035,6 +3045,7 @@
         const providenciasSelecionadas = providenciasDosResultados();
         const itensEstruturados = sincronizarCamposLegadosEstruturados();
         const registro = {
+          ...(ppeCapturaAtual && !registroOriginalEdicao?.ppe_naturezas_originais && ppeCapturaAtual.numero===document.getElementById("numeroBo").value.trim() && ppeCapturaAtual.data===document.getElementById("data").value ? {ppe_naturezas_originais:ppeCapturaAtual.itens} : {}),
           data_ocorrencia: document.getElementById("data").value,
           status_atendimento: statusAtendimento.value,
           motivo_repressao: motivoRepressao.value || null,
