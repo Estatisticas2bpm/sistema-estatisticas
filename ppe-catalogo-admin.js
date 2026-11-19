@@ -57,6 +57,29 @@ function baixar(texto,tipo,nome){const u=URL.createObjectURL(new Blob([texto],{t
 function csvCelula(x){let s=String(x??'');if(/^[\s]*[=+\-@]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';}
 function exportarCsv(){baixar('\ufeff'+linhasExportacao().map(x=>x.map(csvCelula).join(';')).join('\r\n'),'text/csv;charset=utf-8','catalogo-naturezas-ppe.csv');}
 function exportarExcel(){const rows=linhasExportacao().map(row=>'<Row>'+row.map(v=>'<Cell><Data ss:Type="String">'+esc(String(v??'').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g,''))+'</Data></Cell>').join('')+'</Row>').join('');baixar('<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="Naturezas PPe"><Table>'+rows+'</Table></Worksheet></Workbook>','application/xml','catalogo-naturezas-ppe.xml');}
+let historicos=[],histAtual=null,histIds=[];
+async function carregarHistoricos(){
+ const termo=$('histPesquisa').value.trim();
+ if(termo.length<3){aviso('Informe pelo menos três caracteres para pesquisar.',true);return;}
+ $('histBuscar').disabled=true;
+ try{
+  historicos=await rpc('ppe_admin_buscar_historico',{p_nome:termo,p_limite:200});
+  $('histLinhas').innerHTML=historicos.map(o=>'<tr><td>'+esc(o.numero_bo)+'</td><td>'+esc(o.data_ocorrencia)+'</td><td>'+esc(o.unidade_sigla)+'</td><td>'+esc(o.ocorrencia)+(o.crime?' · '+esc(o.crime):'')+'</td><td>'+esc((o.ppe_naturezas_selecionadas||[]).map(id=>catalogo.find(n=>n.id===id)?.codigo_ppe||id).join(', ')||'Não associada')+'</td><td><button type="button" class="btn" data-historico="'+esc(o.id)+'">Associar</button></td></tr>').join('')||'<tr><td colspan="6">Nenhum registro encontrado no escopo autorizado.</td></tr>';
+  aviso(historicos.length+' candidato(s). A busca não confirma equivalência jurídica.');
+ }catch(e){aviso('Falha ao pesquisar: '+e.message,true);}finally{$('histBuscar').disabled=false;}
+}
+function renderHistEditor(){
+ const q=norm($('histBuscaCatalogo').value),lst=$('histOpcoes'),sel=$('histSelecionadas');lst.replaceChildren();sel.replaceChildren();
+ for(const n of catalogo.filter(n=>n.ativo&&n.status_validacao==='VALIDADA'&&!histIds.includes(n.id)&&(!q||norm([n.codigo_ppe,n.descricao_padronizada,n.fundamentacao_legal,...sinonimos.filter(s=>s.natureza_id===n.id).map(s=>s.termo)].join(' ')).includes(q))).slice(0,50)){
+  const b=document.createElement('button');b.type='button';b.className='btn gray';b.style.cssText='display:block;text-align:left;width:100%;margin-bottom:5px';b.textContent=n.codigo_ppe+' — '+n.descricao_padronizada;b.onclick=()=>{if(histIds.length<30)histIds.push(n.id);renderHistEditor();};lst.append(b);
+ }
+ if(!lst.childNodes.length)lst.textContent='Nenhuma natureza administrativamente validada disponível.';
+ for(const id of histIds){const n=catalogo.find(x=>x.id===id);const d=document.createElement('p');d.textContent=(n?n.codigo_ppe+' — '+n.descricao_padronizada:id)+' ';const b=document.createElement('button');b.type='button';b.className='btn gray';b.textContent='Remover';b.onclick=()=>{histIds=histIds.filter(x=>x!==id);renderHistEditor();};d.append(b);sel.append(d);}
+ if(!histIds.length)sel.textContent='Nenhuma natureza selecionada.';
+}
+function abrirHistorico(o){
+ histAtual=o;histIds=[...(o.ppe_naturezas_selecionadas||[])];$('histResumo').textContent='BO '+o.numero_bo+' · '+o.unidade_sigla+' · '+o.ocorrencia+(o.crime?' / '+o.crime:'');$('histBuscaCatalogo').value='';$('histJustificativa').value='';$('histStatus').textContent='';renderHistEditor();$('histEditor').showModal();
+}
 try{
  const auth=window.SistemaAuth?.ready?await window.SistemaAuth.ready:window.SistemaAuth;
  if(!auth?.client||auth.perfil?.perfil!=='ADMIN'){aviso('Acesso restrito ao administrador do SIE-CPC.',true);return;}
@@ -65,6 +88,7 @@ try{
  $('anterior').onclick=()=>{pagina--;render();};$('proxima').onclick=()=>{pagina++;render();};$('atualizar').onclick=carregar;$('nova').onclick=()=>abrirEditor(null);$('csv').onclick=exportarCsv;$('excel').onclick=exportarExcel;$('cancelar').onclick=()=>$('editor').close();$('original').oninput=()=>{if(!editando)$('padronizada').value=$('original').value;};
  document.addEventListener('click',async e=>{
   const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.historico){const o=historicos.find(x=>x.id===b.dataset.historico);if(o)abrirHistorico(o);}
   if(b.dataset.editar){const n=catalogo.find(x=>x.id===b.dataset.editar);if(n)abrirEditor(n);}
   if(b.dataset.resolver){const motivo=prompt('Justifique e documente a resolução (mínimo de 5 caracteres):');if(!motivo||motivo.trim().length<5)return;b.disabled=true;try{await rpc('ppe_admin_resolver',{p_id:b.dataset.resolver,p_tipo:b.dataset.tipo,p_resposta:motivo,p_aceitar:b.dataset.recusar!=='sim'});await carregar();}catch(err){aviso(err.message,true);}finally{b.disabled=false;}}
  });
@@ -77,6 +101,8 @@ try{
   }catch(err){editorAviso(err.message);}finally{$('salvar').disabled=false;}
  };
  $('adicionarSinonimo').onclick=async()=>{if(!editando)return;const termo=$('sinonimo').value.trim();if(termo.length<2){editorAviso('Informe um termo válido.');return;}try{await rpc('ppe_admin_sinonimo',{p_id:editando.id,p_termo:termo,p_remover:false});sinonimos=await todos('naturezas_ppe_sinonimos','termo');$('sinonimo').value='';renderSinonimos();render();}catch(e){editorAviso(e.message);}};
+ $('histBuscar').onclick=carregarHistoricos;$('histBuscaCatalogo').oninput=renderHistEditor;$('histCancelar').onclick=()=>$('histEditor').close();
+ $('histSalvar').onclick=async()=>{const j=$('histJustificativa').value.trim();if(!histAtual||!histIds.length||j.length<5){$('histStatus').textContent='Selecione natureza validada e informe a justificativa.';return;}if(!confirm('Confirmar associação apenas deste BO, preservando a natureza anterior?'))return;$('histSalvar').disabled=true;try{await rpc('ppe_admin_associar_historico',{p_ocorrencia:histAtual.id,p_ids:histIds,p_justificativa:j});$('histEditor').close();await carregar();await carregarHistoricos();}catch(e){$('histStatus').textContent=e.message;}finally{$('histSalvar').disabled=false;}};
  await carregar();
 }catch(e){aviso('Falha de inicialização: '+e.message,true);}
 })();
