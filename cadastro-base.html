@@ -853,7 +853,31 @@
       return ALIASES_LOCAIS_ENTREGA[chaveLocalEntrega(informado)] || informado;
     }
     function preencherLista(id, itens) {
-      document.getElementById(id).innerHTML = itens.map(v => '<option value="'+String(v).replace(/"/g,"&quot;")+'"></option>').join("");
+      const lista=document.getElementById(id);
+      if(id==="listaOcorrencias"){
+        // A mesma pesquisa de antes; o código é apenas um rótulo da opção nativa.
+        const tipos=new Map(catalogos.tipos.map(t=>[t.nome,t]));
+        lista.replaceChildren(...[...new Set(itens)].map(nome=>{
+          const o=document.createElement("option");o.value=nome;
+          const t=tipos.get(nome);
+          if(t?.codigo_ppe)o.label="PPe "+t.codigo_ppe;
+          return o;
+        }));
+        return;
+      }
+      lista.innerHTML = itens.map(v => '<option value="'+String(v).replace(/"/g,"&quot;")+'"></option>').join("");
+    }
+    function tipoPeloCodigoPpe(item){
+      if(!item)return null;
+      const tipo=catalogos.tipos.find(t=>String(t.codigo_ppe||"")===String(item.codigo_ppe));
+      if(!tipo)return null;
+      const nome=normalizarCatalogo(item.descricao_original);
+      const original=normalizarCatalogo(tipo.ppe_descricao_original);
+      const padronizada=normalizarCatalogo(tipo.ppe_descricao_padronizada);
+      if(!nome || (nome!==original && nome!==padronizada))return null;
+      const lei=normalizarCatalogo(item.fundamentacao_legal),leiOriginal=normalizarCatalogo(tipo.ppe_fundamentacao_original);
+      if(lei&&leiOriginal&&lei!==leiOriginal&&nome!==padronizada)return null;
+      return tipo;
     }
     function atualizarSubtipos() {
       const tipo = catalogos.tipos.find(t => t.nome === document.getElementById("ocorrencia").value);
@@ -2364,7 +2388,8 @@
       else if (dados.escolaPdf?.ambiguo) marcarCampoPdf("escolaNome",true,"✓ Escola citada — confirmar o nome manualmente");
       document.getElementById("statusAtendimento").value = "ATENDIDA";
       document.getElementById("municipio").value = normalizarCatalogo(dados.municipio || "BOA VISTA");
-      const tipo = melhorItemCatalogo(catalogos.tipos, dados.natureza, true);
+      // Havendo código legível, não trocar uma natureza jurídica por outra por aproximação textual.
+      const tipo = dados.ppeExtraidas?.length ? tipoPeloCodigoPpe(dados.ppeExtraidas[0]) : melhorItemCatalogo(catalogos.tipos, dados.natureza, true);
       document.getElementById("ocorrencia").value = tipo ? tipo.nome : "";
       atualizarSubtipos();
       if (tipo) {
@@ -2480,8 +2505,15 @@
         const ppeExtraidas=window.PpeNaturezas?.extrairLayout(ppeLayoutAtual)??window.PpeNaturezas?.extrair(texto)??[];
         ppeLayoutAtual=null;
         let ppeErroCatalogo=null;
-        if(dados.numeroBo&&ppeExtraidas.length){
-          try{const sessaoPpe=window.SistemaAuth?.ready?await window.SistemaAuth.ready:window.SistemaAuth;const respostaPpe=await sessaoPpe.client.rpc("ppe_catalogar_extracao",{p_itens:ppeExtraidas});if(respostaPpe.error)throw respostaPpe.error;}catch(e){ppeErroCatalogo=e;console.warn("Catálogo PPe: falha na alimentação durante a leitura.",e.message);}
+        dados.ppeExtraidas= dados.numeroBo ? ppeExtraidas : [];
+        if(dados.ppeExtraidas.length){
+          try{
+            const sessaoPpe=window.SistemaAuth?.ready?await window.SistemaAuth.ready:window.SistemaAuth;
+            const respostaPpe=await sessaoPpe.client.rpc("ppe_catalogar_extracao",{p_itens:dados.ppeExtraidas});
+            if(respostaPpe.error)throw respostaPpe.error;
+            // A nova natureza já deve aparecer na lista aberta do próprio formulário.
+            await carregarCatalogos();
+          }catch(e){ppeErroCatalogo=e;console.warn("Catálogo PPe: falha na alimentação durante a leitura.",e.message);}
         }
         if (!catalogos.tipos.length) await carregarCatalogos();
         if (PDF_CORE) {
