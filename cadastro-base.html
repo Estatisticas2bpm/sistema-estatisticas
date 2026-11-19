@@ -814,14 +814,14 @@
   </dialog>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="pdf-importer-core.js?v=20261031-operacional1"></script>
-  <script src="ppe-naturezas.js?v=20261119-1"></script>
+  <script src="ppe-naturezas.js?v=20261119-2"></script>
   <script src="verificacao-quantidades-operacionais.js?v=20261018-auditoria1"></script>
   <script src="bope-subunidades.js?v=20261015-1"></script>
   <script>
     const SUPABASE_URL = "https://jppmhhukujigxupgskdk.supabase.co";
     const SUPABASE_KEY = "sb_publishable_ZVnU35i2x9zwppQqYg7UYw_mzaT43aG";
     const banco = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    let ppeCapturaAtual=null; // Evidência documental, não substitui a natureza estatística nesta fase.
+    let ppeCapturaAtual=null,ppeLayoutAtual=null; // Evidência documental, não substitui a natureza estatística nesta fase.
     const escolaCadastro = window.EscolasSIE?.iniciar({
       banco,
       input:document.getElementById("escolaNome"),
@@ -2212,7 +2212,8 @@
       pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL;
       const bytes = new Uint8Array(await arquivo.arrayBuffer());
       const documento = await pdfjsLib.getDocument({data:bytes}).promise;
-      const paginas = [];
+      const paginas = [], paginasLayoutPpe=[];
+      ppeLayoutAtual=null;
       try {
         for (let numero = 1; numero <= documento.numPages; numero++) {
           const pagina = await documento.getPage(numero);
@@ -2221,10 +2222,13 @@
           conteudo.items.forEach(item => {
             const y = Math.round(item.transform[5]);
             if (!linhas.has(y)) linhas.set(y, []);
-            linhas.get(y).push({x:item.transform[4], texto:item.str});
+            linhas.get(y).push({x:item.transform[4],texto:item.str,width:item.width});
           });
-          paginas.push(Array.from(linhas.entries()).sort((a,b)=>b[0]-a[0]).map(([,itens])=>itens.sort((a,b)=>a.x-b.x).map(i=>i.texto).join(" ")).join("\n"));
+          const ordenadasPpe=Array.from(linhas.entries()).sort((a,b)=>b[0]-a[0]).map(([,itens])=>itens.sort((a,b)=>a.x-b.x));
+          paginasLayoutPpe.push(ordenadasPpe);
+          paginas.push(ordenadasPpe.map(itens=>itens.map(i=>i.texto).join(" ")).join("\n"));
         }
+        ppeLayoutAtual=paginasLayoutPpe;
         return paginas.join("\n");
       } finally {
         await documento.destroy();
@@ -2473,7 +2477,8 @@
         const dados = extrairDadosOcorrenciaPdf(texto);
         await sugerirOrigemBopePdf(texto);
         if (!dados.numeroBo && !dados.data && !dados.historico) throw new Error("O documento não corresponde ao modelo de ocorrência reconhecido pelo sistema.");
-        const ppeExtraidas=window.PpeNaturezas?.extrair(texto)||[];
+        const ppeExtraidas=window.PpeNaturezas?.extrairLayout(ppeLayoutAtual)??window.PpeNaturezas?.extrair(texto)??[];
+        ppeLayoutAtual=null;
         let ppeErroCatalogo=null;
         if(dados.numeroBo&&ppeExtraidas.length){
           try{const sessaoPpe=window.SistemaAuth?.ready?await window.SistemaAuth.ready:window.SistemaAuth;const respostaPpe=await sessaoPpe.client.rpc("ppe_catalogar_extracao",{p_itens:ppeExtraidas});if(respostaPpe.error)throw respostaPpe.error;}catch(e){ppeErroCatalogo=e;console.warn("Catálogo PPe: falha na alimentação durante a leitura.",e.message);}
