@@ -815,7 +815,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="pdf-importer-core.js?v=20261031-operacional1"></script>
   <script src="ppe-naturezas.js?v=20261119-2"></script>
-  <script src="ppe-cadastro-selecao.js?v=20261119-1"></script>
   <script src="verificacao-quantidades-operacionais.js?v=20261018-auditoria1"></script>
   <script src="bope-subunidades.js?v=20261015-1"></script>
   <script>
@@ -2442,7 +2441,6 @@
       const arquivo = arquivoOcorrenciaPdf.files && arquivoOcorrenciaPdf.files[0];
       if (!arquivo) return;
       ppeCapturaAtual=null;
-      window.PpeSelecao?.limpar();
       document.getElementById("nomePdfSelecionado").textContent = arquivo.name;
       statusImportacaoPdf.hidden = false;
       statusImportacaoPdf.className = "status-importacao";
@@ -2497,7 +2495,6 @@
         const enderecoPreparado = await preencherRascunhoPdf(dados);
         importacaoPdfPendente = true;
         if(dados.numeroBo&&ppeExtraidas.length){ppeCapturaAtual={itens:ppeExtraidas,numero:document.getElementById("numeroBo").value.trim(),data:document.getElementById("data").value};}
-        try{await window.PpeSelecao?.carregarPdf(ppeCapturaAtual?.itens||[],document.getElementById("numeroBo").value.trim(),document.getElementById("data").value);}catch(e){console.warn("Seleção PPe indisponível",e.message);}
         const totalPessoas = dados.pessoas.vitimas.length + dados.pessoas.infratores.length + dados.pessoas.envolvidos.length;
         const totalItens = dados.itensOperacionais.armas.length + dados.itensOperacionais.municoes.length + dados.itensOperacionais.entorpecentes.length + dados.itensOperacionais.recuperados.length + dados.itensOperacionais.subtraidos.length + dados.itensOperacionais.armasBrancas.length;
         const pendencias = [
@@ -2857,7 +2854,6 @@
       if (resposta.error || !resposta.data) { alert("Não foi possível carregar a ocorrência para edição."); return; }
       const x = resposta.data;
       registroOriginalEdicao = x;
-      try{await window.PpeSelecao?.carregarEdicao(x);}catch(e){console.warn("Seleção PPe indisponível na edição",e.message);}
       subunidadeOperacionalPendente = x.subunidade_operacional_id || null;
       if (subunidadeOperacional) await subunidadesBopeProntas;
       const pessoasSalvas = separarPessoas(x.observacao_final);
@@ -3001,8 +2997,6 @@
       if (salvamentoEmAndamento) return;
       if (subunidadeOperacional && !subunidadeOperacional.value) return mostrarErroCampo("subunidadeOperacional","Selecione a unidade operacional responsável: Força Tática, Choque, Canil ou GATE.");
       if (!validarFormularioPrincipal()) return;
-      const ppeSelecaoSalvar=window.PpeSelecao?.campos()||{ok:true,campos:{}};
-      if(!ppeSelecaoSalvar.ok)return mostrarErroCampo("ppeJustificativa",ppeSelecaoSalvar.mensagem);
       const escolaValidada = escolaCadastro ? await escolaCadastro.validar() : {ok:!document.getElementById("escolaNome").value.trim(),id:null,nome:null};
       if(!escolaValidada.ok) return mostrarErroCampo("escolaNome",escolaValidada.mensagem||"Selecione uma escola válida.");
       const botaoSalvar = formulario.querySelector('button[type="submit"]');
@@ -3056,7 +3050,6 @@
         const providenciasSelecionadas = providenciasDosResultados();
         const itensEstruturados = sincronizarCamposLegadosEstruturados();
         const registro = {
-          ...ppeSelecaoSalvar.campos,
           ...(ppeCapturaAtual && !registroOriginalEdicao?.ppe_naturezas_originais && ppeCapturaAtual.numero===document.getElementById("numeroBo").value.trim() && String(ppeCapturaAtual.data).slice(0,4)===document.getElementById("data").value.slice(0,4) ? {ppe_naturezas_originais:ppeCapturaAtual.itens} : {}),
           data_ocorrencia: document.getElementById("data").value,
           status_atendimento: statusAtendimento.value,
