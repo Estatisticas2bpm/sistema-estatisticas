@@ -78,10 +78,9 @@ async function carregarPdf(itens,num,data){
  try{await atualizar();}catch(e){nota('Não foi possível consultar o catálogo: '+e.message);}
  if(v!==versao)return;
  if(podeAssociar()&&!edicao?.ppe_naturezas_selecionadas?.length){
-  for(const x of originais){
-   const n=cat.find(y=>y.codigo_ppe===x.codigo_ppe);
-   if(permitido(n)&&norm(n.descricao_original)===norm(x.descricao_original)&&!ids.includes(n.id))ids.push(n.id);
-  }
+  const candidatos=originais.map(x=>cat.find(y=>y.codigo_ppe===x.codigo_ppe));
+  if(originais.length&&candidatos.every((n,i)=>permitido(n)&&norm(n.descricao_original)===norm(originais[i].descricao_original)))
+   ids=[...new Set(candidatos.map(n=>n.id))];
  }
  listar();
  if(originais.length&&!ids.length)nota('Os códigos foram identificados, mas não há seleção segura. Revise o catálogo ou solicite a inclusão.');
