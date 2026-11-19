@@ -423,11 +423,12 @@
 
         <div class="grade">
           <div class="campo duplo">
-            <label for="ocorrencia">Tipo de Ocorrência *</label>
+            <label for="ocorrencia">Natureza *</label>
             <div class="campo-com-acao"><input id="ocorrencia" name="ocorrencia" type="text" list="listaOcorrencias" autocomplete="off" placeholder="Digite para pesquisar e selecione" required><button class="botao-adicionar" id="abrirNovoTipoOcorrencia" type="button" title="Cadastrar novo tipo de ocorrência" aria-label="Cadastrar novo tipo de ocorrência">+</button></div><datalist id="listaOcorrencias"></datalist>
           </div>
 
-          <div class="campo duplo"><label for="crime">Subtipo da Ocorrência</label><input id="crime" type="text" list="listaSubtipos" autocomplete="off" placeholder="Selecione primeiro o tipo de ocorrência"><datalist id="listaSubtipos"></datalist><small id="fundamentoLegal" style="color:#64748b"></small></div>
+          <div class="campo duplo" id="campoMeiosEmpregados"><label for="meiosEmpregados">Meio(s) Empregado(s)</label><input id="meiosEmpregados" type="text" list="listaMeiosEmpregados" maxlength="3200" autocomplete="off" placeholder="Selecione ou informe; se houver mais de um, separe por ;"><datalist id="listaMeiosEmpregados"><option value="Não Houve"></option><option value="Arma Branca"></option><option value="Arma de Fogo"></option><option value="Veículo"></option><option value="Outro(s)"></option></datalist></div>
+          <div class="campo duplo" id="campoSubtipoLegado"><label for="crime">Subtipo da Ocorrência</label><input id="crime" type="text" list="listaSubtipos" autocomplete="off" placeholder="Selecione primeiro o tipo de ocorrência"><datalist id="listaSubtipos"></datalist><small id="fundamentoLegal" style="color:#64748b"></small></div>
           <div class="campo inteiro">
             <label>Resultados do atendimento</label>
             <div class="resultados-grid">
@@ -814,7 +815,7 @@
   </dialog>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="pdf-importer-core.js?v=20261031-operacional1"></script>
-  <script src="ppe-naturezas.js?v=20261119-2"></script>
+  <script src="ppe-naturezas.js?v=20261119-3"></script>
   <script src="verificacao-quantidades-operacionais.js?v=20261018-auditoria1"></script>
   <script src="bope-subunidades.js?v=20261015-1"></script>
   <script>
@@ -858,14 +859,20 @@
         // A mesma pesquisa de antes; o código é apenas um rótulo da opção nativa.
         const tipos=new Map(catalogos.tipos.map(t=>[t.nome,t]));
         lista.replaceChildren(...[...new Set(itens)].map(nome=>{
-          const o=document.createElement("option");o.value=nome;
-          const t=tipos.get(nome);
-          if(t?.codigo_ppe)o.label="PPe "+t.codigo_ppe;
+          const o=document.createElement("option");const t=tipos.get(nome);
+          o.value=t?rotuloNatureza(t):nome;
           return o;
         }));
         return;
       }
       lista.innerHTML = itens.map(v => '<option value="'+String(v).replace(/"/g,"&quot;")+'"></option>').join("");
+    }
+    function rotuloNatureza(t){
+      return t.codigo_ppe?String(t.codigo_ppe)+": "+(t.ppe_descricao_padronizada||t.nome):t.nome;
+    }
+    function resolverTipoNatureza(valor){
+      const v=normalizarCatalogo(valor);
+      return catalogos.tipos.find(t=>normalizarCatalogo(rotuloNatureza(t))===v||normalizarCatalogo(t.nome)===v)||null;
     }
     function tipoPeloCodigoPpe(item){
       if(!item)return null;
@@ -880,8 +887,10 @@
       return tipo;
     }
     function atualizarSubtipos() {
-      const tipo = catalogos.tipos.find(t => t.nome === document.getElementById("ocorrencia").value);
-      const lista = tipo ? catalogos.subtipos.filter(s => Number(s.tipo_id) === Number(tipo.id)) : [];
+      const tipo = resolverTipoNatureza(document.getElementById("ocorrencia").value);
+      const legado=document.getElementById("campoSubtipoLegado");
+      if(legado){const ocultar=!tipo||!!tipo.codigo_ppe||window.CavalariaCadastro?.ehAtividade()===true;legado.hidden=ocultar;legado.style.display=ocultar?"none":"";}
+      const lista = tipo&&!tipo.codigo_ppe ? catalogos.subtipos.filter(s => Number(s.tipo_id) === Number(tipo.id)) : [];
       preencherLista("listaSubtipos", lista.map(s => s.nome));
       const campo = document.getElementById("crime");
       campo.placeholder = tipo ? "Digite para pesquisar e selecione" : "Selecione primeiro o tipo de ocorrência";
@@ -2392,7 +2401,7 @@
       const tipo = dados.ppeExtraidas?.length ? tipoPeloCodigoPpe(dados.ppeExtraidas[0]) : melhorItemCatalogo(catalogos.tipos, dados.natureza, true);
       document.getElementById("ocorrencia").value = tipo ? tipo.nome : "";
       atualizarSubtipos();
-      if (tipo) {
+      if (tipo && !tipo.codigo_ppe) {
         const subtipos = catalogos.subtipos.filter(s => Number(s.tipo_id) === Number(tipo.id));
         const subtipo = melhorItemCatalogo(subtipos, dados.natureza);
         document.getElementById("crime").value = subtipo ? subtipo.nome : "";
@@ -2466,6 +2475,7 @@
       const arquivo = arquivoOcorrenciaPdf.files && arquivoOcorrenciaPdf.files[0];
       if (!arquivo) return;
       ppeCapturaAtual=null;
+      window.NaturezasCadastro?.limparPdf();
       document.getElementById("nomePdfSelecionado").textContent = arquivo.name;
       statusImportacaoPdf.hidden = false;
       statusImportacaoPdf.className = "status-importacao";
@@ -2525,13 +2535,15 @@
         }
         delete dados.historicoFonte;
         const enderecoPreparado = await preencherRascunhoPdf(dados);
+        const naturezasPendentes=dados.ppeExtraidas?.length?(window.NaturezasCadastro?.importar(dados.ppeExtraidas)||[]):[];
         importacaoPdfPendente = true;
         if(dados.numeroBo&&ppeExtraidas.length){ppeCapturaAtual={itens:ppeExtraidas,numero:document.getElementById("numeroBo").value.trim(),data:document.getElementById("data").value};}
         const totalPessoas = dados.pessoas.vitimas.length + dados.pessoas.infratores.length + dados.pessoas.envolvidos.length;
         const totalItens = dados.itensOperacionais.armas.length + dados.itensOperacionais.municoes.length + dados.itensOperacionais.entorpecentes.length + dados.itensOperacionais.recuperados.length + dados.itensOperacionais.subtraidos.length + dados.itensOperacionais.armasBrancas.length;
         const pendencias = [
           !document.getElementById("ocorrencia").value && "tipo de ocorrência",
-          ppeErroCatalogo && "catálogo PPe indisponível — a evidência será enviada ao salvar",
+          ppeErroCatalogo && "catálogo indisponível — a evidência será enviada ao salvar",
+          naturezasPendentes.length && "conferir naturezas dos códigos "+naturezasPendentes.join(", "),
           !document.getElementById("comandante").value && (dados.comandante.ambiguo ? "comandante ambíguo" : "comandante"),
           dados.vtrAnalise?.ambiguo && "VTR conflitante/ambígua",
           dados.historicoAnalise?.necessitaConferencia && (dados.historicoAnalise.motivo || "limites do histórico"),
@@ -2927,6 +2939,7 @@
       if (document.getElementById("resultadoConducao").checked) document.getElementById("numeroConduzidos").value = Math.max(Number(x.numero_conduzidos)||0,Number(x.numero_prisoes)||0);
       atualizarSubtipos();
       definirCampo("crime",x.crime);
+      window.NaturezasCadastro?.carregarEdicao(x);
       pessoasSalvas.vitimas.forEach(p => adicionarPessoa("vitima",p));
       pessoasSalvas.infratores.forEach(p => adicionarPessoa("infrator",p));
       document.getElementById("envolvidosAdicionais").replaceChildren();
@@ -3082,6 +3095,7 @@
         const providenciasSelecionadas = providenciasDosResultados();
         const itensEstruturados = sincronizarCamposLegadosEstruturados();
         const registro = {
+          naturezas_meios:window.obterNaturezasMeios?.()??registroOriginalEdicao?.naturezas_meios??null,
           ...(ppeCapturaAtual && !registroOriginalEdicao?.ppe_naturezas_originais && ppeCapturaAtual.numero===document.getElementById("numeroBo").value.trim() && String(ppeCapturaAtual.data).slice(0,4)===document.getElementById("data").value.slice(0,4) ? {ppe_naturezas_originais:ppeCapturaAtual.itens} : {}),
           data_ocorrencia: document.getElementById("data").value,
           status_atendimento: statusAtendimento.value,
@@ -3227,7 +3241,7 @@
     });
   </script>
   <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB-IcfbT-uuHlYSNcvmhbSqkPGqh2wl4Rc&libraries=places&v=weekly&loading=async&callback=iniciarAutocompleteGoogle"></script>
-<script src="cadastro-subtipo.js?v=20261109-1"></script>
+<script src="cadastro-subtipo.js?v=20261119-3"></script>
   <script src="cadastro-catalogo-admin.js?v=20261109-1"></script>
 </body>
 </html>
