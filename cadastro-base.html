@@ -428,7 +428,7 @@
           </div>
 
           <div class="campo duplo" id="campoMeiosEmpregados"><label for="meiosEmpregados">Meio(s) Empregado(s)</label><input id="meiosEmpregados" type="text" list="listaMeiosEmpregados" maxlength="3200" autocomplete="off" placeholder="Selecione ou informe; se houver mais de um, separe por ;"><datalist id="listaMeiosEmpregados"><option value="Não Houve"></option><option value="Arma Branca"></option><option value="Arma de Fogo"></option><option value="Veículo"></option><option value="Outro(s)"></option></datalist></div>
-          <div class="campo duplo" id="campoSubtipoLegado"><label for="crime">Subtipo da Ocorrência</label><input id="crime" type="text" list="listaSubtipos" autocomplete="off" placeholder="Selecione primeiro o tipo de ocorrência"><datalist id="listaSubtipos"></datalist><small id="fundamentoLegal" style="color:#64748b"></small></div>
+          <div class="campo duplo" id="campoSubtipoLegado" hidden style="display:none"><label for="crime">Subtipo da Ocorrência</label><input id="crime" type="text" list="listaSubtipos" autocomplete="off" placeholder="Selecione primeiro o tipo de ocorrência"><datalist id="listaSubtipos"></datalist><small id="fundamentoLegal" style="color:#64748b"></small></div>
           <div class="campo inteiro">
             <label>Resultados do atendimento</label>
             <div class="resultados-grid">
@@ -1314,6 +1314,8 @@
     }
     const modalTipoOcorrencia = document.getElementById("modalTipoOcorrencia");
     document.getElementById("abrirNovoTipoOcorrencia").addEventListener("click", function() {
+      const selecionada=resolverTipoNatureza(document.getElementById("ocorrencia").value);
+      if(selecionada){document.getElementById("ocorrencia").value=rotuloNatureza(selecionada);atualizarSubtipos();alert("Esta natureza já está cadastrada.");return;}
       document.getElementById("novoTipoOcorrencia").value = normalizarCatalogo(document.getElementById("ocorrencia").value);
       modalTipoOcorrencia.showModal();
     });
@@ -1322,7 +1324,8 @@
       evento.preventDefault();
       const nome = normalizarCatalogo(document.getElementById("novoTipoOcorrencia").value);
       if (nome.length < 3) { alert("Informe um nome com pelo menos 3 caracteres."); return; }
-      const existente = catalogos.tipos.find(t => normalizarCatalogo(t.nome) === nome);
+      const existente = resolverTipoNatureza(nome);
+      if(!existente&&/^\d{1,9}\s*:/.test(nome)){alert("Para incluir um código, importe o PDF que contém a natureza. Não cadastre o código como parte de um nome livre.");return;}
       if (existente) { document.getElementById("ocorrencia").value = existente.nome; modalTipoOcorrencia.close(); atualizarSubtipos(); return; }
       const resposta = await banco.rpc("cadastrar_tipo_ocorrencia_publico", {p_nome:nome});
       if (resposta.error) { alert("Não foi possível cadastrar o tipo: " + resposta.error.message); return; }
@@ -3242,6 +3245,6 @@
   </script>
   <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB-IcfbT-uuHlYSNcvmhbSqkPGqh2wl4Rc&libraries=places&v=weekly&loading=async&callback=iniciarAutocompleteGoogle"></script>
 <script src="cadastro-subtipo.js?v=20261119-3"></script>
-  <script src="cadastro-catalogo-admin.js?v=20261109-1"></script>
+  <script src="cadastro-catalogo-admin.js?v=20261119-3"></script>
 </body>
 </html>
