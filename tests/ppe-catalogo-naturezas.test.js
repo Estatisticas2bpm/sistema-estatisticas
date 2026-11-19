@@ -22,3 +22,21 @@ assert.match(ponte,/natureza_id uuid primary key/);
 assert.match(ponte,/tipo_id bigint not null unique/);
 assert.match(ponte,/n\.status_validacao<>'DIVERGENTE'/);
 assert.match(ponte,/trg_ppe_integrar_tipo/);
+
+
+const dois=extrairLayout([[ [{x:87,texto:'Natureza'},{x:380,texto:'Meio(s) Empregado(s)'}],
+ [{x:87,width:158,texto:'455: DESOBEDIÊNCIA (ART. 330 DO CPB)'},{x:380,width:40,texto:'Não Houve'}],
+ [{x:87,width:248,texto:'1079: TRÁFICO DE DROGAS (ART. 33 CAPUT DA LEI 11.343/2006)'},{x:380,width:27,texto:'Veículo'}],
+ [{x:276,texto:'ENVOLVIDO(S)'}]]]);
+assert.deepEqual(dois.map(x=>[x.codigo_ppe,x.meios_empregados]),[['455',['Não Houve']],['1079',['Veículo']]]);
+const separado=extrair('Natureza\nMeio(s) Empregado(s)\n1288: TENTATIVA DE HOMICÍDIO\nArma Branca\nMotivação\nEmbriaguez/droga\nENVOLVIDO(S)');
+assert.equal(separado[0].descricao_original,'TENTATIVA DE HOMICÍDIO');
+assert.deepEqual(separado[0].meios_empregados,['Arma Branca']);
+assert.deepEqual(extrair('Natureza Meio(s) Empregado(s)\n1095: ACIDENTE DE TRÂNSITO -AUTO LESÃO\nENVOLVIDO(S)')[0].meios_empregados,[]);
+assert.match(p,/id="meiosEmpregados"/);
+assert.match(p,/id="campoSubtipoLegado" hidden/);
+assert.match(p,/NaturezasCadastro\?\.importar\(dados\.ppeExtraidas\)/);
+assert.match(p,/naturezas_meios:window\./);
+assert.match(read('dashboard.html'),/function renderNaturezasMeios\(a\)/);
+assert.match(read('supabase/migrations/20261119153000_naturezas_meios_por_ocorrencia.sql'),/Código não corresponde à natureza/);
+console.log('PASS: natureza, meios por linha e separação de motivação; ausência de informação preservada.');
