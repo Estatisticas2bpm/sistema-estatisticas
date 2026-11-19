@@ -1326,16 +1326,16 @@
       if (nome.length < 3) { alert("Informe um nome com pelo menos 3 caracteres."); return; }
       const existente = resolverTipoNatureza(nome);
       if(!existente&&/^\d{1,9}\s*:/.test(nome)){alert("Para incluir um código, importe o PDF que contém a natureza. Não cadastre o código como parte de um nome livre.");return;}
-      if (existente) { document.getElementById("ocorrencia").value = existente.nome; modalTipoOcorrencia.close(); atualizarSubtipos(); return; }
+      if (existente) { document.getElementById("ocorrencia").value = rotuloNatureza(existente); modalTipoOcorrencia.close(); document.getElementById("ocorrencia").dispatchEvent(new Event("change",{bubbles:true})); return; }
       const resposta = await banco.rpc("cadastrar_tipo_ocorrencia_publico", {p_nome:nome});
       if (resposta.error) { alert("Não foi possível cadastrar o tipo: " + resposta.error.message); return; }
       const novo = resposta.data;
       catalogos.tipos.push(novo);
       catalogos.tipos.sort((a,b)=>a.nome.localeCompare(b.nome,"pt-BR"));
       preencherLista("listaOcorrencias", catalogos.tipos.map(t=>t.nome));
-      document.getElementById("ocorrencia").value = novo.nome;
+      document.getElementById("ocorrencia").value = rotuloNatureza(novo);
       modalTipoOcorrencia.close();
-      atualizarSubtipos();
+      document.getElementById("ocorrencia").dispatchEvent(new Event("change",{bubbles:true}));
     });
     document.getElementById("crime").addEventListener("change", function() {
       const subtipo = catalogos.subtipos.find(s => s.nome === this.value);
@@ -3098,7 +3098,7 @@
         const providenciasSelecionadas = providenciasDosResultados();
         const itensEstruturados = sincronizarCamposLegadosEstruturados();
         const registro = {
-          naturezas_meios:window.obterNaturezasMeios?.()??registroOriginalEdicao?.naturezas_meios??null,
+          naturezas_meios:window.CavalariaCadastro?.ehAtividade()===true?null:(window.obterNaturezasMeios?.()??registroOriginalEdicao?.naturezas_meios??null),
           ...(ppeCapturaAtual && !registroOriginalEdicao?.ppe_naturezas_originais && ppeCapturaAtual.numero===document.getElementById("numeroBo").value.trim() && String(ppeCapturaAtual.data).slice(0,4)===document.getElementById("data").value.slice(0,4) ? {ppe_naturezas_originais:ppeCapturaAtual.itens} : {}),
           data_ocorrencia: document.getElementById("data").value,
           status_atendimento: statusAtendimento.value,
@@ -3244,7 +3244,7 @@
     });
   </script>
   <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB-IcfbT-uuHlYSNcvmhbSqkPGqh2wl4Rc&libraries=places&v=weekly&loading=async&callback=iniciarAutocompleteGoogle"></script>
-<script src="cadastro-subtipo.js?v=20261119-3"></script>
+<script src="cadastro-subtipo.js?v=20261119-4"></script>
   <script src="cadastro-catalogo-admin.js?v=20261119-3"></script>
 </body>
 </html>
