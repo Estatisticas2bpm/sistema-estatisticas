@@ -311,6 +311,22 @@
             if(vinculados.length===1){tipo=vinculados[0].t;subtipo=vinculados[0].st;}
           }
           if(!tipo){
+            // Um qualificador contextual explícito do PPE prevalece sobre
+            // categorias jurídicas homônimas. Só associar se houver exatamente
+            // uma natureza institucional e um subtipo com o código informado.
+            const contextos=[...descricao.matchAll(/\\(([^()]*)\\)/g)]
+              .map(m=>normalizar(m[1])).filter(x=>x&&!/\\b(?:ART\\.?|ARTIGO|LEI|DECRETO|CPB|C[ÓO]DIGO PENAL)\\b/i.test(x));
+            const pais=contextos.flatMap(ctx=>(catalogos.tipos||[]).filter(t=>!t.codigo_ppe&&normalizar(t.nome)===ctx));
+            const paisUnicos=[...new Map(pais.map(t=>[Number(t.id),t])).values()];
+            if(contextos.length&&paisUnicos.length){
+              if(paisUnicos.length!==1){pendentes.push(codigo+' (contexto ambíguo)');continue;}
+              const subs=(catalogos.subtipos||[]).filter(st=>Number(st.tipo_id)===Number(paisUnicos[0].id)
+                && normalizar(st.nome).startsWith(codigo+': '));
+              if(subs.length!==1){pendentes.push(codigo+' (subtipo contextual pendente)');continue;}
+              tipo=paisUnicos[0];subtipo=subs[0];
+            }
+          }
+          if(!tipo){
             tipo=typeof tipoPeloCodigoPpe==='function'?tipoPeloCodigoPpe(item):null;
             if(!tipo){pendentes.push(codigo);continue;}
           }
