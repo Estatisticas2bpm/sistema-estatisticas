@@ -301,11 +301,20 @@
             tipo=typeof tipoPeloCodigoPpe==='function'?tipoPeloCodigoPpe(item):null;
             if(!tipo){pendentes.push(codigo);continue;}
           }
+          const meiosItem=Array.isArray(item.meios_empregados)?item.meios_empregados.filter(x=>typeof x==='string'&&x.trim()).map(x=>x.trim()):[];
           let n=localizarNatureza(tipo);
+          // O armazenamento atual vincula meios à natureza principal. Quando
+          // dois subtipos da mesma natureza possuem meios distintos, NÃO
+          // mesclar os meios: exigir conferência antes do salvamento.
+          if(n && subtipo && n.subtipos.length && !n.subtipos.some(st=>Number(st.id)===Number(subtipo.id))
+             && JSON.stringify([...n.meios_empregados].sort())!==JSON.stringify([...meiosItem].sort())){
+            pendentes.push(codigo+' (meios distintos na mesma natureza)');
+            continue;
+          }
           if(!n){n={tipo_id:Number(tipo.id),nome:tipo.nome,codigo:codigoTipo(tipo),subtipos:[],meios_empregados:[]};naturezasSelecionadas.push(n);}
           if(subtipo&&!n.subtipos.some(st=>Number(st.id)===Number(subtipo.id)))
             n.subtipos.push({id:Number(subtipo.id),nome:subtipo.nome,fundamento_legal:subtipo.fundamento_legal||null});
-          n.meios_empregados=[...new Set([...n.meios_empregados,...(item.meios_empregados||[])])];
+          n.meios_empregados=[...new Set([...n.meios_empregados,...meiosItem])];
         }
         if(naturezasSelecionadas.length){
           const n=naturezasSelecionadas[0],t=catalogos.tipos.find(t=>Number(t.id)===Number(n.tipo_id));
