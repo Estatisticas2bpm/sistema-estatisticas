@@ -291,6 +291,10 @@
                 && normalizar(st.nome).startsWith(codigo+': '));
               if(candidatos.length===1)subtipo=candidatos[0];
               if(!subtipo){pendentes.push(codigo);continue;}
+            } else {
+              // Contexto explícito: não cair em tipo jurídico homônimo.
+              pendentes.push(codigo);
+              continue;
             }
           }
           if(!tipo){
