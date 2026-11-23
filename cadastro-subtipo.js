@@ -318,8 +318,8 @@
               .map(m=>normalizar(m[1])).filter(x=>x&&!/\\b(?:ART\\.?|ARTIGO|LEI|DECRETO|CPB|C[ÓO]DIGO PENAL)\\b/i.test(x));
             const pais=contextos.flatMap(ctx=>(catalogos.tipos||[]).filter(t=>!t.codigo_ppe&&normalizar(t.nome)===ctx));
             const paisUnicos=[...new Map(pais.map(t=>[Number(t.id),t])).values()];
-            if(contextos.length&&paisUnicos.length){
-              if(paisUnicos.length!==1){pendentes.push(codigo+' (contexto ambíguo)');continue;}
+            if(contextos.length){
+              if(paisUnicos.length!==1){pendentes.push(codigo+' (contexto sem vínculo único)');continue;}
               const subs=(catalogos.subtipos||[]).filter(st=>Number(st.tipo_id)===Number(paisUnicos[0].id)
                 && normalizar(st.nome).startsWith(codigo+': '));
               if(subs.length!==1){pendentes.push(codigo+' (subtipo contextual pendente)');continue;}
