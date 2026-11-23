@@ -298,6 +298,19 @@
             }
           }
           if(!tipo){
+            // Reutiliza subtipo já catalogado somente quando código e descrição
+            // oficial concordam, com vínculo único a uma natureza principal.
+            const descricaoBase=descricao.replace(/\\s*\\([^()]*\\)/g,'').trim();
+            const candidatos=(catalogos.subtipos||[]).filter(st=>{
+              const nome=normalizar(st.nome);
+              return nome.startsWith(codigo+': ') &&
+                normalizar(nome.slice((codigo+': ').length))===descricaoBase;
+            });
+            const vinculados=candidatos.map(st=>({st,t:catalogos.tipos.find(t=>Number(t.id)===Number(st.tipo_id))}))
+              .filter(v=>v.t&&!v.t.codigo_ppe);
+            if(vinculados.length===1){tipo=vinculados[0].t;subtipo=vinculados[0].st;}
+          }
+          if(!tipo){
             tipo=typeof tipoPeloCodigoPpe==='function'?tipoPeloCodigoPpe(item):null;
             if(!tipo){pendentes.push(codigo);continue;}
           }
