@@ -300,7 +300,7 @@
           if(!tipo){
             // Reutiliza subtipo já catalogado somente quando código e descrição
             // oficial concordam, com vínculo único a uma natureza principal.
-            const descricaoBase=descricao.replace(/\\s*\\([^()]*\\)/g,'').trim();
+            const descricaoBase=descricao.replace(/\s*\([^()]*\)/g,'').trim();
             const candidatos=(catalogos.subtipos||[]).filter(st=>{
               const nome=normalizar(st.nome);
               return nome.startsWith(codigo+': ') &&
