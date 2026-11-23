@@ -2515,7 +2515,13 @@
         const dados = extrairDadosOcorrenciaPdf(texto);
         await sugerirOrigemBopePdf(texto);
         if (!dados.numeroBo && !dados.data && !dados.historico) throw new Error("O documento não corresponde ao modelo de ocorrência reconhecido pelo sistema.");
-        const ppeExtraidas=window.PpeNaturezas?.extrairLayout(ppeLayoutAtual)??window.PpeNaturezas?.extrair(texto)??[];
+        // O extrator por coordenadas pode reconhecer o cabeçalho mas não obter itens
+        // (ex.: natureza quebrada em duas linhas). Nesse caso, tentar o texto
+        // linearizado em vez de tratar [] como resultado definitivo.
+        const ppePorLayout=window.PpeNaturezas?.extrairLayout(ppeLayoutAtual);
+        const ppeExtraidas=Array.isArray(ppePorLayout)&&ppePorLayout.length
+          ? ppePorLayout
+          : (window.PpeNaturezas?.extrair(texto)||[]);
         ppeLayoutAtual=null;
         let ppeErroCatalogo=null;
         dados.ppeExtraidas= dados.numeroBo ? ppeExtraidas : [];
