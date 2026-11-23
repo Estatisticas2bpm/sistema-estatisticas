@@ -885,7 +885,7 @@
       // cadastrada (ex.: AMEAÇA (ART. 147 DO CPB) (VIOLÊNCIA DOMÉSTICA...)).
       // Exigir o mesmo código e aceitar somente sufixos parentéticos completos.
       const qualificacao=(base)=>base && nome.startsWith(base) &&
-        /^\\s*(?:\\([^()]*\\)\\s*)+$/.test(nome.slice(base.length));
+        /^\s*(?:[(][^()]+[)]\s*)+$/.test(nome.slice(base.length));
       if(!nome || (nome!==original && nome!==padronizada &&
           !qualificacao(original) && !qualificacao(padronizada)))return null;
       const lei=normalizarCatalogo(item.fundamentacao_legal),leiOriginal=normalizarCatalogo(tipo.ppe_fundamentacao_original);
