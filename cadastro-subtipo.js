@@ -280,7 +280,7 @@
         for(const item of itens||[]){
           const descricao=normalizar(item.descricao_original);
           const codigo=String(item.codigo_ppe||'').trim();
-          const contextoDomestico=/\\(VIOL[ÊE]NCIA DOM[ÉE]STICA CONTRA A MULHER\\)/i.test(descricao);
+          const contextoDomestico=/\(VIOL[ÊE]NCIA DOM[ÉE]STICA CONTRA A MULHER\)/i.test(descricao);
           let tipo=null,subtipo=null;
           // Classificação institucional: o qualificador explícito define a natureza
           // principal; o código PPE define o subtipo, nunca a semelhança vaga.
