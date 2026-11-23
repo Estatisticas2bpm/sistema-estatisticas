@@ -288,7 +288,7 @@
             tipo=catalogos.tipos.find(t=>normalizar(t.nome)==='VIOLÊNCIA DOMÉSTICA CONTRA A MULHER'&&!t.codigo_ppe)||null;
             if(tipo){
               const candidatos=catalogos.subtipos.filter(st=>Number(st.tipo_id)===Number(tipo.id)
-                && normalizar(st.nome).match(new RegExp('^'+codigo.replace(/[^0-9]/g,'')+':\\\\s')));
+                && normalizar(st.nome).startsWith(codigo+': '));
               if(candidatos.length===1)subtipo=candidatos[0];
               if(!subtipo){pendentes.push(codigo);continue;}
             }
