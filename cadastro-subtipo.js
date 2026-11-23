@@ -278,13 +278,40 @@
         if(registroCarregado||window.CavalariaCadastro?.ehAtividade()===true)return [];
         importado=true;naturezasSelecionadas=[];const pendentes=[];
         for(const item of itens||[]){
-          const tipo=typeof tipoPeloCodigoPpe==='function'?tipoPeloCodigoPpe(item):null;
-          if(!tipo){pendentes.push(item.codigo_ppe);continue;}
+          const descricao=normalizar(item.descricao_original);
+          const codigo=String(item.codigo_ppe||'').trim();
+          const contextoDomestico=/\\(VIOL[ÊE]NCIA DOM[ÉE]STICA CONTRA A MULHER\\)/i.test(descricao);
+          let tipo=null,subtipo=null;
+          // Classificação institucional: o qualificador explícito define a natureza
+          // principal; o código PPE define o subtipo, nunca a semelhança vaga.
+          if(contextoDomestico){
+            tipo=catalogos.tipos.find(t=>normalizar(t.nome)==='VIOLÊNCIA DOMÉSTICA CONTRA A MULHER'&&!t.codigo_ppe)||null;
+            if(tipo){
+              const candidatos=catalogos.subtipos.filter(st=>Number(st.tipo_id)===Number(tipo.id)
+                && normalizar(st.nome).match(new RegExp('^'+codigo.replace(/[^0-9]/g,'')+':\\\\s')));
+              if(candidatos.length===1)subtipo=candidatos[0];
+              if(!subtipo){pendentes.push(codigo);continue;}
+            }
+          }
+          if(!tipo){
+            tipo=typeof tipoPeloCodigoPpe==='function'?tipoPeloCodigoPpe(item):null;
+            if(!tipo){pendentes.push(codigo);continue;}
+          }
           let n=localizarNatureza(tipo);
           if(!n){n={tipo_id:Number(tipo.id),nome:tipo.nome,codigo:codigoTipo(tipo),subtipos:[],meios_empregados:[]};naturezasSelecionadas.push(n);}
+          if(subtipo&&!n.subtipos.some(st=>Number(st.id)===Number(subtipo.id)))
+            n.subtipos.push({id:Number(subtipo.id),nome:subtipo.nome,fundamento_legal:subtipo.fundamento_legal||null});
           n.meios_empregados=[...new Set([...n.meios_empregados,...(item.meios_empregados||[])])];
         }
-        if(naturezasSelecionadas.length){const n=naturezasSelecionadas[0],t=catalogos.tipos.find(t=>Number(t.id)===Number(n.tipo_id));campoOcorrencia.value=rotulo(t);campoCrime.value='';ultimoTipo=null;atualizarMeios();try{atualizarSubtipos();}catch(_){}}
+        if(naturezasSelecionadas.length){
+          const n=naturezasSelecionadas[0],t=catalogos.tipos.find(t=>Number(t.id)===Number(n.tipo_id));
+          campoOcorrencia.value=t?.nome||n.nome;
+          try{atualizarSubtipos();}catch(_){}
+          campoCrime.value=n.subtipos[0]?.nome||'';
+          ultimoTipo=null;
+          if(campoMeios)campoMeios.value=n.meios_empregados.join('; ');
+          atualizarMeios();
+        }
         renderizar();return pendentes;
       }
     };
