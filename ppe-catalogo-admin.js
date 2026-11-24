@@ -5,7 +5,9 @@ const $=id=>document.getElementById(id);
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const norm=x=>String(x??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
 const dt=x=>x?new Date(x).toLocaleDateString('pt-BR',{timeZone:'America/Boa_Vista'}):'—';
-let db,catalogo=[],sinonimos=[],divergencias=[],solicitacoes=[],auditoria=[],pagina=0,editando=null,carregando=false;
+let db,catalogo=[],sinonimos=[],divergencias=[],fontes=[],solicitacoes=[],auditoria=[],pagina=0,editando=null,carregando=false;
+let fontesPorNatureza=new Map();
+const codigosDocumentais=id=>[...new Set((fontesPorNatureza.get(id)||[]).map(f=>f.codigo_documento).filter(Boolean))];
 const aviso=(m,e=false)=>{$('status').textContent=m;$('status').className=e?'erro':''};
 const editorAviso=m=>$('editorStatus').textContent=m;
 async function rpc(name,args){const r=await db.rpc(name,args);if(r.error)throw Error(r.error.message);return r.data;}
@@ -13,7 +15,7 @@ async function todos(tabela,ordem){let a=[];for(let i=0;;i+=500){const r=await d
 function filtrados(){
  const q=norm($('pesquisa').value.trim()),status=$('filtroStatus').value,ativo=$('filtroAtivo').value,categoria=$('filtroCategoria').value;
  const mapa=new Map();for(const s of sinonimos){if(!mapa.has(s.natureza_id))mapa.set(s.natureza_id,[]);mapa.get(s.natureza_id).push(s.termo);}
- return catalogo.filter(n=>(!status||n.status_validacao===status)&&(!ativo||String(n.ativo)===ativo)&&(!categoria||n.categoria===categoria)&&(!q||norm([n.codigo_ppe,n.descricao_original,n.descricao_padronizada,n.fundamentacao_legal,n.categoria,...(mapa.get(n.id)||[])].join(' ')).includes(q)));
+ return catalogo.filter(n=>(!status||n.status_validacao===status)&&(!ativo||String(n.ativo)===ativo)&&(!categoria||n.categoria===categoria)&&(!q||norm([n.codigo_ppe,n.descricao_original,n.descricao_padronizada,n.fundamentacao_legal,n.categoria,...codigosDocumentais(n.id),...(mapa.get(n.id)||[])].join(' ')).includes(q)));
 }
 function render(){
  const g=filtrados(),mes=new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Boa_Vista',year:'numeric',month:'2-digit'}).format(new Date());
@@ -23,6 +25,7 @@ function render(){
  $('linhas').innerHTML=g.slice(pagina*50,pagina*50+50).map(n=>'<tr><td><b>'+esc(n.codigo_ppe)+'</b></td><td class="descricao">'+esc(n.descricao_original)+'</td><td class="descricao">'+esc(n.descricao_padronizada)+'</td><td>'+esc(n.fundamentacao_legal||'—')+'</td><td>'+esc(n.categoria||'—')+'</td><td>'+n.quantidade_registros+'</td><td>'+esc(dt(n.primeiro_registro))+'</td><td>'+esc(dt(n.ultimo_registro))+'</td><td>'+esc(n.status_validacao)+(n.ativo?' · Ativa':' · Inativa')+'</td><td><button type="button" class="btn" data-editar="'+esc(n.id)+'">Revisar</button></td></tr>').join('')||'<tr><td colspan="10">Nenhuma natureza neste recorte.</td></tr>';
  $('pagina').textContent=g.length+' resultado(s) · página '+(pagina+1)+' de '+Math.max(1,Math.ceil(g.length/50));$('anterior').disabled=pagina===0;$('proxima').disabled=(pagina+1)*50>=g.length;
  const mapa=new Map(catalogo.map(x=>[x.id,x]));
+ $('fontesPendentes').innerHTML=fontes.filter(f=>!f.natureza_id).map(f=>'<article class="item"><b>'+esc(f.codigo_documento||'Sem código no PDF')+'</b><p>'+esc(f.descricao_documento)+'</p><p>'+esc(f.fundamento_documento||'Fundamento não informado')+' · '+esc(dt(f.ultimo_registro))+'</p></article>').join('')||'<p class="muted">Nenhuma fonte sem correspondência.</p>';
  $('divergencias').innerHTML=divergencias.filter(d=>!d.resolvido_em).map(d=>'<article class="item"><b>'+esc(mapa.get(d.natureza_id)?.codigo_ppe||'—')+'</b><p>Original: '+esc(mapa.get(d.natureza_id)?.descricao_original||'—')+'</p><p>Identificada: '+esc(d.descricao)+'</p><p>Fundamento: '+esc(d.fundamentacao_legal||'—')+' · '+esc(dt(d.identificado_em))+'</p><div class="acoes"><button type="button" class="btn" data-editar="'+esc(d.natureza_id)+'">Revisar catálogo</button><button type="button" class="btn gray" data-resolver="'+esc(d.id)+'" data-tipo="DIVERGENCIA">Resolver divergência</button></div></article>').join('')||'<p class="muted">Nenhuma divergência pendente.</p>';
  $('solicitacoes').innerHTML=solicitacoes.filter(s=>s.status==='PENDENTE').map(s=>'<article class="item"><b>'+esc(s.descricao)+'</b><p>'+esc(dt(s.criado_em))+' · Unidade ID: '+esc(s.unidade_id)+'</p><div class="acoes"><button type="button" class="btn green" data-resolver="'+esc(s.id)+'" data-tipo="SOLICITACAO">Marcar atendida</button><button type="button" class="btn gray" data-resolver="'+esc(s.id)+'" data-tipo="SOLICITACAO" data-recusar="sim">Recusar</button></div></article>').join('')||'<p class="muted">Nenhuma solicitação pendente.</p>';
  $('auditoria').innerHTML=auditoria.map(a=>'<tr><td>'+esc(new Date(a.criado_em).toLocaleString('pt-BR',{timeZone:'America/Boa_Vista'}))+'</td><td>'+esc(a.acao)+'</td><td>'+esc(mapa.get(a.natureza_id)?.codigo_ppe||'—')+'</td><td>'+esc(a.justificativa||'—')+'</td><td>'+esc(a.usuario_id||'—')+'</td></tr>').join('')||'<tr><td colspan="5">Sem alterações registradas.</td></tr>';
@@ -30,8 +33,14 @@ function render(){
 async function carregar(){
  if(carregando)return;carregando=true;$('atualizar').disabled=true;aviso('Consultando catálogo...');
  try{
-  const [c,s,d,r,a]=await Promise.all([todos('naturezas_ppe','codigo_ppe'),todos('naturezas_ppe_sinonimos','termo'),todos('naturezas_ppe_divergencias','identificado_em'),todos('naturezas_ppe_solicitacoes','criado_em'),db.from('naturezas_ppe_auditoria').select('*').order('criado_em',{ascending:false}).limit(50)]);
-  if(a.error)throw Error(a.error.message);catalogo=c;sinonimos=s;divergencias=d;solicitacoes=r;auditoria=a.data||[];
+  const [c,s,d,r,a,f]=await Promise.all([todos('naturezas_ppe','id'),todos('naturezas_ppe_sinonimos','termo'),todos('naturezas_ppe_divergencias','identificado_em'),todos('naturezas_ppe_solicitacoes','criado_em'),db.from('naturezas_ppe_auditoria').select('*').order('criado_em',{ascending:false}).limit(50),todos('naturezas_ppe_fontes','id')]);
+  if(a.error)throw Error(a.error.message);catalogo=c.sort((x,y)=>String(x.codigo_ppe||'').localeCompare(String(y.codigo_ppe||''),'pt-BR',{numeric:true})||x.descricao_padronizada.localeCompare(y.descricao_padronizada,'pt-BR'));sinonimos=s;divergencias=d;fontes=f;solicitacoes=r;auditoria=a.data||[];
+  fontesPorNatureza=new Map();
+  for(const fonte of f){
+   if(!fonte.natureza_id)continue;
+   if(!fontesPorNatureza.has(fonte.natureza_id))fontesPorNatureza.set(fonte.natureza_id,[]);
+   fontesPorNatureza.get(fonte.natureza_id).push(fonte);
+  }
   const cat=$('filtroCategoria').value;$('filtroCategoria').replaceChildren(new Option('Todas',''));for(const v of [...new Set(c.map(x=>x.categoria).filter(Boolean))].sort())$('filtroCategoria').add(new Option(v,v));$('filtroCategoria').value=cat;
   render();aviso('Catálogo atualizado.');
  }catch(e){aviso('Falha ao carregar: '+e.message,true);}
@@ -46,9 +55,13 @@ function renderSinonimos(){
 }
 function abrirEditor(n){
  editando=n||null;$('formEditor').reset();editorAviso('');
- $('tituloEditor').textContent=n?'Revisar natureza '+n.codigo_ppe:'Incluir código validado';
- $('codigo').readOnly=!!n;$('original').readOnly=!!n;$('padronizada').readOnly=!n;
+ $('tituloEditor').textContent=n?(n.codigo_ppe?'Revisar natureza '+n.codigo_ppe:'Revisar natureza sem código operacional'):'Incluir código validado';
+ $('codigo').readOnly=!!n;$('codigo').required=!n;$('original').readOnly=!!n;$('padronizada').readOnly=!n;
  $('codigo').value=n?.codigo_ppe||'';$('original').value=n?.descricao_original||'';$('padronizada').value=n?.descricao_padronizada||'';$('legal').value=n?.fundamentacao_legal||'';$('categoria').value=n?.categoria||'';$('ativo').value=String(n?.ativo??true);$('ativo').disabled=!n;
+ const lista=$('fontesNatureza');lista.replaceChildren();
+ for(const f of fontesPorNatureza.get(n?.id)||[]){
+  const p=document.createElement('p');p.textContent=(f.codigo_documento||'Sem código no PDF')+' — '+f.descricao_documento+(f.fundamento_documento?' · '+f.fundamento_documento:'')+' · '+dt(f.primeiro_registro)+' a '+dt(f.ultimo_registro);lista.append(p);
+ }
  $('sinonimosEditor').hidden=!n;renderSinonimos();$('editor').showModal();
 }
 const colunas=['Código','Descrição original','Descrição padronizada','Fundamento','Categoria','Ocorrências','Primeiro registro','Último registro','Status','Ativa'];

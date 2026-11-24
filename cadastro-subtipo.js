@@ -274,63 +274,15 @@
     window.NaturezasCadastro={
       limparPdf(){if(registroCarregado)return;naturezasSelecionadas=[];ultimoTipo=null;importado=false;if(campoMeios)campoMeios.value='';renderizar();},
       carregarEdicao:carregarDadosSalvos,
-      importar(itens){
+      importar(itens,resultados){
         if(registroCarregado||window.CavalariaCadastro?.ehAtividade()===true)return [];
         importado=true;naturezasSelecionadas=[];const pendentes=[];
-        for(const item of itens||[]){
-          const descricao=normalizar(item.descricao_original);
+        for(const [indice,item] of (itens||[]).entries()){
           const codigo=String(item.codigo_ppe||'').trim();
-          const semAcentos=valor=>String(valor||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-          const contextoDomestico=/\(VIOLENCIA DOMESTICA CONTRA A MULHER\)/i.test(semAcentos(descricao));
-          let tipo=null,subtipo=null;
-          // Classificação institucional: o qualificador explícito define a natureza
-          // principal; o código PPE define o subtipo, nunca a semelhança vaga.
-          if(contextoDomestico){
-            tipo=catalogos.tipos.find(t=>semAcentos(normalizar(t.nome))==='VIOLENCIA DOMESTICA CONTRA A MULHER'&&!t.codigo_ppe)||null;
-            if(tipo){
-              const candidatos=catalogos.subtipos.filter(st=>Number(st.tipo_id)===Number(tipo.id)
-                && normalizar(st.nome).startsWith(codigo+': '));
-              if(candidatos.length===1)subtipo=candidatos[0];
-              if(!subtipo){pendentes.push(codigo);continue;}
-            } else {
-              // Contexto explícito: não cair em tipo jurídico homônimo.
-              pendentes.push(codigo);
-              continue;
-            }
-          }
-          if(!tipo){
-            // Reutiliza subtipo já catalogado somente quando código e descrição
-            // oficial concordam, com vínculo único a uma natureza principal.
-            const descricaoBase=descricao.replace(/\s*\([^()]*\)/g,'').trim();
-            const candidatos=(catalogos.subtipos||[]).filter(st=>{
-              const nome=normalizar(st.nome);
-              return nome.startsWith(codigo+': ') &&
-                normalizar(nome.slice((codigo+': ').length))===descricaoBase;
-            });
-            const vinculados=candidatos.map(st=>({st,t:catalogos.tipos.find(t=>Number(t.id)===Number(st.tipo_id))}))
-              .filter(v=>v.t&&!v.t.codigo_ppe);
-            if(vinculados.length===1){tipo=vinculados[0].t;subtipo=vinculados[0].st;}
-          }
-          if(!tipo){
-            // Um qualificador contextual explícito do PPE prevalece sobre
-            // categorias jurídicas homônimas. Só associar se houver exatamente
-            // uma natureza institucional e um subtipo com o código informado.
-            const contextos=[...descricao.matchAll(/\(([^()]*)\)/g)]
-              .map(m=>normalizar(m[1])).filter(x=>x&&!/\b(?:ART\.?|ARTIGO|LEI|DECRETO|CPB|C[ÓO]DIGO PENAL)\b/i.test(x));
-            const pais=contextos.flatMap(ctx=>(catalogos.tipos||[]).filter(t=>!t.codigo_ppe&&normalizar(t.nome)===ctx));
-            const paisUnicos=[...new Map(pais.map(t=>[Number(t.id),t])).values()];
-            if(contextos.length){
-              if(paisUnicos.length!==1){pendentes.push(codigo+' (contexto sem vínculo único)');continue;}
-              const subs=(catalogos.subtipos||[]).filter(st=>Number(st.tipo_id)===Number(paisUnicos[0].id)
-                && normalizar(st.nome).startsWith(codigo+': '));
-              if(subs.length!==1){pendentes.push(codigo+' (subtipo contextual pendente)');continue;}
-              tipo=paisUnicos[0];subtipo=subs[0];
-            }
-          }
-          if(!tipo){
-            tipo=typeof tipoPeloCodigoPpe==='function'?tipoPeloCodigoPpe(item):null;
-            if(!tipo){pendentes.push(codigo);continue;}
-          }
+          const referencia=codigo||item.descricao_original;
+          const classificacao=window.PpeNaturezas?.classificar(item,catalogos,resultados?.[indice]);
+          if(!classificacao){pendentes.push(referencia);continue;}
+          let {tipo,subtipo,direto}=classificacao;
           const meiosItem=Array.isArray(item.meios_empregados)?item.meios_empregados.filter(x=>typeof x==='string'&&x.trim()).map(x=>x.trim()):[];
           let n=localizarNatureza(tipo);
           // O armazenamento atual vincula meios à natureza principal. Quando
@@ -338,8 +290,11 @@
           // mesclar os meios: exigir conferência antes do salvamento.
           if(n && subtipo && n.subtipos.length && !n.subtipos.some(st=>Number(st.id)===Number(subtipo.id))
              && JSON.stringify([...n.meios_empregados].sort())!==JSON.stringify([...meiosItem].sort())){
-            pendentes.push(codigo+' (meios distintos na mesma natureza)');
-            continue;
+            if(!direto||Number(direto.id)===Number(tipo.id)||localizarNatureza(direto)){
+              pendentes.push(referencia+' (meios distintos na mesma natureza)');
+              continue;
+            }
+            tipo=direto;subtipo=null;n=null;
           }
           if(!n){n={tipo_id:Number(tipo.id),nome:tipo.nome,codigo:codigoTipo(tipo),subtipos:[],meios_empregados:[]};naturezasSelecionadas.push(n);}
           if(subtipo&&!n.subtipos.some(st=>Number(st.id)===Number(subtipo.id)))
