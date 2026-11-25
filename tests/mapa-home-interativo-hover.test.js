@@ -85,7 +85,7 @@ test('mapa inicial usa corretamente builders distintos de CPC e unidades, sem co
  assert.match(render,/camadaCalor\.setLatLngs/);
 });
 test('metadados complementares são lidos sob RLS e sem alterar os RPCs territoriais',()=>{
- assert.match(home,/\.from\('ocorrencias'\)\.select\('id,numero_bo,comandante,hora_inicial'\)\.in\('id',lote\)/);
+ assert.match(home,/\.from\('ocorrencias'\)\.select\('id,numero_bo,comandante,hora_inicial,naturezas_itens'\)\.in\('id',lote\)/);
  assert.match(home,/enriquecerOcorrenciasMapa\(r\.data\|\|\[\]\)/);
  assert.match(home,/obter_mapa_cpc_territorial/);
  assert.match(home,/obter_ocorrencias_mapa/);
