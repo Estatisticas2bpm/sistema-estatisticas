@@ -6,7 +6,7 @@ import {
   categoria, ranking, somar, conducoesOperacionaisPorOcorrencia,
   intervaloAnterior, compararTotal, mudancasSignificativas,
   classificarNatureza, naturezaAlvoPergunta, serieMensalSegura, familiaNatureza, intencaoEstatistica,
-  extrairClassificacoesOficiais
+  extrairClassificacoesOficiais, categoriaCatalogoNatureza
 } from "./estatisticas.mjs";
 import {
   criarContadoresRelatos, registrarContadoresRelatos, publicarContadoresRelatos
@@ -181,7 +181,7 @@ Deno.serve(async (req: Request) => {
     if(erroUnidades||erroBairros||erroTipos) throw new Error("Falha nos catálogos oficiais");
     const nomesUnidade = new Map((unidades||[]).map(u=>[u.id,categoria(u.sigla)]));
     const nomesBairro = new Set((bairros||[]).map(b=>categoria(b.nome)));
-    const nomesTipo = new Set((tipos||[]).map(t=>categoria(t.nome)));
+    const nomesTipo = new Set((tipos||[]).map(t=>categoriaCatalogoNatureza(t.nome)));
     const classificarBairro=(bairro:unknown) => {
       const c=categoria(bairro);return nomesBairro.has(c)?c:"NÃO CLASSIFICADO";
     };
@@ -342,7 +342,7 @@ Deno.serve(async (req: Request) => {
         "Dados em rascunho separados dos finalizados. Verificar percentual de rascunhos antes de considerar a tendência consolidada.",
         "Somente naturezas e bairros reconhecidos nos catálogos oficiais; os demais contam como não classificados.",
         "Naturezas_itens é a fonte primária de categorias; crimes_itens é dimensão separada. Um BO pode aparecer em múltiplas categorias, MAS o total de BOs nunca deve ser igualado à soma de naturezas ou tipificações. Não somar dimensões.",
-        "Famílias FURTO e ROUBO incluem subtipos da mesma natureza, mas NÃO tentativas, localização/recuperação ou categorias ambíguas.",
+        "Famílias FURTO, ROUBO e HOMICÍDIO incluem classificações consumadas equivalentes, mas NÃO tentativas ou categorias ambíguas; homicídios culposos e mortes por intervenção policial são distintos.",
         "Conduções usam max(conduzidos, prisões) em cada BO; não somar essas métricas.",
         "Sem ajuste para sazonalidade, população, exposição ou diferenças de cobertura no cadastro.",
         "Análises por nacionalidade, subtipo e unidades especializadas requerem ferramentas adicionais ainda não homologadas.",
