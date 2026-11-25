@@ -39,7 +39,14 @@
     var brutos=[o&&(o.ocorrencia||(!itens.length?o.crime:''))].concat(itens.map(function(n){return typeof n==='string'?n:n&&(n.nome||n.tipo);}));
     return brutos.concat(nomes(o)).some(function(n){return chave(n).includes(k);});
   }
-  var api={chave:chave,categoria:categoria,nomes:nomes,rank:rank,contem:contem,busca:busca};
+  function registradas(o){
+    var itens=Array.isArray(o&&o.naturezas_itens)?o.naturezas_itens:[];
+    var fontes=[o&&(o.ocorrencia||(!itens.length?o.crime:''))].concat(itens.map(function(n){return typeof n==='string'?n:n&&(n.nome||n.tipo||n.descricao);}));
+    var mapa=new Map();
+    fontes.forEach(function(v){var k=chave(v);if(k&&categoria(v)&&!mapa.has(k))mapa.set(k,String(v).trim());});
+    return Array.from(mapa.values());
+  }
+  var api={registradas:registradas,chave:chave,categoria:categoria,nomes:nomes,rank:rank,contem:contem,busca:busca};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
   else root.SieNaturezasEstatisticas=api;
 })(typeof globalThis!=='undefined'?globalThis:this);
