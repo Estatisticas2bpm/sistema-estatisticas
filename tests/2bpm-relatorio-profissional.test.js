@@ -17,7 +17,8 @@ assert.ok(js.includes("scopeLabel()"));
 assert.ok(!js.includes("TODAS AS SISC E COMPANHIAS"),'Renderer profissional não pode possuir fallback “Todas”.');
 assert.ok(!js.includes("Todas</"),'Renderer profissional não pode imprimir “Todas”.');
 
-assert.ok(js.includes("topComOutros(occ,15,'OUTRAS OCORRÊNCIAS')"),'Principais ocorrências devem usar Top 15 + outras.');
+assert.ok(js.includes("topComOutros(occ,15,'OUTRAS NATUREZAS')"),'Principais ocorrências devem usar Top 15 + outras.');
+assert.ok(js.includes('a soma não representa o total de BOs'));
 assert.ok(js.includes("topComOutros(hoods,9,'OUTROS')"),'Gráfico de bairros deve ser resumido.');
 assert.ok(js.includes("distribuir(cmdData,26)"),'Comandantes devem ser distribuídos de forma balanceada, sem blocos fixos de 20.');
 assert.ok(js.includes("RESULTADOS OPERACIONAIS"),'Quadro de comandantes deve usar coluna consolidada.');

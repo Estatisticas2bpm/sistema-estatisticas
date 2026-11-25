@@ -103,20 +103,25 @@
       'brasão no detalhamento'+(abordagens?' · '+abordagens+' abordagem(ns) GIRO':'')+'</small>';
   }
   function exportarVisao(mapa,ocorrencias,abordagens,prefixo){
-    const bounds=mapa.getBounds(),linhas=[];
+    const bounds=mapa.getBounds(),linhas=[],vistos=new Set();
     const dentro=x=>Number.isFinite(Number(x.latitude))&&Number.isFinite(Number(x.longitude))&&bounds.contains([Number(x.latitude),Number(x.longitude)]);
     for(const x of ocorrencias||[])if(dentro(x)){
-      linhas.push(['OCORRÊNCIA',nome(x.unidade_sigla),x.ocorrencia||x.crime||'',x.data_ocorrencia||'',x.bairro||'',x.endereco||'',x.numero_bo||'',Number(x.latitude).toFixed(6),Number(x.longitude).toFixed(6)]);
+      const id=x.id==null?'':String(x.id);if(id&&vistos.has(id))continue;if(id)vistos.add(id);
+      const N=global.SieNaturezasEstatisticas;
+      const completas=Array.isArray(x.naturezas_itens);
+      const registradas=N?N.registradas(x).join(' | '):String(x.ocorrencia||x.crime||'');
+      const consolidadas=N?N.nomes(x).join(' | '):registradas;
+      linhas.push(['OCORRÊNCIA',nome(x.unidade_sigla),x.ocorrencia||x.crime||'',x.data_ocorrencia||'',x.bairro||'',x.endereco||'',x.numero_bo||'',Number(x.latitude).toFixed(6),Number(x.longitude).toFixed(6),registradas,consolidadas,completas?'COMPLETAS':'NATUREZAS ADICIONAIS NÃO DISPONÍVEIS']);
     }
     for(const x of abordagens||[])if(dentro(x)){
-      linhas.push(['ABORDAGEM GIRO','GIRO',x.tipo_abordagem||'Abordagem',x.registrado_em||'',x.bairro||'',x.endereco||'', '',Number(x.latitude).toFixed(6),Number(x.longitude).toFixed(6)]);
+      linhas.push(['ABORDAGEM GIRO','GIRO',x.tipo_abordagem||'Abordagem',x.registrado_em||'',x.bairro||'',x.endereco||'', '',Number(x.latitude).toFixed(6),Number(x.longitude).toFixed(6),'','','NÃO SE APLICA']);
     }
     const safe=value=>{
       let s=String(value??'').replace(/\r|\n/g,' ');
       if(/^[=+@\-\t]/.test(s))s="'"+s;
       return '"'+s.replace(/"/g,'""')+'"';
     };
-    const header=['Tipo de registro','Unidade responsável','Natureza / tipo','Data / hora','Bairro','Endereço','Número do BO','Latitude','Longitude'];
+    const header=['Tipo de registro','Unidade responsável','Natureza / tipo','Data / hora','Bairro','Endereço','Número do BO','Latitude','Longitude','Naturezas registradas','Categorias estatísticas','Disponibilidade das naturezas'];
     const csv='\uFEFF'+[header,...linhas].map(row=>row.map(safe).join(';')).join('\r\n');
     const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
     const a=document.createElement('a');a.href=url;a.download=(prefixo||'sie-cpc-mapa')+'-'+new Date().toISOString().slice(0,10)+'.csv';
