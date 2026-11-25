@@ -31,13 +31,7 @@ function tipoDocumento(valor){
   const t=chave(valor);
   return !t?'BO (tipo não informado)':t==='BO'||t==='B.O.'?'BO':norm(valor);
 }
-function naturezas(o){
-  const arr=Array.isArray(o.naturezas_itens)?o.naturezas_itens:[];
-  const encontrados=arr.map(x=>typeof x==='string'?x:(x?.nome||x?.natureza||x?.descricao||'')).filter(x=>!ni(x));
-  if(!encontrados.length&&!ni(o.ocorrencia))encontrados.push(o.ocorrencia);
-  if(!encontrados.length&&!ni(o.crime))encontrados.push(o.crime);
-  return [...new Set(encontrados.map(x=>chave(x)))];
-}
+function naturezas(o){return global.SieNaturezasEstatisticas.nomes(o).map(chave)}
 function hierarquiaIds(id,unidades){
   if(!id)return null;
   const ids=new Set(),fila=[String(id)];
@@ -72,10 +66,7 @@ function filtro(o,a,ids){
   if(a.p_companhia&&chave(o.companhia)!==chave(a.p_companhia))return false;
   if(a.p_turno&&chave(o.turno)!==chave(a.p_turno))return false;
   if(a.p_bairro&&!bairroConfereAnalise(o,a.p_bairro))return false;
-  if(a.p_ocorrencia){
-    const nomes=[o.ocorrencia,o.crime,...(Array.isArray(o.naturezas_itens)?o.naturezas_itens.map(x=>typeof x==='string'?x:x.nome||x.natureza||''):[])];
-    if(!nomes.some(x=>contem(x,a.p_ocorrencia)))return false;
-  }
+  if(a.p_ocorrencia&&!global.SieNaturezasEstatisticas.busca(o,a.p_ocorrencia))return false;
   return true;
 }
 function pessoas(o,tipo){
