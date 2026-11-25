@@ -1035,10 +1035,10 @@ function renderOrigemPoliciais(registros){
     $('origemAcionamentoCobertura').textContent='Indicadores indisponíveis. Atualize a página.';
     return;
   }
-  const categorias=modulo.ORIGENS;
+  const categorias=modulo.ORIGENS.filter(x=>x.valor!=='NAO_INFORMADA');
   chart('chartOrigemAcionamento','bar',categorias.map(x=>x.rotulo),
     categorias.map(x=>r.origens[x.valor]),'BOs por origem',
-    ['#125b94','#1e8a78','#b57a22','#615a9d','#3773a6','#64748b','#b5beca'],
+    ['#125b94','#1e8a78','#b57a22','#615a9d','#3773a6','#64748b'],
     indice=>{
       const item=categorias[indice];
       if(!item||!r.origens[item.valor])return;
@@ -1076,8 +1076,8 @@ function renderNaturezasMeios(a){
   if(itens.some(n=>!n.meios_empregados?.length))incompletos++;
   for(const m of meios){if(!grupos.has(m))grupos.set(m,[]);grupos.get(m).push(o);}
  }
- const lista=[...grupos.entries()].sort((x,y)=>y[1].length-x[1].length||x[0].localeCompare(y[0],'pt-BR'));
- $('notaNaturezasMeios').textContent=(a.length-sem)+' de '+a.length+' BO(s) com pelo menos um meio informado; '+sem+' sem informação registrada (inclui histórico); '+incompletos+' com informação parcial. Um BO pode ter vários meios, mas é contado uma vez em cada categoria. “NÃO HOUVE” é informação explícita.';
+ const lista=[...grupos.entries()].filter(([m])=>m.normalize('NFD').replace(/[\u0300-\u036f]/g,'')!=='NAO HOUVE').sort((x,y)=>y[1].length-x[1].length||x[0].localeCompare(y[0],'pt-BR'));
+ $('notaNaturezasMeios').textContent=(a.length-sem)+' de '+a.length+' BO(s) com pelo menos um meio informado; '+sem+' sem informação registrada (inclui histórico); '+incompletos+' com informação parcial. Um BO pode ter vários meios, mas é contado uma vez em cada categoria. “NÃO HOUVE” é informação explícita e não aparece no gráfico ou na tabela.';
  rows('tabNaturezasMeios',lista.map(([m,g])=>'<tr><td>'+esc(m)+'</td><td>'+drillNumero(g.length,'Meio empregado — '+m,g)+'</td></tr>').join(''));
  chart('chartNaturezasMeios','bar',lista.map(x=>x[0]),lista.map(x=>x[1].length),'BOs','#2F7278',i=>{if(lista[i])abrirDetalhes('Meio empregado — '+lista[i][0],lista[i][1]);});
 }
