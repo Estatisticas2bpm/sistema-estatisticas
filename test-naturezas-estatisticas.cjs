@@ -1,0 +1,17 @@
+const assert = require('node:assert/strict');
+const N = require('./naturezas-estatisticas.js');
+const rouboHomicidio = {id:'a',ocorrencia:'ROUBO',naturezas_itens:[{nome:'ROUBO'},{nome:'HOMICÍDIO SIMPLES (ART. 121 CAPUT DO CPB)'},{nome:'HOMICÍDIO'}]};
+const rows = [rouboHomicidio,rouboHomicidio,{id:'b',ocorrencia:'HOMICÍDIO QUALIFICADO'},{id:'c',ocorrencia:'TENTATIVA DE HOMICÍDIO'},{id:'d',ocorrencia:'HOMICÍDIO CULPOSO'},{id:'e',ocorrencia:'AMEAÇA',naturezas_itens:[{nome:'MORTE DECORRENTE DE INTERVENÇÃO POLICIAL'}]},{id:'f',ocorrencia:'APOIO À OUTROS ÓRGÃOS',naturezas_itens:[{nome:'MORTE SUSPEITA — MORTE A ESCLARECER'}]}];
+const rank = Object.fromEntries(N.rank(rows));
+assert.equal(rank.HOMICÍDIO,2);
+assert.equal(rank.ROUBO,1);
+assert.equal(rank['MORTE DECORRENTE DE INTERVENÇÃO POLICIAL'],1);
+assert.equal(rank['MORTE SUSPEITA — MORTE A ESCLARECER'],1);
+assert.equal(N.busca(rows[3],'HOMICÍDIO'),false);
+assert.equal(N.busca(rows[4],'HOMICÍDIO'),false);
+assert.equal(N.busca(rouboHomicidio,'rou'),true);
+assert.equal(N.busca(rouboHomicidio,'HOMICÍDIO SIMPLES'),true);
+assert.deepEqual(N.nomes({ocorrencia:'ACHADO DE CADÁVER',naturezas_itens:[{nome:'ENCONTRO DE CADAVER'}]}),['ENCONTRO DE CADÁVER']);
+assert.equal(N.contem({ocorrencia:'179 — DESTRUIÇÃO, SUBTRAÇÃO OU OCULTAÇÃO DE CADÁVER (ART. 211 DO CPB)'},'ENCONTRO DE CADÁVER'),false);
+assert.equal(N.contem({crime:'HOMICÍDIO'},'HOMICÍDIO'),true);
+console.log('OK: naturezas múltiplas, agrupamento, deduplicação e filtros');
