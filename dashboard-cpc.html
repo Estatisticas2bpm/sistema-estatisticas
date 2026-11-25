@@ -650,7 +650,7 @@ function renderEscolasCpc(payload,erro){
 }
 
 function renderOrigemPoliciaisCpc(payload,erro){
-  const categorias=window.SIEIndicadoresEnvolvimento?.ORIGENS||[];
+  const categorias=(window.SIEIndicadoresEnvolvimento?.ORIGENS||[]).filter(x=>x.valor!=='NAO_INFORMADA');
   const valido=!erro&&payload?.autorizado===true&&payload?.origens&&categorias.length;
   const reservado=$('cpcEnvolvimentoReservado');
   // Um painel sem dados válidos não deve exibir totais de outro recorte.
@@ -666,7 +666,7 @@ function renderOrigemPoliciaisCpc(payload,erro){
   const total=n(payload.total),contagens=payload.origens;
   chart('chartCpcOrigemAtendimento','bar',categorias.map(item=>item.rotulo),
     [{label:'BOs',data:categorias.map(item=>n(contagens[item.valor])),
-      backgroundColor:['#125b94','#1e8a78','#b57a22','#615a9d','#3773a6','#64748b','#b5beca'],
+      backgroundColor:['#125b94','#1e8a78','#b57a22','#615a9d','#3773a6','#64748b'],
       borderRadius:5}],{indexAxis:'y',plugins:{legend:{display:false}},scales:{
         x:{beginAtZero:true,ticks:{precision:0}},y:{grid:{display:false}}}});
   $('cpcOrigemClassificacao').textContent=total?
