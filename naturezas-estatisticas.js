@@ -4,13 +4,33 @@
   function chave(v){return String(v||'').trim().replace(/\s+/g,' ').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();}
   function categoria(v){
     var original=String(v||'').trim().replace(/\s+/g,' ');
-    var k=chave(original).replace(/^\d+\s*[:—–-]\s*/,'');
+    var semCodigo=original.replace(/^\s*\d+\s*[:—–-]\s*/,'').trim();
+    var k=chave(semCodigo);
     if(!k||['NI','N/I','N','NA','NAO INFORMADO'].includes(k))return '';
-    if(/^(HOMICIDIO)(?:$|\s+(?:SIMPLES|QUALIFICADO)\b|\s*\(ART\.)/.test(k)&&!/\b(TENTATIVA|CULPOSO|CULPOSA)\b/.test(k))return 'HOMICÍDIO';
+
+    // Consolida famílias estatísticas sem alterar a natureza original armazenada.
+    // Violência doméstica/Maria da Penha deve aparecer como uma única natureza-base.
+    if(/\bMARIA DA PENHA\b|\bVIOLENCIA DOMESTICA\b|\bVIOLENCIA CONTRA (?:A )?MULHER\b/.test(k))
+      return 'MARIA DA PENHA / VIOLÊNCIA DOMÉSTICA';
+
+    if(/^(HOMICIDIO)(?:$|\s+(?:SIMPLES|QUALIFICADO)\b|\s*\(ART\.)/.test(k)&&!/\b(TENTATIVA|CULPOSO|CULPOSA)\b/.test(k))
+      return 'HOMICÍDIO';
     if(/^(ENCONTRO|ACHADO) DE CADAVER$/.test(k))return 'ENCONTRO DE CADÁVER';
-    if(/\bMARIA DA PENHA\b|\bVIOLENCIA DOMESTICA\b/.test(k))return 'MARIA DA PENHA / VIOLÊNCIA DOMÉSTICA';
     if(/^(SINISTRO|ACIDENTE)\s+DE\s+TRANSITO\b/.test(k))return 'SINISTRO DE TRÂNSITO';
-    return original;
+
+    // Descrições do catálogo frequentemente usam "NATUREZA - detalhamento".
+    // Para o painel estatístico, exibe somente a natureza-base.
+    var base=semCodigo.split(/\s+[—–-]\s+/)[0].trim();
+
+    // Remove apenas complementos jurídicos finais; qualificadores sem caráter legal
+    // permanecem, evitando fundir naturezas diferentes por excesso de simplificação.
+    var anterior;
+    do{
+      anterior=base;
+      base=base.replace(/\s*\((?:ART\.?|ARTIGO|LEI|DECRETO|CPB|LCP|CTB)\b[^)]*\)\s*$/i,'').trim();
+    }while(base!==anterior);
+
+    return base||semCodigo;
   }
   function nomes(o){
     var itens=Array.isArray(o&&o.naturezas_itens)?o.naturezas_itens:[];
