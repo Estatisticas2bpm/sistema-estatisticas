@@ -24,10 +24,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          falhas=0
           for teste in tests/*.test.js tests/*.test.cjs test-naturezas-estatisticas.cjs test-exportacao-naturezas.cjs; do
             echo "TEST $teste"
-            node "$teste"
+            if ! node "$teste"; then
+              echo "FALHA $teste"
+              falhas=$((falhas+1))
+            fi
           done
+          echo "TOTAL DE TESTES COM FALHA: $falhas"
+          test "$falhas" -eq 0
 
       - name: Validar JavaScript externo
         shell: bash
