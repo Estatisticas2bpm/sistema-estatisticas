@@ -81,7 +81,7 @@ body.modo-1bpm .hero{min-height:340px;background-color:#03172c;background-image:
 body.modo-1bpm .hero:after{display:none}
 body.modo-1bpm .hero .top,body.modo-1bpm .hero .heroCopy{position:relative;z-index:1;text-shadow:0 2px 11px rgba(0,0,0,.92)}
 @media(max-width:768px){body.modo-1bpm .hero{min-height:420px;background-position:center,right center;background-image:linear-gradient(90deg,rgba(2,17,40,.99) 0%,rgba(2,24,52,.95) 50%,rgba(3,38,72,.62) 74%,rgba(3,42,78,.22) 100%),url("assets/banners/1bpm-home-banner.png?v=20261009-1bpm-banner1")}body.modo-1bpm .heroCopy{max-width:82%}}
-</style><script src="auth-config.js"></script><script src="auth-guard.js"></script></head><body>
+</style><script src="naturezas-estatisticas.js?v=20261124-1"></script><script src="auth-config.js"></script><script src="auth-guard.js"></script></head><body>
 <header class="hero"><div class="top"><div class="brand"><div class="brandLogos"><img src="brasao-pmrr.png" alt="Brasão da Polícia Militar de Roraima"></div><div><b>SIE-CPC</b><small>Sistema Integrado de Estatística do CPC</small><div data-sie-unit style="margin-top:5px;font-size:11px;font-weight:900;letter-spacing:.8px;color:#9ee5e7;text-transform:uppercase">Unidade ativa · carregando...</div></div></div></div><div class="heroCopy"><span class="eyebrow" id="heroEyebrow"><i class="pulse"></i> Panorama estatístico</span><h1 id="heroTitulo">Visão rápida do mês</h1><p id="periodoSemana">Carregando período...</p><div id="cpcEscopoHero" class="cpcScopeHero" hidden>Consolidação das unidades subordinadas</div></div></header>
 <main class="container">
 <section class="bopeSubPainel" id="bopeSubPainel" hidden aria-label="Subunidades operacionais do BOPE">
@@ -134,7 +134,7 @@ function ordenarUnidadesCpc(){var roots=unidadesCpcPrincipais().slice().sort(fun
 function somar(a,campo){return a.reduce(function(s,x){return s+(Number(x[campo])||0)},0)}
 
 function iso(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")} function fmt(d){return d.toLocaleDateString("pt-BR")}
-function categoriaPrincipalIndex(x){var original=(x.ocorrencia||x.crime||"NÃO INFORMADO").trim(),k=original.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase();if(k.includes("MARIA DA PENHA")||k.includes("VIOLENCIA DOMESTICA"))return "MARIA DA PENHA / VIOLÊNCIA DOMÉSTICA";return original}function bairroPrincipalIndex(v){var original=(v||"NÃO INFORMADO").trim(),k=original.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase(),m={"AIRTON ROCHA":"DR AIRTON ROCHA","DOUTOR AIRTON ROCHA":"DR AIRTON ROCHA","DR AIRTON ROCHA":"DR AIRTON ROCHA","DOUTOR SILVIO BOTELHO":"DR SILVIO BOTELHO","SILVIO BOTELHO":"DR SILVIO BOTELHO","DR SILVIO BOTELHO":"DR SILVIO BOTELHO","DOUTOR SILVIO LEITE":"DR SILVIO LEITE","SILVIO LEITE":"DR SILVIO LEITE","DR SILVIO LEITE":"DR SILVIO LEITE","GOVERNADOR AQUILINO MOTA DUARTE":"GOV AQUILINO MOTA DUARTE","JARDIM EQUATORIAL":"EQUATORIAL","PROFESSORA ARACELI SOUTO MAIOR":"ARACELI","PSICULTURA":"PISCICULTURA"};return m[k]||original}function naoInformadoIndex(v){var k=String(v||"").trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase();return !k||["NI","N/I","N","NA","NAO INFORMADO","NÃO INFORMADO"].includes(k)}function rank(arr,campo,fallback){var m={};arr.forEach(function(x){var k=campo==="ocorrencia"?categoriaPrincipalIndex(x):campo==="bairro"?bairroPrincipalIndex(x.bairro):(x[campo]||x[fallback]||"").trim();if(naoInformadoIndex(k))return;m[k]=(m[k]||0)+1});return Object.entries(m).sort(function(a,b){return b[1]-a[1]}).slice(0,5)}
+function categoriaPrincipalIndex(x){var original=(x.ocorrencia||x.crime||"NÃO INFORMADO").trim(),k=original.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase();if(k.includes("MARIA DA PENHA")||k.includes("VIOLENCIA DOMESTICA"))return "MARIA DA PENHA / VIOLÊNCIA DOMÉSTICA";return original}function bairroPrincipalIndex(v){var original=(v||"NÃO INFORMADO").trim(),k=original.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase(),m={"AIRTON ROCHA":"DR AIRTON ROCHA","DOUTOR AIRTON ROCHA":"DR AIRTON ROCHA","DR AIRTON ROCHA":"DR AIRTON ROCHA","DOUTOR SILVIO BOTELHO":"DR SILVIO BOTELHO","SILVIO BOTELHO":"DR SILVIO BOTELHO","DR SILVIO BOTELHO":"DR SILVIO BOTELHO","DOUTOR SILVIO LEITE":"DR SILVIO LEITE","SILVIO LEITE":"DR SILVIO LEITE","DR SILVIO LEITE":"DR SILVIO LEITE","GOVERNADOR AQUILINO MOTA DUARTE":"GOV AQUILINO MOTA DUARTE","JARDIM EQUATORIAL":"EQUATORIAL","PROFESSORA ARACELI SOUTO MAIOR":"ARACELI","PSICULTURA":"PISCICULTURA"};return m[k]||original}function naoInformadoIndex(v){var k=String(v||"").trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase();return !k||["NI","N/I","N","NA","NAO INFORMADO","NÃO INFORMADO"].includes(k)}function rank(arr,campo,fallback){if(campo==="ocorrencia")return SieNaturezasEstatisticas.rank(arr,5);var m={};arr.forEach(function(x){var k=campo==="ocorrencia"?categoriaPrincipalIndex(x):campo==="bairro"?bairroPrincipalIndex(x.bairro):(x[campo]||x[fallback]||"").trim();if(naoInformadoIndex(k))return;m[k]=(m[k]||0)+1});return Object.entries(m).sort(function(a,b){return b[1]-a[1]}).slice(0,5)}
 // O ranking executivo consolida o TIPO de ocorrência; subtipos permanecem
 // disponíveis para detalhamento no Dashboard Completo. Não inferir o tipo pelo
 // subtipo (ex.: "AMEAÇA" sozinha não significa Maria da Penha).
@@ -147,22 +147,7 @@ function categoriaPrincipalCpc(x){
   if(/\bMARIA DA PENHA\b|\bVIOLENCIA DOMESTICA\b/.test(chave))return "MARIA DA PENHA / VIOLÊNCIA DOMÉSTICA";
   return original;
 }
-function rankCpcOcorrencias(registros){
-  var contagem=new Map(),idsVistos=new Set();
-  (registros||[]).forEach(function(x){
-    // A mesma ocorrência não pode ser contada duas vezes se vier repetida.
-    var id=x.id==null?"":String(x.id);
-    if(id){if(idsVistos.has(id))return;idsVistos.add(id)}
-    var nome=categoriaPrincipalCpc(x);
-    if(!nome)return;
-    var chave=nome.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase();
-    var grupo=contagem.get(chave);
-    if(grupo)grupo[1]++;
-    else contagem.set(chave,[nome,1]);
-  });
-  return Array.from(contagem.values()).sort(function(a,b){
-    return b[1]-a[1]||a[0].localeCompare(b[0],"pt-BR");
-  }).slice(0,5);
+function rankCpcOcorrencias(registros){return SieNaturezasEstatisticas.rank(registros,5);
 }
 function draw(id,itens,cores){
  var el=document.getElementById(id),max=itens.length?itens[0][1]:1;
