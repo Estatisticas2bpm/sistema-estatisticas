@@ -169,7 +169,7 @@ AS $function$ select o.id,o.data_ocorrencia,o.ocorrencia,o.bairro,coalesce(o.end
 
 
 create or replace function public.ocorrencia_busca_natureza(p_principal text,p_crime text,p_itens jsonb,p_filtro text)
-returns boolean language sql immutable security invoker set search_path=pg_catalog,public as $
+returns boolean language sql immutable security invoker set search_path=pg_catalog,public as $$
  select case when nullif(btrim(p_filtro),'') is null then true
  when public.chave_natureza_estatistica(p_filtro) in ('HOMICIDIO','ENCONTRO DE CADAVER') and translate(upper(btrim(p_filtro)), 'ÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇ','AAAAAEEEEIIIIOOOOOUUUUC') in ('HOMICIDIO','ENCONTRO DE CADAVER','ACHADO DE CADAVER') then public.ocorrencia_contem_natureza(p_principal,p_crime,p_itens,p_filtro)
  else exists(select 1 from (
@@ -179,7 +179,7 @@ returns boolean language sql immutable security invoker set search_path=pg_catal
  from jsonb_array_elements(case when jsonb_typeof(p_itens)='array' then p_itens else '[]'::jsonb end) j
  ) n where strpos(translate(upper(coalesce(n.nome,'')), 'ÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇ','AAAAAEEEEIIIIOOOOOUUUUC'),translate(upper(btrim(p_filtro)), 'ÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇ','AAAAAEEEEIIIIOOOOOUUUUC'))>0
  or strpos(public.chave_natureza_estatistica(n.nome),public.chave_natureza_estatistica(p_filtro))>0) end
-$;
+$$;
 
 CREATE OR REPLACE FUNCTION public.obter_indicadores_origem_envolvimento_cpc(data_inicio date DEFAULT NULL::date, data_fim date DEFAULT NULL::date, p_unidade_id uuid DEFAULT NULL::uuid, p_aisc text DEFAULT NULL::text, p_sisc text DEFAULT NULL::text, p_setor text DEFAULT NULL::text, p_ocorrencia text DEFAULT NULL::text, p_bairro text DEFAULT NULL::text, p_companhia text DEFAULT NULL::text, p_turno text DEFAULT NULL::text)
  RETURNS jsonb
