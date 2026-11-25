@@ -26,6 +26,8 @@ const pending=[],rendered=[],calls=[];
 const context={
   db:{rpc:(nome,args)=>{assert.equal(nome,'obter_indicadores_origem_envolvimento_cpc');assert.equal(args.data_inicio,elements.ini.value);return Promise.resolve({data:{autorizado:true,origens:{},policiais:{}},error:null})}},
   renderOrigemPoliciaisCpc:()=>{},
+  renderEscolasCpc:()=>{},
+  catalogoTerritorial:null,
   window:{SistemaAuth:{ready:Promise.resolve()},CpcIndicadoresDashboard:{carregar:()=>Promise.resolve()}},
   document:{querySelector:()=>main},
   $:id=>elements[id],
