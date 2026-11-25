@@ -5,6 +5,18 @@ export function categoria(v) {
   if (!texto || texto.length > 65 || !/^[\p{L}\p{N} .,()\-\/]+$/u.test(texto)) return "NÃO CLASSIFICADO";
   return texto.toUpperCase();
 }
+// Categorias canônicas fixas; jamais propagar texto livre, mesmo em rótulos longos.
+export function categoriaCatalogoNatureza(v) {
+  const k=String(v??"").trim().replace(/\s+/g," ").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/^\d+\s*[:—–-]\s*/,"");
+  if(/^HOMICIDIO(?:$|\s+(?:SIMPLES|QUALIFICADO)\b|\s*\(ART\.)/u.test(k)&&!/\b(?:TENTATIVA|CULPOSO|CULPOSA)\b/u.test(k))return "HOMICÍDIO";
+  if(/^(?:ENCONTRO|ACHADO) DE CADAVER$/u.test(k))return "ENCONTRO DE CADÁVER";
+  if(k==="ENCONTRO DE OSSADA")return "ENCONTRO DE OSSADA";
+  if(k==="MORTE DECORRENTE DE INTERVENCAO POLICIAL")return "MORTE DECORRENTE DE INTERVENÇÃO POLICIAL";
+  if(/^MORTE SUSPEITA\s*[-—–]\s*MORTE A ESCLARECER$/u.test(k))return "MORTE SUSPEITA — MORTE A ESCLARECER";
+  if(/\bMARIA DA PENHA\b|\bVIOLENCIA DOMESTICA\b/u.test(k))return "MARIA DA PENHA / VIOLÊNCIA DOMÉSTICA";
+  return categoria(v);
+}
+
 export function ranking(m, maximo = 10) {
   return [...m.entries()].filter(([, quantidade]) => quantidade >= 5)
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "pt-BR"))
@@ -56,8 +68,8 @@ export function mudancasSignificativas(mapaAtual, mapaAnterior, maximo=10) {
 export function classificarNatureza(ocorrencia, crime, catalogo) {
   // Preserva a prioridade do campo principal: não usar um "crime" secundário
   // exato para sobrescrever a natureza primária que só exige agrupamento.
-  for (const valor of [ocorrencia, crime].map(categoria)) {
-    if (catalogo.has(valor)) return valor;
+  for (const valor of [ocorrencia, crime].map(categoriaCatalogoNatureza)) {
+    if (valor!=="NÃO CLASSIFICADO" && catalogo.has(valor)) return valor;
     // Registro misto não pode virar automaticamente furto ou roubo consumado.
     if (/^(?:FURTO\s+(?:E|OU|\/)\s+ROUBO|ROUBO\s+(?:E|OU|\/)\s+FURTO)\b/u.test(valor)) continue;
     if (/^FURTO [\p{L}\p{N}]/u.test(valor) && catalogo.has("FURTO")) return "FURTO";
@@ -71,9 +83,14 @@ export function naturezaAlvoPergunta(pergunta, catalogo) {
   const opcoes=[
     {expr:/\bFURTOS?\b/,nome:"FURTO"},
     {expr:/\bROUBOS?\b/,nome:"ROUBO"},
-    {expr:/MARIA DA PENHA|VIOLENCIA DOMESTICA/,nome:"MARIA DA PENHA / VIOLÊNCIA DOMÉSTICA"}
+    {expr:/MARIA DA PENHA|VIOLENCIA DOMESTICA/,nome:"MARIA DA PENHA / VIOLÊNCIA DOMÉSTICA"},
+    {expr:/\bHOMICIDIOS?\b/,nome:"HOMICÍDIO"},
+    {expr:/\b(?:ACHADO|ENCONTRO)S? DE CADAVER(?:ES)?\b/,nome:"ENCONTRO DE CADÁVER"},
+    {expr:/\b(?:ENCONTRO DE )?OSSADAS?\b/,nome:"ENCONTRO DE OSSADA"},
+    {expr:/\bMORTES? (?:DECORRENTES? DE|POR) INTERVENCAO POLICIAL\b/,nome:"MORTE DECORRENTE DE INTERVENÇÃO POLICIAL"},
+    {expr:/\bMORTES? SUSPEITAS?\b/,nome:"MORTE SUSPEITA — MORTE A ESCLARECER"}
   ];
-  const candidatas=opcoes.filter(x=>x.expr.test(texto)&&catalogo.has(x.nome));
+  const candidatas=opcoes.filter(x=>x.expr.test(texto)&&catalogo.has(x.nome)&&!(x.nome==='HOMICÍDIO'&&/TENTATIVA|CULPOSO|CULPOSA/.test(texto)));
   return candidatas.length===1?candidatas[0].nome:null;
 }
 
@@ -85,7 +102,7 @@ function nomesOficiaisItens(itens, campo, catalogo) {
   if (!Array.isArray(itens)) return [];
   const unicos=new Set();
   for (const item of itens) {
-    const valor=categoria(item && typeof item==="object" ? item[campo] : null);
+    const valor=(campo==='nome'?categoriaCatalogoNatureza:categoria)(item && typeof item==="object" ? item[campo] : (campo==='nome'&&typeof item==='string'?item:null));
     if (catalogo.has(valor) && valor!=="NÃO CLASSIFICADO") unicos.add(valor);
   }
   return [...unicos];
@@ -93,7 +110,8 @@ function nomesOficiaisItens(itens, campo, catalogo) {
 export function extrairClassificacoesOficiais(registro,catalogo) {
   const estruturadas=nomesOficiaisItens(registro?.naturezas_itens,"nome",catalogo);
   const naturezaFallback=classificarNatureza(registro?.ocorrencia,registro?.crime,catalogo);
-  const naturezas=estruturadas.length?estruturadas:[naturezaFallback];
+  const principal=classificarNatureza(registro?.ocorrencia,null,catalogo);
+  const naturezas=estruturadas.length?[...new Set([...estruturadas,...(principal==='NÃO CLASSIFICADO'?[]:[principal])])]:[naturezaFallback];
   // As tipificações criminais são uma DIMENSÃO DIFERENTE das naturezas.
   // Não somar "crimes_itens" à quantidade de BOs nem à lista de naturezas.
   const crimes=nomesOficiaisItens(registro?.crimes_itens,"tipo_nome",catalogo);
@@ -119,7 +137,8 @@ export function serieMensalSegura(porMes) {
 // Família estatística: naturezas principais + subtipos comprovadamente ligados.
 // Tentativas e registros de localização/recuperação NÃO contam como consumação.
 export function familiaNatureza(categoriaOficial) {
-  const valor=categoria(categoriaOficial);
+  const valor=categoriaCatalogoNatureza(categoriaOficial);
+  if(['HOMICÍDIO','ENCONTRO DE CADÁVER','ENCONTRO DE OSSADA','MORTE DECORRENTE DE INTERVENÇÃO POLICIAL','MORTE SUSPEITA — MORTE A ESCLARECER'].includes(valor))return valor;
   if (/^FURTO(?:$|\s)/u.test(valor) &&
       !/^FURTO\s+(?:E|OU|\/)\s+ROUBO\b/u.test(valor)) return "FURTO";
   if (/^ROUBO(?:$|\s)/u.test(valor) &&
@@ -139,12 +158,12 @@ export function intencaoEstatistica(pergunta) {
 
   // Consultas individuais e recortes por nacionalidade não são recursos do piloto.
   // O bloqueio é semântico de propósito, sem envio do conteúdo a terceiros.
-  if (/\b(CPF|RG|MATRICULA|EMAIL|TELEFONE|ENDERECO|PLACA|DOCUMENTO|NOME|IDENTIDADE|IDENTIFICAR|SUSPEITO|INFRATOR|VITIMA|POLICIAL|POLICIAIS|NACIONALIDADE|VENEZUELAN|ESTRANGEIR|ETNIA|RACA|COR DA PELE)\w*/u.test(texto))
+  if (/\b(CPF|RG|MATRICULA|EMAIL|TELEFONE|ENDERECO|PLACA|DOCUMENTO|NOME|IDENTIDADE|IDENTIFICAR|SUSPEITO|INFRATOR|VITIMA|POLICIAL|POLICIAIS|NACIONALIDADE|VENEZUELAN|ESTRANGEIR|ETNIA|RACA|COR DA PELE)\w*/u.test(texto.replace(/\bMORTES? (?:DECORRENTES? DE|POR) INTERVENCAO POLICIAL\b/g,"MORTE INTERVENCAO")))
     return null;
 
   const regras = [
     ["resumo", /\b(RESUM\w*|ANALIS\w*|BRIEFING|PANORAMA|CENARIO|SITUACAO|DIAGNOSTICO)\b/u],
-    ["ocorrencias", /\b(OCORRENCIAS?|NATUREZAS?|REGISTROS?|CRIMES?|CRIMINAL|FURTOS?|ROUBOS?|VIOLENCIA|MARIA DA PENHA)\b/u],
+    ["ocorrencias", /\b(OCORRENCIAS?|NATUREZAS?|REGISTROS?|CRIMES?|CRIMINAL|FURTOS?|ROUBOS?|HOMICIDIOS?|CADAVER(?:ES)?|OSSADAS?|MORTES?|VIOLENCIA|MARIA DA PENHA)\b/u],
     ["comparacao_temporal", /\b(COMPARA|COMPARATIV|EVOLU|CRESC|AUMENT|DIMINUI|REDUZ|VARIAC|TENDENC|MUDANC|ANTES|DEPOIS|PERIODO)\w*/u],
     ["distribuicao_territorial", /\b(BAIRROS?|REGIOES?|TERRITORIO|TERRITORIAL|AREA|LOCALIZACAO|CONCENTRACAO|ONDE)\b/u],
     ["horarios", /\b(HORARIOS?|HORAS?|TURNO|DIA DA SEMANA|NOITE|MADRUGADA|TARDE|MANHA)\b/u],
