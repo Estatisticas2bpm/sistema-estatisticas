@@ -118,9 +118,9 @@
     const shiftTotals=shifts.map(t=>d.filter(x=>S(x.turno)===t).length);
     const matrix=days.map((day,di)=>{const vals=shifts.map(t=>d.filter(x=>new Date(x.data_ocorrencia+'T12:00').getDay()===di&&S(x.turno)===t).length);return[di+1,day,...vals,vals.reduce((a,b)=>a+b,0)]});
 
-    const occTop=topComOutros(occ,15,'OUTRAS OCORRÊNCIAS');
+    const occTop=topComOutros(occ,15,'OUTRAS NATUREZAS');
     const occRows=occTop.rows.map((x,i)=>{
-      const nomes=x[0]==='OUTRAS OCORRÊNCIAS'?occTop.restNames:new Set([x[0]]);
+      const nomes=x[0]==='OUTRAS NATUREZAS'?occTop.restNames:new Set([x[0]]);
       const g=d.filter(y=>naturezasOcorrenciaRel(y).some(n=>nomes.has(n))),ages=g.map(y=>num(y.infrator_idade)).filter(Boolean);
       return[i+1,x[0],x[1],rank(g,'bairro',2).map(z=>z[0]).join(' / ')||'NI',ages.length?Math.min(...ages)+' a '+Math.max(...ages)+' anos':'NI'];
     });
@@ -165,7 +165,7 @@
       table(['DOCUMENTO / INDICADOR','QUANTIDADE'],docs.map(x=>[docNome(x[0]),x[1]]),{cls:'r2-tight',widths:['76%','24%']})+
 
       '<h1 class="r2-title" style="margin-top:4mm">2. PRINCIPAIS TIPOS DE OCORRÊNCIAS NA UNIDADE OPERACIONAL</h1>'+
-      '<h2 class="r2-section">CLASSIFICAÇÃO DAS OCORRÊNCIAS - TOP 15</h2>'+
+      '<h2 class="r2-section">CLASSIFICAÇÃO DAS OCORRÊNCIAS - TOP 15</h2><p>Frequência por natureza: um BO pode integrar mais de uma categoria; a soma não representa o total de BOs.</p>'+
       table(['ITEM','DESCRIÇÃO','FREQ.','BAIRROS RECORRENTES','FAIXA ETÁRIA'],occRows,{cls:'r2-mini',widths:['6%','35%','10%','32%','17%']})
     });
 
