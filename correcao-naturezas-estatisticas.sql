@@ -406,5 +406,5 @@ select case when exists(select 1 from contexto) then
   jsonb_build_object('autorizado',false,'erro','Apenas o comando ativo pode consultar este consolidado.')
 end
 from resumo r;
-$function$
+$function$;
 commit;
