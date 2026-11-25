@@ -167,4 +167,244 @@ CREATE OR REPLACE FUNCTION public.obter_ocorrencias_mapa(data_inicio date, data_
  SET search_path TO 'public'
 AS $function$ select o.id,o.data_ocorrencia,o.ocorrencia,o.bairro,coalesce(o.endereco_formatado,o.endereco),o.latitude,o.longitude from public.ocorrencias o where o.data_ocorrencia between data_inicio and data_fim and o.latitude is not null and o.longitude is not null and public.ocorrencia_contem_natureza(o.ocorrencia,o.crime,o.naturezas_itens,tipo_filtro) order by o.data_ocorrencia desc; $function$;
 
+
+create or replace function public.ocorrencia_busca_natureza(p_principal text,p_crime text,p_itens jsonb,p_filtro text)
+returns boolean language sql immutable security invoker set search_path=pg_catalog,public as $
+ select case when nullif(btrim(p_filtro),'') is null then true
+ when public.chave_natureza_estatistica(p_filtro) in ('HOMICIDIO','ENCONTRO DE CADAVER') and translate(upper(btrim(p_filtro)), 'ÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇ','AAAAAEEEEIIIIOOOOOUUUUC') in ('HOMICIDIO','ENCONTRO DE CADAVER','ACHADO DE CADAVER') then public.ocorrencia_contem_natureza(p_principal,p_crime,p_itens,p_filtro)
+ else exists(select 1 from (
+ select coalesce(nullif(p_principal,''),case when jsonb_array_length(case when jsonb_typeof(p_itens)='array' then p_itens else '[]'::jsonb end)=0 then p_crime end) nome
+ union all
+ select case when jsonb_typeof(j)='string' then j#>>'{}' else coalesce(j->>'nome',j->>'tipo') end
+ from jsonb_array_elements(case when jsonb_typeof(p_itens)='array' then p_itens else '[]'::jsonb end) j
+ ) n where strpos(translate(upper(coalesce(n.nome,'')), 'ÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇ','AAAAAEEEEIIIIOOOOOUUUUC'),translate(upper(btrim(p_filtro)), 'ÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇ','AAAAAEEEEIIIIOOOOOUUUUC'))>0
+ or strpos(public.chave_natureza_estatistica(n.nome),public.chave_natureza_estatistica(p_filtro))>0) end
+$;
+
+CREATE OR REPLACE FUNCTION public.obter_indicadores_origem_envolvimento_cpc(data_inicio date DEFAULT NULL::date, data_fim date DEFAULT NULL::date, p_unidade_id uuid DEFAULT NULL::uuid, p_aisc text DEFAULT NULL::text, p_sisc text DEFAULT NULL::text, p_setor text DEFAULT NULL::text, p_ocorrencia text DEFAULT NULL::text, p_bairro text DEFAULT NULL::text, p_companhia text DEFAULT NULL::text, p_turno text DEFAULT NULL::text)
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE
+ SET search_path TO 'public', 'private', 'auth'
+AS $function$
+with recursive
+contexto as (
+  select u.id comando_id,
+    (
+      public.obter_contexto_unidade_usuario()->>'perfil'='COMANDANTE'
+      and public.obter_contexto_unidade_usuario()->>'unidade_principal_sigla'='CPC'
+    ) comandante
+  from public.unidades u
+  where u.id=private.unidade_atual()
+    and u.ativo=true and u.tipo='COMANDO' and private.usuario_ativo()
+),
+descendentes as (
+  select u.id,u.tipo,u.parent_id,u.agrega_descendentes
+  from public.unidades u join contexto c on c.comando_id=u.parent_id
+  where u.ativo=true
+  union all
+  select u.id,u.tipo,u.parent_id,u.agrega_descendentes
+  from public.unidades u join descendentes d on u.parent_id=d.id
+  where u.ativo=true
+),
+arvore_selecionada as (
+  select d.id,d.tipo,d.parent_id,d.agrega_descendentes
+  from descendentes d
+  where p_unidade_id is not null and d.id=p_unidade_id
+  union all
+  select d.id,d.tipo,d.parent_id,d.agrega_descendentes
+  from descendentes d join arvore_selecionada a on a.id=d.parent_id
+  where a.agrega_descendentes=true
+),
+escopo as (
+  select d.id from descendentes d where p_unidade_id is null
+  union
+  select s.id from arvore_selecionada s
+),
+candidatas as materialized (
+  select o.id,o.data_ocorrencia,o.bairro,o.sisc,o.companhia,o.turno,
+         o.ocorrencia,o.crime,o.naturezas_itens,o.escola_id,o.escola_nome,o.origem_acionamento,o.observacao_final,o.criado_em
+  from public.ocorrencias o
+  where (data_inicio is null or o.data_ocorrencia>=data_inicio)
+    and (data_fim is null or o.data_ocorrencia<=data_fim)
+    and (
+      exists(select 1 from escopo e where e.id=o.unidade_id)
+      or (
+        p_unidade_id is not null and exists(
+          select 1 from arvore_selecionada a
+          where a.tipo='SUBUNIDADE' and a.id=o.subunidade_operacional_id
+        )
+      )
+    )
+),
+territorios as materialized (
+  select b.bairro,public.territorio_por_bairro(b.bairro) info
+  from (select distinct bairro from candidatas) b
+),
+filtradas as (
+  select c.id,c.ocorrencia,c.crime,c.escola_id,c.escola_nome,c.origem_acionamento,c.observacao_final,c.criado_em
+  from candidatas c
+  left join territorios t on t.bairro=c.bairro
+  where (p_aisc is null or btrim(p_aisc)='' or upper(coalesce(t.info->>'aisc',''))=upper(btrim(p_aisc)))
+    and (p_sisc is null or btrim(p_sisc)='' or upper(coalesce(nullif(c.sisc,''),t.info->>'sisc',''))=upper(btrim(p_sisc)))
+    and (p_setor is null or btrim(p_setor)='' or upper(coalesce(t.info->>'setor',''))=upper(btrim(p_setor)))
+    and public.ocorrencia_busca_natureza(c.ocorrencia,c.crime,c.naturezas_itens,p_ocorrencia)
+    and (
+      p_bairro is null or btrim(p_bairro)=''
+      or upper(coalesce(c.bairro,'')) like '%'||upper(btrim(p_bairro))||'%'
+      or upper(coalesce(t.info->>'bairro','')) like '%'||upper(btrim(p_bairro))||'%'
+      or (t.info->>'bairro_id' is not null
+        and t.info->>'bairro_id'=public.territorio_por_bairro(p_bairro)->>'bairro_id')
+    )
+    and (p_companhia is null or btrim(p_companhia)='' or upper(btrim(coalesce(c.companhia,'')))=upper(btrim(p_companhia)))
+    and (p_turno is null or btrim(p_turno)='' or upper(btrim(coalesce(c.turno,'')))=upper(btrim(p_turno)))
+),
+metadados as (
+  select f.id,f.origem_acionamento,f.criado_em,
+    case when f.criado_em >= timestamptz '2026-11-06 00:00:00-04:00' and f.observacao_final is not null
+          and strpos(f.observacao_final,'[[PESSOAS_ENVOLVIDAS]]')>0
+          and pg_input_is_valid(
+            substring(f.observacao_final from strpos(f.observacao_final,'[[PESSOAS_ENVOLVIDAS]]')+char_length('[[PESSOAS_ENVOLVIDAS]]')),
+            'jsonb')
+      then substring(f.observacao_final from strpos(f.observacao_final,'[[PESSOAS_ENVOLVIDAS]]')+char_length('[[PESSOAS_ENVOLVIDAS]]'))::jsonb
+      else '{}'::jsonb end as meta
+  from filtradas f
+),
+pessoas as (
+  select m.id,m.origem_acionamento,m.criado_em,
+    exists(
+      select 1 from (
+        select m.meta #> '{institucionaisPrincipais,vitima}' perfil
+        union all
+        select v->'institucional' from jsonb_array_elements(
+          case when jsonb_typeof(m.meta->'vitimas')='array' then m.meta->'vitimas' else '[]'::jsonb end
+        ) v
+      ) q
+      where q.perfil->>'situacao'='SIM'
+        and q.perfil->>'tipo' in (
+          'POLICIAL_MILITAR','POLICIAL_CIVIL','POLICIAL_FEDERAL',
+          'POLICIAL_RODOVIARIO_FEDERAL','POLICIAL_PENAL','DELEGADO_POLICIA','OUTRO_POLICIAL'
+        )
+    ) vitima_policial,
+    exists(
+      select 1 from (
+        select m.meta #> '{institucionaisPrincipais,infrator}' perfil
+        union all
+        select a->'institucional' from jsonb_array_elements(
+          case when jsonb_typeof(m.meta->'infratores')='array' then m.meta->'infratores' else '[]'::jsonb end
+        ) a
+      ) q
+      where q.perfil->>'situacao'='SIM'
+        and q.perfil->>'tipo' in (
+          'POLICIAL_MILITAR','POLICIAL_CIVIL','POLICIAL_FEDERAL',
+          'POLICIAL_RODOVIARIO_FEDERAL','POLICIAL_PENAL','DELEGADO_POLICIA','OUTRO_POLICIAL'
+        )
+    ) infrator_policial,
+    exists(
+      select 1 from (
+        select m.meta #> '{institucionaisPrincipais,vitima}' perfil
+        union all
+        select m.meta #> '{institucionaisPrincipais,infrator}'
+        union all
+        select v->'institucional' from jsonb_array_elements(
+          case when jsonb_typeof(m.meta->'vitimas')='array' then m.meta->'vitimas' else '[]'::jsonb end
+        ) v
+        union all
+        select a->'institucional' from jsonb_array_elements(
+          case when jsonb_typeof(m.meta->'infratores')='array' then m.meta->'infratores' else '[]'::jsonb end
+        ) a
+      ) q
+      where q.perfil->>'situacao' in ('SIM','NAO')
+    ) classificacao_preenchida,
+    exists(
+      select 1 from (
+        select m.meta #> '{institucionaisPrincipais,vitima}' perfil
+        union all
+        select v->'institucional' from jsonb_array_elements(
+          case when jsonb_typeof(m.meta->'vitimas')='array'
+               then m.meta->'vitimas' else '[]'::jsonb end
+        ) v
+      ) q
+      where q.perfil->>'situacao'='SIM'
+        and q.perfil->>'tipo' in ('MAGISTRADO','MEMBRO_MINISTERIO_PUBLICO',
+          'AUTORIDADE_POLITICA_ADMINISTRATIVA','OUTRA_AUTORIDADE')
+    ) vitima_autoridade,
+    exists(
+      select 1 from (
+        select m.meta #> '{institucionaisPrincipais,infrator}' perfil
+        union all
+        select v->'institucional' from jsonb_array_elements(
+          case when jsonb_typeof(m.meta->'infratores')='array'
+               then m.meta->'infratores' else '[]'::jsonb end
+        ) v
+      ) q
+      where q.perfil->>'situacao'='SIM'
+        and q.perfil->>'tipo' in ('MAGISTRADO','MEMBRO_MINISTERIO_PUBLICO',
+          'AUTORIDADE_POLITICA_ADMINISTRATIVA','OUTRA_AUTORIDADE')
+    ) infrator_autoridade
+  from metadados m
+),
+resumo as (
+  select count(*)::integer total_ocorrencias,
+    count(*) filter(where criado_em >= timestamptz '2026-11-06 00:00:00-04:00')::integer novos_cadastros,
+    count(*) filter(where origem_acionamento='CICC')::integer cicc,
+    count(*) filter(where origem_acionamento='PATRULHAMENTO')::integer patrulhamento,
+    count(*) filter(where origem_acionamento='ABORDAGEM')::integer abordagem,
+    count(*) filter(where origem_acionamento='MISSAO')::integer missao,
+    count(*) filter(where origem_acionamento='OPERACAO')::integer operacao,
+    count(*) filter(where origem_acionamento='OUTRA')::integer outra,
+    count(*) filter(where origem_acionamento is null
+      or origem_acionamento not in ('CICC','PATRULHAMENTO','ABORDAGEM','MISSAO','OPERACAO','OUTRA'))::integer nao_informada,
+    count(*) filter(where vitima_policial or infrator_policial)::integer policiais_total,
+    count(*) filter(where vitima_policial)::integer policiais_vitimas,
+    count(*) filter(where infrator_policial)::integer policiais_infratores,
+    count(*) filter(where classificacao_preenchida)::integer classificados_funcionais,
+    count(*) filter(where vitima_autoridade or infrator_autoridade)::integer autoridades_total,
+    count(*) filter(where vitima_autoridade)::integer autoridades_vitimas,
+    count(*) filter(where infrator_autoridade)::integer autoridades_infratores,
+    count(*) filter(where vitima_policial or infrator_policial or vitima_autoridade or infrator_autoridade)::integer envolvidos_total
+  from pessoas
+)
+select case when exists(select 1 from contexto) then
+  jsonb_build_object(
+    'autorizado',true,
+    'total',r.total_ocorrencias,
+    'origens',jsonb_build_object(
+      'CICC',r.cicc,'PATRULHAMENTO',r.patrulhamento,'ABORDAGEM',r.abordagem,
+      'MISSAO',r.missao,'OPERACAO',r.operacao,'OUTRA',r.outra,'NAO_INFORMADA',r.nao_informada),
+    'origem_informada',r.total_ocorrencias-r.nao_informada,
+    'escolas',jsonb_build_object(
+      'total',(select count(*) from filtradas where escola_id is not null),
+      'instituicoes',(select count(distinct escola_id) from filtradas where escola_id is not null),
+      'ranking',coalesce((
+        select jsonb_agg(jsonb_build_object(
+          'nome',g.nome,'total',g.total,
+          'naturezas',(
+            select coalesce(jsonb_agg(jsonb_build_object('tipo',q.ocorrencia,'subtipo',q.crime,'quantidade',q.quantidade)) ,'[]'::jsonb)
+            from (select f2.ocorrencia,f2.crime,count(*) quantidade
+              from filtradas f2 where f2.escola_id=g.chave
+              group by f2.ocorrencia,f2.crime order by count(*) desc) q
+          )
+        ) order by g.total desc)
+        from (select f.escola_id chave,e.nome,count(*) total
+          from filtradas f join public.escolas e on e.id=f.escola_id where f.escola_id is not null
+          group by f.escola_id,e.nome order by count(*) desc limit 40) g
+      ),'[]'::jsonb)
+    ),
+    'pode_ver_envolvimento',(select c.comandante from contexto c),
+    'envolvidos_total',case when (select c.comandante from contexto c) then r.envolvidos_total else null end,
+    'policiais',case when (select c.comandante from contexto c) then jsonb_build_object(
+      'total',r.policiais_total,'vitimas',r.policiais_vitimas,
+      'infratores',r.policiais_infratores,
+      'classificados',r.classificados_funcionais,
+      'novos_cadastros',r.novos_cadastros,
+      'sem_classificacao',r.novos_cadastros-r.classificados_funcionais) else null end,
+    'autoridades',case when (select c.comandante from contexto c) then jsonb_build_object(
+      'total',r.autoridades_total,'vitimas',r.autoridades_vitimas,
+      'infratores',r.autoridades_infratores) else null end
+  ) else
+  jsonb_build_object('autorizado',false,'erro','Apenas o comando ativo pode consultar este consolidado.')
+end
+from resumo r;
+$function$
 commit;
