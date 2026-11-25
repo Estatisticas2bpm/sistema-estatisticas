@@ -6,7 +6,7 @@
 .cpcUnitPin img{display:block;position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:white}
 body.modo-cpc .quick{display:none}
 .giro-moto-marker{background:transparent!important;border:0!important}.giro-moto-marker span{display:grid;place-items:center;width:26px;height:26px;font-size:21px;line-height:1;filter:grayscale(1) brightness(.15);text-shadow:0 1px 1px #fff,0 0 2px #fff}.territoryNote{margin-top:10px;color:#52677a;font-size:11px}.territoryNote b{color:#29465f}@media(max-width:1200px){.filters{grid-template-columns:repeat(4,1fr)}}@media(max-width:800px){.filters{grid-template-columns:repeat(2,1fr)}#mapa{height:650px}}@media(max-width:600px){.filters{grid-template-columns:1fr}.head{align-items:flex-start;flex-direction:column}#mapa{height:560px}}</style>
-<script src="estatistica-indicadores.js?v=20261012-ciptur-escudo3"></script><script src="mapa-cpc-profissional.js?v=20261012-v1"></script><script src="mapa-unidade-profissional.js?v=20261015-bigtrail1"></script><script src="ocorrencia-detalhe-mapa.js?v=20261028-modal1"></script><script src="auth-config.js"></script><script src="auth-guard.js"></script><script src="bope-painel.js?v=20261020-bope-sub1"></script></head>
+<script src="estatistica-indicadores.js?v=20261012-ciptur-escudo3"></script><script src="mapa-cpc-profissional.js?v=20261012-v1"></script><script src="mapa-unidade-profissional.js?v=20261015-bigtrail1"></script><script src="ocorrencia-detalhe-mapa.js?v=20261028-modal1"></script><script src="naturezas-estatisticas.js?v=20261124-1"></script><script src="auth-config.js"></script><script src="auth-guard.js"></script><script src="bope-painel.js?v=20261020-bope-sub1"></script></head>
 <body><header><div class="head"><div><h1 id="tituloMapa">Mapa Criminal</h1><p id="subtituloMapa">Distribuição geográfica com leitura operacional e territorial oficial</p></div><div class="headLinks"><a href="territorio-cpc.html" data-module="PAINEL_CPC" hidden>⌘ Matriz territorial</a><a href="index.html">← Página inicial</a></div></div></header>
 <main><section class="panel"><div class="presets"><button data-period="hoje">Hoje</button><button data-period="7dias">Últimos 7 dias</button><button data-period="mes" class="active">Mês atual</button><button data-period="semana">Semana atual</button></div>
 <div class="filters">
@@ -166,8 +166,8 @@ function filtrarOcorrencias(){
     &&(!bt||String(x.unidade_territorial_id||'')===bt)
     &&(!cia||chave(x.cia_unidade_apuracao)===cia)
     &&(!a||x.aisc===a)&&(!s||x.sisc===s)&&(!st||x.setor===st)
-    &&(!categoriaRapida||cat(x.ocorrencia||x.crime)[0]===categoriaRapida)
-    &&(!t||chave(x.ocorrencia||x.crime).includes(t))
+    &&(!categoriaRapida||SieNaturezasEstatisticas.nomes(x).some(n=>cat(n)[0]===categoriaRapida))
+    &&(!t||SieNaturezasEstatisticas.busca(x,$('tipo').value))
     &&(!b||bairroCorrespondeMapa(x.bairro,$('bairro').value,x.territorio_bairro))
     &&(!tu||chave(x.turno)===tu));
 }
