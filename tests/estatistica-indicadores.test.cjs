@@ -34,10 +34,16 @@ assert.equal(cardsG[3].valor,4);
 const cardsT=i.cards('CIPTUR',ocorr,[],{status:'ok',data:[{houve_remocao:true}]});
 assert.equal(cardsT[2].valor,1);
 assert.equal(cardsT[3].valor,1);
-const cardsC=i.cards('CAVALARIA',ocorr,[],{status:'ok',data:[{abordagens_pessoas:5,tipo_policiamento:'POLICIAMENTO_MONTADO'}]});
-assert.equal(cardsC[0].valor,1);
-assert.equal(cardsC[1].valor,5);
+const cardsC=i.cards('CAVALARIA',[
+ {cavalaria_classe_registro:'ATIVIDADE',cavalaria_tipo_atividade:'POLICIAMENTO_MONTADO'},
+ {cavalaria_classe_registro:'ATIVIDADE',cavalaria_tipo_atividade:'VISITA_EDUCATIVA_ESCOLAR'},
+ {cavalaria_classe_registro:'OCORRENCIA'}, {}
+],[],{status:'ok',data:[{abordagens_pessoas:5,tipo_policiamento:'POLICIAMENTO_MONTADO'}]});
+assert.equal(cardsC[0].valor,2);
+assert.equal(cardsC[1].valor,1);
 assert.equal(cardsC[2].valor,1);
+assert.equal(cardsC[3].valor,1);
+assert.equal(i.cards('CAVALARIA',[],[],{status:'ok',data:[{tipo_policiamento:'POLICIAMENTO_MONTADO'}]})[0].valor,0,'Serviços legados não duplicam atividades PPE');
 assert.equal(i.formatar(i.cards('CIPG',[],[],{status:'erro'})[0]),'—','erro não é zero');
 assert.equal(i.formatar(i.cards('GIRO',[],[],{status:'carregando'})[2]),'—','carregando não é zero');
 assert.equal(i.formatar(i.cards('GIRO',[],[],{status:'ok',data:[]})[2]),'0','consulta vazia válida é zero');
