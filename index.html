@@ -81,7 +81,7 @@ body.modo-1bpm .hero{min-height:340px;background-color:#03172c;background-image:
 body.modo-1bpm .hero:after{display:none}
 body.modo-1bpm .hero .top,body.modo-1bpm .hero .heroCopy{position:relative;z-index:1;text-shadow:0 2px 11px rgba(0,0,0,.92)}
 @media(max-width:768px){body.modo-1bpm .hero{min-height:420px;background-position:center,right center;background-image:linear-gradient(90deg,rgba(2,17,40,.99) 0%,rgba(2,24,52,.95) 50%,rgba(3,38,72,.62) 74%,rgba(3,42,78,.22) 100%),url("assets/banners/1bpm-home-banner.png?v=20261009-1bpm-banner1")}body.modo-1bpm .heroCopy{max-width:82%}}
-</style><script src="naturezas-estatisticas.js?v=20261124-1"></script><script src="auth-config.js"></script><script src="auth-guard.js"></script></head><body>
+</style><script src="naturezas-estatisticas.js?v=20261124-2"></script><script src="auth-config.js"></script><script src="auth-guard.js"></script></head><body>
 <header class="hero"><div class="top"><div class="brand"><div class="brandLogos"><img src="brasao-pmrr.png" alt="Brasão da Polícia Militar de Roraima"></div><div><b>SIE-CPC</b><small>Sistema Integrado de Estatística do CPC</small><div data-sie-unit style="margin-top:5px;font-size:11px;font-weight:900;letter-spacing:.8px;color:#9ee5e7;text-transform:uppercase">Unidade ativa · carregando...</div></div></div></div><div class="heroCopy"><span class="eyebrow" id="heroEyebrow"><i class="pulse"></i> Panorama estatístico</span><h1 id="heroTitulo">Visão rápida do mês</h1><p id="periodoSemana">Carregando período...</p><div id="cpcEscopoHero" class="cpcScopeHero" hidden>Consolidação das unidades subordinadas</div></div></header>
 <main class="container">
 <section class="bopeSubPainel" id="bopeSubPainel" hidden aria-label="Subunidades operacionais do BOPE">
@@ -109,7 +109,7 @@ body.modo-1bpm .hero .top,body.modo-1bpm .hero .heroCopy{position:relative;z-ind
 <section class="search"><div><h2 id="searchTitulo">Localizar uma ocorrência</h2><p id="searchDescricao">Pesquise por número do BO, tipo de ocorrência ou bairro.</p></div><form class="searchForm" action="consulta.html"><input name="q" aria-label="Pesquisar ocorrências" placeholder="Digite para pesquisar..."><button class="btn">⌕ Pesquisar</button></form></section>
 <div id="atalhosCpcTitulo" class="cpcActionsTitle" hidden><b>Ferramentas de análise do Comando</b><span>Consultas, dashboards, mapa, séries temporais e relatórios das unidades subordinadas.</span></div><nav class="actions" id="atalhosHome"><a class="action" id="atalhoCadastroPrincipal" href="cadastro.html?v=pdf21"><span>＋</span>Cadastrar ocorrência</a><a class="action" href="autos-infracao.html" data-permission="cadastro" data-module="AUTOS_INFRACAO" hidden><span>⚑</span>Autos de infração</a><a class="action" href="produtividade-cpc.html"><span>▣</span>Operações e apresentações documentadas</a><a class="action" href="consulta.html"><span>⌕</span>Consultar ocorrências</a><a class="action" href="dashboard.html?v=20261009-bope-banner1"><span>▥</span>Dashboard completo</a><a class="action" id="giroAccessShortcut" href="giro-acesso-abordagens.html" hidden><span>🔑</span>Cadastrar/gerenciar policiais das abordagens — GIRO</a><a class="action" id="giroAdminAbordagensShortcut" href="giro-abordagem.html?admin=1" hidden><span>◎</span>Testar abordagens do GIRO com minha conta ADMIN</a><a class="action" id="cipgAccessShortcut" href="cipg-gerenciar-acessos.html" data-permission="cadastro" data-module="PRODUTIVIDADE_CIPG" hidden><span>🔑</span>Cadastrar/gerenciar policiais do Caderno Digital — CIPG</a><a class="action" href="dashboard-cpc.html" data-permission="dashboard" data-module="PAINEL_CPC" hidden><span>◎</span>Painel Estatístico Integrado CPC</a><a class="action" href="territorio-cpc.html" data-permission="dashboard" data-module="PAINEL_CPC" hidden><span>⌘</span>Matriz territorial</a><a class="action" href="auditoria.html"><span>✓</span>Auditoria de dados</a><a class="action" href="analise-temporal.html"><span>◷</span>Análise temporal</a><a class="action" href="mapa-criminal.html"><span>⌖</span>Mapa criminal</a><a class="action" href="tco-rapido.html"><span>▤</span>TCO rápido</a><a class="action" href="relatorio.html"><span>▧</span>Gerar relatório</a><a class="action" href="acoes.html" data-permission="acoes" data-module="ACOES_SOCIAIS" hidden><span>📷</span>Ações preventivas</a><a class="action" href="usuarios.html" data-permission="usuarios" data-auth-only hidden><span>👥</span>Gerenciar usuários</a></nav>
 </main><footer>SIE-CPC — Polícia Militar de Roraima · Comando de Policiamento da Capital</footer>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="https://cdn.jsdelivr.net/npm/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"><script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script><link rel="stylesheet" href="mapa-cpc-profissional.css?v=20261015-bigtrail1"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="estatistica-indicadores.js?v=20261012-ciptur-escudo3"></script><script src="bope-painel.js?v=20261020-bope-brasoes1"></script><script src="mapa-cpc-profissional.js?v=20261015-hover1"></script><script src="mapa-unidade-profissional.js?v=20261015-bigtrail1"></script><script src="mapa-interacao-home.js?v=20261015-1"></script><script src="mapa-resumo-home.js?v=20261015-1"></script><script src="filtro-tipos-mapa.js?v=20261028-1"></script><script src="ocorrencia-detalhe-mapa.js?v=20261028-modal1"></script><script src="cipa-home.js?v=20261012-series3"></script><script src="cipg-home.js?v=20261012-contrato2"></script><script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="https://cdn.jsdelivr.net/npm/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"><script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script><link rel="stylesheet" href="mapa-cpc-profissional.css?v=20261015-bigtrail1"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="estatistica-indicadores.js?v=20261012-ciptur-escudo3"></script><script src="bope-painel.js?v=20261020-bope-brasoes1"></script><script src="mapa-cpc-profissional.js?v=20261124-2"></script><script src="mapa-unidade-profissional.js?v=20261015-bigtrail1"></script><script src="mapa-interacao-home.js?v=20261015-1"></script><script src="mapa-resumo-home.js?v=20261015-1"></script><script src="filtro-tipos-mapa.js?v=20261028-1"></script><script src="ocorrencia-detalhe-mapa.js?v=20261028-modal1"></script><script src="cipa-home.js?v=20261012-series3"></script><script src="cipg-home.js?v=20261012-contrato2"></script><script>
 const db=supabase.createClient("https://jppmhhukujigxupgskdk.supabase.co","sb_publishable_ZVnU35i2x9zwppQqYg7UYw_mzaT43aG");
 var bopeSubAtiva=null,bopeIdUnidadeAtiva=null;
 var modoCpc=false,modo2Bpm=false,modoCiptur=false,modoCipa=false,modoCipg=false,modoGiro=false,modoCavalaria=false,modoBope=false,cpcUnidades=[],cpcAtual=[],cpcAnterior=[],cpcTcosAtual=[],cpcTcosAnterior=[],cpcTerritorio={},filtroCpcUnidade="";
@@ -627,11 +627,12 @@ mapa.on("zoomend",function(){
 function intervaloMapa(){var h=new Date(),i,f=new Date(h);if(periodoMapa.value==="hoje")i=new Date(h);else if(periodoMapa.value==="7dias"){i=new Date(h);i.setDate(h.getDate()-6)}else if(periodoMapa.value==="semana"){i=new Date(h);var d=h.getDay(),dif=d===0?-6:1-d;i.setDate(h.getDate()+dif)}else if(periodoMapa.value==="personalizado"){return [mapaInicio.value,mapaFim.value]}else i=new Date(h.getFullYear(),h.getMonth(),1);return[iso(i),iso(f)]}
 // Complementa apenas dados de BO já acessíveis ao usuário (RLS de ocorrências).
 // Mantém os RPCs e os filtros territoriais originais; nunca amplia a visibilidade de registros.
-const detalhesOcorrenciasMapa=new Map();
+
 let requisicaoMapaAtual=0;
 async function enriquecerOcorrenciasMapa(registros){
   const ids=[...new Set((registros||[]).map(x=>String(x.id||'')).filter(x=>/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(x)))];
-  const pendentes=ids.filter(id=>!detalhesOcorrenciasMapa.has(id));
+  const detalhesOcorrenciasMapa=new Map();
+  const pendentes=ids;
   const lotes=[];
   for(let i=0;i<pendentes.length;i+=200)lotes.push(pendentes.slice(i,i+200));
   let indice=0;
@@ -639,7 +640,7 @@ async function enriquecerOcorrenciasMapa(registros){
     while(indice<lotes.length){
       const lote=lotes[indice++];
       // A leitura direta usa exatamente as mesmas políticas RLS aplicadas à consulta de ocorrências.
-      const resposta=await db.from('ocorrencias').select('id,numero_bo,comandante,hora_inicial').in('id',lote);
+      const resposta=await db.from('ocorrencias').select('id,numero_bo,comandante,hora_inicial,naturezas_itens').in('id',lote);
       if(resposta.error){
         console.warn('Detalhes autorizados do mapa indisponíveis:',resposta.error.message);
         return;
@@ -655,7 +656,7 @@ async function enriquecerOcorrenciasMapa(registros){
     for(const campo of ['numero_bo','comandante','hora_inicial']){
       if(detalhe[campo]!==null&&detalhe[campo]!==undefined&&String(detalhe[campo]).trim()!=='')extras[campo]=detalhe[campo];
     }
-    return {...x,...extras};
+    return {...x,...extras,naturezas_itens:detalhe.naturezas_itens||[]};
   });
 }
 async function carregarMapa(){
