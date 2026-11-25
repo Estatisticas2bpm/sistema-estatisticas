@@ -29,7 +29,17 @@
     return Array.from(grupos.values()).sort(function(a,b){return b[1]-a[1]||a[0].localeCompare(b[0],'pt-BR');}).slice(0,limite==null?999:limite);
   }
   function contem(o,n){return nomes(o).some(function(v){return chave(v)===chave(categoria(n));});}
-  var api={chave:chave,categoria:categoria,nomes:nomes,rank:rank,contem:contem};
+  // Texto livre: preservar buscas parciais; o termo consolidado HOMICÍDIO
+  // não deve trazer tentativas ou homicídios culposos.
+  function busca(o,termo){
+    var k=chave(termo);
+    if(!k)return true;
+    if(k==='HOMICIDIO'||k==='ENCONTRO DE CADAVER'||k==='ACHADO DE CADAVER')return contem(o,termo);
+    var itens=Array.isArray(o&&o.naturezas_itens)?o.naturezas_itens:[];
+    var brutos=[o&&(o.ocorrencia||(!itens.length?o.crime:''))].concat(itens.map(function(n){return typeof n==='string'?n:n&&(n.nome||n.tipo);}));
+    return brutos.concat(nomes(o)).some(function(n){return chave(n).includes(k);});
+  }
+  var api={chave:chave,categoria:categoria,nomes:nomes,rank:rank,contem:contem,busca:busca};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
   else root.SieNaturezasEstatisticas=api;
 })(typeof globalThis!=='undefined'?globalThis:this);
