@@ -815,7 +815,7 @@
   </dialog>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="pdf-importer-core.js?v=20261031-operacional1"></script>
-  <script src="ppe-naturezas.js?v=20261119-3"></script>
+  <script src="ppe-naturezas.js?v=20261124-identidade1"></script>
   <script src="verificacao-quantidades-operacionais.js?v=20261018-auditoria1"></script>
   <script src="bope-subunidades.js?v=20261015-1"></script>
   <script>
@@ -873,24 +873,6 @@
     function resolverTipoNatureza(valor){
       const v=normalizarCatalogo(valor);
       return catalogos.tipos.find(t=>normalizarCatalogo(rotuloNatureza(t))===v||normalizarCatalogo(t.nome)===v)||null;
-    }
-    function tipoPeloCodigoPpe(item){
-      if(!item)return null;
-      const tipo=catalogos.tipos.find(t=>String(t.codigo_ppe||"")===String(item.codigo_ppe));
-      if(!tipo)return null;
-      const nome=normalizarCatalogo(item.descricao_original);
-      const original=normalizarCatalogo(tipo.ppe_descricao_original);
-      const padronizada=normalizarCatalogo(tipo.ppe_descricao_padronizada);
-      // O PPE pode acrescentar qualificadores entre parênteses à descrição
-      // cadastrada (ex.: AMEAÇA (ART. 147 DO CPB) (VIOLÊNCIA DOMÉSTICA...)).
-      // Exigir o mesmo código e aceitar somente sufixos parentéticos completos.
-      const qualificacao=(base)=>base && nome.startsWith(base) &&
-        /^\s*(?:[(][^()]+[)]\s*)+$/.test(nome.slice(base.length));
-      if(!nome || (nome!==original && nome!==padronizada &&
-          !qualificacao(original) && !qualificacao(padronizada)))return null;
-      const lei=normalizarCatalogo(item.fundamentacao_legal),leiOriginal=normalizarCatalogo(tipo.ppe_fundamentacao_original);
-      if(lei&&leiOriginal&&lei!==leiOriginal&&nome!==padronizada)return null;
-      return tipo;
     }
     function atualizarSubtipos() {
       const tipo = resolverTipoNatureza(document.getElementById("ocorrencia").value);
@@ -2406,9 +2388,11 @@
       else if (dados.escolaPdf?.ambiguo) marcarCampoPdf("escolaNome",true,"✓ Escola citada — confirmar o nome manualmente");
       document.getElementById("statusAtendimento").value = "ATENDIDA";
       document.getElementById("municipio").value = normalizarCatalogo(dados.municipio || "BOA VISTA");
-      // Havendo código legível, não trocar uma natureza jurídica por outra por aproximação textual.
-      const tipo = dados.ppeExtraidas?.length ? tipoPeloCodigoPpe(dados.ppeExtraidas[0]) : melhorItemCatalogo(catalogos.tipos, dados.natureza, true);
+      // PPE reconhecido é classificado somente pelo vínculo documental e pela
+      // estrutura institucional; nunca por aproximação ao texto bruto.
+      const tipo = dados.temSecaoPpe ? null : melhorItemCatalogo(catalogos.tipos, dados.natureza, true);
       document.getElementById("ocorrencia").value = tipo ? tipo.nome : "";
+      if (dados.temSecaoPpe) document.getElementById("crime").value = "";
       atualizarSubtipos();
       if (tipo && !tipo.codigo_ppe) {
         const subtipos = catalogos.subtipos.filter(s => Number(s.tipo_id) === Number(tipo.id));
@@ -2528,16 +2512,22 @@
         const ppeExtraidas=Array.isArray(ppePorLayout)&&ppePorLayout.length
           ? ppePorLayout
           : (window.PpeNaturezas?.extrair(texto)||[]);
+        dados.temSecaoPpe=Array.isArray(ppePorLayout)||window.PpeNaturezas?.temSecao(texto)||
+          /Natureza\s+Meio\(s\)\s+Empregado\(s\)/i.test(texto);
         ppeLayoutAtual=null;
         let ppeErroCatalogo=null;
+        let ppeResultados=[];
         dados.ppeExtraidas= dados.numeroBo ? ppeExtraidas : [];
         if(dados.ppeExtraidas.length){
           try{
             const sessaoPpe=window.SistemaAuth?.ready?await window.SistemaAuth.ready:window.SistemaAuth;
             const respostaPpe=await sessaoPpe.client.rpc("ppe_catalogar_extracao",{p_itens:dados.ppeExtraidas});
             if(respostaPpe.error)throw respostaPpe.error;
+            if(!Array.isArray(respostaPpe.data)||respostaPpe.data.length!==dados.ppeExtraidas.length)
+              throw new Error("Resposta incompleta do catálogo PPE.");
             // A nova natureza já deve aparecer na lista aberta do próprio formulário.
             await carregarCatalogos();
+            ppeResultados=respostaPpe.data;
           }catch(e){ppeErroCatalogo=e;console.warn("Catálogo PPe: falha na alimentação durante a leitura.",e.message);}
         }
         if (!catalogos.tipos.length) await carregarCatalogos();
@@ -2550,7 +2540,7 @@
         }
         delete dados.historicoFonte;
         const enderecoPreparado = await preencherRascunhoPdf(dados);
-        const naturezasPendentes=dados.ppeExtraidas?.length?(window.NaturezasCadastro?.importar(dados.ppeExtraidas)||[]):[];
+        const naturezasPendentes=dados.ppeExtraidas?.length?(window.NaturezasCadastro?.importar(dados.ppeExtraidas,ppeResultados)||[]):[];
         importacaoPdfPendente = true;
         if(dados.numeroBo&&ppeExtraidas.length){ppeCapturaAtual={itens:ppeExtraidas,numero:document.getElementById("numeroBo").value.trim(),data:document.getElementById("data").value};}
         const totalPessoas = dados.pessoas.vitimas.length + dados.pessoas.infratores.length + dados.pessoas.envolvidos.length;
@@ -2558,7 +2548,8 @@
         const pendencias = [
           !document.getElementById("ocorrencia").value && "tipo de ocorrência",
           ppeErroCatalogo && "catálogo indisponível — a evidência será enviada ao salvar",
-          naturezasPendentes.length && "conferir naturezas dos códigos "+naturezasPendentes.join(", "),
+          dados.temSecaoPpe && !dados.ppeExtraidas.length && "seção PPE não extraída com segurança; selecione a natureza e os meios manualmente",
+          naturezasPendentes.length && "conferir naturezas PPE: "+naturezasPendentes.join(", "),
           !document.getElementById("comandante").value && (dados.comandante.ambiguo ? "comandante ambíguo" : "comandante"),
           dados.vtrAnalise?.ambiguo && "VTR conflitante/ambígua",
           dados.historicoAnalise?.necessitaConferencia && (dados.historicoAnalise.motivo || "limites do histórico"),
@@ -3256,7 +3247,7 @@
     });
   </script>
   <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB-IcfbT-uuHlYSNcvmhbSqkPGqh2wl4Rc&libraries=places&v=weekly&loading=async&callback=iniciarAutocompleteGoogle"></script>
-<script src="cadastro-subtipo.js?v=20261123-classificacao7"></script>
+<script src="cadastro-subtipo.js?v=20261124-identidade1"></script>
   <script src="cadastro-catalogo-admin.js?v=20261119-3"></script>
 </body>
 </html>

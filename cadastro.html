@@ -26,7 +26,7 @@
     const unidadesBopeSemGrupamento=new Set(['CANIL','FORCA_TATICA','CHOQUE','GATE']);
     const ehUnidadeBopeCadastro=unidadesBopeSemGrupamento.has(siglaCadastro);
     const ehBopeCadastro=siglaCadastro==='BOPE';
-    const resposta=await fetch('cadastro-base.html?v=20261119-naturezas1',{cache:'no-store'});
+    const resposta=await fetch('cadastro-base.html?v=20261124-identidade1',{cache:'no-store'});
     if(!resposta.ok) throw new Error('Falha ao carregar a base do cadastro.');
     let html=await resposta.text();
     // Os enxertos abaixo usam trechos literais do cadastro-base. Normalizar as
