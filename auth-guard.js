@@ -181,7 +181,9 @@
   }
 
   async function instalarSeletorUnidadeAdmin(perfil,client){
-    if(normalizarPerfil(perfil.perfil)!=='ADMIN'||contextoAtual?.pode_alternar!==true)return;
+    const papel=normalizarPerfil(perfil.perfil);
+    const comandanteCpc=papel==='COMANDANTE'&&contextoAtual?.unidade_principal_sigla==='CPC';
+    if((papel!=='ADMIN'&&!comandanteCpc)||contextoAtual?.pode_alternar!==true)return;
     const badge=document.getElementById('sistemaUnidadeAtiva');
     if(!badge||badge.dataset.adminSelector==='1')return;
 
@@ -203,7 +205,7 @@
     titulo.style.cssText='font-size:9px;font-weight:900;letter-spacing:.45px;text-transform:uppercase;color:#66758a;white-space:nowrap';
 
     const select=document.createElement('select');
-    select.setAttribute('aria-label','Unidade de trabalho do administrador');
+    select.setAttribute('aria-label',comandanteCpc?'Unidade de consulta do comandante do CPC':'Unidade de trabalho do administrador');
     select.style.cssText='width:auto;max-width:min(72vw,520px);border:1px solid #d1dbe4;border-radius:6px;padding:3px 24px 3px 7px;background:#fff;color:#17324a;font:800 10px Inter,Segoe UI,Arial,sans-serif;cursor:pointer';
     unidades.forEach(u=>{
       const op=document.createElement('option');
@@ -212,16 +214,27 @@
       select.appendChild(op);
     });
     select.value=contextoAtual.unidade_id;
+    if(comandanteCpc&&contextoAtual.sigla==='BOPE'){
+      const params=new URLSearchParams(location.search);
+      const siglaSub=params.get('bope_subunidade')||params.get('subunidade_bope')||params.get('subunidade');
+      const sub=unidades.find(u=>u.tipo==='SUBUNIDADE'&&String(u.parent_id)===String(contextoAtual.unidade_id)&&u.sigla===siglaSub);
+      if(sub)select.value=sub.id;
+    }
+    let selecaoAnterior=select.value;
 
     const detalhe=document.createElement('div');
     detalhe.setAttribute('aria-live','polite');
     detalhe.style.cssText='position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0';
-    detalhe.textContent=contextoAtual?.somente_leitura_operacional
+    detalhe.textContent=comandanteCpc
+      ? 'Consulta das unidades subordinadas ao CPC. Cadastro e alterações operacionais ficam bloqueados.'
+      : contextoAtual?.somente_leitura_operacional
       ? 'Contexto consolidado: consulta dos descendentes. Cadastro e alterações operacionais ficam bloqueados.'
       : 'Os registros e filtros usam esta unidade como contexto. Sua unidade principal não é alterada.';
 
     select.addEventListener('change',async()=>{
-      const anterior=contextoAtual.unidade_id;
+      const anterior=selecaoAnterior;
+      const selecionada=unidades.find(u=>String(u.id)===String(select.value));
+      if(!selecionada){select.value=anterior;return;}
       select.disabled=true;
       detalhe.textContent='Alterando unidade de trabalho...';
       const troca=await client.rpc('definir_contexto_unidade_admin',{p_unidade_id:select.value});
@@ -231,6 +244,14 @@
         select.value=anterior;
         select.disabled=false;
         detalhe.textContent='A unidade de trabalho não foi alterada.';
+        return;
+      }
+      if(comandanteCpc){
+        const destino=new URL('index.html',location.href);
+        if(selecionada.tipo==='SUBUNIDADE'&&troca.data?.sigla==='BOPE'){
+          destino.searchParams.set('bope_subunidade',selecionada.sigla);
+        }
+        location.assign(destino.href);
         return;
       }
       location.reload();
